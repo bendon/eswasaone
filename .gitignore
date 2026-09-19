@@ -1,0 +1,35 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+*.local
+.DS_Store
+
+# Frappe bench (created by bootstrap; large)
+engine/frappe-bench/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+
+# Secrets & local
+*.pem
+*.key
+.env.*
+!.env.example
+
+# Generated noise
+*.log
+.coverage
+htmlcov/

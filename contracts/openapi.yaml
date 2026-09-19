@@ -1,0 +1,560 @@
+openapi: 3.1.0
+info:
+  title: EswasaOne Core BFF
+  version: 0.1.0
+  description: >
+    Single BFF contract for Service Portal and Institution Portal.
+    All writes are confirm-before-commit and execute as the Frappe user.
+servers:
+  - url: https://eswasaone.aiceafrica.com/api
+    description: Public (nginx → Core :8015)
+  - url: http://127.0.0.1:8015/api
+    description: Local Core
+tags:
+  - name: home
+  - name: certification
+  - name: standards
+  - name: estore
+  - name: verify
+  - name: agent
+  - name: ingest
+  - name: identity
+  - name: adapters
+
+paths:
+  /home/institution:
+    get:
+      tags: [home]
+      operationId: getInstitutionHome
+      summary: Institution portal KPIs, module states, and feed preview
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InstitutionHome" }
+
+  /home/service:
+    get:
+      tags: [home]
+      operationId: getServiceHome
+      summary: Service portal stats, recent activity, alerts
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceHome" }
+
+  /certification/applications:
+    get:
+      tags: [certification]
+      operationId: listCertificationApplications
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CertificationApplication" }
+    post:
+      tags: [certification]
+      operationId: createCertificationApplication
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateCertificationApplication" }
+      responses:
+        "201":
+          description: Created (pending confirmation if mutates confirm flow)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CertificationApplication" }
+
+  /certification/applications/{id}:
+    get:
+      tags: [certification]
+      operationId: getCertificationApplication
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CertificationApplication" }
+
+  /certification/applications/{id}/advance:
+    post:
+      tags: [certification]
+      operationId: advanceCertificationApplication
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm]
+              properties:
+                action: { type: string }
+                confirm: { type: boolean }
+                comment: { type: string }
+      responses:
+        "200":
+          description: Advanced
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CertificationApplication" }
+
+  /certification/audits/overdue:
+    get:
+      tags: [certification]
+      operationId: listOverdueAudits
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: auditor
+          in: query
+          schema: { type: string }
+        - name: scheme
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/AuditSummary" }
+
+  /standards:
+    get:
+      tags: [standards]
+      operationId: listStandards
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: sector
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/StandardSummary" }
+
+  /estore/checkout:
+    post:
+      tags: [estore]
+      operationId: estoreCheckout
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items, confirm]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [standard_code, qty]
+                    properties:
+                      standard_code: { type: string }
+                      qty: { type: integer, minimum: 1 }
+                payment_method:
+                  type: string
+                  enum: [momo, invoice]
+                confirm: { type: boolean }
+      responses:
+        "200":
+          description: Checkout initiated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckoutResult" }
+
+  /verify/{token}:
+    get:
+      tags: [verify]
+      operationId: verifyToken
+      summary: Public certificate / mark verification
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerificationResult" }
+
+  /agent/ask:
+    post:
+      tags: [agent]
+      operationId: agentAsk
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentAskRequest" }
+      responses:
+        "200":
+          description: Structured answer / pending action
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentAskResponse" }
+
+  /ingest/applicability:
+    post:
+      tags: [ingest]
+      operationId: checkApplicability
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string }
+                jurisdiction: { type: string }
+                sector: { type: string }
+                hs_code: { type: string }
+      responses:
+        "200":
+          description: Guided applicability result with citations
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApplicabilityResult" }
+
+  /auth/login:
+    post:
+      tags: [identity]
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: Session established
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+
+  /auth/me:
+    get:
+      tags: [identity]
+      operationId: me
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionUser" }
+
+  /adapters/momo/callback:
+    post:
+      tags: [adapters]
+      operationId: momoCallback
+      summary: MTN MoMo payment callback
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: Accepted
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+
+  schemas:
+    InstitutionHome:
+      type: object
+      required: [kpis, modules, feed]
+      properties:
+        kpis:
+          type: array
+          items: { $ref: "#/components/schemas/Kpi" }
+        modules:
+          type: array
+          items: { $ref: "#/components/schemas/ModuleTile" }
+        feed:
+          type: array
+          items: { $ref: "#/components/schemas/FeedItem" }
+
+    ServiceHome:
+      type: object
+      required: [stats, services, recent_activity, alerts]
+      properties:
+        stats:
+          type: array
+          items: { $ref: "#/components/schemas/Kpi" }
+        services:
+          type: array
+          items: { $ref: "#/components/schemas/ServiceCard" }
+        recent_activity:
+          type: array
+          items: { $ref: "#/components/schemas/FeedItem" }
+        alerts:
+          type: array
+          items: { $ref: "#/components/schemas/FeedItem" }
+
+    Kpi:
+      type: object
+      required: [key, label, value]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        value: {}
+        trend: { type: string }
+        status:
+          type: string
+          enum: [ok, warn, critical, unknown]
+
+    ModuleTile:
+      type: object
+      required: [id, title, status]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        status: { type: string }
+        href: { type: string }
+        watermark: { type: string }
+
+    ServiceCard:
+      type: object
+      required: [id, title]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        href: { type: string }
+
+    FeedItem:
+      type: object
+      required: [id, type, title, created_at]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        title: { type: string }
+        body: { type: string }
+        severity:
+          type: string
+          enum: [info, success, warn, critical]
+        created_at: { type: string, format: date-time }
+        href: { type: string }
+
+    CertificationApplication:
+      type: object
+      required: [id, scheme, applicant, status]
+      properties:
+        id: { type: string }
+        scheme: { type: string }
+        applicant: { type: string }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateCertificationApplication:
+      type: object
+      required: [scheme, applicant_name, confirm]
+      properties:
+        scheme: { type: string }
+        applicant_name: { type: string }
+        contact_email: { type: string, format: email }
+        confirm: { type: boolean }
+
+    AuditSummary:
+      type: object
+      required: [id, application_id, due_date, status]
+      properties:
+        id: { type: string }
+        application_id: { type: string }
+        auditor: { type: string }
+        scheme: { type: string }
+        due_date: { type: string, format: date }
+        status: { type: string }
+
+    StandardSummary:
+      type: object
+      required: [code, title]
+      properties:
+        code: { type: string }
+        title: { type: string }
+        sector: { type: string }
+        status: { type: string }
+        buy_url: { type: string }
+
+    CheckoutResult:
+      type: object
+      required: [order_id, status]
+      properties:
+        order_id: { type: string }
+        status: { type: string }
+        payment_ref: { type: string }
+        momo_reference: { type: string }
+
+    VerificationResult:
+      type: object
+      required: [valid, token]
+      properties:
+        valid: { type: boolean }
+        token: { type: string }
+        subject: { type: string }
+        issued_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        details: { type: object, additionalProperties: true }
+
+    AgentAskRequest:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+        context:
+          type: object
+          additionalProperties: true
+        confirm_action_id: { type: string }
+
+    AgentAskResponse:
+      type: object
+      required: [answer]
+      properties:
+        answer: { type: string }
+        citations:
+          type: array
+          items: { $ref: "#/components/schemas/Citation" }
+        tools_used:
+          type: array
+          items: { type: string }
+        pending_action:
+          $ref: "#/components/schemas/PendingAction"
+        buy_links:
+          type: array
+          items: { $ref: "#/components/schemas/BuyLink" }
+
+    Citation:
+      type: object
+      required: [source_id, title, rights]
+      properties:
+        source_id: { type: string }
+        title: { type: string }
+        rights:
+          type: string
+          enum: [open, public, licensed]
+        url: { type: string }
+        excerpt: { type: string }
+
+    PendingAction:
+      type: object
+      required: [id, tool, summary]
+      properties:
+        id: { type: string }
+        tool: { type: string }
+        summary: { type: string }
+        mutates: { type: boolean }
+
+    BuyLink:
+      type: object
+      required: [standard_code, url]
+      properties:
+        standard_code: { type: string }
+        title: { type: string }
+        url: { type: string }
+
+    ApplicabilityResult:
+      type: object
+      required: [summary, steps, citations]
+      properties:
+        summary: { type: string }
+        steps:
+          type: array
+          items:
+            type: object
+            required: [order, title]
+            properties:
+              order: { type: integer }
+              title: { type: string }
+              detail: { type: string }
+              href: { type: string }
+        citations:
+          type: array
+          items: { $ref: "#/components/schemas/Citation" }
+        buy_links:
+          type: array
+          items: { $ref: "#/components/schemas/BuyLink" }
+
+    Session:
+      type: object
+      required: [access_token, user]
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, default: bearer }
+        user: { $ref: "#/components/schemas/SessionUser" }
+
+    SessionUser:
+      type: object
+      required: [username, full_name, roles]
+      properties:
+        username: { type: string }
+        full_name: { type: string }
+        email: { type: string }
+        roles:
+          type: array
+          items: { type: string }

@@ -1,0 +1,16 @@
+frappe
+erpnext
+hrms
+crm
+lms
+helpdesk
+insights
+payments
+eswasa_certification
+eswasa_standards
+eswasa_metrology
+eswasa_estore
+eswasa_verification
+eswasa_tbt
+eswasa_governance
+eswasa_ingest

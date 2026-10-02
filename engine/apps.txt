@@ -1,16 +1,25 @@
 frappe
 erpnext
+# Companion Frappe apps (best-effort; version-16 preferred)
 hrms
 crm
 lms
+# WARN A8: helpdesk — no version-16 branch; develop get-app failed (frappe-ui
+#          "./code-editor" build). Incomplete clone removed; retry when upstream
+#          ships a Frappe v16-compatible release.
 helpdesk
+# WARN A8: insights — no version-16 branch; develop get-app failed (vite missing
+#          @framework/ui). Incomplete clone removed; retry later.
 insights
 payments
+# Custom — WS2 Certify (no ERPNext dep)
 eswasa_certification
+# Custom — WS3 RegApps (eswasa_estore requires erpnext — already above)
 eswasa_standards
 eswasa_metrology
 eswasa_estore
 eswasa_verification
 eswasa_tbt
 eswasa_governance
+# Custom — WS8 (when ready)
 eswasa_ingest

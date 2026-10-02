@@ -1,0 +1,17 @@
+[
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Adopt",
+  "workflow_action_name": "Adopt"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Return to Draft",
+  "workflow_action_name": "Return to Draft"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Submit for Review",
+  "workflow_action_name": "Submit for Review"
+ }
+]

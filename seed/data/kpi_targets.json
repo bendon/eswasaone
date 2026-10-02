@@ -1,0 +1,45 @@
+{
+  "source": "docs/mocks/eswasaone-institutional-portal.html",
+  "marker": "A10_DEMOSEED",
+  "kpis": {
+    "companies_certified_ytd": 148,
+    "training_enrolments_ytd": 2840,
+    "revenue_ytd_szl": 3630000,
+    "revenue_variance_pct": -8,
+    "pending_applications": 23,
+    "pending_sla_overdue": 7,
+    "approvals_queue": 7,
+    "standards_published": 312,
+    "tbt_badge": 4,
+    "staff_headcount": 110
+  },
+  "finance_months_szl_thousands": {
+    "labels": [
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep"
+    ],
+    "budget_thousands": [
+      520,
+      570,
+      585,
+      640,
+      660,
+      680
+    ],
+    "actual_thousands": [
+      470,
+      600,
+      540,
+      720,
+      665,
+      575
+    ]
+  },
+  "revenue_ytd_label": "3.63M",
+  "variance_note": "8% below budget",
+  "gl_status": "stub"
+}

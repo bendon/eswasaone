@@ -1,0 +1,68 @@
+{
+  "title": "Export honey to the EU",
+  "summary": "Natural honey (HS 0409) destined for the European Union",
+  "meta": {
+    "standards": 3,
+    "est_fee": "~SZL 2,400",
+    "est_timeline": "6–8 weeks",
+    "steps": 5
+  },
+  "steps": [
+    {
+      "title": "Confirm product classification",
+      "detail": "Natural honey falls under HS code 0409. This decides which standards and market rules apply.",
+      "citations": [{ "label": "WTO HS / TBT", "url": "#", "rights": "open" }],
+      "action": null
+    },
+    {
+      "title": "Meet the applicable standard",
+      "detail": "Comply with SZNS 060 (composition, moisture, HMF) aligned to CODEX STAN 12.",
+      "citations": [
+        { "label": "SZNS 060:2019", "url": "#", "rights": "licensed" },
+        { "label": "Codex STAN 12", "url": "#", "rights": "open" }
+      ],
+      "action": {
+        "type": "buy",
+        "label": "Buy SZNS 060:2019",
+        "target": "szns-060",
+        "auth_required": true,
+        "reason": "Buying a standard requires an account so we can license the download to you."
+      }
+    },
+    {
+      "title": "Get product testing & certification",
+      "detail": "Submit a sample for lab testing (moisture, sugars, contaminants), then apply for product certification.",
+      "citations": [{ "label": "ESWASA Metrology", "url": "#", "rights": "public" }],
+      "action": {
+        "type": "apply",
+        "label": "Apply for certification",
+        "target": "cert-honey",
+        "auth_required": true,
+        "reason": "Applying creates a tracked case under your account."
+      }
+    },
+    {
+      "title": "Meet EU market requirements",
+      "detail": "EU Honey Directive 2001/110/EC applies. Honey also needs an approved national residue-monitoring plan.",
+      "citations": [{ "label": "EUR-Lex 2001/110/EC", "url": "#", "rights": "open" }],
+      "action": {
+        "type": "open",
+        "label": "View EU requirements",
+        "target": "https://eur-lex.europa.eu",
+        "auth_required": false
+      }
+    },
+    {
+      "title": "Prepare export documentation",
+      "detail": "Assemble the health certificate, traceability records and test reports. Our export desk can review your pack.",
+      "citations": [{ "label": "ESWASA Export desk", "url": "#", "rights": "public" }],
+      "action": {
+        "type": "apply",
+        "label": "Request export review",
+        "target": "export-review",
+        "auth_required": true,
+        "reason": "An export review is tracked under your account."
+      }
+    }
+  ]
+}

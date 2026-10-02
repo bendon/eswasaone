@@ -1,0 +1,292 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+  "field_order": [
+  "naming_series",
+  "scheme",
+  "standard_ref",
+  "column_break_a",
+  "workflow_state",
+  "application_date",
+  "section_applicant",
+  "applicant_name",
+  "applicant_org",
+  "column_break_b",
+  "contact_email",
+  "contact_phone",
+  "site_address",
+  "section_assessment",
+  "assigned_auditor",
+  "column_break_c",
+  "assessment_notes",
+  "section_flags",
+  "nc_open",
+  "certificate_blocked",
+  "sla_breached",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "APP-.YYYY.-.#####",
+   "default": "APP-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "scheme",
+   "fieldtype": "Link",
+   "label": "Scheme",
+   "options": "Certification Scheme",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "standard_ref",
+   "fieldtype": "Data",
+   "label": "Standard Reference",
+   "fetch_from": "scheme.standard_ref",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_a",
+   "fieldtype": "Column Break",
+   "label": "Column Break A"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "workflow_state",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Application\nAssessment\nAudit Scheduled\nAudit\nNC Resolution\nCertified\nSurveillance\nRenewal\nWithdraw",
+   "default": "Application",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "bold": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "application_date",
+   "fieldtype": "Date",
+   "label": "Application Date",
+   "reqd": 1,
+   "default": "Today",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_applicant",
+   "fieldtype": "Section Break",
+   "label": "Applicant"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "applicant_name",
+   "fieldtype": "Data",
+   "label": "Applicant Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "applicant_org",
+   "fieldtype": "Data",
+   "label": "Organisation"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_b",
+   "fieldtype": "Column Break",
+   "label": "Column Break B"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "contact_email",
+   "fieldtype": "Data",
+   "label": "Contact Email",
+   "options": "Email"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "contact_phone",
+   "fieldtype": "Data",
+   "label": "Contact Phone"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "site_address",
+   "fieldtype": "Small Text",
+   "label": "Site Address"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_assessment",
+   "fieldtype": "Section Break",
+   "label": "Assessment & Assignment"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "assigned_auditor",
+   "fieldtype": "Link",
+   "label": "Assigned Auditor",
+   "options": "Auditor"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_c",
+   "fieldtype": "Column Break",
+   "label": "Column Break C"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "assessment_notes",
+   "fieldtype": "Text",
+   "label": "Assessment Notes"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_flags",
+   "fieldtype": "Section Break",
+   "label": "Rule Flags"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "nc_open",
+   "fieldtype": "Check",
+   "label": "NC Open",
+   "default": "0",
+   "read_only": 1,
+   "description": "R-C2: open nonconformities"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "certificate_blocked",
+   "fieldtype": "Check",
+   "label": "Certificate Blocked",
+   "default": "0",
+   "read_only": 1,
+   "description": "R-C2: blocks Certificate submit"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sla_breached",
+   "fieldtype": "Check",
+   "label": "SLA Breached",
+   "default": "0",
+   "read_only": 1,
+   "description": "R-C6: Assessment turnaround exceeded"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Certification Application",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "issingle": 0,
+ "istable": 0,
+ "links": [],
+ "modified": "2026-09-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Certification",
+ "name": "Certification Application",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Manager",
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Officer",
+   "share": 1,
+   "submit": 1,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Auditor",
+   "share": 0,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Applicant",
+   "share": 0,
+   "submit": 1,
+   "write": 1,
+   "doctype": "DocPerm"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "title_field": "applicant_name",
+ "search_fields": "applicant_name,scheme,contact_email,workflow_state"
+}

@@ -1,0 +1,119 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "link_id",
+  "calibration_job",
+  "reference_standard",
+  "reference_certificate",
+  "trace_to",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "link_id",
+   "fieldtype": "Data",
+   "label": "Link ID",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "calibration_job",
+   "fieldtype": "Link",
+   "label": "Calibration Job",
+   "options": "Calibration Job",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reference_standard",
+   "fieldtype": "Data",
+   "label": "Reference Standard",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reference_certificate",
+   "fieldtype": "Data",
+   "label": "Reference Certificate"
+  },
+  {
+   "fieldname": "trace_to",
+   "fieldtype": "Data",
+   "label": "Traceable To"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "is_submittable": 0,
+ "is_tree": 0,
+ "links": [],
+ "modified": "2026-09-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa Metrology",
+ "name": "Traceability Link",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1
+  },
+  {
+   "role": "Eswasa Metrology Officer",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Metrology Reviewer",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Metrology Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:link_id",
+ "naming_rule": "By fieldname"
+}

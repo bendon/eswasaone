@@ -1,0 +1,6 @@
+/* Service portal — single CSS entry. All styles come from shared-ui. */
+@import "@eswasaone/shared-ui/styles/service.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

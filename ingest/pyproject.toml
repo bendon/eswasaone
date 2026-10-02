@@ -7,15 +7,33 @@ dependencies = [
   "httpx>=0.27.0",
   "pydantic>=2.0",
   "pydantic-settings>=2.0",
+  "qdrant-client>=1.9.0",
 ]
 
 [project.optional-dependencies]
 dev = ["ruff", "black", "pytest"]
 
+[project.scripts]
+eswasa-ingest = "pipeline:main"
+eswasa-ingest-health = "health:main"
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+py-modules = ["pipeline", "health", "config"]
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["connectors*", "processing*", "enrich*"]
+include = ["connectors*", "processing*", "enrich*", "storage*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "integration: live network / Qdrant checks",
+]

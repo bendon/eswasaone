@@ -1,0 +1,18 @@
+[
+  {
+    "doctype": "Print Format",
+    "name": "Eswasa Certificate Stub",
+    "doc_type": "Sales Invoice",
+    "standard": "No",
+    "print_format_type": "Jinja",
+    "html": "<div style=\"font-family: sans-serif; padding: 2rem;\"><h1>Certificate of Conformity (Stub)</h1><p>Document: {{ doc.name }}</p><p>Customer: {{ doc.customer_name or doc.customer }}</p><p><em>WS1 stub — replace with certification print format from eswasa_certification.</em></p></div>"
+  },
+  {
+    "doctype": "Print Format",
+    "name": "Eswasa Calibration Stub",
+    "doc_type": "Sales Invoice",
+    "standard": "No",
+    "print_format_type": "Jinja",
+    "html": "<div style=\"font-family: sans-serif; padding: 2rem;\"><h1>Calibration Certificate (Stub)</h1><p>Document: {{ doc.name }}</p><p>Customer: {{ doc.customer_name or doc.customer }}</p><p><em>WS1 stub — replace with metrology print format from eswasa_metrology.</em></p></div>"
+  }
+]

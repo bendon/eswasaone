@@ -1,0 +1,6 @@
+/* Institution portal — single CSS entry. All styles come from shared-ui. */
+@import "@eswasaone/shared-ui/styles/institution.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

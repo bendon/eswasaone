@@ -1,0 +1,176 @@
+[
+  {
+    "doctype": "Role Profile",
+    "name": "Citizen",
+    "role_profile": "Citizen",
+    "roles": [{"role": "Citizen"}]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Business",
+    "role_profile": "Business",
+    "roles": [{"role": "Citizen"}, {"role": "Customer"}]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Certification Applicant",
+    "role_profile": "Certification Applicant",
+    "roles": [
+      {"role": "Citizen"},
+      {"role": "Customer"},
+      {"role": "Certification Applicant"}
+    ]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Learner",
+    "role_profile": "Learner",
+    "roles": [{"role": "Citizen"}, {"role": "LMS Student"}]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "TC Member (External)",
+    "role_profile": "TC Member (External)",
+    "roles": [{"role": "Eswasa TC Member"}]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Board Member (External)",
+    "role_profile": "Board Member (External)",
+    "roles": [{"role": "Eswasa Board Member"}]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Institution Staff",
+    "role_profile": "Institution Staff",
+    "roles": [
+      {"role": "ESWASA Staff"},
+      {"role": "Desk User"},
+      {"role": "Employee"},
+      {"role": "Employee Self Service"}
+    ]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Certification Directorate",
+    "role_profile": "Certification Directorate",
+    "roles": [
+      {"role": "ESWASA Staff"},
+      {"role": "Desk User"},
+      {"role": "Employee"},
+      {"role": "Employee Self Service"},
+      {"role": "Certification Officer"}
+    ]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Certification Manager",
+    "role_profile": "Certification Manager",
+    "roles": [
+      {"role": "ESWASA Staff"},
+      {"role": "Desk User"},
+      {"role": "Employee"},
+      {"role": "Employee Self Service"},
+      {"role": "Certification Manager"},
+      {"role": "Certification Officer"}
+    ]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Standards Development",
+    "role_profile": "Standards Development",
+    "roles": [
+      {"role": "ESWASA Staff"},
+      {"role": "Desk User"},
+      {"role": "Employee"},
+      {"role": "Employee Self Service"},
+      {"role": "Eswasa Standards Officer"}
+    ]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Metrology & LIMS",
+    "role_profile": "Metrology & LIMS",
+    "roles": [
+      {"role": "ESWASA Staff"},
+      {"role": "Desk User"},
+      {"role": "Employee"},
+      {"role": "Employee Self Service"},
+      {"role": "Eswasa Metrology Officer"}
+    ]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "TBT Enquiry Point",
+    "role_profile": "TBT Enquiry Point",
+    "roles": [
+      {"role": "ESWASA Staff"},
+      {"role": "Desk User"},
+      {"role": "Employee"},
+      {"role": "Employee Self Service"},
+      {"role": "Eswasa TBT Officer"}
+    ]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Finance & Accounts",
+    "role_profile": "Finance & Accounts",
+    "roles": [
+      {"role": "ESWASA Staff"},
+      {"role": "Desk User"},
+      {"role": "Employee"},
+      {"role": "Employee Self Service"},
+      {"role": "Accounts User"}
+    ]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "People & HR",
+    "role_profile": "People & HR",
+    "roles": [
+      {"role": "ESWASA Staff"},
+      {"role": "Desk User"},
+      {"role": "Employee"},
+      {"role": "Employee Self Service"},
+      {"role": "HR User"},
+      {"role": "Leave Approver"}
+    ]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Commercial & CRM",
+    "role_profile": "Commercial & CRM",
+    "roles": [
+      {"role": "ESWASA Staff"},
+      {"role": "Desk User"},
+      {"role": "Employee"},
+      {"role": "Employee Self Service"},
+      {"role": "Sales User"}
+    ]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "Board Secretariat",
+    "role_profile": "Board Secretariat",
+    "roles": [
+      {"role": "ESWASA Staff"},
+      {"role": "Desk User"},
+      {"role": "Employee"},
+      {"role": "Employee Self Service"},
+      {"role": "Eswasa Board Secretary"},
+      {"role": "Eswasa Risk Officer"}
+    ]
+  },
+  {
+    "doctype": "Role Profile",
+    "name": "ICT / System Administration",
+    "role_profile": "ICT / System Administration",
+    "roles": [
+      {"role": "ESWASA Staff"},
+      {"role": "Desk User"},
+      {"role": "Employee"},
+      {"role": "Employee Self Service"},
+      {"role": "System Manager"}
+    ]
+  }
+]

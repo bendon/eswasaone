@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1B2A5C">
+<title>EswasaOne — Export honey to the EU</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F7FA;--card:#FFFFFF;--line:#E4EAF2;--line-2:#EFF3F8;
+    --ink:#0F172A;--muted:#5A6B84;--muted-2:#8A9AB1;
+    --navy:#1B2A5C;--navy-l:#EAEEF9;--gold:#F5C518;--green:#16A34A;
+    --r:14px;--r-lg:18px;--maxw:1400px;--nav-h:68px;--gutter:32px;
+    --font-sans:"Plus Jakarta Sans",system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box}*{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:1.5}
+  a{color:inherit;text-decoration:none}svg{flex:0 0 auto}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 var(--gutter)}
+  .topnav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .topnav__in{max-width:var(--maxw);margin:0 auto;height:var(--nav-h);display:flex;align-items:center;gap:32px;padding:0 var(--gutter)}
+  .brand{display:flex;align-items:center;gap:11px}.brand b{font-weight:800}
+  .brand__logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(150deg,#F5C518,#D9A800);display:grid;place-items:center}
+  .navlinks{display:flex;gap:2px;flex:1}
+  .navlinks a{padding:9px 14px;border-radius:10px;font-weight:600;color:var(--muted);font-size:13.5px}
+  .navlinks a.on{background:var(--navy-l);color:var(--navy)}
+  .authbtn{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:700}
+  .content{padding:26px 0 56px}
+  .back{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--muted);margin-bottom:18px;font-size:13.5px}
+  .guide{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px}
+  .guide__head{display:flex;gap:14px;align-items:flex-start}
+  .guide__head .g{width:46px;height:46px;border-radius:13px;background:var(--navy);color:#fff;display:grid;place-items:center}
+  .guide__head h1{font-size:22px;font-weight:800;letter-spacing:-.025em}
+  .guide__head p{font-size:13px;color:var(--muted);margin-top:5px}
+  .trust{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted-2);margin-top:12px}
+  .trust::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green)}
+  .steps{list-style:none;margin-top:24px;position:relative}
+  .steps::before{content:"";position:absolute;left:19px;top:12px;bottom:26px;width:2px;background:linear-gradient(var(--navy-l),var(--line))}
+  .step{display:flex;gap:16px;padding-bottom:16px;position:relative}
+  .step__n{width:40px;height:40px;border-radius:50%;background:#fff;border:2px solid var(--line);display:grid;place-items:center;font-weight:800;color:var(--navy);z-index:1}
+  .step__card{flex:1;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+  .step__card b{display:block;font-size:14.5px}
+  .step__card p{font-size:13px;color:var(--muted);margin-top:7px}
+  .src{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .src a{font-size:11.5px;color:var(--navy);background:var(--navy-l);border-radius:16px;padding:4px 10px}
+  .btn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;border-radius:10px;padding:9px 16px;font:inherit;font-weight:600;border:0;cursor:pointer;background:var(--gold);color:var(--navy)}
+  .rail{display:flex;flex-direction:column;gap:16px}
+  .summary,.authbox{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+  .authbox{background:var(--navy);color:#D7E0EC;border:0}
+  .authbox b{color:#fff;display:block;margin-bottom:6px}
+  .authbox button{width:100%;margin-top:14px;background:var(--gold);color:var(--navy);border:0;border-radius:10px;padding:11px;font:inherit;font-weight:700}
+  .summary h4{font-size:13px;font-weight:700;margin-bottom:12px}
+  .row{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line-2);font-size:13px}
+  .row:first-of-type{border-top:0}
+  .related{margin-top:40px}
+  .related h2{font-size:19px;font-weight:800}
+  .related p{color:var(--muted);font-size:13px;margin:4px 0 16px}
+  .rg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .gcard{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:16px}
+  .gcard h3{font-size:15px;font-weight:800;margin-top:10px}
+  .gcard p{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .dock{position:fixed;right:24px;bottom:24px}
+  .dock__trigger{display:flex;align-items:center;gap:12px;height:58px;padding:8px 22px 8px 8px;background:#fff;border:1px solid var(--line);border-radius:999px;box-shadow:0 14px 36px -10px rgba(16,24,40,.26);font:inherit;font-weight:600}
+  .dock__av{width:42px;height:42px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:800}
+  @media(max-width:900px){.guide{grid-template-columns:1fr}.rg{grid-template-columns:1fr}.wrap{padding:0 16px}}
+</style>
+</head>
+<body>
+<!-- SoT for /goals/:slug — steps are the main region; Related goals only at the bottom. Home never stacks this inline. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></symbol>
+  <symbol id="i-cleft" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M15 6l-6 6 6 6"/></symbol>
+</svg>
+<header class="topnav"><div class="topnav__in">
+  <a class="brand" href="/"><span class="brand__logo"><svg width="20" height="20"><use href="#i-shield"/></svg></span><b>EswasaOne</b></a>
+  <nav class="navlinks"><a href="/">Home</a><a href="/goals" class="on">Goals</a><a href="/standards">Standards</a></nav>
+  <button class="authbtn">Sign in</button>
+</div></header>
+<main class="wrap"><div class="content">
+  <a class="back" href="/goals"><svg width="14" height="14"><use href="#i-cleft"/></svg> All goals</a>
+  <section class="guide">
+    <div>
+      <div class="guide__head">
+        <span class="g"><svg width="23" height="23" stroke="#fff"><use href="#i-spark"/></svg></span>
+        <div>
+          <h1>Export honey to the EU</h1>
+          <p>Natural honey (HS 0409) destined for the European Union</p>
+        </div>
+      </div>
+      <p class="trust">Generated from official ESWASA, Codex &amp; market sources</p>
+      <ol class="steps">
+        <li class="step"><span class="step__n">1</span><div class="step__card"><b>Confirm product classification</b><p>Natural honey falls under HS code 0409.</p><div class="src"><a>WTO HS / TBT · open</a></div></div></li>
+        <li class="step"><span class="step__n">2</span><div class="step__card"><b>Meet the applicable standard</b><p>Comply with SZNS 060 aligned to CODEX STAN 12.</p><div class="src"><a>SZNS 060:2019 · licensed</a></div><button class="btn">Buy SZNS 060:2019</button></div></li>
+        <li class="step"><span class="step__n">3</span><div class="step__card"><b>Get product testing &amp; certification</b><p>Submit a sample for lab testing, then apply for product certification.</p><button class="btn">Apply for certification</button></div></li>
+        <li class="step"><span class="step__n">4</span><div class="step__card"><b>Meet EU market requirements</b><p>EU Honey Directive 2001/110/EC and residue-monitoring plan.</p></div></li>
+        <li class="step"><span class="step__n">5</span><div class="step__card"><b>Prepare export documentation</b><p>Health certificate, traceability and test reports.</p><button class="btn">Request export review</button></div></li>
+      </ol>
+    </div>
+    <aside class="rail">
+      <div class="summary"><h4>At a glance</h4>
+        <div class="row"><span>Standards</span><b>3</b></div>
+        <div class="row"><span>Fees</span><b>~SZL 2,400</b></div>
+        <div class="row"><span>Timeline</span><b>6–8 weeks</b></div>
+        <div class="row"><span>Steps</span><b>5</b></div>
+      </div>
+      <div class="authbox"><b>Save this guide</b><p>Sign in to keep progress and get step reminders.</p><button>Sign in to save</button></div>
+    </aside>
+  </section>
+  <section class="related">
+    <h2>Related goals</h2>
+    <p>Continue exploring — or browse the full library</p>
+    <div class="rg">
+      <a class="gcard" href="/goals/export-beef-sacu"><h3>Export beef to South Africa</h3><p>SACU market access and health certificates.</p></a>
+      <a class="gcard" href="/goals/export-macadamia-eu"><h3>Export macadamia to the EU</h3><p>Aflatoxin limits and traceability.</p></a>
+      <a class="gcard" href="/goals/iso-22000"><h3>Get ISO 22000</h3><p>Food safety management with HACCP.</p></a>
+      <a class="gcard" href="/goals/sell-bottled-water"><h3>Sell bottled water locally</h3><p>SZNS 042 product mark path.</p></a>
+    </div>
+  </section>
+</div></main>
+<div class="dock"><button class="dock__trigger"><span class="dock__av">E</span>Ask Esi anything…</button></div>
+</body>
+</html>

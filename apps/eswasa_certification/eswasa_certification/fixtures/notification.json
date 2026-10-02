@@ -1,0 +1,52 @@
+[
+  {
+    "doctype": "Notification",
+    "name": "Cert R-C1 Application Submitted",
+    "subject": "Application received: {{ doc.name }}",
+    "document_type": "Certification Application",
+    "event": "Submit",
+    "enabled": 1,
+    "channel": "Email",
+    "condition": "",
+    "message": "<p>Dear {{ doc.applicant_name }},</p><p>Your certification application <strong>{{ doc.name }}</strong> for scheme {{ doc.scheme }} has been received and is under assessment (R-C1).</p>",
+    "recipients": [
+      {
+        "receiver_by_document_field": "contact_email"
+      }
+    ]
+  },
+  {
+    "doctype": "Notification",
+    "name": "Cert R-C3 Certificate Approved",
+    "subject": "Certificate APPROVED: {{ doc.certificate_number }}",
+    "document_type": "Certificate",
+    "event": "Submit",
+    "enabled": 1,
+    "channel": "Email",
+    "condition": "",
+    "message": "<p>Certificate <strong>{{ doc.certificate_number }}</strong> for {{ doc.holder_name }} has been <strong>APPROVED</strong> (R-C3).</p><p>Verify: {{ doc.qr_payload }}</p><p>Valid until: {{ doc.valid_until }}</p>",
+    "recipients": [
+      {
+        "receiver_by_role": "Certification Officer"
+      }
+    ]
+  },
+  {
+    "doctype": "Notification",
+    "name": "Cert R-C4 Renewal Due",
+    "subject": "RENEWAL DUE: {{ doc.certificate_number }}",
+    "document_type": "Certificate",
+    "event": "Days Before",
+    "days_in_advance": 42,
+    "date_changed": "valid_until",
+    "enabled": 1,
+    "channel": "Email",
+    "condition": "doc.status==\"Active\"",
+    "message": "<p>Certificate <strong>{{ doc.certificate_number }}</strong> expires on {{ doc.valid_until }}. Please start renewal (R-C4).</p>",
+    "recipients": [
+      {
+        "receiver_by_role": "Certification Officer"
+      }
+    ]
+  }
+]

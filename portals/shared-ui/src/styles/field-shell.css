@@ -1,0 +1,376 @@
+/* Field PWA shell — via field.css only */
+/* EswasaOne Field — mobile shell tokens + layout
+   Visual detail for Home/Me/Audits stays light; Agents 3–5 flesh out. */
+
+:root {
+  --field-navy: #24286f;
+  --field-navy-mid: #313391;
+  --field-gold: #f5c518;
+  --field-gold-ink: #24286f;
+  --field-bg: #f4f7fa;
+  --field-card: #ffffff;
+  --field-ink: #0f172a;
+  --field-muted: #5a6b84;
+  --field-line: #e4eaf2;
+  --field-header-h: 72px;
+  --field-tabs-h: 64px;
+  --field-safe-b: env(safe-area-inset-bottom, 0px);
+  --field-safe-t: env(safe-area-inset-top, 0px);
+  --font: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--field-bg);
+  color: var(--field-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--field-navy-mid);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--field-navy-mid);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--field-line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--field-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.linkish {
+  color: var(--field-navy-mid);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* ---------- Device shell ---------- */
+
+.field-shell {
+  --navy: var(--field-navy-mid);
+  --navy-d: var(--field-navy);
+  --gold: var(--field-gold);
+  --bg: var(--field-bg);
+  --card: var(--field-card);
+  --ink: var(--field-ink);
+  --muted: var(--field-muted);
+  --line: var(--field-line);
+
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--field-bg);
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(36, 40, 111, 0.06);
+}
+
+.field-shell--gate {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.field-muted {
+  color: var(--field-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ---------- Header ---------- */
+
+.field-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: calc(12px + var(--field-safe-t)) 16px 12px;
+  background: linear-gradient(180deg, var(--field-navy) 0%, var(--field-navy-mid) 100%);
+  color: #fff;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 10px 12px;
+}
+
+.field-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.field-header__mark {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.field-header__product {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.field-header__product span {
+  color: var(--field-gold);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  margin-left: 4px;
+}
+
+.field-header__greet {
+  margin: 2px 0 0;
+  font-size: 12px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.field-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-header__meta {
+  grid-column: 1 / -1;
+}
+
+.field-role-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(245, 197, 24, 0.18);
+  color: var(--field-gold);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.field-icon-btn {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.field-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--field-gold);
+  color: var(--field-gold-ink);
+  font-size: 12px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.field-sync {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.field-sync__dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.field-sync__dot[data-state="idle"] {
+  background: #94a3b8;
+}
+
+.field-sync__dot[data-state="ok"] {
+  background: #22c55e;
+}
+
+.field-sync__dot[data-state="err"] {
+  background: #f87171;
+}
+
+/* ---------- Main scroll ---------- */
+
+.field-main {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 16px calc(var(--field-tabs-h) + 16px + var(--field-safe-b));
+}
+
+.field-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field-screen__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.field-card {
+  background: var(--field-card);
+  border: 1px solid var(--field-line);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04);
+}
+
+.field-card__label {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--field-muted);
+}
+
+.field-card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.field-subtabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.field-subtab {
+  flex: 0 0 auto;
+  border: 1px solid var(--field-line);
+  background: var(--field-card);
+  color: var(--field-muted);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.field-subtab--active {
+  background: var(--field-navy-mid);
+  border-color: var(--field-navy-mid);
+  color: #fff;
+}
+
+/* ---------- Bottom tabs ---------- */
+
+.field-tabs {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: min(480px, 100%);
+  height: calc(var(--field-tabs-h) + var(--field-safe-b));
+  padding: 6px 8px var(--field-safe-b);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid var(--field-line);
+  backdrop-filter: blur(10px);
+  z-index: 30;
+}
+
+.field-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-decoration: none;
+  color: var(--field-muted);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 10px;
+  min-height: 48px;
+}
+
+.field-tab svg {
+  width: 20px;
+  height: 20px;
+}
+
+.field-tab--active {
+  color: var(--field-navy-mid);
+  background: rgba(49, 51, 145, 0.08);
+}
+
+.field-gate .staff-gate__card {
+  border-top: 3px solid var(--field-gold);
+}

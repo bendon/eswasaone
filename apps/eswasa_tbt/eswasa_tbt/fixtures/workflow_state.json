@@ -1,0 +1,20 @@
+[
+ {
+  "doctype": "Workflow State",
+  "name": "Ingested",
+  "workflow_state_name": "Ingested",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Notified",
+  "workflow_state_name": "Notified",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Tagged",
+  "workflow_state_name": "Tagged",
+  "style": ""
+ }
+]

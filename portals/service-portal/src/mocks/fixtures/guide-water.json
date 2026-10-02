@@ -1,0 +1,54 @@
+{
+  "title": "Sell bottled water locally",
+  "summary": "Packaged drinking water for the Eswatini market",
+  "meta": {
+    "standards": 2,
+    "est_fee": "~SZL 1,800",
+    "est_timeline": "4–6 weeks",
+    "steps": 4
+  },
+  "steps": [
+    {
+      "title": "Identify the correct product standard",
+      "detail": "Packaged drinking water is covered by SZNS 042. Confirm the exact product type (still, sparkling, mineral).",
+      "citations": [{ "label": "SZNS catalogue", "url": "#", "rights": "public" }],
+      "action": null
+    },
+    {
+      "title": "Buy and apply the standard",
+      "detail": "Obtain SZNS 042 and ensure your water meets the chemical, microbiological and labelling requirements.",
+      "citations": [{ "label": "SZNS 042", "url": "#", "rights": "licensed" }],
+      "action": {
+        "type": "buy",
+        "label": "Buy SZNS 042",
+        "target": "szns-042",
+        "auth_required": true,
+        "reason": "Buying a standard requires an account so we can license the download to you."
+      }
+    },
+    {
+      "title": "Arrange product testing",
+      "detail": "Submit samples to an accredited laboratory for the required chemical and microbiological tests.",
+      "citations": [{ "label": "ESWASA Metrology", "url": "#", "rights": "public" }],
+      "action": {
+        "type": "book",
+        "label": "Book lab testing",
+        "target": "lab-water",
+        "auth_required": true,
+        "reason": "Booking creates a tracked request under your account."
+      }
+    },
+    {
+      "title": "Apply for product certification",
+      "detail": "Once test results are ready, apply for the product certification mark so you can sell legally.",
+      "citations": [{ "label": "Certification scheme", "url": "#", "rights": "public" }],
+      "action": {
+        "type": "apply",
+        "label": "Apply for certification",
+        "target": "cert-water",
+        "auth_required": true,
+        "reason": "Applying creates a tracked case under your account."
+      }
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "comment_id",
+  "draft",
+  "commenter_name",
+  "commenter_email",
+  "organisation",
+  "comment_text",
+  "status",
+  "response"
+ ],
+ "fields": [
+  {
+   "fieldname": "comment_id",
+   "fieldtype": "Data",
+   "label": "Comment ID",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "draft",
+   "fieldtype": "Link",
+   "label": "Draft",
+   "options": "Draft",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "commenter_name",
+   "fieldtype": "Data",
+   "label": "Commenter Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "commenter_email",
+   "fieldtype": "Data",
+   "label": "Commenter Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "organisation",
+   "fieldtype": "Data",
+   "label": "Organisation"
+  },
+  {
+   "fieldname": "comment_text",
+   "fieldtype": "Text Editor",
+   "label": "Comment",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nReceived\nAccepted\nRejected\nNoted",
+   "default": "Received",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "response",
+   "fieldtype": "Small Text",
+   "label": "Response"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "is_submittable": 0,
+ "is_tree": 0,
+ "links": [],
+ "modified": "2026-09-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa Standards",
+ "name": "Public Comment",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1
+  },
+  {
+   "role": "Eswasa Standards Officer",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa TC Member",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Standards Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:comment_id",
+ "naming_rule": "By fieldname"
+}

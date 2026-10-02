@@ -1,0 +1,27 @@
+[
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Open Ballot",
+  "workflow_action_name": "Open Ballot"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Open Public Review",
+  "workflow_action_name": "Open Public Review"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Publish / Gazette",
+  "workflow_action_name": "Publish / Gazette"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Start Drafting",
+  "workflow_action_name": "Start Drafting"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Submit to Committee",
+  "workflow_action_name": "Submit to Committee"
+ }
+]

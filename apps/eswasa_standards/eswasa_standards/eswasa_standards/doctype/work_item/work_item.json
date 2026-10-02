@@ -1,0 +1,175 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "work_item_code",
+  "title",
+  "technical_committee",
+  "sector",
+  "proposer",
+  "justification",
+  "linked_standard",
+  "workflow_state",
+  "current_draft",
+  "review_opened_on",
+  "review_closes_on",
+  "review_reminder_sent",
+  "comments_compiled"
+ ],
+ "fields": [
+  {
+   "fieldname": "work_item_code",
+   "fieldtype": "Data",
+   "label": "Work Item Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "technical_committee",
+   "fieldtype": "Link",
+   "label": "Technical Committee",
+   "options": "Technical Committee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sector",
+   "fieldtype": "Data",
+   "label": "Sector"
+  },
+  {
+   "fieldname": "proposer",
+   "fieldtype": "Data",
+   "label": "Proposer"
+  },
+  {
+   "fieldname": "justification",
+   "fieldtype": "Text Editor",
+   "label": "Justification"
+  },
+  {
+   "fieldname": "linked_standard",
+   "fieldtype": "Link",
+   "label": "Linked Standard",
+   "options": "Standard"
+  },
+  {
+   "fieldname": "workflow_state",
+   "fieldtype": "Data",
+   "label": "Workflow State",
+   "hidden": 1,
+   "no_copy": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "current_draft",
+   "fieldtype": "Link",
+   "label": "Current Draft",
+   "options": "Draft"
+  },
+  {
+   "fieldname": "review_opened_on",
+   "fieldtype": "Date",
+   "label": "Review Opened On",
+   "description": "R-S1: public review window start"
+  },
+  {
+   "fieldname": "review_closes_on",
+   "fieldtype": "Date",
+   "label": "Review Closes On",
+   "description": "R-S1/R-S2: default +60 days from open"
+  },
+  {
+   "default": "0",
+   "fieldname": "review_reminder_sent",
+   "fieldtype": "Check",
+   "label": "Review Reminder Sent",
+   "description": "R-S2: ≤7d closing reminder idempotency"
+  },
+  {
+   "default": "0",
+   "fieldname": "comments_compiled",
+   "fieldtype": "Check",
+   "label": "Comments Compiled",
+   "description": "R-S2: comments compiled on review close"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "is_submittable": 0,
+ "is_tree": 0,
+ "links": [],
+ "modified": "2026-09-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa Standards",
+ "name": "Work Item",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1
+  },
+  {
+   "role": "Eswasa Standards Officer",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa TC Member",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Standards Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:work_item_code",
+ "naming_rule": "By fieldname",
+ "title_field": "title"
+}

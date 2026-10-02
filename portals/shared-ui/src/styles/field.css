@@ -1,0 +1,11 @@
+/* ============================================================
+   EswasaOne — FIELD PWA CSS ENTRY (4 of 4)
+
+   Mobile self-service / field shell. Do not import institution.css.
+   Apps import this file only.
+   ============================================================ */
+@import "./global.css";
+@import "./field-shell.css";
+@import "./field-home.css";
+@import "./field-me.css";
+@import "./field-audits.css";

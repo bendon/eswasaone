@@ -1,0 +1,223 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+  "field_order": [
+  "scheme_code",
+  "scheme_name",
+  "column_break_std",
+  "standard_ref",
+  "scheme_type",
+  "accreditation_basis",
+  "section_break_ops",
+  "surveillance_interval_months",
+  "certificate_validity_months",
+  "assessment_turnaround_days",
+  "column_break_act",
+  "is_active",
+  "certification_fee",
+  "section_break_desc",
+  "description"
+ ],
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "scheme_code",
+   "fieldtype": "Data",
+   "label": "Scheme Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "scheme_name",
+   "fieldtype": "Data",
+   "label": "Scheme Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_std",
+   "fieldtype": "Column Break",
+   "label": "Column Break Std"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "standard_ref",
+   "fieldtype": "Data",
+   "label": "Standard Reference",
+   "in_list_view": 1,
+   "description": "e.g. ISO 9001:2015"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "scheme_type",
+   "fieldtype": "Select",
+   "label": "Scheme Type",
+   "reqd": 1,
+   "in_list_view": 1,
+   "options": "Management System\nProduct"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "accreditation_basis",
+   "fieldtype": "Select",
+   "label": "Accreditation Basis",
+   "reqd": 1,
+   "options": "ISO/IEC 17021\nISO/IEC 17065"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_break_ops",
+   "fieldtype": "Section Break",
+   "label": "Operations"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "surveillance_interval_months",
+   "fieldtype": "Int",
+   "label": "Surveillance Interval (Months)",
+   "default": "12"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "certificate_validity_months",
+   "fieldtype": "Int",
+   "label": "Certificate Validity (Months)",
+   "default": "36"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "assessment_turnaround_days",
+   "fieldtype": "Int",
+   "label": "Assessment Turnaround (Days)",
+   "default": "14",
+   "description": "R-C6: SLA for Assessment state"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_act",
+   "fieldtype": "Column Break",
+   "label": "Column Break Act"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "certification_fee",
+   "fieldtype": "Currency",
+   "label": "Certification Fee",
+   "default": "5000",
+   "description": "R-C3: Sales Invoice line amount"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_break_desc",
+   "fieldtype": "Section Break",
+   "label": "Description"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 0,
+ "issingle": 0,
+ "istable": 0,
+ "links": [],
+ "modified": "2026-09-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Certification",
+ "name": "Certification Scheme",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Manager",
+   "share": 1,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Officer",
+   "share": 0,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Auditor",
+   "share": 0,
+   "write": 0,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Applicant",
+   "share": 0,
+   "write": 0,
+   "doctype": "DocPerm"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:scheme_code",
+ "naming_rule": "By fieldname",
+ "title_field": "scheme_name",
+ "search_fields": "scheme_code,scheme_name,standard_ref"
+}

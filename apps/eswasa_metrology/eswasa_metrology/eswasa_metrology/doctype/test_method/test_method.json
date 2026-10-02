@@ -1,0 +1,136 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "method_code",
+  "title",
+  "standard_ref",
+  "accredited",
+  "tat_days",
+  "calibration_fee",
+  "procedure_file",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "method_code",
+   "fieldtype": "Data",
+   "label": "Method Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "standard_ref",
+   "fieldtype": "Data",
+   "label": "Standard Reference"
+  },
+  {
+   "fieldname": "accredited",
+   "fieldtype": "Check",
+   "label": "Accredited",
+   "default": 0
+  },
+  {
+   "fieldname": "tat_days",
+   "fieldtype": "Int",
+   "label": "TAT Days",
+   "default": "7",
+   "description": "R-M1: turnaround days used to set Calibration Job due_on"
+  },
+  {
+   "fieldname": "calibration_fee",
+   "fieldtype": "Currency",
+   "label": "Calibration Fee",
+   "description": "R-M1/R-M2: fee for draft/final Sales Invoice"
+  },
+  {
+   "fieldname": "procedure_file",
+   "fieldtype": "Attach",
+   "label": "Procedure File"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "is_submittable": 0,
+ "is_tree": 0,
+ "links": [],
+ "modified": "2026-09-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa Metrology",
+ "name": "Test Method",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1
+  },
+  {
+   "role": "Eswasa Metrology Officer",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Metrology Reviewer",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Metrology Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:method_code",
+ "naming_rule": "By fieldname",
+ "title_field": "title"
+}

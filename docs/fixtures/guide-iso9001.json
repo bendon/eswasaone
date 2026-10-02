@@ -1,0 +1,65 @@
+{
+  "title": "Get ISO 9001 certified",
+  "summary": "Quality Management System certification against ISO 9001:2015",
+  "meta": {
+    "standards": 1,
+    "est_fee": "~SZL 9,500",
+    "est_timeline": "10–12 weeks",
+    "steps": 5
+  },
+  "steps": [
+    {
+      "title": "Define your QMS scope",
+      "detail": "Decide which sites and processes the certification will cover — this sets the audit scope and fee band.",
+      "citations": [{ "label": "ISO 9001 scheme", "url": "#", "rights": "public" }],
+      "action": null
+    },
+    {
+      "title": "Get the standard",
+      "detail": "Obtain ISO 9001:2015 from the e-store so you can work from the normative text.",
+      "citations": [{ "label": "e-store", "url": "#", "rights": "licensed" }],
+      "action": {
+        "type": "buy",
+        "label": "Buy ISO 9001:2015",
+        "target": "iso-9001",
+        "auth_required": true,
+        "reason": "Buying a standard requires an account so we can license the download."
+      }
+    },
+    {
+      "title": "Implement & run an internal audit",
+      "detail": "Build your quality management system and run an internal audit. ESWASA training covers both.",
+      "citations": [{ "label": "Training catalogue", "url": "#", "rights": "public" }],
+      "action": {
+        "type": "buy",
+        "label": "Enrol in QMS training",
+        "target": "qms-training",
+        "auth_required": true,
+        "reason": "Enrolment is linked to your learner record."
+      }
+    },
+    {
+      "title": "Apply for certification",
+      "detail": "Submit your application. Certification runs a Stage 1 (readiness) then Stage 2 (full) audit.",
+      "citations": [{ "label": "Certification scheme", "url": "#", "rights": "public" }],
+      "action": {
+        "type": "apply",
+        "label": "Apply for certification",
+        "target": "iso-cert",
+        "auth_required": true,
+        "reason": "Applying creates a tracked case under your account."
+      }
+    },
+    {
+      "title": "Certification & surveillance",
+      "detail": "On a successful audit your certificate is issued and listed on the public register, with annual surveillance.",
+      "citations": [{ "label": "Public register", "url": "#", "rights": "open" }],
+      "action": {
+        "type": "open",
+        "label": "See the public register",
+        "target": "#",
+        "auth_required": false
+      }
+    }
+  ]
+}

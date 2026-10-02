@@ -1,0 +1,178 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "instrument_id",
+  "instrument_name",
+  "manufacturer",
+  "model",
+  "serial_number",
+  "measurement_range",
+  "accuracy_class",
+  "owner_customer",
+  "owner_email",
+  "status",
+  "calibration_due_on",
+  "is_internal_eswasa",
+  "blocked_for_use",
+  "calibration_due_notice_sent"
+ ],
+ "fields": [
+  {
+   "fieldname": "instrument_id",
+   "fieldtype": "Data",
+   "label": "Instrument ID",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "instrument_name",
+   "fieldtype": "Data",
+   "label": "Instrument Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "manufacturer",
+   "fieldtype": "Data",
+   "label": "Manufacturer"
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "fieldname": "serial_number",
+   "fieldtype": "Data",
+   "label": "Serial Number"
+  },
+  {
+   "fieldname": "measurement_range",
+   "fieldtype": "Data",
+   "label": "Measurement Range"
+  },
+  {
+   "fieldname": "accuracy_class",
+   "fieldtype": "Data",
+   "label": "Accuracy Class"
+  },
+  {
+   "fieldname": "owner_customer",
+   "fieldtype": "Data",
+   "label": "Owner / Customer"
+  },
+  {
+   "fieldname": "owner_email",
+   "fieldtype": "Data",
+   "label": "Owner Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nActive\nOut of Service\nRetired",
+   "default": "Active"
+  },
+  {
+   "fieldname": "calibration_due_on",
+   "fieldtype": "Date",
+   "label": "Calibration Due On",
+   "description": "R-M3: next calibration due date"
+  },
+  {
+   "fieldname": "is_internal_eswasa",
+   "fieldtype": "Check",
+   "label": "Internal ESWASA",
+   "default": 0,
+   "description": "R-M3: internal lab instrument — overdue blocks new jobs"
+  },
+  {
+   "fieldname": "blocked_for_use",
+   "fieldtype": "Check",
+   "label": "Blocked for Use",
+   "default": 0,
+   "description": "R-M3: set when internal instrument calibration is overdue"
+  },
+  {
+   "fieldname": "calibration_due_notice_sent",
+   "fieldtype": "Check",
+   "label": "Calibration Due Notice Sent",
+   "default": 0,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "is_submittable": 0,
+ "is_tree": 0,
+ "links": [],
+ "modified": "2026-09-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa Metrology",
+ "name": "Instrument",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1
+  },
+  {
+   "role": "Eswasa Metrology Officer",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Metrology Reviewer",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Metrology Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:instrument_id",
+ "naming_rule": "By fieldname",
+ "title_field": "instrument_name"
+}

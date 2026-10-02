@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1B2A5C">
+<title>Standards & e-store — EswasaOne (SoT)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!--
+  Fidelity source of truth for /standards catalogue UI (design system v5).
+
+  Chrome (topnav, mtop, tabbar, More sheet, Ask Esi dock, auth modal) is owned by
+  ServiceLayout + portals/shared-ui — do not re-implement here for React ports.
+
+  Styles live in:
+    portals/shared-ui/src/styles/tokens.css
+    portals/shared-ui/src/styles/catalogue.css
+    portals/shared-ui/src/styles/service.css
+
+  React port: portals/service-portal/src/pages/StandardsPage.tsx
+-->
+<style>
+  @import url("../../portals/shared-ui/src/styles/service.css");
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="content">
+    <p class="page-note" style="margin-bottom:16px">
+      <strong>Mock SoT — Standards catalogue.</strong>
+      Open the Service Portal at <code>/standards</code> for the live React port.
+      Full interactive markup was ported from design system v5 (page hero, search,
+      filters, cards, collections, support CTA). Shared chrome is not duplicated below.
+    </p>
+
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="/">Home</a> · <strong>Standards &amp; e-store</strong>
+    </nav>
+
+    <section class="page-hero">
+      <div class="page-hero__inner">
+        <span class="page-hero__label">ESWASAONE · SZNS CATALOGUE</span>
+        <h1>Standards &amp; e-store</h1>
+        <p>
+          Every current SZNS standard in one place. Search, filter by sector, preview the
+          scope, and buy the licensed full text — delivered as a secured PDF to your inbox.
+        </p>
+        <div class="page-hero__actions">
+          <button type="button" class="chip-cta gold">Browse free standards</button>
+          <button type="button" class="chip-cta">How licensing works</button>
+        </div>
+      </div>
+      <div class="page-hero__stats" aria-label="Catalogue statistics">
+        <div class="hstat"><b>312</b><span>Standards published</span></div>
+        <div class="hstat"><b>12</b><span>Sectors covered</span></div>
+        <div class="hstat"><b>45</b><span>Free downloads</span></div>
+        <div class="hstat"><b>24 hr</b><span>Typical delivery</span></div>
+      </div>
+    </section>
+
+    <div class="searchcard">
+      <form class="searchform" role="search" onsubmit="return false;">
+        <label class="searchform__input">
+          <input type="search" placeholder="Search by code, title, or keyword…" aria-label="Search standards">
+        </label>
+        <select class="searchform__sector" aria-label="Sector">
+          <option value="">All sectors</option>
+          <option>Food &amp; agriculture</option>
+          <option>Management systems</option>
+        </select>
+        <button type="submit" class="searchform__submit">Search</button>
+      </form>
+    </div>
+
+    <div class="catalogue" style="margin-top:32px">
+      <aside class="sidebar" aria-label="Filters">
+        <div class="filterbox">
+          <div class="filterbox__head"><b>Refine results</b><button type="button">Clear all</button></div>
+          <div class="fgroup" aria-expanded="true">
+            <button class="fgroup__head" type="button">Sector</button>
+            <div class="fgroup__list">
+              <label class="fcheck"><input type="checkbox" checked> <span>Food &amp; agriculture</span><em>124</em></label>
+              <label class="fcheck"><input type="checkbox"> <span>Management systems</span><em>42</em></label>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <div class="std-main">
+        <div class="toolbar">
+          <span class="toolbar__count">312 standards <span>· 287 current</span></span>
+        </div>
+        <ul class="stdlist">
+          <li class="std" style="--accent:#15803D">
+            <div class="std__body">
+              <div class="std__top">
+                <span class="std__chip" style="--chip-tint:#E3F4E9;--chip-tone:#15803D">Food</span>
+                <span class="std__code">SZNS 060</span>
+                <span class="std__status current">Current</span>
+              </div>
+              <h2 class="std__title"><a href="/standards/SZNS-060">Honey — Specification</a></h2>
+              <p class="std__abstract">Specifies requirements for moisture content, HMF, sugar profile, and contaminant limits.</p>
+            </div>
+            <div class="std__foot">
+              <span class="std__price">SZL 280<small>incl. VAT</small></span>
+              <div class="std__actions">
+                <button type="button" class="abtn ghost">Preview</button>
+                <button type="button" class="abtn buy">Add to cart</button>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <section class="featured" aria-labelledby="featuredTitle">
+      <div class="featured__head">
+        <div>
+          <h2 id="featuredTitle">Curated collections</h2>
+          <p>Bundled by sector and use case — save when you buy together.</p>
+        </div>
+      </div>
+      <div class="collections">
+        <a class="collection" href="/standards?collection=food-export" style="--chip-tint:#E3F4E9;--chip-tone:#15803D">
+          <span class="collection__ic">◆</span>
+          <h3>Food export starter pack</h3>
+          <p>Eleven standards covering labelling, hygiene, and contaminant limits.</p>
+          <div class="collection__foot"><span class="collection__count">11 standards</span></div>
+        </a>
+      </div>
+    </section>
+
+    <section class="support">
+      <div class="support__copy">
+        <span>NEED HELP?</span>
+        <h2>Can't find the standard you need?</h2>
+        <p>Tell Esi what you're working on and she'll match it to the right SZNS reference.</p>
+      </div>
+      <div class="support__actions">
+        <button type="button" class="btn gold">Ask Esi</button>
+        <a class="btn ghost" href="mailto:info@eswasa.co.sz">Email the standards desk</a>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

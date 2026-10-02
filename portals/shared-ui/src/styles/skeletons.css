@@ -1,0 +1,138 @@
+/* ResourceGate skeletons — via institution.css */
+@keyframes sk-shimmer {
+  0% {
+  background-position:100% 0}
+to {
+  background-position:-100% 0}
+}
+.sk {
+  display:flex;
+  flex-direction:column;
+  gap:12px}
+.sk__line,.sk__kpi,.sk__tile,.sk__banner,.sk__panel,.sk__avatar,.sk__row-item {
+  background:linear-gradient(90deg,var(--line-2) 0%,#f7f9fc 45%,var(--line-2) 90%);
+  background-size:200% 100%;
+  animation:sk-shimmer 1.2s ease-in-out infinite;
+  border-radius:8px}
+.sk__line {
+  height:12px;
+  width:60%}
+.sk__line--sm {
+  width:36%;
+  height:10px}
+.sk__line--md {
+  width:52%}
+.sk__line--lg {
+  width:78%;
+  height:18px}
+.sk__line--title {
+  width:40%;
+  height:20px;
+  margin-bottom:4px}
+.sk--panel {
+  padding:24px;
+  gap:10px}
+.sk--kpis {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  flex-direction:unset}
+@media (max-width: 900px) {
+  .sk--kpis {
+  grid-template-columns:repeat(2,1fr)}
+}
+.sk__kpi {
+  padding:16px;
+  min-height:88px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  background:var(--card);
+  border:1px solid var(--line);
+  animation:none}
+.sk__kpi .sk__line {
+  animation:sk-shimmer 1.2s ease-in-out infinite;
+  background:linear-gradient(90deg,var(--line-2) 0%,#f7f9fc 45%,var(--line-2) 90%);
+  background-size:200% 100%}
+.sk--list .sk__head {
+  margin-bottom:4px}
+.sk__tiles {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap}
+.sk__tile {
+  width:110px;
+  height:52px;
+  border-radius:12px}
+.sk__row-item {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  animation:none}
+.sk__avatar {
+  width:36px;
+  height:36px;
+  border-radius:10px;
+  flex-shrink:0}
+.sk__row-copy {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:8px}
+.sk__row-copy .sk__line {
+  animation:sk-shimmer 1.2s ease-in-out infinite;
+  background:linear-gradient(90deg,var(--line-2) 0%,#f7f9fc 45%,var(--line-2) 90%);
+  background-size:200% 100%}
+.sk--dash .sk__banner {
+  height:72px;
+  border-radius:14px}
+.sk--dash .sk__row {
+  display:grid;
+  grid-template-columns:1.6fr 1fr;
+  gap:16px}
+@media (max-width: 900px) {
+  .sk--dash .sk__row {
+  grid-template-columns:1fr}
+}
+.sk__panel {
+  min-height:160px;
+  border:1px solid var(--line);
+  background:var(--card);
+  animation:sk-shimmer 1.2s ease-in-out infinite;
+  background-image:linear-gradient(90deg,var(--line-2) 0%,#f7f9fc 45%,var(--line-2) 90%);
+  background-size:200% 100%}
+.sk__panel--tall {
+  min-height:280px}
+.resource-gate {
+  position:relative}
+.resource-gate.is-refreshing {
+  opacity:.92}
+.resource-gate__bar {
+  position:sticky;
+  top:0;
+  z-index:5;
+  margin-bottom:10px;
+  padding:8px 12px;
+  border-radius:10px;
+  background:var(--navy-l);
+  color:var(--navy);
+  font-size:12.5px;
+  font-weight:700;
+  text-align:center}
+.resource-gate__stale {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
+  padding:10px 14px;
+  border-radius:10px;
+  background:var(--amber-l);
+  color:#92400e;
+  font-size:13px;
+  font-weight:600}
+.resource-gate__stale .btn {
+  margin-left:auto}

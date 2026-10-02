@@ -6,6 +6,7 @@ All app listeners bind **`127.0.0.1` only**. Nginx proxies `eswasaone.aiceafrica
 |---|---|---|
 | Service Portal | `3015` | Vite / React (public) |
 | Institution Portal | `3016` | Vite / React (staff) |
+| Field Portal | `3017` | Vite / React PWA (employee ESS + field audits) |
 | EswasaOne Core | `8015` | FastAPI BFF + `/ws/feed` |
 | Ingest worker health | `8016` | Optional metrics |
 | Frappe / ERPNext | `8020` | Gunicorn / bench serve |
@@ -20,6 +21,7 @@ All app listeners bind **`127.0.0.1` only**. Nginx proxies `eswasaone.aiceafrica
 |---|---|
 | `/` | Service Portal `:3015` |
 | `/institution/` | Institution Portal `:3016` |
+| `/field/` | Field Portal `:3017` |
 | `/api/` | Core `:8015` |
 | `/ws/` | Core `:8015` (WebSocket) |
 | `/desk` (later) | Frappe `:8020` — admin only |

@@ -1,0 +1,173 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "result_id",
+  "calibration_job",
+  "parameter",
+  "measured_value",
+  "unit",
+  "uncertainty",
+  "pass_fail",
+  "out_of_tolerance",
+  "supervisor_signoff_required",
+  "supervisor_signed_off",
+  "supervisor",
+  "reviewed",
+  "raw_data_file"
+ ],
+ "fields": [
+  {
+   "fieldname": "result_id",
+   "fieldtype": "Data",
+   "label": "Result ID",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "calibration_job",
+   "fieldtype": "Link",
+   "label": "Calibration Job",
+   "options": "Calibration Job",
+   "reqd": 1
+  },
+  {
+   "fieldname": "parameter",
+   "fieldtype": "Data",
+   "label": "Parameter",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "measured_value",
+   "fieldtype": "Float",
+   "label": "Measured Value"
+  },
+  {
+   "fieldname": "unit",
+   "fieldtype": "Data",
+   "label": "Unit"
+  },
+  {
+   "fieldname": "uncertainty",
+   "fieldtype": "Float",
+   "label": "Uncertainty"
+  },
+  {
+   "fieldname": "pass_fail",
+   "fieldtype": "Select",
+   "label": "Pass/Fail",
+   "options": "\nPass\nFail\nN/A",
+   "default": "N/A"
+  },
+  {
+   "fieldname": "out_of_tolerance",
+   "fieldtype": "Check",
+   "label": "Out of Tolerance",
+   "default": 0,
+   "description": "R-M4: flagged when Pass/Fail is Fail"
+  },
+  {
+   "fieldname": "supervisor_signoff_required",
+   "fieldtype": "Check",
+   "label": "Supervisor Sign-off Required",
+   "default": 0,
+   "read_only": 1
+  },
+  {
+   "fieldname": "supervisor_signed_off",
+   "fieldtype": "Check",
+   "label": "Supervisor Signed Off",
+   "default": 0
+  },
+  {
+   "fieldname": "supervisor",
+   "fieldtype": "Link",
+   "label": "Supervisor",
+   "options": "User"
+  },
+  {
+   "fieldname": "reviewed",
+   "fieldtype": "Check",
+   "label": "Reviewed",
+   "default": 0,
+   "description": "R-M2: set after submit to approve result"
+  },
+  {
+   "fieldname": "raw_data_file",
+   "fieldtype": "Attach",
+   "label": "Raw Data File"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "is_submittable": 1,
+ "is_tree": 0,
+ "links": [],
+ "modified": "2026-09-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa Metrology",
+ "name": "Result",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1
+  },
+  {
+   "role": "Eswasa Metrology Officer",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Metrology Reviewer",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Metrology Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:result_id",
+ "naming_rule": "By fieldname"
+}

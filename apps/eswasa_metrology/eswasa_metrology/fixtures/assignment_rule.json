@@ -1,0 +1,42 @@
+[
+  {
+    "doctype": "Assignment Rule",
+    "name": "Metro Job Received Pool",
+    "document_type": "Calibration Job",
+    "rule": "Round Robin",
+    "priority": 1,
+    "disabled": 0,
+    "description": "R-M1: assign Metrology Officers when job is Received",
+    "assign_condition": "doc.workflow_state == \"Received\"",
+    "unassign_condition": "doc.workflow_state in [\"Dispatched\", \"Certified\"]",
+    "close_condition": "doc.workflow_state == \"Dispatched\"",
+    "assignment_days": [
+      {"day": "Monday"},
+      {"day": "Tuesday"},
+      {"day": "Wednesday"},
+      {"day": "Thursday"},
+      {"day": "Friday"}
+    ],
+    "users": []
+  },
+  {
+    "doctype": "Assignment Rule",
+    "name": "Metro OOT Supervisor Pool",
+    "document_type": "Result",
+    "rule": "Round Robin",
+    "priority": 2,
+    "disabled": 0,
+    "description": "R-M4: assign Metrology Managers for out-of-tolerance sign-off",
+    "assign_condition": "doc.out_of_tolerance == 1 and doc.supervisor_signed_off == 0",
+    "unassign_condition": "doc.supervisor_signed_off == 1",
+    "close_condition": "doc.supervisor_signed_off == 1",
+    "assignment_days": [
+      {"day": "Monday"},
+      {"day": "Tuesday"},
+      {"day": "Wednesday"},
+      {"day": "Thursday"},
+      {"day": "Friday"}
+    ],
+    "users": []
+  }
+]

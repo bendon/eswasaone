@@ -1,0 +1,10 @@
+[
+ {
+  "doctype": "Role",
+  "name": "Eswasa Verification Officer",
+  "role_name": "Eswasa Verification Officer",
+  "desk_access": 1,
+  "is_custom": 1,
+  "disabled": 0
+ }
+]

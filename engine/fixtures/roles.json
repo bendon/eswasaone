@@ -1,0 +1,23 @@
+[
+  {"doctype": "Role", "role_name": "ESWASA Staff", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Citizen", "desk_access": 0, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Certification Manager", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Certification Officer", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Certification Auditor", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa Metrology Manager", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa Metrology Officer", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa Metrology Reviewer", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa Standards Manager", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa Standards Officer", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa TC Member", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa Board Secretary", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa Board Member", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa Risk Officer", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa TBT Officer", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa TBT Analyst", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa Estore Manager", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa Estore Clerk", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Eswasa Verification Officer", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Ingest Curator", "desk_access": 1, "is_custom": 1},
+  {"doctype": "Role", "role_name": "Ingest Viewer", "desk_access": 1, "is_custom": 1}
+]

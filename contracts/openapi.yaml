@@ -20,6 +20,7 @@ tags:
   - name: ingest
   - name: identity
   - name: adapters
+  - name: governance
 
 paths:
   /home/institution:
@@ -310,6 +311,607 @@ paths:
         "200":
           description: Accepted
 
+  # --- Wave 1 Frontend Workflow Capture (F0b) ---
+  /certification/audits/{id}:
+    patch:
+      tags: [certification]
+      operationId: patchCertificationAudit
+      summary: Schedule, assign, complete, or submit Field outcome
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+        - name: Idempotency-Key
+          in: header
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AuditPatchBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+
+  /certification/certificates/{id}/revoke:
+    post:
+      tags: [certification]
+      operationId: revokeCertificate
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmBody" }
+      responses:
+        "200":
+          description: Revoked
+
+  /certification/certificates/{id}/renew:
+    post:
+      tags: [certification]
+      operationId: renewCertificate
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmBody" }
+      responses:
+        "200":
+          description: Renewed
+
+  /certification/certificates/{id}/pdf:
+    get:
+      tags: [certification]
+      operationId: getCertificatePdf
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "200":
+          description: Signed download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url: { type: string, nullable: true }
+
+  /standards/ballots/{id}/vote:
+    post:
+      tags: [standards]
+      operationId: voteBallot
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BallotVoteBody" }
+      responses:
+        "200":
+          description: Vote recorded
+
+  /approvals/{doctype}/{name}/escalate:
+    post:
+      tags: [identity]
+      operationId: escalateApproval
+      summary: Operator R-A2 escalate for SLA-breached queue item
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: doctype
+          in: path
+          required: true
+          schema: { type: string }
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EscalateBody" }
+      responses:
+        "200":
+          description: Escalation result
+
+  /field/me/audits:
+    get:
+      tags: [certification]
+      operationId: listFieldMyAudits
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Audits assigned to current auditor
+
+  /field/me/summary:
+    get:
+      tags: [certification]
+      operationId: getFieldMySummary
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Next audit, schedule chips, unread
+
+  /estore/cart:
+    post:
+      tags: [estore]
+      operationId: upsertEstoreCart
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CartBody" }
+      responses:
+        "200":
+          description: Cart snapshot
+
+  /estore/orders/{id}:
+    get:
+      tags: [estore]
+      operationId: getEstoreOrder
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "200":
+          description: Order status (poll for MoMo)
+
+  /estore/licences/{id}/download:
+    get:
+      tags: [estore]
+      operationId: downloadEstoreLicence
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "200":
+          description: Signed licence download URL
+
+  /hr/access-requests:
+    get:
+      tags: [identity]
+      operationId: listAccessRequests
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Access request queue
+    post:
+      tags: [identity]
+      operationId: createAccessRequest
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccessRequestBody" }
+      responses:
+        "200":
+          description: Created
+
+  /hr/expense-claims:
+    get:
+      tags: [identity]
+      operationId: listExpenseClaims
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Expense claims for current user
+
+  /tbt/alerts/{id}/{action}:
+    post:
+      tags: [ingest]
+      operationId: triageTbtAlert
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+        - name: action
+          in: path
+          required: true
+          schema: { type: string, enum: [assess, publish, dismiss] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmBody" }
+      responses:
+        "200":
+          description: Triage result
+
+  /ingest/queue:
+    get:
+      tags: [ingest]
+      operationId: listIngestQueue
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Curation queue
+
+  /ingest/items/{id}/{action}:
+    post:
+      tags: [ingest]
+      operationId: curateIngestItem
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+        - name: action
+          in: path
+          required: true
+          schema: { type: string, enum: [approve, reject, flag_rights] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmBody" }
+      responses:
+        "200":
+          description: Curation result
+
+  # --- Board & Governance (WS-I5) -------------------------------------------
+
+  /governance/overview:
+    get:
+      tags: [governance]
+      operationId: getGovernanceOverview
+      summary: Next meeting, pack track, KPIs, calendar, overdue actions
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GovernanceOverview" }
+
+  /governance/meetings:
+    get:
+      tags: [governance]
+      operationId: listGovernanceMeetings
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: body
+          in: query
+          description: Governance Body name/id filter
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/GovernanceMeeting" }
+    post:
+      tags: [governance]
+      operationId: createGovernanceMeeting
+      summary: Schedule a board/committee meeting (creates pack draft)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GovernanceMeetingCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GovernanceMeeting" }
+
+  /governance/meetings/{id}:
+    get:
+      tags: [governance]
+      operationId: getGovernanceMeeting
+      summary: Meeting detail with agenda, attendance, allowed_actions
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GovernanceMeeting" }
+        "404":
+          description: Not found
+
+  /governance/meetings/{id}/act:
+    post:
+      tags: [governance]
+      operationId: actOnGovernanceMeeting
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GovernanceMeetingAct" }
+      responses:
+        "200":
+          description: Updated meeting
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GovernanceMeeting" }
+
+  /governance/packs/{meeting}:
+    get:
+      tags: [governance]
+      operationId: getGovernancePack
+      summary: Pack builder state for a meeting (sections + allowed_actions)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: meeting
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GovernancePack" }
+        "404":
+          description: Not found
+
+  /governance/packs/{id}/sections:
+    patch:
+      tags: [governance]
+      operationId: patchGovernancePackSections
+      summary: Include/exclude, reorder, or mark_ready sections
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GovernancePackSectionsPatch" }
+      responses:
+        "200":
+          description: Updated pack
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GovernancePack" }
+
+  /governance/packs/{id}/assemble:
+    post:
+      tags: [governance]
+      operationId: assembleGovernancePack
+      summary: Assemble pack PDF from included Ready sections
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmBody" }
+      responses:
+        "200":
+          description: Assembled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GovernancePackAssembleResult" }
+
+  /governance/packs/{id}/issue:
+    post:
+      tags: [governance]
+      operationId: issueGovernancePack
+      summary: Issue pack (409 if any included section is not Ready)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmBody" }
+      responses:
+        "200":
+          description: Issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GovernancePack" }
+        "409":
+          description: Included section not Ready
+
+  /governance/board-pack:
+    get:
+      tags: [governance]
+      operationId: getBoardPackSummary
+      summary: Deprecated — outstanding board pack sections (prefer /governance/packs/{meeting})
+      deprecated: true
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BoardPackSummary" }
+
+  /governance/pack/{meeting}:
+    post:
+      tags: [governance]
+      operationId: assembleBoardPack
+      summary: Deprecated — assemble board pack (prefer POST /governance/packs/{id}/assemble)
+      deprecated: true
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: meeting
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmBody" }
+      responses:
+        "200":
+          description: Assembled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BoardPackSummary" }
+
+  /governance/resolutions:
+    get:
+      tags: [governance]
+      operationId: listGovernanceResolutions
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/GovernanceResolution" }
+
+  /governance/actions:
+    get:
+      tags: [governance]
+      operationId: listResolutionActions
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/ResolutionAction" }
+
+  /governance/risks:
+    get:
+      tags: [governance]
+      operationId: listGovernanceRisks
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: L
+          in: query
+          description: Residual likelihood (1–5)
+          schema: { type: integer, minimum: 1, maximum: 5 }
+        - name: I
+          in: query
+          description: Residual impact (1–5)
+          schema: { type: integer, minimum: 1, maximum: 5 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/GovernanceRisk" }
+
+  /governance/members:
+    get:
+      tags: [governance]
+      operationId: listBoardMembers
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/BoardMember" }
+
+  /governance/bodies:
+    get:
+      tags: [governance]
+      operationId: listGovernanceBodies
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/GovernanceBody" }
+
+  /governance/declarations:
+    get:
+      tags: [governance]
+      operationId: listGovernanceDeclarations
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/GovernanceDeclaration" }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -558,3 +1160,442 @@ components:
         roles:
           type: array
           items: { type: string }
+
+    AllowedAction:
+      type: object
+      required: [action, label]
+      properties:
+        action: { type: string }
+        label: { type: string }
+        rule_id: { type: string, nullable: true }
+        danger: { type: boolean, default: false }
+        consequence: { type: string, nullable: true }
+
+    ConfirmBody:
+      type: object
+      required: [confirm]
+      properties:
+        confirm: { type: boolean }
+
+    AuditPatchBody:
+      type: object
+      required: [action, confirm]
+      properties:
+        action: { type: string }
+        confirm: { type: boolean }
+        payload: { type: object, additionalProperties: true }
+
+    BallotVoteBody:
+      type: object
+      required: [vote, confirm]
+      properties:
+        vote: { type: string, enum: [approve, disapprove, abstain] }
+        comment: { type: string }
+        confirm: { type: boolean }
+
+    EscalateBody:
+      type: object
+      required: [confirm]
+      properties:
+        confirm: { type: boolean }
+        reason: { type: string }
+
+    CartItemBody:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string }
+        qty: { type: integer, default: 1 }
+
+    CartBody:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/CartItemBody" }
+        confirm: { type: boolean }
+
+    AccessRequestBody:
+      type: object
+      required: [reason, confirm]
+      properties:
+        reason: { type: string }
+        requested_roles:
+          type: array
+          items: { type: string }
+        confirm: { type: boolean }
+
+    # --- Board & Governance schemas (WS-I5) ---------------------------------
+
+    PackSectionStatus:
+      type: string
+      enum: [awaiting, ready, overdue]
+
+    PackSectionSource:
+      type: string
+      enum: [live_module, upload, secretariat]
+
+    PackSection:
+      type: object
+      required: [id, title, status, included]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        status: { $ref: "#/components/schemas/PackSectionStatus" }
+        included: { type: boolean }
+        source: { $ref: "#/components/schemas/PackSectionSource" }
+        module_key: { type: string, nullable: true }
+        owner: { type: string, nullable: true }
+        idx: { type: integer, nullable: true }
+        file_url: { type: string, nullable: true }
+        restricted: { type: boolean, default: false }
+
+    PackTrack:
+      type: object
+      required: [sections]
+      description: Segmented pack readiness track for Overview / meeting drawer
+      properties:
+        pack_id: { type: string, nullable: true }
+        meeting_id: { type: string, nullable: true }
+        due_label: { type: string, nullable: true }
+        outstanding_sections: { type: integer, default: 0 }
+        sections:
+          type: array
+          items: { $ref: "#/components/schemas/PackSection" }
+
+    GovernanceKpis:
+      type: object
+      properties:
+        open_actions: { type: integer, default: 0 }
+        overdue_actions: { type: integer, default: 0 }
+        high_critical_risks: { type: integer, default: 0 }
+        worsening_risks: { type: integer, default: 0 }
+        board_attendance_pct: { type: number, nullable: true }
+        declarations_due: { type: integer, default: 0 }
+
+    GovernanceCalendarItem:
+      type: object
+      required: [id, title, date]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        date: { type: string, format: date }
+        kind: { type: string, nullable: true }
+        href: { type: string, nullable: true }
+
+    GovernanceOverview:
+      type: object
+      required: [kpis, pack_track, calendar, overdue_actions, recent_resolutions]
+      properties:
+        next_meeting: { $ref: "#/components/schemas/GovernanceMeeting", nullable: true }
+        pack_track: { $ref: "#/components/schemas/PackTrack" }
+        kpis: { $ref: "#/components/schemas/GovernanceKpis" }
+        calendar:
+          type: array
+          items: { $ref: "#/components/schemas/GovernanceCalendarItem" }
+        overdue_actions:
+          type: array
+          items: { $ref: "#/components/schemas/ResolutionAction" }
+        recent_resolutions:
+          type: array
+          items: { $ref: "#/components/schemas/GovernanceResolution" }
+        heat_cells:
+          type: array
+          description: Optional 5×5 residual L×I counts for Overview heat map
+          items:
+            type: object
+            required: [L, I, count]
+            properties:
+              L: { type: integer }
+              I: { type: integer }
+              count: { type: integer }
+
+    MeetingAgendaItem:
+      type: object
+      required: [id, item]
+      properties:
+        id: { type: string }
+        item: { type: string }
+        presenter: { type: string, nullable: true }
+        purpose: { type: string, nullable: true }
+        paper: { type: string, nullable: true }
+
+    MeetingAttendance:
+      type: object
+      required: [member]
+      properties:
+        member: { type: string }
+        member_name: { type: string, nullable: true }
+        rsvp: { type: string, nullable: true }
+        attended: { type: boolean, nullable: true }
+        apology: { type: boolean, nullable: true }
+
+    GovernanceMeeting:
+      type: object
+      required: [id, title, status]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        body: { type: string, nullable: true }
+        body_name: { type: string, nullable: true }
+        meeting_type:
+          type: string
+          enum: [Ordinary, Special, AGM]
+          nullable: true
+        date: { type: string, format: date, nullable: true }
+        start_time: { type: string, nullable: true }
+        scheduled_at: { type: string, format: date-time, nullable: true }
+        venue: { type: string, nullable: true }
+        hybrid: { type: boolean, default: false }
+        online_link: { type: string, nullable: true }
+        pack_deadline: { type: string, format: date, nullable: true }
+        status: { type: string }
+        agenda:
+          type: array
+          items: { $ref: "#/components/schemas/MeetingAgendaItem" }
+        attendance:
+          type: array
+          items: { $ref: "#/components/schemas/MeetingAttendance" }
+        pack_id: { type: string, nullable: true }
+        pack_track: { $ref: "#/components/schemas/PackTrack", nullable: true }
+        allowed_actions:
+          type: array
+          items: { $ref: "#/components/schemas/AllowedAction" }
+
+    GovernanceMeetingCreate:
+      type: object
+      required: [title, confirm]
+      properties:
+        title: { type: string }
+        body: { type: string, nullable: true }
+        meeting_type:
+          type: string
+          enum: [Ordinary, Special, AGM]
+          default: Ordinary
+        date: { type: string, format: date }
+        start_time: { type: string }
+        scheduled_at: { type: string, format: date-time }
+        venue: { type: string }
+        hybrid: { type: boolean, default: false }
+        online_link: { type: string }
+        pack_deadline: { type: string, format: date }
+        confirm: { type: boolean }
+
+    GovernanceMeetingAct:
+      type: object
+      required: [action, confirm]
+      properties:
+        action:
+          type: string
+          enum:
+            - reschedule
+            - cancel
+            - record_attendance
+            - start_minutes
+            - submit_minutes
+            - approve_minutes
+        confirm: { type: boolean }
+        payload:
+          type: object
+          additionalProperties: true
+          description: Action-specific fields (new dates, attendance rows, etc.)
+
+    GovernancePack:
+      type: object
+      required: [id, meeting, status, sections]
+      properties:
+        id: { type: string }
+        meeting: { type: string }
+        meeting_title: { type: string, nullable: true }
+        version: { type: integer, default: 1 }
+        status:
+          type: string
+          enum: [Draft, Assembled, Issued]
+        sections:
+          type: array
+          items: { $ref: "#/components/schemas/PackSection" }
+        assembled_file: { type: string, nullable: true }
+        pages: { type: integer, nullable: true }
+        issued_on: { type: string, format: date-time, nullable: true }
+        due_label: { type: string, nullable: true }
+        outstanding_sections: { type: integer, default: 0 }
+        allowed_actions:
+          type: array
+          items: { $ref: "#/components/schemas/AllowedAction" }
+
+    GovernancePackSectionPatch:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string }
+        included: { type: boolean }
+        idx: { type: integer }
+        status: { $ref: "#/components/schemas/PackSectionStatus" }
+        mark_ready: { type: boolean }
+
+    GovernancePackSectionsPatch:
+      type: object
+      required: [confirm, sections]
+      properties:
+        confirm: { type: boolean }
+        sections:
+          type: array
+          items: { $ref: "#/components/schemas/GovernancePackSectionPatch" }
+
+    GovernancePackAssembleResult:
+      type: object
+      required: [id, version]
+      properties:
+        id: { type: string }
+        version: { type: integer }
+        pages: { type: integer, nullable: true }
+        file_url: { type: string, nullable: true }
+        status: { type: string, nullable: true }
+
+    BoardPackSummary:
+      type: object
+      description: Deprecated thin summary — prefer GovernancePack / PackTrack
+      required: [due_label, outstanding_sections, sections]
+      properties:
+        due_label: { type: string }
+        outstanding_sections: { type: integer }
+        sections:
+          type: array
+          items:
+            type: object
+            required: [title, status]
+            properties:
+              title: { type: string }
+              status: { type: string }
+
+    GovernanceResolution:
+      type: object
+      required: [id, title, status]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        meeting: { type: string, nullable: true }
+        text: { type: string, nullable: true }
+        outcome:
+          type: string
+          enum: [Passed, Rejected, Deferred]
+          nullable: true
+        votes_for: { type: integer, nullable: true }
+        votes_against: { type: integer, nullable: true }
+        votes_abstained: { type: integer, nullable: true }
+        status: { type: string }
+        date: { type: string, format: date, nullable: true }
+        allowed_actions:
+          type: array
+          items: { $ref: "#/components/schemas/AllowedAction" }
+
+    ResolutionAction:
+      type: object
+      required: [id, description, status]
+      properties:
+        id: { type: string }
+        resolution: { type: string, nullable: true }
+        description: { type: string }
+        owner: { type: string, nullable: true }
+        due_date: { type: string, format: date, nullable: true }
+        progress: { type: integer, minimum: 0, maximum: 100, default: 0 }
+        status:
+          type: string
+          enum: [Open, Overdue, Completed]
+        report_in_pack: { type: boolean, default: false }
+
+    RiskBand:
+      type: string
+      enum: [critical, high, medium, low]
+
+    RiskTrend:
+      type: string
+      enum: [improving, stable, worsening]
+
+    GovernanceRisk:
+      type: object
+      required: [id, title, status, residual_likelihood, residual_impact, score, band]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        cause_consequence: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        owner: { type: string, nullable: true }
+        inherent_likelihood: { type: integer, minimum: 1, maximum: 5, nullable: true }
+        inherent_impact: { type: integer, minimum: 1, maximum: 5, nullable: true }
+        controls: { type: string, nullable: true }
+        residual_likelihood: { type: integer, minimum: 1, maximum: 5 }
+        residual_impact: { type: integer, minimum: 1, maximum: 5 }
+        score:
+          type: integer
+          description: Server-computed residual L × I
+        band: { $ref: "#/components/schemas/RiskBand" }
+        trend: { $ref: "#/components/schemas/RiskTrend", nullable: true }
+        appetite_threshold: { type: integer, nullable: true }
+        status: { type: string }
+        flagged_for_pack: { type: boolean, default: false }
+
+    BoardMember:
+      type: object
+      required: [id, full_name]
+      properties:
+        id: { type: string }
+        full_name: { type: string }
+        title: { type: string, nullable: true }
+        role:
+          type: string
+          enum: [Chair, Vice, Member, Ex officio]
+          nullable: true
+        committees:
+          type: array
+          items: { type: string }
+        term_start: { type: string, format: date, nullable: true }
+        term_end: { type: string, format: date, nullable: true }
+        attendance_pct: { type: number, nullable: true }
+        declaration_due: { type: boolean, default: false }
+
+    GovernanceBody:
+      type: object
+      required: [id, name, type]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type:
+          type: string
+          enum: [Board, Committee]
+        chair: { type: string, nullable: true }
+        quorum: { type: integer, nullable: true }
+        meeting_frequency: { type: string, nullable: true }
+        members:
+          type: array
+          items: { type: string }
+
+    GovernanceDeclaration:
+      type: object
+      required: [id, member, kind, interest, filed_on]
+      properties:
+        id: { type: string }
+        member: { type: string }
+        member_name: { type: string, nullable: true }
+        kind:
+          type: string
+          enum: [Annual, Meeting]
+        meeting: { type: string, nullable: true }
+        agenda_item: { type: string, nullable: true }
+        interest: { type: string }
+        action:
+          type: string
+          enum: [Recuse, Note]
+          nullable: true
+        filed_on: { type: string, format: date }
+
+    # Aliases kept for older portal list shapes
+    GovernanceMeetingSummary:
+      allOf:
+        - $ref: "#/components/schemas/GovernanceMeeting"
+    GovernanceResolutionSummary:
+      allOf:
+        - $ref: "#/components/schemas/GovernanceResolution"
+    GovernanceRiskSummary:
+      allOf:
+        - $ref: "#/components/schemas/GovernanceRisk"

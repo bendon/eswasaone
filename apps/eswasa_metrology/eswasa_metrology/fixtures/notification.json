@@ -1,0 +1,73 @@
+[
+  {
+    "doctype": "Notification",
+    "name": "Metro R-M1 Job Received",
+    "subject": "Calibration job received: {{ doc.job_code or doc.name }}",
+    "document_type": "Calibration Job",
+    "event": "Submit",
+    "enabled": 1,
+    "channel": "Email",
+    "condition": "",
+    "message": "<p>Calibration job <strong>{{ doc.job_code or doc.name }}</strong> has been received (R-M1). Due: {{ doc.due_on }}. Assigned: {{ doc.assigned_to }}.</p>",
+    "recipients": [
+      {
+        "receiver_by_role": "Eswasa Metrology Officer"
+      }
+    ]
+  },
+  {
+    "doctype": "Notification",
+    "name": "Metro R-M2 Result Approved",
+    "subject": "Calibration complete: {{ doc.result_id or doc.name }}",
+    "document_type": "Result",
+    "event": "Value Change",
+    "value_changed": "reviewed",
+    "enabled": 1,
+    "channel": "Email",
+    "condition": "doc.reviewed==1 and doc.docstatus==1",
+    "message": "<p>Result <strong>{{ doc.result_id or doc.name }}</strong> for job {{ doc.calibration_job }} has been reviewed and approved (R-M2).</p>",
+    "recipients": [
+      {
+        "receiver_by_role": "Eswasa Metrology Reviewer"
+      }
+    ]
+  },
+  {
+    "doctype": "Notification",
+    "name": "Metro R-M3 Calibration Due",
+    "subject": "Calibration due: {{ doc.instrument_name or doc.name }}",
+    "document_type": "Instrument",
+    "event": "Days Before",
+    "days_in_advance": 14,
+    "date_changed": "calibration_due_on",
+    "enabled": 1,
+    "channel": "Email",
+    "condition": "doc.status==\"Active\"",
+    "message": "<p>Instrument <strong>{{ doc.name }}</strong> ({{ doc.instrument_name }}) is due for calibration on {{ doc.calibration_due_on }} (R-M3).</p>",
+    "recipients": [
+      {
+        "receiver_by_document_field": "owner_email"
+      },
+      {
+        "receiver_by_role": "Eswasa Metrology Officer"
+      }
+    ]
+  },
+  {
+    "doctype": "Notification",
+    "name": "Metro R-M4 Out of Tolerance",
+    "subject": "Out-of-tolerance result: {{ doc.result_id or doc.name }}",
+    "document_type": "Result",
+    "event": "Value Change",
+    "value_changed": "out_of_tolerance",
+    "enabled": 1,
+    "channel": "Email",
+    "condition": "doc.out_of_tolerance==1",
+    "message": "<p>Result <strong>{{ doc.result_id or doc.name }}</strong> is out of tolerance. Supervisor sign-off is required (R-M4).</p>",
+    "recipients": [
+      {
+        "receiver_by_role": "Eswasa Metrology Manager"
+      }
+    ]
+  }
+]

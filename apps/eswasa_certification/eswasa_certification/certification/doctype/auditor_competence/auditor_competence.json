@@ -1,0 +1,157 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "auditor",
+  "scheme",
+  "standard_ref",
+  "column_break_a",
+  "competence_level",
+  "valid_from",
+  "valid_to",
+  "section_evidence",
+  "evidence_notes"
+ ],
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "auditor",
+   "fieldtype": "Link",
+   "label": "Auditor",
+   "options": "Auditor",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "scheme",
+   "fieldtype": "Link",
+   "label": "Scheme",
+   "options": "Certification Scheme",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "standard_ref",
+   "fieldtype": "Data",
+   "label": "Standard Reference",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_a",
+   "fieldtype": "Column Break",
+   "label": "Column Break A"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "competence_level",
+   "fieldtype": "Select",
+   "label": "Competence Level",
+   "reqd": 1,
+   "in_list_view": 1,
+   "options": "Lead Auditor\nAuditor\nTechnical Expert\nTrainee"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "label": "Valid From",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "valid_to",
+   "fieldtype": "Date",
+   "label": "Valid To"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_evidence",
+   "fieldtype": "Section Break",
+   "label": "Evidence"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "evidence_notes",
+   "fieldtype": "Text",
+   "label": "Evidence Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 0,
+ "issingle": 0,
+ "istable": 0,
+ "links": [],
+ "modified": "2026-09-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Certification",
+ "name": "Auditor Competence",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Manager",
+   "share": 1,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Officer",
+   "share": 0,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Auditor",
+   "share": 0,
+   "write": 0,
+   "doctype": "DocPerm"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "title_field": "competence_level",
+ "search_fields": "auditor,scheme,standard_ref,competence_level"
+}

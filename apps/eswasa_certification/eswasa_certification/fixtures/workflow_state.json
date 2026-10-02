@@ -1,0 +1,65 @@
+[
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "Application",
+  "style": "",
+  "workflow_state_name": "Application"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "Assessment",
+  "style": "Info",
+  "workflow_state_name": "Assessment"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "Audit Scheduled",
+  "style": "Info",
+  "workflow_state_name": "Audit Scheduled"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "Audit",
+  "style": "Warning",
+  "workflow_state_name": "Audit"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "NC Resolution",
+  "style": "Danger",
+  "workflow_state_name": "NC Resolution"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "ok-sign",
+  "name": "Certified",
+  "style": "Success",
+  "workflow_state_name": "Certified"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "Surveillance",
+  "style": "Info",
+  "workflow_state_name": "Surveillance"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "Renewal",
+  "style": "Warning",
+  "workflow_state_name": "Renewal"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "remove",
+  "name": "Withdraw",
+  "style": "Danger",
+  "workflow_state_name": "Withdraw"
+ }
+]

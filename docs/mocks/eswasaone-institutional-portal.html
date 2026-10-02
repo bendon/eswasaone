@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EswasaOne — Institution Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --sidebar:#0E1524;
+    --sidebar-2:#161F32;
+    --sidebar-line:#1E2942;
+    --bg:#F4F6FA;
+    --card:#FFFFFF;
+    --ink:#101828;
+    --muted:#667085;
+    --muted-2:#98A2B3;
+    --line:#E7EBF1;
+    --line-2:#EFF2F7;
+    --gold:#E0A81E;
+    --gold-soft:#FBF1D8;
+    --teal:#0E7C7B;
+    --navy:#12263F;
+    --green:#16A34A;
+    --red:#E11D6E;
+    --amber:#E9A23B;
+    --blue:#2563EB;
+    --indigo:#4F46E5;
+    --purple:#7C3AED;
+    --orange:#EA6C1E;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.04);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+
+  /* ---------------- Sidebar ---------------- */
+  .side{background:var(--sidebar);color:#C7D2E4;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .side__brand{display:flex;align-items:center;gap:11px;padding:20px 20px 16px}
+  .side__logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(150deg,#F4C24A,#E0A81E);display:grid;place-items:center;box-shadow:0 4px 12px rgba(224,168,30,.35)}
+  .side__logo svg{width:19px;height:19px;stroke:#3a2a05}
+  .side__brand b{font-weight:800;font-size:16px;color:#fff;display:block;letter-spacing:-.01em}
+  .side__brand span{font-size:10px;letter-spacing:.14em;color:#7E8CA8;font-weight:600}
+  .side__role{margin:2px 14px 12px;padding:11px 13px;border:1px solid rgba(224,168,30,.4);background:rgba(224,168,30,.08);border-radius:11px;display:flex;align-items:center;gap:10px}
+  .side__role svg{width:17px;height:17px;stroke:var(--gold);flex-shrink:0}
+  .side__role b{color:var(--gold);font-size:12.5px;font-weight:700;display:block}
+  .side__role span{color:#8A97B4;font-size:11px}
+  .nav{flex:1;overflow-y:auto;padding:4px 12px}
+  .nav::-webkit-scrollbar{width:0}
+  .nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;color:#AEBBD3;font-size:13.5px;font-weight:500;margin-bottom:2px}
+  .nav a svg{width:18px;height:18px;stroke:currentColor;flex-shrink:0}
+  .nav a:hover{background:var(--sidebar-2);color:#E6EDF9}
+  .nav a.on{background:linear-gradient(90deg,rgba(224,168,30,.16),rgba(224,168,30,.04));color:#fff;font-weight:600;box-shadow:inset 2px 0 0 var(--gold)}
+  .nav a .badge{margin-left:auto;background:var(--gold);color:#3a2a05;font-size:10.5px;font-weight:800;min-width:19px;height:19px;border-radius:10px;display:grid;place-items:center;padding:0 5px}
+  .side__foot{border-top:1px solid var(--sidebar-line);padding:10px 12px}
+  .side__foot a{display:flex;align-items:center;gap:11px;padding:9px 12px;color:#8A97B4;font-size:13px;border-radius:8px}
+  .side__foot a:hover{background:var(--sidebar-2);color:#C7D2E4}
+  .side__foot a svg{width:17px;height:17px;stroke:currentColor}
+
+  /* ---------------- Main ---------------- */
+  .main{display:flex;flex-direction:column;min-width:0}
+  .top{height:64px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 26px;gap:12px;position:sticky;top:0;z-index:10}
+  .top h1{font-size:16px;font-weight:700}
+  .pill{font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--gold);background:var(--gold-soft);border-radius:20px;padding:4px 10px}
+  .top__r{margin-left:auto;display:flex;align-items:center;gap:6px}
+  .ibtn{width:38px;height:38px;border-radius:10px;border:1px solid transparent;background:transparent;display:grid;place-items:center;cursor:pointer;position:relative}
+  .ibtn:hover{background:var(--bg);border-color:var(--line)}
+  .ibtn svg{width:18px;height:18px;stroke:var(--muted)}
+  .top__div{width:1px;height:26px;background:var(--line);margin:0 4px}
+  .top__user{display:flex;align-items:center;gap:10px;padding:5px 6px;border-radius:10px;cursor:pointer}
+  .top__user:hover{background:var(--bg)}
+  .top__av{width:34px;height:34px;border-radius:50%;background:linear-gradient(140deg,#7C3AED,#2563EB);color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px}
+  .top__user b{font-size:13px;font-weight:700;display:block;line-height:1.2}
+  .top__user span{font-size:11px;color:var(--muted-2)}
+  .top__user .cev{width:15px;height:15px;stroke:var(--muted-2)}
+
+  .content{padding:26px;overflow-y:auto}
+
+  /* Hero */
+  .hero{display:grid;grid-template-columns:1fr 340px;gap:0;background:linear-gradient(120deg,#0F8080 0%,#0C5D63 55%,#0A464F 100%);border-radius:20px;padding:34px 34px;color:#fff;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);pointer-events:none}
+  .hero__label{font-size:11px;letter-spacing:.16em;font-weight:700;color:rgba(255,255,255,.6)}
+  .hero h2{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:10px}
+  .hero p{color:rgba(255,255,255,.75);font-size:14px;margin-top:7px}
+  .ask-main{display:flex;align-items:center;gap:12px;margin-top:22px;max-width:600px;background:#fff;border:1px solid rgba(255,255,255,.5);border-radius:15px;padding:9px 9px 9px 14px;box-shadow:0 14px 40px rgba(0,0,0,.26)}
+  .ask-main .am__ic{width:42px;height:42px;border-radius:11px;background:linear-gradient(140deg,#2DD4BF,#0E7C7B);display:grid;place-items:center;flex-shrink:0;box-shadow:0 3px 12px rgba(45,212,191,.4)}
+  .ask-main .am__ic svg{width:23px;height:23px;stroke:#04211f}
+  .ask-main input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--ink);font:inherit;font-size:15px;font-weight:500}
+  .ask-main input::placeholder{color:#98A2B3;font-weight:400}
+  .ask-main .am__btn{display:flex;align-items:center;gap:7px;background:var(--gold);color:#3a2a05;border:0;border-radius:11px;padding:0 20px;height:44px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;flex-shrink:0}
+  .ask-main .am__btn svg{width:16px;height:16px;stroke:#3a2a05}
+  .hero__hint{font-size:12px;color:rgba(255,255,255,.55);margin-top:11px;display:flex;align-items:center;gap:7px}
+  .hero__hint svg{width:14px;height:14px;stroke:rgba(255,255,255,.6)}
+  .hero__chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+  .hero__chips span{font-size:12.5px;font-weight:500;color:rgba(255,255,255,.9);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:7px 14px;cursor:pointer;transition:background .14s}
+  .hero__chips span:hover{background:rgba(255,255,255,.2)}
+  .agent{background:rgba(6,20,24,.55);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px;margin-left:24px;backdrop-filter:blur(6px)}
+  .agent__h{display:flex;align-items:center;gap:8px;margin-bottom:11px}
+  .agent__h .d{width:22px;height:22px;border-radius:6px;background:linear-gradient(140deg,#2DD4BF,#0E7C7B);display:grid;place-items:center}
+  .agent__h .d svg{width:13px;height:13px;stroke:#04211f}
+  .agent__h b{font-size:12.5px;font-weight:700}
+  .agent__h .live{margin-left:auto;font-size:10px;color:#4ADE80;display:flex;align-items:center;gap:4px}
+  .agent__h .live::before{content:"";width:6px;height:6px;border-radius:50%;background:#4ADE80}
+  .alert{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px;line-height:1.35;color:rgba(255,255,255,.72)}
+  .alert svg{width:14px;height:14px;flex-shrink:0;margin-top:1px}
+  .alert b{font-weight:700;font-size:10px;letter-spacing:.04em;display:block}
+  .alert.r b{color:#F0A93B} .alert.r svg{stroke:#F0A93B}
+  .alert.g b{color:#4ADE80} .alert.g svg{stroke:#4ADE80}
+  .alert.a b{color:#FBBF52} .alert.a svg{stroke:#FBBF52}
+  .alert.t b{color:#7DD3FC} .alert.t svg{stroke:#7DD3FC}
+  .agent__ask{display:flex;align-items:center;gap:8px;margin-top:11px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:9px;height:38px;padding:0 12px;color:rgba(255,255,255,.5);font-size:12px}
+  .agent__ask svg{width:15px;height:15px;stroke:rgba(255,255,255,.6);margin-left:auto}
+  .agent__try{font-size:10px;color:rgba(255,255,255,.4);margin-top:7px}
+
+  /* KPI cards */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:20px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  .kpi__top{display:flex;justify-content:space-between;align-items:flex-start}
+  .kpi__label{font-size:11px;font-weight:600;letter-spacing:.03em;color:var(--muted-2);text-transform:uppercase;max-width:150px;line-height:1.3}
+  .kpi__ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+  .kpi__ic svg{width:18px;height:18px;stroke:#fff}
+  .kpi__val{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:12px}
+  .kpi__delta{font-size:12px;font-weight:600;margin-top:3px}
+  .kpi__delta.up{color:var(--green)} .kpi__delta.down{color:var(--red)} .kpi__delta.warn{color:var(--red)}
+
+  .sec-label{font-size:16px;font-weight:700;margin:26px 0 14px}
+
+  /* Module tiles */
+  .mods{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .mod{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+  .mod:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(16,24,40,.12)}
+  .mod__head{padding:20px;position:relative;color:#fff;min-height:134px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+  .mod__head::before{content:"";position:absolute;inset:0;background:radial-gradient(130% 100% at 100% 0%,rgba(255,255,255,.20),transparent 55%),linear-gradient(160deg,rgba(255,255,255,.05),rgba(0,0,0,.16));pointer-events:none;z-index:0}
+  .mod__head .wm{position:absolute;right:-16px;bottom:-22px;opacity:.18;pointer-events:none;z-index:0}
+  .mod__head .wm svg{width:126px;height:126px;stroke:#fff}
+  .mod__head > svg,.mod__head > b,.mod__head > .b{position:relative;z-index:2}
+  .mod__head > svg{width:34px;height:34px;stroke:#fff}
+  .mod__head b{font-size:16px;font-weight:700}
+  .mod__head .b{position:absolute;top:16px;right:16px;background:rgba(0,0,0,.28);color:#fff;font-size:11px;font-weight:800;min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;padding:0 6px}
+  .mod__foot{padding:13px 20px;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+  .mod__foot .cev{width:16px;height:16px;stroke:var(--muted-2);margin-left:auto}
+
+  /* Charts row */
+  .row{display:grid;gap:16px;margin-top:16px}
+  .row.c2a{grid-template-columns:1.5fr 1fr}
+  .row.c2{grid-template-columns:1fr 1fr}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+  .panel__h{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+  .panel__h h3{font-size:15px;font-weight:700}
+  .panel__h p{font-size:12px;color:var(--muted-2);margin-top:2px}
+  .tagpill{font-size:11px;font-weight:600;color:#B4741B;background:var(--gold-soft);border-radius:20px;padding:4px 11px}
+  .chart-wrap{position:relative;height:230px;margin-top:12px}
+  .chart-tall{height:210px}
+
+  .legend{margin-top:10px}
+  .legend .lg{display:flex;align-items:center;gap:9px;padding:7px 0;font-size:13px;border-top:1px solid var(--line-2)}
+  .legend .lg:first-child{border-top:0}
+  .legend .dot{width:9px;height:9px;border-radius:3px}
+  .legend .lg b{margin-left:auto;font-weight:700}
+
+  /* Traffic light KPIs */
+  .tl{display:flex;flex-direction:column;gap:15px;margin-top:14px}
+  .tl__row .tl__top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+  .tl__row .tl__top .v{font-weight:700;display:flex;align-items:center;gap:8px}
+  .tl__row .tl__top .v .s{width:9px;height:9px;border-radius:50%}
+  .tl__bar{height:7px;border-radius:4px;background:var(--line-2);overflow:hidden}
+  .tl__fill{height:100%;border-radius:4px}
+
+  /* Activity */
+  .act{display:flex;flex-direction:column}
+  .act__i{display:flex;gap:11px;padding:12px 0;border-top:1px solid var(--line-2)}
+  .act__i:first-child{border-top:0}
+  .act__d{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0}
+  .act__i p{font-size:13px;line-height:1.4}
+  .act__i span{font-size:11.5px;color:var(--muted-2)}
+
+  @media(max-width:1200px){.mods{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:1fr}.agent{margin-left:0;margin-top:20px}}
+  @media(max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.mods{grid-template-columns:repeat(2,1fr)}.row.c2a,.row.c2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- icon sprite -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-check-c" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.3 2.3L15.5 9.5"/></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M4 21V10l8-5 8 5v11M9 21v-6h6v6"/></symbol>
+    <symbol id="i-briefcase" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M3 12h18"/></symbol>
+    <symbol id="i-badge" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5.5"/><path d="M9.7 13.5L8 21l4-2 4 2-1.7-7.5"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h5"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1116 0"/><path d="M12 18l4-5"/><circle cx="12" cy="18" r="1"/></symbol>
+    <symbol id="i-cap" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l10 5-10 5L2 9z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></symbol>
+    <symbol id="i-dollar" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M16 7.5c0-1.9-1.8-3-4-3s-4 1.1-4 3 1.8 2.7 4 3.2 4 1.3 4 3.3-1.8 3.2-4 3.2-4-1.3-4-3.2"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0112 0M16 5.5a3.2 3.2 0 010 6M21 20a6 6 0 00-4-5.6"/></symbol>
+    <symbol id="i-mega" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 001 1h2l4 4V5L7 9H5a1 1 0 00-1 1z"/><path d="M16 8a5 5 0 010 8"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4M4 20h16"/><path d="M8 16l3-4 3 2 4-6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5.6 5.6L4.2 4.2M19.8 19.8l-1.4-1.4M18.4 5.6l1.4-1.4M4.2 19.8l1.4-1.4"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1112 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M10 20a2 2 0 004 0"/></symbol>
+    <symbol id="i-cev" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10l4 4 4-4"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 00-14-4M4 5v4h4"/><path d="M4 13a8 8 0 0014 4M20 19v-4h-4"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 15H3z"/><path d="M12 10v4M12 17h.01"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-7-7 16-2-6z"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H6a2 2 0 00-2 2v12a2 2 0 002 2h8M16 8l4 4-4 4M20 12H9"/></symbol>
+    <symbol id="i-cleft" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8l-4 4 4 4"/></symbol>
+  </svg>
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="side">
+    <div class="side__brand">
+      <span class="side__logo"><svg><use href="#i-shield"/></svg></span>
+      <div><b>EswasaOne</b><span>INSTITUTION PORTAL</span></div>
+    </div>
+    <div class="side__role">
+      <svg><use href="#i-check-c"/></svg>
+      <div><b>Administrator</b><span>Full system access</span></div>
+    </div>
+    <nav class="nav">
+      <a class="on"><svg><use href="#i-grid"/></svg>Dashboard</a>
+      <a><svg><use href="#i-check-c"/></svg>Approvals<span class="badge">7</span></a>
+      <a><svg><use href="#i-bank"/></svg>Board &amp; Governance</a>
+      <a><svg><use href="#i-briefcase"/></svg>CRM &amp; Commercial</a>
+      <a><svg><use href="#i-badge"/></svg>Certification</a>
+      <a><svg><use href="#i-file"/></svg>Standards Dev</a>
+      <a><svg><use href="#i-gauge"/></svg>Metrology &amp; LIMS</a>
+      <a><svg><use href="#i-cap"/></svg>LMS &amp; Training</a>
+      <a><svg><use href="#i-globe"/></svg>WTO/TBT Alerts<span class="badge">4</span></a>
+      <a><svg><use href="#i-dollar"/></svg>Finance</a>
+      <a><svg><use href="#i-users"/></svg>HR &amp; People</a>
+      <a><svg><use href="#i-mega"/></svg>Marketing</a>
+      <a><svg><use href="#i-chart"/></svg>Reports &amp; Analytics</a>
+    </nav>
+    <div class="side__foot">
+      <a><svg><use href="#i-cleft"/></svg>Collapse</a>
+      <a><svg><use href="#i-out"/></svg>Sign Out</a>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="top">
+      <h1>Dashboards</h1>
+      <span class="pill">ADMIN ACCESS</span>
+      <div class="top__r">
+        <button class="ibtn"><svg><use href="#i-sun"/></svg></button>
+        <button class="ibtn"><svg><use href="#i-bell"/></svg></button>
+        <div class="top__div"></div>
+        <div class="top__user">
+          <span class="top__av">T</span>
+          <div><b>Thandi</b><span>Admin</span></div>
+          <svg class="cev"><use href="#i-cev"/></svg>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- HERO -->
+      <section class="hero">
+        <div>
+          <div class="hero__label">INSTITUTION PORTAL</div>
+          <h2>What can we help you with today?</h2>
+          <p>Ask the EswasaOne assistant to pull up any module, record or figure across the Authority, and it will take you straight there.</p>
+          <div class="ask-main">
+            <span class="am__ic"><svg><use href="#i-spark"/></svg></span>
+            <input type="text" placeholder="Ask EswasaOne anything…  e.g. “Which audits are overdue this week?”" />
+            <button class="am__btn"><svg><use href="#i-send"/></svg> Ask</button>
+          </div>
+          <div class="hero__hint"><svg><use href="#i-spark"/></svg> Powered by the EswasaOne AI assistant · answers in seconds</div>
+          <div class="hero__chips">
+            <span>Show overdue audits</span>
+            <span>Revenue vs target this quarter</span>
+            <span>Draft the board pack summary</span>
+            <span>Applications past SLA</span>
+          </div>
+        </div>
+        <div class="agent">
+          <div class="agent__h">
+            <span class="d"><svg><use href="#i-spark"/></svg></span>
+            <b>EswasaOne Assistant</b>
+            <span class="live">Live</span>
+          </div>
+          <div class="alert a"><svg><use href="#i-warn"/></svg><div><b>APPROVAL QUEUE</b>7 items awaiting your sign-off</div></div>
+          <div class="alert r"><svg><use href="#i-clock"/></svg><div><b>SLA BREACH</b>7 applications past target turnaround time</div></div>
+          <div class="alert t"><svg><use href="#i-bank"/></svg><div><b>BOARD</b>Council pack due Friday — 2 sections outstanding</div></div>
+          <div class="alert g"><svg><use href="#i-check-c"/></svg><div><b>PUBLISHED</b>SZNS 1043:2024 now live in catalogue &amp; e-store</div></div>
+          <div class="agent__ask">Ask the AI Agent…<svg><use href="#i-send"/></svg></div>
+          <div class="agent__try">Try: “renew cert”, “export to EU”, “my training”</div>
+        </div>
+      </section>
+
+      <!-- KPIs -->
+      <section class="kpis">
+        <div class="kpi"><div class="kpi__top"><div class="kpi__label">Companies Certified (YTD)</div><span class="kpi__ic" style="background:var(--green)"><svg><use href="#i-badge"/></svg></span></div><div class="kpi__val">148</div><div class="kpi__delta up">↑ 12 vs last year</div></div>
+        <div class="kpi"><div class="kpi__top"><div class="kpi__label">Training Enrolments (YTD)</div><span class="kpi__ic" style="background:var(--gold)"><svg><use href="#i-cap"/></svg></span></div><div class="kpi__val">2,840</div><div class="kpi__delta up">↑ 23% vs target</div></div>
+        <div class="kpi"><div class="kpi__top"><div class="kpi__label">Revenue YTD (SZL)</div><span class="kpi__ic" style="background:var(--red)"><svg><use href="#i-dollar"/></svg></span></div><div class="kpi__val">3.63M</div><div class="kpi__delta down">↓ 8% below budget</div></div>
+        <div class="kpi"><div class="kpi__top"><div class="kpi__label">Pending Applications</div><span class="kpi__ic" style="background:var(--teal)"><svg><use href="#i-clock"/></svg></span></div><div class="kpi__val">23</div><div class="kpi__delta warn">7 overdue SLA</div></div>
+      </section>
+
+      <!-- MODULES -->
+      <div class="sec-label">Portal Modules</div>
+      <section class="mods">
+        <div class="mod"><div class="mod__head" style="background:#4B5563"><span class="wm"><svg><use href="#i-grid"/></svg></span><svg><use href="#i-grid"/></svg><b>Dashboard</b></div><div class="mod__foot">KPIs &amp; executive overview<svg class="cev"><use href="#i-cev"/></svg></div></div>
+        <div class="mod"><div class="mod__head" style="background:var(--indigo)"><span class="wm"><svg><use href="#i-bank"/></svg></span><svg><use href="#i-bank"/></svg><b>Board &amp; Gov.</b></div><div class="mod__foot">Resolutions, risk register<svg class="cev"><use href="#i-cev"/></svg></div></div>
+        <div class="mod"><div class="mod__head" style="background:var(--blue)"><span class="wm"><svg><use href="#i-briefcase"/></svg></span><svg><use href="#i-briefcase"/></svg><b>CRM</b></div><div class="mod__foot">Pipeline &amp; client register<svg class="cev"><use href="#i-cev"/></svg></div></div>
+        <div class="mod"><div class="mod__head" style="background:var(--green)"><span class="wm"><svg><use href="#i-badge"/></svg></span><svg><use href="#i-badge"/></svg><b>Certification</b></div><div class="mod__foot">Applications &amp; audits<svg class="cev"><use href="#i-cev"/></svg></div></div>
+        <div class="mod"><div class="mod__head" style="background:var(--purple)"><span class="wm"><svg><use href="#i-file"/></svg></span><svg><use href="#i-file"/></svg><b>Standards Dev</b></div><div class="mod__foot">Work programme &amp; TCs<svg class="cev"><use href="#i-cev"/></svg></div></div>
+        <div class="mod"><div class="mod__head" style="background:var(--teal)"><span class="wm"><svg><use href="#i-gauge"/></svg></span><svg><use href="#i-gauge"/></svg><b>Metrology</b></div><div class="mod__foot">Calibration &amp; LIMS<svg class="cev"><use href="#i-cev"/></svg></div></div>
+        <div class="mod"><div class="mod__head" style="background:#8B5CF6"><span class="wm"><svg><use href="#i-cap"/></svg></span><svg><use href="#i-cap"/></svg><b>LMS &amp; Training</b></div><div class="mod__foot">Enrolments &amp; analytics<svg class="cev"><use href="#i-cev"/></svg></div></div>
+        <div class="mod"><div class="mod__head" style="background:var(--orange)"><span class="b">4</span><span class="wm"><svg><use href="#i-globe"/></svg></span><svg><use href="#i-globe"/></svg><b>WTO/TBT Alerts</b></div><div class="mod__foot">4 new notifications<svg class="cev"><use href="#i-cev"/></svg></div></div>
+        <div class="mod"><div class="mod__head" style="background:#0E8A6E"><span class="wm"><svg><use href="#i-dollar"/></svg></span><svg><use href="#i-dollar"/></svg><b>Finance</b></div><div class="mod__foot">Invoices &amp; budget tracker<svg class="cev"><use href="#i-cev"/></svg></div></div>
+        <div class="mod"><div class="mod__head" style="background:var(--red)"><span class="wm"><svg><use href="#i-users"/></svg></span><svg><use href="#i-users"/></svg><b>HR &amp; People</b></div><div class="mod__foot">Headcount, leave &amp; appraisals<svg class="cev"><use href="#i-cev"/></svg></div></div>
+        <div class="mod"><div class="mod__head" style="background:#E2621B"><span class="wm"><svg><use href="#i-mega"/></svg></span><svg><use href="#i-mega"/></svg><b>Marketing</b></div><div class="mod__foot">Campaigns &amp; stakeholder CRM<svg class="cev"><use href="#i-cev"/></svg></div></div>
+      </section>
+
+      <!-- CHARTS ROW 1 -->
+      <div class="row c2a">
+        <div class="panel">
+          <div class="panel__h"><div><h3>Revenue vs Budget</h3><p>Monthly SZL (thousands)</p></div><span class="tagpill">● 8% below budget</span></div>
+          <div class="chart-wrap"><canvas id="revBar"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel__h"><div><h3>Revenue by Service Line</h3></div></div>
+          <div class="chart-wrap chart-tall"><canvas id="revDonut"></canvas></div>
+          <div class="legend">
+            <div class="lg"><span class="dot" style="background:#12263F"></span>Certification<b>42%</b></div>
+            <div class="lg"><span class="dot" style="background:var(--gold)"></span>Training<b>28%</b></div>
+            <div class="lg"><span class="dot" style="background:var(--green)"></span>Standards Sales<b>18%</b></div>
+            <div class="lg"><span class="dot" style="background:#94A3B8"></span>Metrology<b>12%</b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW 2 -->
+      <div class="row">
+        <div class="panel">
+          <div class="panel__h"><div><h3>Operational Activity — 6 Months</h3><p>Certifications issued · Training enrolments · Standards developed</p></div></div>
+          <div class="chart-wrap"><canvas id="opsLine"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ROW 3 -->
+      <div class="row c2">
+        <div class="panel">
+          <div class="panel__h"><div><h3>Annual Plan KPIs — Traffic Light</h3></div></div>
+          <div class="tl">
+            <div class="tl__row"><div class="tl__top"><span>Standards Developed (Target: 12)</span><span class="v">8 <span class="s" style="background:var(--amber)"></span></span></div><div class="tl__bar"><div class="tl__fill" style="width:66%;background:var(--amber)"></div></div></div>
+            <div class="tl__row"><div class="tl__top"><span>Certification Revenue (Target: SZL 2.4M)</span><span class="v">SZL 1.9M <span class="s" style="background:var(--amber)"></span></span></div><div class="tl__bar"><div class="tl__fill" style="width:79%;background:var(--amber)"></div></div></div>
+            <div class="tl__row"><div class="tl__top"><span>Training Completion Rate (Target: 85%)</span><span class="v">78% <span class="s" style="background:var(--amber)"></span></span></div><div class="tl__bar"><div class="tl__fill" style="width:78%;background:var(--amber)"></div></div></div>
+            <div class="tl__row"><div class="tl__top"><span>Audit Cycle Time (Target: &lt;60 days)</span><span class="v">52 days <span class="s" style="background:var(--green)"></span></span></div><div class="tl__bar"><div class="tl__fill" style="width:87%;background:var(--green)"></div></div></div>
+            <div class="tl__row"><div class="tl__top"><span>Customer Satisfaction (Target: 4.0)</span><span class="v">4.3 / 5.0 <span class="s" style="background:var(--green)"></span></span></div><div class="tl__bar"><div class="tl__fill" style="width:86%;background:var(--green)"></div></div></div>
+            <div class="tl__row"><div class="tl__top"><span>Staff Appraisal Completion (Target: 100%)</span><span class="v">64% <span class="s" style="background:var(--red)"></span></span></div><div class="tl__bar"><div class="tl__fill" style="width:64%;background:var(--red)"></div></div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel__h"><div><h3>Recent Activity</h3></div></div>
+          <div class="act">
+            <div class="act__i"><span class="act__d" style="background:var(--blue)"></span><div><p>Cert application CERT-2025-0041 moved to Audit Scheduled</p><span>2h ago</span></div></div>
+            <div class="act__i"><span class="act__d" style="background:var(--gold)"></span><div><p>New TBT notification G/TBT/N/EU/891 — High impact on textiles</p><span>4h ago</span></div></div>
+            <div class="act__i"><span class="act__d" style="background:var(--green)"></span><div><p>ISO 45001 Lead Auditor cohort completed. 12/14 passed.</p><span>6h ago</span></div></div>
+            <div class="act__i"><span class="act__d" style="background:var(--teal)"></span><div><p>SZNS 1043:2024 published to catalogue and e-store</p><span>1d ago</span></div></div>
+            <div class="act__i"><span class="act__d" style="background:var(--red)"></span><div><p>Invoice INV-2025-0394 overdue — SZL 18,500 — Swazi Textiles</p><span>1d ago</span></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const gridColor='#EFF2F7', tick='#98A2B3', font="Plus Jakarta Sans";
+  Chart.defaults.font.family=font; Chart.defaults.font.size=11; Chart.defaults.color=tick;
+
+  new Chart(document.getElementById('revBar'),{
+    type:'bar',
+    data:{labels:['Apr','May','Jun','Jul','Aug','Sep'],
+      datasets:[
+        {label:'Budget',data:[520,570,585,640,660,680],backgroundColor:'#AEB8C7',borderRadius:4,barPercentage:.7,categoryPercentage:.7},
+        {label:'Actual',data:[470,600,540,720,665,575],backgroundColor:'#C48F20',borderRadius:4,barPercentage:.7,categoryPercentage:.7}
+      ]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:gridColor},ticks:{callback:v=>v+'k'},max:800}}}
+  });
+
+  new Chart(document.getElementById('revDonut'),{
+    type:'doughnut',
+    data:{labels:['Certification','Training','Standards Sales','Metrology'],
+      datasets:[{data:[42,28,18,12],backgroundColor:['#12263F','#E0A81E','#16A34A','#94A3B8'],borderWidth:0,spacing:2}]},
+    options:{maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false}}}
+  });
+
+  new Chart(document.getElementById('opsLine'),{
+    type:'line',
+    data:{labels:['Apr','May','Jun','Jul','Aug','Sep'],
+      datasets:[
+        {label:'Training enrolments',data:[40,51,45,60,55,49],borderColor:'#E0A81E',backgroundColor:'transparent',tension:.4,pointRadius:3,pointBackgroundColor:'#fff',pointBorderColor:'#E0A81E',borderWidth:2.5},
+        {label:'Certifications issued',data:[12,15,11,17,20,18],borderColor:'#12263F',backgroundColor:'transparent',tension:.4,pointRadius:3,pointBackgroundColor:'#fff',pointBorderColor:'#12263F',borderWidth:2.5},
+        {label:'Standards developed',data:[4,6,5,8,10,9],borderColor:'#16A34A',backgroundColor:'transparent',tension:.4,pointRadius:3,pointBackgroundColor:'#fff',pointBorderColor:'#16A34A',borderWidth:2.5}
+      ]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:gridColor},max:80,ticks:{stepSize:20}}}}
+  });
+</script>
+</body>
+</html>

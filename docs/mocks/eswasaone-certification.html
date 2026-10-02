@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#313391">
+<title>Certification — EswasaOne (SoT)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!--
+  Fidelity SoT for /certification (schemes catalogue + process + verify widget).
+
+  Chrome (nav, dock, tabbar, auth) — ServiceLayout / shared-ui.
+  Styles: tokens.css + catalogue.css + certification.css via service.css
+  React: portals/service-portal/src/pages/CertificationPage.tsx
+-->
+<style>@import url("../../portals/shared-ui/src/styles/service.css");</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="content">
+    <p class="page-note" style="margin-bottom:16px">
+      <strong>Mock SoT — Certification.</strong>
+      Live React port: Service Portal <code>/certification</code>.
+    </p>
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="/">Home</a> · <strong>Certification</strong>
+    </nav>
+    <section class="page-hero">
+      <div class="page-hero__inner">
+        <span class="page-hero__label">ESWASAONE · CERTIFICATION</span>
+        <h1>Certification that travels with your product.</h1>
+        <p>Management-system, product, and sector-specific certification issued under ESWASA accreditation.</p>
+      </div>
+      <div class="page-hero__stats">
+        <div class="hstat"><b>148</b><span>Companies certified</span></div>
+        <div class="hstat"><b>7</b><span>Active schemes</span></div>
+        <div class="hstat"><b>4–14 wk</b><span>Typical timeline</span></div>
+        <div class="hstat"><b>3 yrs</b><span>Certificate validity</span></div>
+      </div>
+    </section>
+    <div class="actioncard">
+      <div class="actiongrid">
+        <button type="button" class="action"><div class="action__body"><b>Track your application</b><span>Live stage &amp; audit dates</span></div></button>
+        <button type="button" class="action"><div class="action__body"><b>Verify a certificate</b><span>Check any ESWASA number</span></div></button>
+        <button type="button" class="action"><div class="action__body"><b>Start a new application</b><span>Pick a scheme</span></div></button>
+      </div>
+    </div>
+    <section class="verify-widget" id="verify">
+      <div class="verify-widget__copy">
+        <span>VERIFY A CERTIFICATE</span>
+        <h2>Check any ESWASA certificate.</h2>
+      </div>
+    </section>
+    <ul class="certlist" style="margin-top:32px">
+      <li class="cert" style="--accent:#313391">
+        <div class="cert__top">
+          <span class="cert__chip" style="--chip-tint:#ECEEFC;--chip-tone:#313391">Management system</span>
+          <span class="cert__code">ISO 9001:2015</span>
+        </div>
+        <h2 class="cert__title">Quality management systems — Certification</h2>
+        <dl class="cert__facts">
+          <div class="cert__fact"><dt>Duration</dt><dd>6–12 weeks</dd></div>
+          <div class="cert__fact"><dt>Validity</dt><dd>3 years</dd></div>
+          <div class="cert__fact"><dt>Fee range</dt><dd class="mono">SZL 18k – 45k</dd></div>
+        </dl>
+      </li>
+    </ul>
+    <section class="process">
+      <div class="process__head"><h2>How certification works</h2></div>
+      <div class="process__steps">
+        <div class="pstep"><span class="pstep__n">01</span><h3>Apply online</h3><p>Submit details and get a reference number.</p></div>
+        <div class="pstep"><span class="pstep__n">05</span><h3>Certification decision</h3><p>Committee review and 3-year certificate.</p></div>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

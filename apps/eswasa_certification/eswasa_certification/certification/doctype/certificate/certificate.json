@@ -1,0 +1,283 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+  "field_order": [
+  "naming_series",
+  "certificate_number",
+  "application",
+  "scheme",
+  "column_break_a",
+  "holder_name",
+  "status",
+  "section_validity",
+  "issued_on",
+  "valid_until",
+  "column_break_b",
+  "scope_summary",
+  "section_rc3",
+  "verification_token",
+  "qr_payload",
+  "column_break_rc3",
+  "register_entry",
+  "sales_invoice",
+  "renewal_notice_sent",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "CERT-.YYYY.-.#####",
+   "default": "CERT-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "certificate_number",
+   "fieldtype": "Data",
+   "label": "Certificate Number",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "application",
+   "fieldtype": "Link",
+   "label": "Application",
+   "options": "Certification Application",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "scheme",
+   "fieldtype": "Link",
+   "label": "Scheme",
+   "options": "Certification Scheme",
+   "fetch_from": "application.scheme",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_a",
+   "fieldtype": "Column Break",
+   "label": "Column Break A"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "holder_name",
+   "fieldtype": "Data",
+   "label": "Holder Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "options": "Active\nSuspended\nWithdrawn\nExpired",
+   "default": "Active"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_validity",
+   "fieldtype": "Section Break",
+   "label": "Validity"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "issued_on",
+   "fieldtype": "Date",
+   "label": "Issued On",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "valid_until",
+   "fieldtype": "Date",
+   "label": "Valid Until",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_b",
+   "fieldtype": "Column Break",
+   "label": "Column Break B"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "scope_summary",
+   "fieldtype": "Small Text",
+   "label": "Scope Summary"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_rc3",
+   "fieldtype": "Section Break",
+   "label": "Verification & Billing (R-C3)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "verification_token",
+   "fieldtype": "Data",
+   "label": "Verification Token",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "qr_payload",
+   "fieldtype": "Small Text",
+   "label": "QR Payload",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_rc3",
+   "fieldtype": "Column Break",
+   "label": "Column Break RC3"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "register_entry",
+   "fieldtype": "Data",
+   "label": "Register Entry",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "Public Register Entry id (eswasa_verification)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "renewal_notice_sent",
+   "fieldtype": "Check",
+   "label": "Renewal Notice Sent",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Certificate",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "issingle": 0,
+ "istable": 0,
+ "links": [],
+ "modified": "2026-09-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Certification",
+ "name": "Certificate",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Manager",
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Officer",
+   "share": 0,
+   "submit": 1,
+   "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Auditor",
+   "share": 0,
+   "write": 0,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Certification Applicant",
+   "share": 0,
+   "write": 0,
+   "doctype": "DocPerm"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "title_field": "certificate_number",
+ "search_fields": "certificate_number,holder_name,scheme,status"
+}

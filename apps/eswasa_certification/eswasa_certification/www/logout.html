@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#313391">
+<title>{{ title }}</title>
+<link rel="icon" href="/assets/eswasa_certification/images/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ eswasa_css }}">
+</head>
+<body class="es-auth">
+{% include "eswasa_certification/templates/includes/eswasa_line_icons.html" %}
+
+<main class="es-card" id="es-card" style="text-align:center; align-items:center;">
+  <div class="es-head" style="align-items:center;">
+    <img class="es-logo" src="{{ eswasa_logo }}" alt="EswasaOne">
+  </div>
+
+  <div id="es-signingout">
+    <div style="display:flex; justify-content:center; margin-bottom:16px;">
+      <span class="es-spin" style="width:28px; height:28px; border-width:3px; border-color:rgba(49,51,145,0.2); border-top-color:var(--navy);"></span>
+    </div>
+    <h1 style="margin:0 0 6px; font-size:20px; font-weight:700; color:var(--ink);">{{ _("Signing you out…") }}</h1>
+    <p style="margin:0; color:var(--muted); font-size:14px;">{{ _("Please wait a moment.") }}</p>
+  </div>
+
+  <div id="es-signedout" hidden style="display:flex; flex-direction:column; align-items:center; gap:20px;">
+    <svg width="48" height="48" viewBox="0 0 16 16" fill="none" style="color:var(--green);"><use href="#es-line-check-circle"></use></svg>
+    <div>
+      <h1 style="margin:0 0 6px; font-size:22px; font-weight:700; color:var(--ink);">{{ _("You're signed out") }}</h1>
+      <p style="margin:0; color:var(--muted); font-size:14px;">{{ _("You have been securely logged out of your account.") }}</p>
+    </div>
+    <a class="es-btn es-btn-primary" href="/login" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; width:100%;">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="none" style="margin-right:8px;"><use href="#es-line-logout"></use></svg>
+      {{ _("Back to sign in") }}
+    </a>
+  </div>
+</main>
+
+<script>
+(function () {
+  var csrfToken = "{{ csrf_token }}";
+  var signingOut = document.getElementById("es-signingout");
+  var signedOut = document.getElementById("es-signedout");
+
+  fetch("/api/method/logout", {
+    method: "POST",
+    headers: { "X-Frappe-CSRF-Token": csrfToken }
+  })
+    .then(function () { /* session ended */ })
+    .catch(function () { /* even on error, show signed-out UI */ })
+    .finally(function () {
+      signingOut.hidden = true;
+      signedOut.hidden = false;
+      signedOut.style.display = "flex";
+    });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+[
+  {"doctype": "Cost Center", "cost_center_name": "Certification", "is_group": 0},
+  {"doctype": "Cost Center", "cost_center_name": "Training", "is_group": 0},
+  {"doctype": "Cost Center", "cost_center_name": "Standards Sales", "is_group": 0},
+  {"doctype": "Cost Center", "cost_center_name": "Metrology", "is_group": 0}
+]

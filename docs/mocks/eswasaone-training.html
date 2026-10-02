@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#313391">
+<title>Training — EswasaOne (SoT)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!--
+  Fidelity SoT for /training (course catalogue + sessions + paths).
+  Chrome — ServiceLayout. Styles — training.css via service.css.
+  React — portals/service-portal/src/pages/TrainingPage.tsx
+-->
+<style>@import url("../../portals/shared-ui/src/styles/service.css");</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="content">
+    <p class="page-note" style="margin-bottom:16px">
+      <strong>Mock SoT — Training.</strong> Live React port: <code>/training</code>.
+    </p>
+    <nav class="crumb"><a href="/">Home</a> · <strong>Training</strong></nav>
+    <section class="page-hero">
+      <div class="page-hero__inner">
+        <span class="page-hero__label">ESWASAONE · TRAINING CENTRE</span>
+        <h1>Learn the standard. Then pass the audit.</h1>
+        <p>ESWASA training built around the standards you're audited against.</p>
+      </div>
+      <div class="page-hero__stats">
+        <div class="hstat"><b>2,840</b><span>Learners enrolled</span></div>
+        <div class="hstat"><b>24</b><span>Courses offered</span></div>
+        <div class="hstat"><b>5 cities</b><span>Across Eswatini</span></div>
+        <div class="hstat"><b>100%</b><span>Digital certificate</span></div>
+      </div>
+    </section>
+    <ul class="courselist" style="margin-top:32px">
+      <li class="course" style="--accent:#15803D">
+        <div class="course__top">
+          <span class="course__chip" style="--chip-tint:#E3F4E9;--chip-tone:#15803D">Food safety</span>
+          <span class="course__code">TRN-FS-101</span>
+        </div>
+        <h2 class="course__title">HACCP — Awareness and implementation</h2>
+        <dl class="course__facts">
+          <div class="course__fact"><dt>Duration</dt><dd>3 days</dd></div>
+          <div class="course__fact"><dt>Fee</dt><dd class="mono">SZL 2,400</dd></div>
+        </dl>
+      </li>
+    </ul>
+  </div>
+</main>
+</body>
+</html>

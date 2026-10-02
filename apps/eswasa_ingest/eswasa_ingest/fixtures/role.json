@@ -1,0 +1,14 @@
+[
+ {
+  "doctype": "Role",
+  "name": "Ingest Curator",
+  "role_name": "Ingest Curator",
+  "desk_access": 1
+ },
+ {
+  "doctype": "Role",
+  "name": "Ingest Viewer",
+  "role_name": "Ingest Viewer",
+  "desk_access": 1
+ }
+]

@@ -10,6 +10,8 @@
 
 5. **Conventions.** Python: ruff + black, pydantic v2, type hints. TS: strict, ESLint, Tailwind tokens from `shared-ui`. Frappe: standard app structure, fixtures for roles/workflows/print formats.
 
+   **CSS (four entries only).** Apps import one of `@eswasaone/shared-ui/styles/{global,service,institution,field}.css` — see `portals/shared-ui/src/styles/README.md`. Shared chrome → global; portal surfaces → that portal’s barrel. Never import CSS partials from pages; never cross-import another portal’s shell.
+
 6. **Definition of done per unit:** it runs, it's typed, it has a smoke test, and it's wired to the contract (real or mocked).
 
 7. **Report back** in a one-line status: `WS<n>: <done> | <blocked-on> | <stub-left>`.

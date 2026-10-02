@@ -1,0 +1,193 @@
+{
+ "actions": [],
+ "creation": "2026-09-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "name": "Ingested Document",
+ "field_order": [
+  "title",
+  "source",
+  "column_break_1",
+  "external_id",
+  "document_url",
+  "section_meta",
+  "jurisdiction",
+  "rights",
+  "content_hash",
+  "column_break_2",
+  "object_store_path",
+  "fetched_at",
+  "status",
+  "section_body",
+  "summary",
+  "raw_metadata"
+ ],
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "label": "Source",
+   "options": "Source",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "label": "Column Break 1"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "external_id",
+   "fieldtype": "Data",
+   "label": "External Id",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "document_url",
+   "fieldtype": "Data",
+   "label": "URL",
+   "options": "URL"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_meta",
+   "fieldtype": "Section Break",
+   "label": "Corpus metadata"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "jurisdiction",
+   "fieldtype": "Data",
+   "label": "Jurisdiction"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "rights",
+   "fieldtype": "Select",
+   "label": "Rights",
+   "reqd": 1,
+   "options": "open\npublic\nlicensed",
+   "default": "open",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "content_hash",
+   "fieldtype": "Data",
+   "label": "Content Hash",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break",
+   "label": "Column Break 2"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "object_store_path",
+   "fieldtype": "Data",
+   "label": "Object Store Path",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "fetched_at",
+   "fieldtype": "Datetime",
+   "label": "Fetched At"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "reqd": 1,
+   "options": "Pending Review\nApproved\nRejected",
+   "default": "Pending Review",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_body",
+   "fieldtype": "Section Break",
+   "label": "Content"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "summary",
+   "fieldtype": "Long Text",
+   "label": "Summary",
+   "description": "Open/public paraphrase or excerpt only; never licensed full text for public output"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "raw_metadata",
+   "fieldtype": "JSON",
+   "label": "Raw Metadata"
+  }
+ ],
+ "permissions": [
+  {
+   "doctype": "DocPerm",
+   "role": "Ingest Curator",
+   "create": 1,
+   "delete": 1,
+   "write": 1,
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "Ingest Viewer",
+   "create": 0,
+   "delete": 0,
+   "write": 0,
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 0
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "System Manager",
+   "create": 1,
+   "delete": 1,
+   "write": 1,
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1
+  }
+ ],
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "title_field": "title",
+ "search_fields": "title,external_id,jurisdiction",
+ "module": "Knowledge Ingest"
+}

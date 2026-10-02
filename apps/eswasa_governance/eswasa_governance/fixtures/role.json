@@ -1,0 +1,26 @@
+[
+ {
+  "doctype": "Role",
+  "name": "Eswasa Board Secretary",
+  "role_name": "Eswasa Board Secretary",
+  "desk_access": 1,
+  "is_custom": 1,
+  "disabled": 0
+ },
+ {
+  "doctype": "Role",
+  "name": "Eswasa Board Member",
+  "role_name": "Eswasa Board Member",
+  "desk_access": 1,
+  "is_custom": 1,
+  "disabled": 0
+ },
+ {
+  "doctype": "Role",
+  "name": "Eswasa Risk Officer",
+  "role_name": "Eswasa Risk Officer",
+  "desk_access": 1,
+  "is_custom": 1,
+  "disabled": 0
+ }
+]

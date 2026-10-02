@@ -1,0 +1,42 @@
+[
+  {
+    "doctype": "Assignment Rule",
+    "name": "Cert Application Assessment Pool",
+    "document_type": "Certification Application",
+    "rule": "Round Robin",
+    "priority": 1,
+    "disabled": 0,
+    "description": "R-C1: assign Certification Officers when application enters Assessment",
+    "assign_condition": "doc.workflow_state == \"Assessment\"",
+    "unassign_condition": "doc.workflow_state in [\"Certified\", \"Withdraw\", \"NC Resolution\"]",
+    "close_condition": "doc.workflow_state in [\"Certified\", \"Withdraw\"]",
+    "assignment_days": [
+      {"day": "Monday"},
+      {"day": "Tuesday"},
+      {"day": "Wednesday"},
+      {"day": "Thursday"},
+      {"day": "Friday"}
+    ],
+    "users": []
+  },
+  {
+    "doctype": "Assignment Rule",
+    "name": "Cert Surveillance Due Pool",
+    "document_type": "Surveillance Visit",
+    "rule": "Round Robin",
+    "priority": 2,
+    "disabled": 0,
+    "description": "R-C5: assign officers for planned surveillance visits",
+    "assign_condition": "doc.status == \"Planned\"",
+    "unassign_condition": "doc.status in [\"Completed\", \"Cancelled\"]",
+    "close_condition": "doc.status == \"Completed\"",
+    "assignment_days": [
+      {"day": "Monday"},
+      {"day": "Tuesday"},
+      {"day": "Wednesday"},
+      {"day": "Thursday"},
+      {"day": "Friday"}
+    ],
+    "users": []
+  }
+]

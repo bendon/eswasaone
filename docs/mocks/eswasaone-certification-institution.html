@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#313391">
+<title>EswasaOne — Certification (Institution)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F7FA;--card:#FFFFFF;--line:#E4EAF2;--line-2:#EFF3F8;
+    --ink:#0F172A;--muted:#5A6B84;--muted-2:#8A9AB1;
+    --navy:#313391;--navy-d:#24286F;--navy-l:#ECEEFC;
+    --gold:#F5C518;--gold-d:#D9A800;--gold-ink:#24286F;--gold-l:#FEF6DC;
+    --green:#16A34A;--green-l:#DCFCE7;--red:#E11D6E;--red-l:#FDECEC;
+    --amber:#D97706;--amber-l:#FEF3C7;--blue:#2563EB;--blue-l:#E0F2FE;--indigo:#4F46E5;--indigo-l:#E8E7FB;--purple:#7C3AED;--purple-l:#F0E9FB;--live:#22C55E;
+    --sidebar:#0E1524;--sidebar-2:#161F32;--sidebar-line:#1E2942;--sidebar-fg:#C7D2E4;--sidebar-nav:#AEBBD3;--sidebar-dim:#7E8CA8;
+    --r-sm:10px;--r:14px;--r-lg:18px;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+    --sh-xs:0 1px 2px rgba(16,24,40,.05);--sh-sm:0 1px 3px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.04);--sh-lg:0 20px 44px -20px rgba(16,24,40,.24);
+  }
+  *,*::before,*::after{box-sizing:border-box}*{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}svg{flex:0 0 auto}
+  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .side{background:var(--sidebar);color:var(--sidebar-fg);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .side__brand{display:flex;align-items:center;gap:11px;padding:20px 20px 16px}
+  .side__logo{width:38px;height:38px;border-radius:9px;background:#fff;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  .side__logo svg{width:22px;height:22px;stroke:var(--navy)}
+  .side__brand b{font-weight:800;font-size:16px;color:#fff;display:block}
+  .side__brand span{font-size:10px;letter-spacing:.14em;color:var(--sidebar-dim);font-weight:600}
+  .side__role{margin:2px 14px 12px;padding:11px 13px;border:1px solid rgba(245,197,24,.4);background:rgba(245,197,24,.08);border-radius:11px;display:flex;align-items:center;gap:10px}
+  .side__role svg{width:17px;height:17px;stroke:var(--gold)}
+  .side__role b{color:var(--gold);font-size:12.5px;font-weight:700;display:block}
+  .side__role span{color:var(--sidebar-dim);font-size:11px}
+  .nav{flex:1;overflow-y:auto;padding:4px 12px}.nav::-webkit-scrollbar{width:0}
+  .nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;color:var(--sidebar-nav);font-size:13.5px;font-weight:500;margin-bottom:2px}
+  .nav a svg{width:18px;height:18px;stroke:currentColor}
+  .nav a:hover{background:var(--sidebar-2);color:#E6EDF9}
+  .nav a.on{background:linear-gradient(90deg,rgba(245,197,24,.16),rgba(245,197,24,.04));color:#fff;font-weight:600;box-shadow:inset 2px 0 0 var(--gold)}
+  .nav a .badge{margin-left:auto;background:var(--gold);color:var(--gold-ink);font-size:10.5px;font-weight:800;min-width:19px;height:19px;border-radius:10px;display:grid;place-items:center;padding:0 5px}
+  .side__foot{border-top:1px solid var(--sidebar-line);padding:10px 12px}
+  .side__foot a{display:flex;align-items:center;gap:11px;padding:9px 12px;color:var(--sidebar-dim);font-size:13px;border-radius:8px}
+  .side__foot a:hover{background:var(--sidebar-2);color:var(--sidebar-fg)}
+  .side__foot a svg{width:17px;height:17px;stroke:currentColor}
+  .main{display:flex;flex-direction:column;min-width:0}
+  .top{height:64px;background:rgba(255,255,255,.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 26px;gap:12px;position:sticky;top:0;z-index:10}
+  .top h1{font-size:16px;font-weight:700}
+  .pill{font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--navy);background:var(--gold-l);border-radius:999px;padding:4px 10px}
+  .content{padding:22px 26px 40px;overflow-x:hidden}
+  .head{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+  .head h2{font-size:22px;font-weight:800;letter-spacing:-.02em}
+  .head p{color:var(--muted);font-size:13.5px;margin-top:2px}
+  .head .r{margin-left:auto;display:flex;gap:10px;align-items:center}
+  .viewtog{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .viewtog button{background:none;border:0;padding:9px 14px;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .viewtog button svg{width:15px;height:15px;stroke:currentColor}
+  .viewtog button.on{background:var(--navy);color:#fff}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 15px;border-radius:10px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;border:1px solid transparent}
+  .btn svg{width:15px;height:15px}
+  .btn.pri{background:var(--navy);color:#fff}.btn.pri svg{stroke:#fff}
+  .btn.gold{background:var(--gold);color:var(--gold-ink)}.btn.gold svg{stroke:var(--gold-ink)}
+  .btn.ghost{background:#fff;border-color:var(--line);color:var(--ink)}.btn.ghost svg{stroke:var(--muted)}
+  .btn.sm{min-height:34px;padding:0 12px;font-size:12px;border-radius:9px}
+  .filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+  .sel{height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font:inherit;font-size:13px;background:#fff}
+  .search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;background:#fff}
+  .search svg{width:16px;height:16px;stroke:var(--muted-2)}
+  .search input{flex:1;border:0;outline:0;background:transparent;font:inherit;font-size:13px}
+  .board{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}
+  .col{flex:0 0 288px;background:#EEF1F6;border-radius:14px;padding:10px;display:flex;flex-direction:column;max-height:calc(100vh - 260px)}
+  .col__h{display:flex;align-items:center;gap:8px;padding:6px 8px 12px}
+  .col__dot{width:8px;height:8px;border-radius:50%}
+  .col__h b{font-size:13px;font-weight:800}
+  .col__h .c{margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:999px;font-size:11.5px;font-weight:800;padding:2px 9px;color:var(--muted)}
+  .col__list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding:2px}
+  .col__list::-webkit-scrollbar{width:6px}.col__list::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:99px}
+  .cardc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px 14px;box-shadow:var(--sh-xs);cursor:pointer;position:relative;transition:box-shadow .15s,transform .15s,border-color .15s}
+  .cardc:hover{box-shadow:var(--sh-lg);transform:translateY(-2px);border-color:transparent}
+  .cardc.breach{border-left:3px solid var(--red)}
+  .cardc__top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .cardc__ref{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted)}
+  .cardc__nc{margin-left:auto;font-size:10px;font-weight:800;color:#9F1239;background:var(--red-l);border-radius:6px;padding:2px 7px}
+  .cardc__co{font-size:14px;font-weight:700;letter-spacing:-.01em;line-height:1.3}
+  .cardc__scheme{font-size:12px;color:var(--muted);margin-top:2px}
+  .cardc__foot{display:flex;align-items:center;gap:8px;margin-top:11px;flex-wrap:wrap}
+  .aud{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-weight:600}
+  .aud .av{width:20px;height:20px;border-radius:50%;background:var(--navy-l);color:var(--navy);display:grid;place-items:center;font-size:9px;font-weight:800}
+  .sla{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;border-radius:999px;padding:3px 8px;margin-left:auto}
+  .sla .d{width:5px;height:5px;border-radius:50%}
+  .sla.breach{background:var(--red-l);color:#9F1239}.sla.breach .d{background:var(--red)}
+  .sla.due{background:var(--amber-l);color:#92400E}.sla.due .d{background:var(--amber)}
+  .sla.ok{background:var(--green-l);color:#166534}.sla.ok .d{background:var(--green)}
+  .cardc__act{margin-top:12px;display:flex;gap:8px}
+  .act-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;border-radius:9px;font:inherit;font-weight:700;font-size:12px;cursor:pointer;border:1px solid transparent}
+  .act-btn svg{width:13px;height:13px}
+  .act-btn.pri{background:var(--navy);color:#fff}.act-btn.pri svg{stroke:#fff}
+  .act-btn.gold{background:var(--gold);color:var(--gold-ink)}.act-btn.gold svg{stroke:var(--gold-ink)}
+  .act-btn.ghost{background:#fff;border-color:var(--line);color:var(--ink)}.act-btn.ghost svg{stroke:var(--muted)}
+  .listwrap{display:none;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-xs);overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted-2);padding:14px 16px 12px;background:#FAFBFD}
+  td{padding:13px 16px;border-top:1px solid var(--line-2);vertical-align:middle}
+  tr:hover td{background:#FAFBFD;cursor:pointer}
+  .stagechip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;border-radius:999px;padding:3px 10px}
+  .stagechip .d{width:6px;height:6px;border-radius:50%}
+  .scrim{position:fixed;inset:0;background:rgba(8,16,26,.5);backdrop-filter:blur(3px);display:none;z-index:60}
+  .scrim.show{display:block}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:#fff;z-index:61;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.3,1);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(16,24,40,.24)}
+  .drawer.show{transform:none}
+  .drawer__h{padding:20px 22px;border-bottom:1px solid var(--line)}
+  .drawer__h .x{float:right;background:none;border:0;font-size:22px;color:var(--muted-2);cursor:pointer;line-height:1}
+  .drawer__ref{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:700}
+  .drawer__co{font-size:19px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+  .drawer__sub{font-size:13px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .drawer__b{flex:1;overflow-y:auto;padding:20px 22px}
+  .dh{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);margin:20px 0 10px}
+  .dh:first-child{margin-top:0}
+  .timeline{position:relative;padding-left:6px}
+  .tl-step{display:flex;gap:12px;padding-bottom:14px;position:relative}
+  .tl-step::before{content:"";position:absolute;left:8px;top:20px;bottom:-2px;width:2px;background:var(--line-2)}
+  .tl-step:last-child::before{display:none}
+  .tl-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;border:2px solid var(--line);background:#fff;display:grid;place-items:center;z-index:1}
+  .tl-dot svg{width:10px;height:10px;stroke:#fff}
+  .tl-step.done .tl-dot{background:var(--green);border-color:var(--green)}
+  .tl-step.cur .tl-dot{background:var(--navy);border-color:var(--navy);box-shadow:0 0 0 4px var(--navy-l)}
+  .tl-step b{font-size:13px;font-weight:700;display:block}
+  .tl-step span{font-size:11.5px;color:var(--muted-2)}
+  .tl-step.todo b{color:var(--muted-2);font-weight:600}
+  .kv{display:flex;gap:10px;font-size:13px;padding:7px 0;border-top:1px solid var(--line-2)}
+  .kv:first-of-type{border-top:0}
+  .kv b{color:var(--muted);font-weight:600;min-width:120px}
+  .docrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line-2);font-size:13px}
+  .docrow:first-of-type{border-top:0}
+  .docrow svg{width:16px;height:16px;stroke:var(--navy)}
+  .docrow .dl{margin-left:auto;color:var(--navy);font-weight:700;font-size:12px}
+  .drawer__f{border-top:1px solid var(--line);padding:16px 22px;display:flex;gap:10px}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,60px);background:var(--navy-d);color:#fff;border-radius:12px;padding:12px 18px;font-size:13.5px;font-weight:600;box-shadow:0 18px 44px -12px rgba(16,24,40,.4);opacity:0;transition:.24s;z-index:90}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  @media(max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.content{padding:16px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-check-c" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.3 2.3L15.5 9.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 7"/></symbol>
+    <symbol id="i-badge" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5.5"/><path d="M9.7 13.5L8 21l4-2 4 2-1.7-7.5"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1116 0"/><path d="M12 18l4-5"/><circle cx="12" cy="18" r="1"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h5"/></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M4 21V10l8-5 8 5v11M9 21v-6h6v6"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></symbol>
+    <symbol id="i-dollar" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M16 7.5c0-1.9-1.8-3-4-3s-4 1.1-4 3 1.8 2.7 4 3.2 4 1.3 4 3.3-1.8 3.2-4 3.2-4-1.3-4-3.2"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0112 0M16 5.5a3.2 3.2 0 010 6M21 20a6 6 0 00-4-5.6"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-cleft" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8l-4 4 4 4"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H6a2 2 0 00-2 2v12a2 2 0 002 2h8M16 8l4 4-4 4M20 12H9"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5l12 7-12 7z"/></symbol>
+    <symbol id="i-award" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5.5"/><path d="M9.7 13.5L8 21l4-2 4 2-1.7-7.5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-board" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M9 5v14M15 5v14"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-dl" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4M5 21h14"/></symbol>
+  </svg>
+  <aside class="side">
+    <div class="side__brand"><span class="side__logo"><svg><use href="#i-shield"/></svg></span><div><b>EswasaOne</b><span>INSTITUTION PORTAL</span></div></div>
+    <div class="side__role"><svg><use href="#i-check-c"/></svg><div><b>Cert Officer</b><span>s.nkambule@eswasa.co.sz</span></div></div>
+    <nav class="nav">
+      <a href="#"><svg><use href="#i-grid"/></svg>Dashboard</a>
+      <a href="#"><svg><use href="#i-check-c"/></svg>Approvals<span class="badge">13</span></a>
+      <a href="#" class="on"><svg><use href="#i-badge"/></svg>Certification</a>
+      <a href="#"><svg><use href="#i-gauge"/></svg>Metrology &amp; LIMS</a>
+      <a href="#"><svg><use href="#i-file"/></svg>Standards Dev</a>
+      <a href="#"><svg><use href="#i-globe"/></svg>WTO/TBT Alerts</a>
+      <a href="#"><svg><use href="#i-dollar"/></svg>Finance</a>
+      <a href="#"><svg><use href="#i-sliders"/></svg>System Administration</a>
+    </nav>
+    <div class="side__foot"><a href="#"><svg><use href="#i-cleft"/></svg>Collapse</a><a href="#"><svg><use href="#i-out"/></svg>Sign Out</a></div>
+  </aside>
+  <div class="main">
+    <header class="top"><h1>Certification</h1><span class="pill">CERT OFFICER</span></header>
+    <div class="content">
+      <div class="head">
+        <div><h2>Certification pipeline</h2><p>Where every application sits — the next step is the only button.</p></div>
+        <div class="r">
+          <div class="viewtog"><button class="on"><svg><use href="#i-board"/></svg>Pipeline</button><button><svg><use href="#i-list"/></svg>List</button></div>
+          <button class="btn gold"><svg><use href="#i-plus"/></svg>New application</button>
+        </div>
+      </div>
+      <div class="filters">
+        <select class="sel"><option>All schemes</option><option>ISO 9001</option><option>ISO 22000</option><option>ISO 14001</option><option>Product mark</option></select>
+        <select class="sel"><option>All auditors</option><option>T. Mabuza</option><option>B. Simelane</option><option>L. Dube</option><option>Unassigned</option></select>
+        <select class="sel"><option>SLA: all</option><option>Breached</option><option>Due soon</option></select>
+        <div class="search"><svg><use href="#i-search"/></svg><input placeholder="Search applicant or reference…"></div>
+      </div>
+      <div class="board">
+        <div class="col"><div class="col__h"><span class="col__dot" style="background:var(--blue)"></span><b>Submitted</b><span class="c">2</span></div><div class="col__list">
+          <div class="cardc due"><div class="cardc__top"><span class="cardc__ref">APP-2026-00011</span></div><div class="cardc__co">Matsapha Packaging Co</div><div class="cardc__scheme">ISO 9001:2015</div><div class="cardc__foot"><span class="aud"><span class="av">—</span>Unassigned</span><span class="sla due"><span class="d"></span>2d old</span></div><div class="cardc__act"><button class="act-btn pri"><svg><use href="#i-play"/></svg>Start review</button></div></div>
+          <div class="cardc"><div class="cardc__top"><span class="cardc__ref">APP-2026-00006</span></div><div class="cardc__co">Lubombo Cosmetics</div><div class="cardc__scheme">ISO 22000</div><div class="cardc__foot"><span class="aud"><span class="av">—</span>Unassigned</span><span class="sla ok"><span class="d"></span>1d old</span></div><div class="cardc__act"><button class="act-btn pri"><svg><use href="#i-play"/></svg>Start review</button></div></div>
+        </div></div>
+        <div class="col"><div class="col__h"><span class="col__dot" style="background:var(--indigo)"></span><b>In Review</b><span class="c">3</span></div><div class="col__list">
+          <div class="cardc"><div class="cardc__top"><span class="cardc__ref">APP-2026-00016</span></div><div class="cardc__co">Swazi Fresh Produce Ltd</div><div class="cardc__scheme">ISO 9001:2015</div><div class="cardc__foot"><span class="aud"><span class="av">TM</span>T. Mabuza</span><span class="sla due"><span class="d"></span>SLA 1d left</span></div><div class="cardc__act"><button class="act-btn pri"><svg><use href="#i-cal"/></svg>Schedule audit</button></div></div>
+          <div class="cardc"><div class="cardc__top"><span class="cardc__ref">APP-2026-00015</span></div><div class="cardc__co">Hhohho Timber Products</div><div class="cardc__scheme">ISO 14001</div><div class="cardc__foot"><span class="aud"><span class="av">BS</span>B. Simelane</span><span class="sla ok"><span class="d"></span>on track</span></div><div class="cardc__act"><button class="act-btn pri"><svg><use href="#i-cal"/></svg>Schedule audit</button></div></div>
+          <div class="cardc breach"><div class="cardc__top"><span class="cardc__ref">APP-2026-00014</span></div><div class="cardc__co">Simunye Sugar Refinery</div><div class="cardc__scheme">ISO 22000</div><div class="cardc__foot"><span class="aud"><span class="av">LD</span>L. Dube</span><span class="sla breach"><span class="d"></span>overdue 3d</span></div><div class="cardc__act"><button class="act-btn pri"><svg><use href="#i-cal"/></svg>Schedule audit</button></div></div>
+        </div></div>
+        <div class="col"><div class="col__h"><span class="col__dot" style="background:var(--amber)"></span><b>Audit Scheduled</b><span class="c">2</span></div><div class="col__list">
+          <div class="cardc breach"><div class="cardc__top"><span class="cardc__ref">APP-2026-00012</span></div><div class="cardc__co">Ezulwini Hospitality Group</div><div class="cardc__scheme">ISO 9001:2015</div><div class="cardc__foot"><span class="aud"><span class="av">TM</span>T. Mabuza</span><span class="sla breach"><span class="d"></span>audit overdue 8d</span></div><div class="cardc__act"><button class="act-btn pri"><svg><use href="#i-clip"/></svg>Record outcome</button></div></div>
+          <div class="cardc"><div class="cardc__top"><span class="cardc__ref">APP-2026-00009</span></div><div class="cardc__co">Swazi Beverages</div><div class="cardc__scheme">ISO 9001:2015</div><div class="cardc__foot"><span class="aud"><span class="av">BS</span>B. Simelane</span><span class="sla due"><span class="d"></span>audit 27 Sep</span></div><div class="cardc__act"><button class="act-btn pri"><svg><use href="#i-clip"/></svg>Record outcome</button></div></div>
+        </div></div>
+        <div class="col"><div class="col__h"><span class="col__dot" style="background:var(--red)"></span><b>NC / Corrective</b><span class="c">1</span></div><div class="col__list">
+          <div class="cardc"><div class="cardc__top"><span class="cardc__ref">APP-2026-00013</span><span class="cardc__nc">2 NC open</span></div><div class="cardc__co">Manzini Agro Processors</div><div class="cardc__scheme">ISO 22000</div><div class="cardc__foot"><span class="aud"><span class="av">LD</span>L. Dube</span><span class="sla due"><span class="d"></span>CA due 4 Oct</span></div><div class="cardc__act"><button class="act-btn pri"><svg><use href="#i-clip"/></svg>Review corrective action</button></div></div>
+        </div></div>
+        <div class="col"><div class="col__h"><span class="col__dot" style="background:var(--green)"></span><b>Certified</b><span class="c">2</span></div><div class="col__list">
+          <div class="cardc"><div class="cardc__top"><span class="cardc__ref">APP-2025-00041</span></div><div class="cardc__co">Highlanders Dairy</div><div class="cardc__scheme">ISO 9001:2015</div><div class="cardc__foot"><span class="aud"><span class="av">TM</span>T. Mabuza</span><span class="sla ok"><span class="d"></span>valid</span></div><div class="cardc__act"><button class="act-btn gold"><svg><use href="#i-eye"/></svg>View certificate</button><button class="act-btn ghost">Surveillance</button></div></div>
+          <div class="cardc"><div class="cardc__top"><span class="cardc__ref">APP-2026-00018</span></div><div class="cardc__co">Royal Eswatini Water</div><div class="cardc__scheme">Product mark</div><div class="cardc__foot"><span class="aud"><span class="av">BS</span>B. Simelane</span><span class="sla ok"><span class="d"></span>valid</span></div><div class="cardc__act"><button class="act-btn gold"><svg><use href="#i-eye"/></svg>View certificate</button><button class="act-btn ghost">Surveillance</button></div></div>
+        </div></div>
+        <div class="col"><div class="col__h"><span class="col__dot" style="background:var(--purple)"></span><b>Surveillance</b><span class="c">1</span></div><div class="col__list">
+          <div class="cardc"><div class="cardc__top"><span class="cardc__ref">APP-2025-00030</span></div><div class="cardc__co">Ngwane Mills</div><div class="cardc__scheme">ISO 22000</div><div class="cardc__foot"><span class="aud"><span class="av">LD</span>L. Dube</span><span class="sla due"><span class="d"></span>surveillance due 30 Sep</span></div><div class="cardc__act"><button class="act-btn pri"><svg><use href="#i-clip"/></svg>Record surveillance</button></div></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

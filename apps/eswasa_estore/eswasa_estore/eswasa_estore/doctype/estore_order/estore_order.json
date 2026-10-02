@@ -1,0 +1,178 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-20 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "order_id",
+  "customer",
+  "user_email",
+  "status",
+  "payment_method",
+  "momo_reference",
+  "payment_ref",
+  "amount_szl",
+  "currency",
+  "items_json",
+  "sales_order",
+  "payment_entry",
+  "sales_invoice",
+  "fulfilment_status",
+  "retry_url",
+  "failure_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "order_id",
+   "fieldtype": "Data",
+   "label": "Order ID",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Data",
+   "label": "Customer",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "user_email",
+   "fieldtype": "Data",
+   "label": "User Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nPending Payment\nPaid\nFailed\nCancelled\nInvoiced",
+   "default": "Pending Payment",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "payment_method",
+   "fieldtype": "Select",
+   "label": "Payment Method",
+   "options": "\nmomo\ninvoice",
+   "default": "momo"
+  },
+  {
+   "fieldname": "momo_reference",
+   "fieldtype": "Data",
+   "label": "MoMo Reference",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "payment_ref",
+   "fieldtype": "Data",
+   "label": "Payment Ref"
+  },
+  {
+   "fieldname": "amount_szl",
+   "fieldtype": "Currency",
+   "label": "Amount (SZL)",
+   "options": "SZL"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "label": "Currency",
+   "default": "SZL"
+  },
+  {
+   "fieldname": "items_json",
+   "fieldtype": "JSON",
+   "label": "Items JSON"
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Data",
+   "label": "Sales Order Ref"
+  },
+  {
+   "fieldname": "payment_entry",
+   "fieldtype": "Data",
+   "label": "Payment Entry Ref"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Data",
+   "label": "Sales Invoice Ref"
+  },
+  {
+   "fieldname": "fulfilment_status",
+   "fieldtype": "Select",
+   "label": "Fulfilment Status",
+   "options": "\nPending\nFulfilled\nPartial\nSkipped",
+   "default": "Pending"
+  },
+  {
+   "fieldname": "retry_url",
+   "fieldtype": "Data",
+   "label": "Retry URL"
+  },
+  {
+   "fieldname": "failure_reason",
+   "fieldtype": "Small Text",
+   "label": "Failure Reason"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "is_tree": 0,
+ "links": [],
+ "modified": "2026-09-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa Estore",
+ "name": "Estore Order",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1
+  },
+  {
+   "role": "Eswasa Estore Manager",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Estore Clerk",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "share": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:order_id",
+ "naming_rule": "By fieldname",
+ "title_field": "order_id"
+}

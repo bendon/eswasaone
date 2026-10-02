@@ -1,0 +1,9 @@
+export { HrSummaryView } from "./HrSummaryView";
+export { EmployeesView } from "./EmployeesView";
+export { LeaveView } from "./LeaveView";
+export { AppraisalsView } from "./AppraisalsView";
+export { AccessRequestsView } from "./AccessRequestsView";
+export { RecruitmentView } from "./RecruitmentView";
+export { PayrollView } from "./PayrollView";
+export { StructureView } from "./StructureView";
+export { HrChrome } from "./HrChrome";

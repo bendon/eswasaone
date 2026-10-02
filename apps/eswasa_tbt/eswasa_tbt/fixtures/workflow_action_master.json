@@ -1,0 +1,12 @@
+[
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Notify Subscribers",
+  "workflow_action_name": "Notify Subscribers"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Tag",
+  "workflow_action_name": "Tag"
+ }
+]

@@ -1,0 +1,38 @@
+[
+ {
+  "doctype": "Workflow State",
+  "name": "Ballot",
+  "workflow_state_name": "Ballot",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Committee Draft",
+  "workflow_state_name": "Committee Draft",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "New Work Item",
+  "workflow_state_name": "New Work Item",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Public Review",
+  "workflow_state_name": "Public Review",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Published/Gazetted",
+  "workflow_state_name": "Published/Gazetted",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Working Draft",
+  "workflow_state_name": "Working Draft",
+  "style": ""
+ }
+]

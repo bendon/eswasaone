@@ -1,0 +1,1 @@
+"""Content module — public-facing updates, announcements, news feed."""

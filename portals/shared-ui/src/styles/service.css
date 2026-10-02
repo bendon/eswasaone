@@ -1,0 +1,15 @@
+/* ============================================================
+   EswasaOne — SERVICE PORTAL CSS ENTRY (2 of 4)
+
+   Citizen / service surfaces. Partials below are internal — apps
+   import this file only (via index.css / main.tsx).
+   ============================================================ */
+@import "./global.css";
+@import "./landing.css";
+@import "./catalogue.css";
+@import "./certification.css";
+@import "./training.css";
+@import "./account.css";
+@import "./service-shell.css";
+@import "./guides.css";
+@import "./goals.css";

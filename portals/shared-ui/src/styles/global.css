@@ -1,0 +1,10 @@
+/* ============================================================
+   EswasaOne — GLOBAL CSS ENTRY (1 of 4)
+
+   Tokens, reset, shared chrome (dock, modal, footer, brand, staff auth).
+   Imported by service.css / institution.css / field.css — do not import
+   from portal pages. Apps import one portal entry only.
+   ============================================================ */
+@import "./base.css";
+@import "./components.css";
+@import "./staff-auth.css";

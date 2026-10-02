@@ -1,0 +1,32 @@
+[
+ {
+  "doctype": "Workflow State",
+  "name": "Certified",
+  "workflow_state_name": "Certified",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Dispatched",
+  "workflow_state_name": "Dispatched",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "In Progress",
+  "workflow_state_name": "In Progress",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Received",
+  "workflow_state_name": "Received",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Reviewed",
+  "workflow_state_name": "Reviewed",
+  "style": ""
+ }
+]

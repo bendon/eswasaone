@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EswasaOne — Guided Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sidebar:#0E1524;--sidebar-2:#161F32;--sidebar-line:#1E2942;
+    --bg:#F1F5F8;--card:#FFFFFF;--ink:#101828;--muted:#667085;--muted-2:#98A2B3;
+    --line:#E7EBF1;--line-2:#EFF2F7;
+    --gold:#E0A81E;--gold-soft:#FBF1D8;--teal:#0E7C7B;--navy:#12263F;
+    --green:#16A34A;--red:#E11D6E;--blue:#2563EB;
+    --radius:14px;--shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.04);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+  .side{background:var(--sidebar);color:#C7D2E4;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .side__brand{display:flex;align-items:center;gap:11px;padding:20px 20px 18px}
+  .side__logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(150deg,#F4C24A,#E0A81E);display:grid;place-items:center;box-shadow:0 4px 12px rgba(224,168,30,.35)}
+  .side__logo svg{width:19px;height:19px;stroke:#3a2a05}
+  .side__brand b{font-weight:800;font-size:16px;color:#fff;display:block;letter-spacing:-.01em}
+  .side__brand span{font-size:10px;letter-spacing:.14em;color:#7E8CA8;font-weight:600}
+  .nav{flex:1;padding:6px 12px}
+  .nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:9px;color:#AEBBD3;font-size:14px;font-weight:500;margin-bottom:3px}
+  .nav a svg{width:19px;height:19px;stroke:currentColor;flex-shrink:0}
+  .nav a:hover{background:var(--sidebar-2);color:#E6EDF9}
+  .nav a.on{background:var(--blue);color:#fff;font-weight:600}
+  .side__foot{border-top:1px solid var(--sidebar-line);padding:12px}
+  .side__foot .guest{font-size:11.5px;color:#7E8CA8;padding:4px 8px 10px}
+  .side__foot .signin{width:100%;background:transparent;border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:9px;padding:9px;font:inherit;font-weight:600;font-size:13px;cursor:pointer}
+  .side__foot .signin:hover{background:rgba(255,255,255,.08)}
+  .main{display:flex;flex-direction:column;min-width:0}
+  .top{height:64px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 26px;gap:12px;position:sticky;top:0;z-index:10}
+  .top h1{font-size:16px;font-weight:700}
+  .top .badge{font-size:11px;font-weight:700;color:var(--teal);background:#E4F4F1;border-radius:20px;padding:4px 11px}
+  .top__r{margin-left:auto;font-size:12.5px;color:var(--muted-2)}
+  .content{padding:26px;max-width:1120px;width:100%;margin:0 auto}
+
+  /* Ask */
+  .ask-wrap{background:linear-gradient(120deg,#0F8080,#0A464F);border-radius:20px;padding:28px 30px;color:#fff;position:relative;overflow:hidden}
+  .ask-wrap::after{content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%)}
+  .ask-wrap h2{font-size:24px;font-weight:800;letter-spacing:-.02em}
+  .ask-wrap p{color:rgba(255,255,255,.78);font-size:13.5px;margin-top:6px;max-width:520px}
+  .ask-main{display:flex;align-items:center;gap:12px;margin-top:18px;max-width:640px;background:#fff;border-radius:15px;padding:9px 9px 9px 14px;box-shadow:0 14px 40px rgba(0,0,0,.26)}
+  .ask-main .ic{width:42px;height:42px;border-radius:11px;background:linear-gradient(140deg,#2DD4BF,#0E7C7B);display:grid;place-items:center;flex-shrink:0;box-shadow:0 3px 12px rgba(45,212,191,.4)}
+  .ask-main .ic svg{width:23px;height:23px;stroke:#04211f}
+  .ask-main input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--ink);font:inherit;font-size:15px;font-weight:500}
+  .ask-main input::placeholder{color:#98A2B3;font-weight:400}
+  .ask-main button{display:flex;align-items:center;gap:7px;background:var(--gold);color:#3a2a05;border:0;border-radius:11px;padding:0 20px;height:44px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;flex-shrink:0}
+  .ask-main button:disabled{opacity:.7;cursor:not-allowed}
+  .ask-main button svg{width:16px;height:16px;stroke:#3a2a05}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .chips span{font-size:12.5px;font-weight:500;color:rgba(255,255,255,.9);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:7px 14px;cursor:pointer;transition:background .14s}
+  .chips span:hover{background:rgba(255,255,255,.2)}
+
+  /* Flow */
+  .flow{display:none;grid-template-columns:1fr 300px;gap:22px;margin-top:26px}
+  .flow.show{display:grid}
+  .flow__head{display:flex;align-items:flex-start;gap:14px;margin-bottom:4px}
+  .flow__head .g{width:42px;height:42px;border-radius:12px;background:var(--teal);display:grid;place-items:center;flex-shrink:0}
+  .flow__head .g svg{width:22px;height:22px;stroke:#fff}
+  .flow__head h3{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.25}
+  .flow__head p{font-size:13px;color:var(--muted);margin-top:3px}
+  .trust{font-size:12px;color:var(--muted-2);margin-top:10px;display:flex;align-items:center;gap:6px}
+  .trust span{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+  .steps{margin-top:20px;position:relative}
+  .steps::before{content:"";position:absolute;left:19px;top:10px;bottom:24px;width:2px;background:var(--line)}
+  .step{display:flex;gap:16px;padding-bottom:18px;position:relative}
+  .step__n{width:40px;height:40px;border-radius:50%;background:#fff;border:2px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:14px;color:var(--teal);flex-shrink:0;z-index:1;cursor:pointer;transition:all .15s}
+  .step__n:hover{border-color:var(--teal)}
+  .step.done .step__n{background:var(--teal);border-color:var(--teal);color:#fff}
+  .step__card{flex:1;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+  .step__card b{font-size:14.5px;font-weight:700;display:block}
+  .step__card p{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
+  .src{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .src a{font-size:11.5px;color:var(--teal);background:#E4F4F1;border-radius:16px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px}
+  .src a svg{width:11px;height:11px;stroke:var(--teal)}
+  .badge-r{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:2px 7px;border-radius:6px;margin-left:4px}
+  .badge-r.open{background:#DCFCE7;color:#166534}
+  .badge-r.public{background:#E0F2FE;color:#075985}
+  .badge-r.licensed{background:#FEF3C7;color:#92400E}
+
+  .step__act{margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:9px 16px;font:inherit;font-weight:600;font-size:13px;cursor:pointer;border:1px solid transparent}
+  .btn svg{width:15px;height:15px}
+  .btn.buy{background:var(--gold);color:#3a2a05} .btn.buy svg{stroke:#3a2a05}
+  .btn.apply{background:var(--teal);color:#fff} .btn.apply svg{stroke:#fff}
+  .btn.open{background:#fff;border-color:var(--line);color:var(--ink)} .btn.open svg{stroke:var(--muted)}
+  .btn .lock{opacity:.8}
+
+  /* rail */
+  .flow__rail{display:flex;flex-direction:column;gap:16px;position:sticky;top:88px;align-self:start}
+  .summary{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  .summary h4{font-size:13px;font-weight:700;margin-bottom:12px}
+  .summary .row{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line-2);font-size:13px}
+  .summary .row:first-of-type{border-top:0}
+  .summary .row b{font-weight:700}
+  .authbox{background:var(--navy);color:#D7E0EC;border-radius:var(--radius);padding:18px}
+  .authbox b{color:#fff;font-size:14px;display:block;margin-bottom:6px}
+  .authbox p{font-size:12.5px;line-height:1.5;color:#AEBDD0}
+  .authbox button{width:100%;margin-top:14px;background:var(--gold);color:#3a2a05;border:0;border-radius:10px;padding:11px;font:inherit;font-weight:700;font-size:13.5px;cursor:pointer}
+  .free-note{font-size:11.5px;color:#8FA6C0;margin-top:10px;text-align:center}
+
+  /* skeleton */
+  .skel{display:none;margin-top:26px}
+  .skel.show{display:block}
+  .skel-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+  .skel-line{height:12px;background:linear-gradient(90deg,#f0f2f5 25%,#e4e7ec 50%,#f0f2f5 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;margin-bottom:10px}
+  .skel-line.w60{width:60%}.skel-line.w40{width:40%}.skel-line.w80{width:80%}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(8,16,26,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--card);border-radius:18px;max-width:400px;width:100%;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.4);position:relative}
+  .modal .x{position:absolute;top:16px;right:16px;background:none;border:0;font-size:22px;color:var(--muted-2);cursor:pointer;line-height:1}
+  .modal .mic{width:52px;height:52px;border-radius:13px;background:linear-gradient(140deg,#2DD4BF,#0E7C7B);display:grid;place-items:center;margin-bottom:14px}
+  .modal .mic svg{width:27px;height:27px;stroke:#fff}
+  .modal h3{font-size:19px;font-weight:800;letter-spacing:-.01em}
+  .modal p{font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+  .modal .prov{font-size:13px;color:var(--ink);background:#F0F9F8;border:1px solid #C5E8E4;border-radius:10px;padding:12px 14px;margin-top:16px;line-height:1.45}
+  .modal .prov strong{display:block;font-size:12px;color:var(--teal);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+  .modal input{width:100%;margin-top:16px;height:46px;border:1px solid var(--line);border-radius:11px;padding:0 14px;font:inherit;font-size:14px}
+  .modal .cta{width:100%;margin-top:12px;background:var(--teal);color:#fff;border:0;border-radius:11px;padding:13px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+  .modal .alt{width:100%;margin-top:8px;background:transparent;border:1px solid var(--line);border-radius:11px;padding:12px;font:inherit;font-weight:600;font-size:13.5px;cursor:pointer}
+  .modal .note{font-size:12px;color:var(--muted-2);text-align:center;margin-top:14px}
+
+  @media(max-width:960px){
+    .app{grid-template-columns:1fr}
+    .side{display:none}
+    .flow{grid-template-columns:1fr}
+    .flow__rail{position:static}
+    .content{padding:18px}
+    .ask-wrap{padding:22px 18px}
+    .ask-main{flex-wrap:wrap}
+    .ask-main button{width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h5v-5h2v5h5v-9"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M4 20.5A2.5 2.5 0 016.5 18H20"/></symbol>
+    <symbol id="i-badge" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5.5"/><path d="M9.7 13.5L8 21l4-2 4 2-1.7-7.5"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></symbol>
+    <symbol id="i-alert-c" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-7-7 16-2-6z"/></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 11.2a1.5 1.5 0 001.5 1.2h8.1a1.5 1.5 0 001.5-1.2L21 8H6"/><circle cx="9.5" cy="20" r="1.2"/><circle cx="17.5" cy="20" r="1.2"/></symbol>
+    <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15l6-6M10 6l1-1a4 4 0 016 6l-1 1M14 18l-1 1a4 4 0 01-6-6l1-1"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  </svg>
+
+  <aside class="side">
+    <div class="side__brand">
+      <span class="side__logo"><svg><use href="#i-shield"/></svg></span>
+      <div><b>EswasaOne</b><span>SERVICE PORTAL</span></div>
+    </div>
+    <nav class="nav">
+      <a><svg><use href="#i-home"/></svg>Home</a>
+      <a class="on"><svg><use href="#i-compass"/></svg>Guides</a>
+      <a><svg><use href="#i-book"/></svg>Standards</a>
+      <a><svg><use href="#i-badge"/></svg>Certification</a>
+      <a><svg><use href="#i-globe"/></svg>Export</a>
+      <a><svg><use href="#i-alert-c"/></svg>Complaints</a>
+    </nav>
+    <div class="side__foot">
+      <div class="guest" id="guestLabel">Browsing as guest · no account needed</div>
+      <button class="signin" id="sideSignin" onclick="openAuth('Sign in to EswasaOne')">Sign in</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <h1>Guided flow</h1>
+      <span class="badge">Free · no login</span>
+      <div class="top__r">Powered by the EswasaOne assistant</div>
+    </header>
+
+    <div class="content">
+      <section class="ask-wrap">
+        <h2>What are you trying to do?</h2>
+        <p>Describe your goal in plain language. We’ll build the exact steps — which standards apply, what to prepare, and what it costs.</p>
+        <div class="ask-main">
+          <span class="ic"><svg><use href="#i-spark"/></svg></span>
+          <input id="goal" type="text" placeholder='e.g. “Export honey to the EU” or “Get ISO 9001 certified”' onkeydown="if(event.key==='Enter')run()">
+          <button id="buildBtn" onclick="run()"><svg><use href="#i-send"/></svg> Build my guide</button>
+        </div>
+        <div class="chips">
+          <span onclick="pick('honey')">Export honey to the EU</span>
+          <span onclick="pick('iso')">Get ISO 9001 certified</span>
+          <span onclick="pick('water')">Sell bottled water locally</span>
+        </div>
+      </section>
+
+      <!-- Loading skeleton -->
+      <div id="skel" class="skel">
+        <div class="skel-card"><div class="skel-line w60"></div><div class="skel-line w80"></div><div class="skel-line w40"></div></div>
+        <div class="skel-card"><div class="skel-line w60"></div><div class="skel-line w80"></div><div class="skel-line w40"></div></div>
+        <div class="skel-card"><div class="skel-line w60"></div><div class="skel-line w80"></div></div>
+      </div>
+
+      <section id="flow" class="flow">
+        <div>
+          <div class="flow__head">
+            <span class="g"><svg><use href="#i-compass"/></svg></span>
+            <div>
+              <h3 id="flowTitle">—</h3>
+              <p id="flowSub">—</p>
+              <div class="trust"><span></span> Generated from official ESWASA, Codex & market sources</div>
+            </div>
+          </div>
+          <div id="steps" class="steps"></div>
+        </div>
+
+        <div class="flow__rail">
+          <div class="summary">
+            <h4>At a glance</h4>
+            <div class="row"><span>Standards that apply</span><b id="mStd">—</b></div>
+            <div class="row"><span>Estimated fees</span><b id="mFee">—</b></div>
+            <div class="row"><span>Typical timeline</span><b id="mTime">—</b></div>
+            <div class="row"><span>Steps</span><b id="mSteps">—</b></div>
+          </div>
+          <div class="authbox">
+            <b>Ready to act?</b>
+            <p>Reading this guide is free. Sign in only when you want to buy a standard, apply, or track progress.</p>
+            <button onclick="openAuth('Create your free account')">Create free account</button>
+            <div class="free-note">Guides & applicability stay free forever</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Progressive Auth Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="x" onclick="closeAuth()">&times;</button>
+    <div class="mic"><svg><use href="#i-lock"/></svg></div>
+    <h3 id="authTitle">Sign in to continue</h3>
+    <p id="authDesc">Browsing and guides are free. Sign in only to buy, apply, or track — one account works across standards, certification and training.</p>
+    <div class="prov" id="authWhy" style="display:none">
+      <strong>Why this step needs an account</strong>
+      <span id="authWhyText"></span>
+    </div>
+    <input type="email" id="authEmail" placeholder="Email address">
+    <button class="cta" onclick="fakeLogin()">Continue with email</button>
+    <button class="alt" onclick="fakeLogin()">Continue with a business account</button>
+    <div class="note">After signing in you’ll return exactly where you left off.</div>
+  </div>
+</div>
+
+<script>
+  // Realistic mock responses that match the real /api/guide shape
+  const FLOWS = {
+    honey: {
+      title: "Export honey to the EU",
+      summary: "Natural honey (HS 0409) destined for the European Union",
+      meta: { standards: 3, est_fee: "~SZL 2,400", est_timeline: "6–8 weeks", steps: 5 },
+      steps: [
+        {
+          title: "Confirm product classification",
+          detail: "Natural honey falls under HS code 0409. This decides which standards and market rules apply.",
+          citations: [{ label: "WTO HS / TBT", url: "#", rights: "open" }],
+          action: null
+        },
+        {
+          title: "Meet the applicable standard",
+          detail: "Comply with SZNS 060 (composition, moisture, HMF) aligned to CODEX STAN 12.",
+          citations: [
+            { label: "SZNS 060:2019", url: "#", rights: "licensed" },
+            { label: "Codex STAN 12", url: "#", rights: "open" }
+          ],
+          action: { type: "buy", label: "Buy SZNS 060:2019", target: "szns-060", auth_required: true, reason: "Buying a standard requires an account so we can license the download to you." }
+        },
+        {
+          title: "Get product testing & certification",
+          detail: "Submit a sample for lab testing (moisture, sugars, contaminants), then apply for product certification.",
+          citations: [{ label: "ESWASA Metrology", url: "#", rights: "public" }],
+          action: { type: "apply", label: "Apply for certification", target: "cert-honey", auth_required: true, reason: "Applying creates a tracked case under your account." }
+        },
+        {
+          title: "Meet EU market requirements",
+          detail: "EU Honey Directive 2001/110/EC applies. Honey also needs an approved national residue-monitoring plan.",
+          citations: [{ label: "EUR-Lex 2001/110/EC", url: "#", rights: "open" }],
+          action: { type: "open", label: "View EU requirements", target: "https://eur-lex.europa.eu", auth_required: false }
+        },
+        {
+          title: "Prepare export documentation",
+          detail: "Assemble the health certificate, traceability records and test reports. Our export desk can review your pack.",
+          citations: [{ label: "ESWASA Export desk", url: "#", rights: "public" }],
+          action: { type: "apply", label: "Request export review", target: "export-review", auth_required: true, reason: "An export review is tracked under your account." }
+        }
+      ]
+    },
+    iso: {
+      title: "Get ISO 9001 certified",
+      summary: "Quality Management System certification against ISO 9001:2015",
+      meta: { standards: 1, est_fee: "~SZL 9,500", est_timeline: "10–12 weeks", steps: 5 },
+      steps: [
+        {
+          title: "Define your QMS scope",
+          detail: "Decide which sites and processes the certification will cover — this sets the audit scope and fee band.",
+          citations: [{ label: "ISO 9001 scheme", url: "#", rights: "public" }],
+          action: null
+        },
+        {
+          title: "Get the standard",
+          detail: "Obtain ISO 9001:2015 from the e-store so you can work from the normative text.",
+          citations: [{ label: "e-store", url: "#", rights: "licensed" }],
+          action: { type: "buy", label: "Buy ISO 9001:2015", target: "iso-9001", auth_required: true, reason: "Buying a standard requires an account so we can license the download." }
+        },
+        {
+          title: "Implement & run an internal audit",
+          detail: "Build your quality management system and run an internal audit. ESWASA training covers both.",
+          citations: [{ label: "Training catalogue", url: "#", rights: "public" }],
+          action: { type: "buy", label: "Enrol in QMS training", target: "qms-training", auth_required: true, reason: "Enrolment is linked to your learner record." }
+        },
+        {
+          title: "Apply for certification",
+          detail: "Submit your application. Certification runs a Stage 1 (readiness) then Stage 2 (full) audit.",
+          citations: [{ label: "Certification scheme", url: "#", rights: "public" }],
+          action: { type: "apply", label: "Apply for certification", target: "iso-cert", auth_required: true, reason: "Applying creates a tracked case under your account." }
+        },
+        {
+          title: "Certification & surveillance",
+          detail: "On a successful audit your certificate is issued and listed on the public register, with annual surveillance.",
+          citations: [{ label: "Public register", url: "#", rights: "open" }],
+          action: { type: "open", label: "See the public register", target: "#", auth_required: false }
+        }
+      ]
+    },
+    water: {
+      title: "Sell bottled water locally",
+      summary: "Packaged drinking water for the Eswatini market",
+      meta: { standards: 2, est_fee: "~SZL 1,800", est_timeline: "4–6 weeks", steps: 4 },
+      steps: [
+        {
+          title: "Identify the correct product standard",
+          detail: "Packaged drinking water is covered by SZNS 042. Confirm the exact product type (still, sparkling, mineral).",
+          citations: [{ label: "SZNS catalogue", url: "#", rights: "public" }],
+          action: null
+        },
+        {
+          title: "Buy and apply the standard",
+          detail: "Obtain SZNS 042 and ensure your water meets the chemical, microbiological and labelling requirements.",
+          citations: [{ label: "SZNS 042", url: "#", rights: "licensed" }],
+          action: { type: "buy", label: "Buy SZNS 042", target: "szns-042", auth_required: true, reason: "Buying a standard requires an account so we can license the download to you." }
+        },
+        {
+          title: "Arrange product testing",
+          detail: "Submit samples to an accredited laboratory for the required chemical and microbiological tests.",
+          citations: [{ label: "ESWASA Metrology", url: "#", rights: "public" }],
+          action: { type: "apply", label: "Book lab testing", target: "lab-water", auth_required: true, reason: "Booking creates a tracked request under your account." }
+        },
+        {
+          title: "Apply for product certification",
+          detail: "Once test results are ready, apply for the product certification mark so you can sell legally.",
+          citations: [{ label: "Certification scheme", url: "#", rights: "public" }],
+          action: { type: "apply", label: "Apply for certification", target: "cert-water", auth_required: true, reason: "Applying creates a tracked case under your account." }
+        }
+      ]
+    }
+  };
+
+  const ICON = { buy: "i-cart", apply: "i-clipboard", open: "i-eye" };
+  let isLoggedIn = false;
+  let pendingAction = null; // { type, label, reason }
+
+  function render(data) {
+    document.getElementById('flowTitle').textContent = data.title;
+    document.getElementById('flowSub').textContent = data.summary;
+    document.getElementById('mStd').textContent = data.meta.standards;
+    document.getElementById('mFee').textContent = data.meta.est_fee;
+    document.getElementById('mTime').textContent = data.meta.est_timeline;
+    document.getElementById('mSteps').textContent = data.meta.steps;
+
+    const wrap = document.getElementById('steps');
+    wrap.innerHTML = '';
+
+    data.steps.forEach((s, i) => {
+      const cites = (s.citations || []).map(c => {
+        const badge = c.rights ? `<span class="badge-r ${c.rights}">${c.rights}</span>` : '';
+        return `<a href="${c.url}" target="_blank" rel="noopener"><svg><use href="#i-link"/></svg>${c.label}${badge}</a>`;
+      }).join('');
+
+      let act = '';
+      if (s.action) {
+        const lock = s.action.auth_required && !isLoggedIn
+          ? `<svg class="lock"><use href="#i-lock"/></svg>` : '';
+        const why = (s.action.reason || '').replace(/'/g, "\\'");
+        act = `<div class="step__act">
+          <button class="btn ${s.action.type}" onclick="doAct('${s.action.type}','${s.action.label}','${why}')">
+            <svg><use href="#${ICON[s.action.type]}"/></svg>${s.action.label} ${lock}
+          </button>
+        </div>`;
+      }
+
+      wrap.insertAdjacentHTML('beforeend', `
+        <div class="step" data-idx="${i}">
+          <div class="step__n" onclick="toggleDone(this)" title="Mark as done">${i + 1}</div>
+          <div class="step__card">
+            <b>${s.title}</b>
+            <p>${s.detail}</p>
+            <div class="src">${cites}</div>
+            ${act}
+          </div>
+        </div>`);
+    });
+
+    document.getElementById('skel').classList.remove('show');
+    document.getElementById('flow').classList.add('show');
+    document.getElementById('flow').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function toggleDone(el) {
+    el.closest('.step').classList.toggle('done');
+    el.textContent = el.closest('.step').classList.contains('done') ? '✓' : (parseInt(el.closest('.step').dataset.idx) + 1);
+  }
+
+  function pick(key) {
+    document.getElementById('goal').value = FLOWS[key].title;
+    run(key);
+  }
+
+  function run(forcedKey) {
+    const btn = document.getElementById('buildBtn');
+    const input = document.getElementById('goal');
+    const val = (input.value || '').toLowerCase().trim();
+
+    if (!val && !forcedKey) return;
+
+    // Show loading
+    document.getElementById('flow').classList.remove('show');
+    document.getElementById('skel').classList.add('show');
+    btn.disabled = true;
+    btn.innerHTML = 'Building…';
+
+    // Simulate network latency of a real /api/guide call
+    setTimeout(() => {
+      let key = forcedKey;
+      if (!key) {
+        if (val.includes('iso') || val.includes('9001') || val.includes('certif')) key = 'iso';
+        else if (val.includes('water') || val.includes('bottled')) key = 'water';
+        else key = 'honey';
+      }
+      render(FLOWS[key]);
+      btn.disabled = false;
+      btn.innerHTML = '<svg><use href="#i-send"/></svg> Build my guide';
+    }, 1100);
+  }
+
+  function openAuth(title, reason) {
+    document.getElementById('authTitle').textContent = title || 'Sign in to continue';
+    const whyBox = document.getElementById('authWhy');
+    const whyText = document.getElementById('authWhyText');
+    if (reason) {
+      whyText.textContent = reason;
+      whyBox.style.display = 'block';
+    } else {
+      whyBox.style.display = 'none';
+    }
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('authEmail').focus();
+  }
+
+  function closeAuth() {
+    document.getElementById('overlay').classList.remove('show');
+    pendingAction = null;
+  }
+
+  function doAct(type, label, reason) {
+    if (type === 'open' || isLoggedIn) {
+      // In real app: navigate or open the target
+      alert(isLoggedIn || type === 'open'
+        ? `Action ready: ${label}`
+        : 'This would open the public page.');
+      return;
+    }
+    // Needs auth → store pending action and show contextual modal
+    pendingAction = { type, label, reason };
+    openAuth('Sign in to continue', reason);
+  }
+
+  function fakeLogin() {
+    // Demo only — real app would call POST /api/auth/login
+    isLoggedIn = true;
+    document.getElementById('guestLabel').textContent = 'Signed in · Citizen role';
+    document.getElementById('sideSignin').textContent = 'Sign out';
+    document.getElementById('sideSignin').onclick = () => {
+      isLoggedIn = false;
+      document.getElementById('guestLabel').textContent = 'Browsing as guest · no account needed';
+      document.getElementById('sideSignin').textContent = 'Sign in';
+      document.getElementById('sideSignin').onclick = () => openAuth('Sign in to EswasaOne');
+    };
+    closeAuth();
+
+    if (pendingAction) {
+      // Resume the exact action the user wanted
+      setTimeout(() => {
+        alert(`Welcome back! Continuing: ${pendingAction.label}`);
+        pendingAction = null;
+      }, 200);
+    }
+  }
+
+  document.getElementById('overlay').addEventListener('click', e => {
+    if (e.target.id === 'overlay') closeAuth();
+  });
+</script>
+</body>
+</html>

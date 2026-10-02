@@ -1,0 +1,87 @@
+[
+ {
+  "doctype": "Workflow",
+  "name": "Standards Development",
+  "workflow_name": "Standards Development",
+  "document_type": "Work Item",
+  "is_active": 1,
+  "override_status": 0,
+  "send_email_alert": 0,
+  "workflow_state_field": "workflow_state",
+  "states": [
+   {
+    "state": "New Work Item",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Standards Officer",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Working Draft",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Standards Officer",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Committee Draft",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Standards Officer",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Public Review",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Standards Officer",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Ballot",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Standards Officer",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Published/Gazetted",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Standards Officer",
+    "is_optional_state": 0
+   }
+  ],
+  "transitions": [
+   {
+    "state": "New Work Item",
+    "action": "Start Drafting",
+    "next_state": "Working Draft",
+    "allowed": "Eswasa Standards Officer",
+    "allow_self_approval": 1
+   },
+   {
+    "state": "Working Draft",
+    "action": "Submit to Committee",
+    "next_state": "Committee Draft",
+    "allowed": "Eswasa Standards Officer",
+    "allow_self_approval": 1
+   },
+   {
+    "state": "Committee Draft",
+    "action": "Open Public Review",
+    "next_state": "Public Review",
+    "allowed": "Eswasa Standards Manager",
+    "allow_self_approval": 1
+   },
+   {
+    "state": "Public Review",
+    "action": "Open Ballot",
+    "next_state": "Ballot",
+    "allowed": "Eswasa Standards Manager",
+    "allow_self_approval": 1
+   },
+   {
+    "state": "Ballot",
+    "action": "Publish / Gazette",
+    "next_state": "Published/Gazetted",
+    "allowed": "Eswasa Standards Manager",
+    "allow_self_approval": 1
+   }
+  ]
+ }
+]

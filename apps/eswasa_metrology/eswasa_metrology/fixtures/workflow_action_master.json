@@ -1,0 +1,22 @@
+[
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Dispatch",
+  "workflow_action_name": "Dispatch"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Issue Certificate",
+  "workflow_action_name": "Issue Certificate"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Start Work",
+  "workflow_action_name": "Start Work"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Submit for Review",
+  "workflow_action_name": "Submit for Review"
+ }
+]

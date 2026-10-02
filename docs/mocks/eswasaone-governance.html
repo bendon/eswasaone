@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EswasaOne — Board & Governance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f7fa;--card:#fff;--line:#e4eaf2;--line-2:#eff3f8;
+  --ink:#0f172a;--muted:#5a6b84;--muted-2:#8a9ab1;
+  --navy:#313391;--navy-d:#24286f;--navy-l:#eceefc;
+  --gold:#f5c518;--gold-d:#d9a800;--gold-ink:#24286f;--gold-l:#fef6dc;
+  --green:#16a34a;--green-l:#dcfce7;--red:#e11d6e;--red-l:#fdecec;
+  --amber:#d97706;--amber-l:#fef3c7;--blue:#2563eb;--blue-l:#e0f2fe;
+  --purple:#7c3aed;--purple-l:#f0e9fb;
+  --sidebar:#0e1524;--sidebar-2:#161f32;--sidebar-line:#1e2942;
+  --r-sm:10px;--r:14px;--r-lg:18px;
+  --sh-xs:0 1px 2px rgba(16,24,40,.05);
+  --sh-lg:0 20px 44px -20px rgba(16,24,40,.24);
+  --font-sans:"Plus Jakarta Sans",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+svg{flex:0 0 auto}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+/* Shell */
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.side{background:var(--sidebar);color:#c7d2e4;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.side__brand{display:flex;align-items:center;gap:11px;padding:20px 20px 18px}
+.side__logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(150deg,var(--gold),var(--gold-d));display:grid;place-items:center;font-weight:800;color:var(--gold-ink)}
+.side__brand b{display:block;color:#fff;font-size:16px;font-weight:800}
+.side__brand span{font-size:10px;letter-spacing:.14em;color:#7e8ca8;font-weight:600}
+.nav{flex:1;overflow-y:auto;padding:4px 12px}
+.nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;color:#aebbd3;font-size:13.5px;font-weight:500;margin-bottom:2px}
+.nav a:hover{background:var(--sidebar-2);color:#e6edf9}
+.nav a.on{background:linear-gradient(90deg,rgba(245,197,24,.16),rgba(245,197,24,.04));color:#fff;font-weight:600;box-shadow:inset 2px 0 0 var(--gold)}
+.nav a .badge{margin-left:auto;background:var(--gold);color:var(--gold-ink);font-size:10.5px;font-weight:800;min-width:19px;height:19px;border-radius:10px;display:grid;place-items:center;padding:0 5px}
+.nav svg{width:18px;height:18px;stroke:currentColor}
+.main{display:flex;flex-direction:column;min-width:0}
+.top{height:64px;background:rgba(255,255,255,.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 26px;position:sticky;top:0;z-index:40}
+.top h1{font-size:16px;font-weight:700}
+.top .menu{display:none;width:40px;height:40px;border:0;background:none;border-radius:10px;cursor:pointer}
+.top .menu svg{width:20px;height:20px;stroke:var(--muted)}
+.top__r{margin-left:auto;display:flex;align-items:center;gap:10px}
+.top__av{width:34px;height:34px;border-radius:50%;background:linear-gradient(140deg,#4a52b0,var(--navy));color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px}
+.top__who b{display:block;font-size:13px;line-height:1.2}
+.top__who span{font-size:11px;color:var(--muted-2)}
+.content{padding:26px;display:flex;flex-direction:column;gap:0;min-width:0}
+
+/* Module head */
+.mod-head{display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.mod-head h2{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.mod-head p{color:var(--muted);font-size:13.5px;margin-top:3px;max-width:62ch}
+.mod-head .r{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 15px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.btn svg{width:15px;height:15px;stroke:currentColor}
+.btn.pri{background:var(--navy);color:#fff}.btn.pri:hover{background:var(--navy-d)}
+.btn.gold{background:var(--gold);color:var(--gold-ink)}.btn.gold:hover{background:var(--gold-d)}
+.btn.ghost{background:#fff;border-color:var(--line);color:var(--ink)}.btn.ghost:hover{background:var(--bg)}
+.btn.danger{background:#fff;border-color:#f4c2d4;color:var(--red)}
+.btn.sm{min-height:32px;padding:0 11px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.subtabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto;scrollbar-width:none}
+.subtabs::-webkit-scrollbar{display:none}
+.subtab{display:inline-flex;align-items:center;gap:7px;padding:11px 14px;font-size:13px;font-weight:600;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:nowrap}
+.subtab:hover{color:var(--ink)}
+.subtab.on{color:var(--navy);border-bottom-color:var(--navy);font-weight:700}
+.subtab .c{background:var(--navy-l);color:var(--navy);font-size:10.5px;font-weight:800;border-radius:10px;padding:1px 7px}
+.subtab .c.alert{background:var(--red-l);color:#9f1239}
+.tab{display:none}.tab.on{display:block}
+
+/* Panels */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-xs);min-width:0;overflow:hidden}
+.panel__h{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line-2);flex-wrap:wrap}
+.panel__h h3{font-size:14.5px;font-weight:800;letter-spacing:-.015em}
+.panel__h p{font-size:12px;color:var(--muted-2);margin-top:2px}
+.panel__h .r{margin-left:auto;display:flex;gap:6px;align-items:center}
+.panel__b{padding:18px 20px}
+.grid{display:grid;gap:16px;margin-bottom:16px}
+.g-3-2{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.g-1-1{grid-template-columns:1fr 1fr}
+
+/* Next meeting — the signature element */
+.nextmtg{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-xs);overflow:hidden;margin-bottom:16px}
+.cal{background:var(--navy);color:#fff;padding:22px 26px;display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:150px;position:relative}
+.cal::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--gold)}
+.cal .m{font-size:12px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.7)}
+.cal .d{font-size:52px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.cal .w{font-size:13px;font-weight:600;color:rgba(255,255,255,.8);margin-top:4px}
+.cal .in{margin-top:12px;font-size:11.5px;font-weight:700;background:rgba(255,255,255,.12);border-radius:999px;padding:4px 10px}
+.nm{padding:20px 24px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.nm__top{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.nm__top h3{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.nm__meta{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:5px;font-size:12.5px;color:var(--muted)}
+.nm__meta span{display:inline-flex;align-items:center;gap:6px}
+.nm__meta svg{width:14px;height:14px;stroke:var(--muted-2)}
+.nm__top .r{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.pack-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pack-h b{font-size:13px;font-weight:800}
+.pack-h span{font-size:12px;color:var(--muted)}
+.pack-h .due{margin-left:auto;font-size:12px;font-weight:700;color:#92400e}
+.track{display:flex;gap:4px}
+.seg{flex:1;min-width:0;border-radius:8px;padding:9px 10px 8px;background:var(--line-2);border:1px solid transparent;cursor:pointer;text-align:left;border-top:4px solid #cbd5e1}
+.seg:hover{border-color:var(--line)}
+.seg b{display:block;font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg span{display:block;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg.ready{border-top-color:var(--green);background:#f3fbf6}
+.seg.wait{border-top-color:var(--amber);background:#fffaf0}
+.seg.late{border-top-color:var(--red);background:#fff5f8}
+.quorum{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.avs{display:flex}
+.avs i{width:28px;height:28px;border-radius:50%;border:2px solid #fff;margin-left:-6px;display:grid;place-items:center;font-style:normal;font-size:10px;font-weight:800;background:var(--navy-l);color:var(--navy)}
+.avs i:first-child{margin-left:0}
+.avs i.yes{background:var(--green-l);color:#166534}
+.avs i.no{background:var(--red-l);color:#9f1239}
+.avs i.q{background:var(--line-2);color:var(--muted-2)}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px 17px;box-shadow:var(--sh-xs);cursor:pointer;text-align:left}
+.kpi:hover{border-color:#cdd6e4}
+.kpi .l{font-size:12px;font-weight:600;color:var(--muted)}
+.kpi .v{font-size:24px;font-weight:800;letter-spacing:-.03em;margin-top:4px;display:flex;align-items:baseline;gap:8px}
+.kpi .v small{font-size:12px;font-weight:700}
+.kpi .v small.bad{color:#9f1239}.kpi .v small.warn{color:#92400e}.kpi .v small.good{color:#166534}
+
+/* Rows / tables */
+.list{display:flex;flex-direction:column}
+.li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:12px 20px;border-top:1px solid var(--line-2);cursor:pointer;align-items:center}
+.li:first-child{border-top:0}
+.li:hover{background:#fafbfd}
+.li b{font-size:13.5px;font-weight:700;display:block}
+.li .sub{font-size:12px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 10px}
+.li .ref{font-family:var(--font-mono);font-size:11.5px;color:var(--muted-2)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--muted-2);padding:12px 16px;background:#fafbfd;white-space:nowrap}
+td{padding:12px 16px;border-top:1px solid var(--line-2);vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:#fafbfd}
+td .t{font-weight:700}
+td .s{font-size:12px;color:var(--muted)}
+
+.st{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.st::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.8}
+.st.ok{background:var(--green-l);color:#166534}
+.st.warn{background:var(--amber-l);color:#92400e}
+.st.bad{background:var(--red-l);color:#9f1239}
+.st.info{background:var(--blue-l);color:#075985}
+.st.navy{background:var(--navy-l);color:var(--navy)}
+.st.mute{background:var(--line-2);color:var(--muted)}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;align-items:center}
+.sel{height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font-size:13px;background:#fff}
+.search{flex:1;min-width:180px;display:flex;align-items:center;gap:8px;height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;background:#fff}
+.search svg{width:16px;height:16px;stroke:var(--muted-2)}
+.search input{flex:1;border:0;outline:0;background:transparent;font-size:13px;min-width:0}
+
+.prog{height:6px;border-radius:4px;background:var(--line-2);overflow:hidden;min-width:70px}
+.prog i{display:block;height:100%;background:var(--navy);border-radius:4px}
+.prog.late i{background:var(--red)}
+
+/* Heat map */
+.heat{display:grid;grid-template-columns:22px repeat(5,1fr);gap:4px;align-items:stretch}
+.heat .ax{font-size:10.5px;font-weight:700;color:var(--muted-2);display:grid;place-items:center}
+.heat .cell{aspect-ratio:1.5/1;border-radius:7px;display:grid;place-items:center;font-weight:800;font-size:14px;border:2px solid transparent;cursor:pointer;background:var(--line-2);color:transparent}
+.heat .cell.has{color:var(--ink)}
+.heat .cell.l1{background:#e8f6ee}.heat .cell.l2{background:#fdf3d4}.heat .cell.l3{background:#fde3c3}.heat .cell.l4{background:#fbd0dc}
+.heat .cell.l4.has{color:#9f1239}
+.heat .cell.sel{border-color:var(--navy)}
+.heat-foot{display:flex;justify-content:space-between;font-size:11px;color:var(--muted-2);font-weight:600;margin:6px 0 0 26px}
+.heat-y{font-size:11px;color:var(--muted-2);font-weight:600;margin-bottom:6px}
+
+/* Pack builder */
+.pk{display:flex;flex-direction:column}
+.pk__row{display:grid;grid-template-columns:18px 24px minmax(0,1fr) 150px 120px auto;gap:12px;align-items:center;padding:12px 20px;border-top:1px solid var(--line-2)}
+.pk__row:first-child{border-top:0}
+.pk__grip{color:var(--muted-2);cursor:grab;display:grid;place-items:center}
+.pk__grip svg{width:14px;height:14px;stroke:currentColor}
+.pk__n{font-family:var(--font-mono);font-size:12px;color:var(--muted-2);font-weight:600}
+.pk__row b{font-size:13.5px;font-weight:700;display:block}
+.pk__src{font-size:11.5px;color:var(--muted);display:inline-flex;gap:6px;align-items:center;margin-top:2px}
+.pk__src svg{width:12px;height:12px;stroke:currentColor}
+.pk__own{font-size:12.5px;color:var(--muted)}
+.pk__act{display:flex;gap:6px;justify-content:flex-end}
+.cb{appearance:none;width:17px;height:17px;border:1.5px solid #c7d2e0;border-radius:5px;background:#fff;cursor:pointer;position:relative}
+.cb:checked{background:var(--navy);border-color:var(--navy)}
+.cb:checked::after{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l4 4L19 7'/%3E%3C/svg%3E") center/12px no-repeat}
+.side-sum{display:flex;flex-direction:column;gap:12px}
+.kv{display:flex;gap:10px;font-size:13px;padding:8px 0;border-top:1px solid var(--line-2)}
+.kv:first-child{border-top:0}
+.kv b{color:var(--muted);font-weight:600;min-width:130px}
+.note{font-size:12px;color:var(--muted);line-height:1.5;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.ver{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line-2);font-size:12.5px}
+.ver:first-child{border-top:0}
+.ver .mono{font-weight:600}
+.ver a{margin-left:auto;color:var(--navy);font-weight:700;font-size:12px;cursor:pointer}
+
+/* Members */
+.mem{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;padding:16px 20px}
+.mc{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;cursor:pointer;background:#fff}
+.mc:hover{border-color:var(--navy)}
+.mc__top{display:flex;gap:11px;align-items:center}
+.mc__av{width:40px;height:40px;border-radius:50%;background:var(--navy-l);color:var(--navy);display:grid;place-items:center;font-weight:800;font-size:13px}
+.mc__top b{font-size:13.5px;font-weight:700;display:block}
+.mc__top span{font-size:12px;color:var(--muted)}
+.mc__tags{display:flex;flex-wrap:wrap;gap:5px}
+.mc__tags i{font-style:normal;font-size:10.5px;font-weight:700;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+.mc__foot{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line-2);padding-top:9px;gap:8px}
+.mc__foot b{color:var(--ink)}
+
+/* Calendar list */
+.cl{display:flex;flex-direction:column}
+.cl__i{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 20px;border-top:1px solid var(--line-2)}
+.cl__i:first-child{border-top:0}
+.cl__d{border:1px solid var(--line);border-radius:9px;text-align:center;padding:4px 0;line-height:1.1}
+.cl__d b{display:block;font-size:17px;font-weight:800}
+.cl__d span{font-size:10px;font-weight:700;color:var(--muted-2)}
+.cl__i .t{font-weight:700;font-size:13px}
+.cl__i .s{font-size:12px;color:var(--muted)}
+
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(8,16,26,.5);backdrop-filter:blur(3px);display:none;z-index:60}
+.scrim.show{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:#fff;z-index:61;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.3,1);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(16,24,40,.24)}
+.drawer.show{transform:none}
+.drawer__h{padding:20px 22px;border-bottom:1px solid var(--line);position:relative}
+.drawer__h .x{position:absolute;right:16px;top:16px;width:34px;height:34px;border-radius:9px;border:0;background:none;font-size:22px;color:var(--muted-2);cursor:pointer}
+.drawer__h .x:hover{background:var(--bg)}
+.drawer__ref{font-family:var(--font-mono);font-size:12px;color:var(--muted);font-weight:600}
+.drawer__t{font-size:19px;font-weight:800;letter-spacing:-.02em;margin-top:4px;padding-right:36px}
+.drawer__sub{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:12.5px;color:var(--muted)}
+.drawer__b{flex:1;overflow-y:auto;padding:18px 22px}
+.drawer__f{border-top:1px solid var(--line);padding:14px 22px;display:flex;gap:8px;flex-wrap:wrap}
+.dh{font-size:12px;font-weight:800;color:var(--muted);margin:20px 0 8px}
+.dh:first-child{margin-top:0}
+.agenda{list-style:none;counter-reset:ag}
+.agenda li{counter-increment:ag;display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;padding:9px 0;border-top:1px solid var(--line-2);font-size:13px;align-items:start}
+.agenda li:first-child{border-top:0}
+.agenda li::before{content:counter(ag);font-family:var(--font-mono);font-size:12px;color:var(--muted-2);font-weight:600;padding-top:1px}
+.agenda li span{font-size:11.5px;color:var(--muted)}
+.tl{position:relative}
+.tl__i{display:flex;gap:12px;padding-bottom:14px;position:relative}
+.tl__i::before{content:"";position:absolute;left:5px;top:16px;bottom:0;width:2px;background:var(--line-2)}
+.tl__i:last-child::before{display:none}
+.tl__dot{width:12px;height:12px;border-radius:50%;background:var(--navy);margin-top:4px;flex-shrink:0;box-shadow:0 0 0 3px var(--navy-l)}
+.tl__i b{font-size:13px;font-weight:700;display:block}
+.tl__i p{font-size:12.5px;color:var(--ink);margin-top:2px}
+.tl__i span{font-size:11.5px;color:var(--muted-2)}
+.vote{display:flex;gap:8px}
+.vote div{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
+.vote b{display:block;font-size:20px;font-weight:800}
+.vote span{font-size:11.5px;color:var(--muted)}
+.quote{font-size:13.5px;line-height:1.6;background:var(--bg);border-left:3px solid var(--navy);border-radius:0 10px 10px 0;padding:12px 14px}
+
+/* Form */
+.form{display:flex;flex-direction:column;gap:13px}
+.form label{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:700}
+.form label small{font-weight:500;color:var(--muted-2)}
+.form input,.form select,.form textarea{min-height:42px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff;font-size:13.5px;font-weight:500}
+.form textarea{padding:10px 12px;min-height:88px;resize:vertical}
+.form .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chk{display:flex!important;flex-direction:row!important;align-items:center;gap:9px!important;font-weight:600!important}
+
+/* Modal + toast */
+.ov{position:fixed;inset:0;z-index:80;padding:20px;background:rgba(8,16,26,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center}
+.ov.show{display:flex}
+.modal{width:100%;max-width:440px;background:#fff;border-radius:18px;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.modal .bar{width:40px;height:4px;border-radius:999px;background:var(--navy);margin-bottom:14px}
+.modal h3{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.modal p{font-size:13.5px;color:var(--muted);margin-top:8px;line-height:1.55}
+.modal ul{margin:12px 0 0 18px;font-size:13px;color:var(--ink);line-height:1.7}
+.modal .acts{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,60px);background:var(--navy-d);color:#fff;border-radius:12px;padding:12px 18px;font-size:13.5px;font-weight:600;opacity:0;transition:.24s;z-index:90;pointer-events:none;max-width:calc(100vw - 40px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(2,1fr)}.g-3-2,.g-1-1{grid-template-columns:1fr}}
+@media(max-width:1000px){.pk__row{grid-template-columns:18px 24px minmax(0,1fr) auto;row-gap:6px}.pk__own,.pk__st{grid-column:3}.pk__act{grid-column:4;grid-row:1}}
+@media(max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;left:0;top:0;bottom:0;width:260px;z-index:70;transform:translateX(-105%);transition:transform .28s}
+  .app.nav-open .side{transform:none}
+  .top .menu{display:grid;place-items:center}
+  .top{padding:0 14px}.top__who{display:none}
+  .content{padding:16px}
+  .nextmtg{grid-template-columns:1fr}
+  .cal{flex-direction:row;gap:14px;justify-content:flex-start;padding:14px 20px}
+  .cal .d{font-size:34px}.cal .in{margin:0 0 0 auto}
+  .track{flex-wrap:wrap}.seg{flex:1 1 calc(33% - 4px)}
+  .mod-head .r{width:100%}.mod-head .r .btn{flex:1}
+}
+@media(max-width:560px){
+  .kpis{grid-template-columns:1fr 1fr}
+  .seg{flex:1 1 calc(50% - 4px)}
+  .form .two{grid-template-columns:1fr}
+  .nm{padding:16px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-vid" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M20 12a8 8 0 01-14 5.3M4 12a8 8 0 0114-5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/></symbol>
+  <symbol id="i-stack" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+</svg>
+
+<div class="app" id="app">
+  <aside class="side">
+    <div class="side__brand"><span class="side__logo">E</span><div><b>EswasaOne</b><span>INSTITUTION PORTAL</span></div></div>
+    <nav class="nav" aria-label="Institution modules">
+      <a href="#">Dashboard</a>
+      <a href="#">Approvals<span class="badge">23</span></a>
+      <a href="#" class="on" aria-current="page">Board &amp; Governance<span class="badge">3</span></a>
+      <a href="#">CRM &amp; Commercial</a>
+      <a href="#">Certification</a>
+      <a href="#">Standards Dev</a>
+      <a href="#">Metrology &amp; LIMS</a>
+      <a href="#">LMS &amp; Training</a>
+      <a href="#">WTO/TBT Alerts<span class="badge">1</span></a>
+      <a href="#">Finance</a>
+      <a href="#">HR &amp; People</a>
+      <a href="#">Marketing</a>
+      <a href="#">Reports &amp; Analytics</a>
+      <a href="#">System Administration</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <button class="menu" aria-label="Open navigation" onclick="document.getElementById('app').classList.toggle('nav-open')"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <h1>Board &amp; Governance</h1>
+      <div class="top__r"><span class="top__av">TM</span><div class="top__who"><b>Thandeka Motsa</b><span>Company Secretary</span></div></div>
+    </header>
+
+    <main class="content">
+      <div class="mod-head">
+        <div>
+          <h2>Board &amp; Governance</h2>
+          <p>Meetings, board packs, resolutions and risk for the ESWASA Board and its committees.</p>
+        </div>
+        <div class="r">
+          <button class="btn ghost" onclick="openForm('resolution')"><svg><use href="#i-doc"/></svg>Record resolution</button>
+          <button class="btn pri" onclick="openForm('meeting')"><svg><use href="#i-plus"/></svg>Schedule meeting</button>
+        </div>
+      </div>
+
+      <div class="subtabs" role="tablist">
+        <button class="subtab on" data-tab="overview">Overview</button>
+        <button class="subtab" data-tab="meetings">Meetings <span class="c">7</span></button>
+        <button class="subtab" data-tab="pack">Board pack <span class="c alert">2</span></button>
+        <button class="subtab" data-tab="resolutions">Resolutions &amp; actions <span class="c alert">3</span></button>
+        <button class="subtab" data-tab="risk">Risk register <span class="c">14</span></button>
+        <button class="subtab" data-tab="members">Members &amp; committees</button>
+      </div>
+
+      <!-- ============ OVERVIEW ============ -->
+      <section class="tab on" id="tab-overview">
+        <div class="nextmtg">
+          <div class="cal"><span class="m">OCT 2026</span><span class="d">08</span><span class="w">Thursday, 09:00</span><span class="in">In 10 days</span></div>
+          <div class="nm">
+            <div class="nm__top">
+              <div>
+                <h3>Q3 Board meeting</h3>
+                <div class="nm__meta">
+                  <span><svg><use href="#i-pin"/></svg>ESWASA Boardroom, Matsapha</span>
+                  <span><svg><use href="#i-vid"/></svg>Hybrid — Teams link issued with pack</span>
+                  <span class="mono">BM-2026-Q3</span>
+                </div>
+              </div>
+              <div class="r">
+                <button class="btn ghost sm" onclick="openMeeting(0)">Open meeting</button>
+                <button class="btn gold sm" onclick="goTab('pack')"><svg><use href="#i-stack"/></svg>Build pack</button>
+              </div>
+            </div>
+            <div>
+              <div class="pack-h"><b>Board pack</b><span>7 of 9 sections ready</span><span class="due">Issue to members by Thu 1 Oct</span></div>
+              <div class="track" id="track"></div>
+            </div>
+            <div class="quorum">
+              <div class="avs"><i class="yes">SD</i><i class="yes">NS</i><i class="yes">MM</i><i class="yes">LN</i><i class="yes">BH</i><i class="yes">ZM</i><i class="q">TS</i><i class="q">PK</i><i class="no">SG</i></div>
+              <span><b style="color:var(--ink)">6 of 9 confirmed</b> — quorum of 5 met. 2 awaiting reply, 1 apology.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <button class="kpi" onclick="goTab('resolutions')"><div class="l">Open resolution actions</div><div class="v">14 <small class="bad">3 overdue</small></div></button>
+          <button class="kpi" onclick="goTab('risk')"><div class="l">High and critical risks</div><div class="v">3 <small class="warn">1 worsening</small></div></button>
+          <button class="kpi" onclick="goTab('members')"><div class="l">Board attendance, 2026</div><div class="v">91% <small class="good">+4 pts</small></div></button>
+          <button class="kpi" onclick="goTab('members')"><div class="l">Declarations of interest due</div><div class="v">2 <small class="warn">before 8 Oct</small></div></button>
+        </div>
+
+        <div class="grid g-3-2">
+          <div class="panel">
+            <div class="panel__h"><div><h3>Actions needing attention</h3><p>From board and committee resolutions</p></div><div class="r"><button class="btn ghost sm" onclick="goTab('resolutions')">All actions</button></div></div>
+            <div class="list" id="ov-actions"></div>
+          </div>
+          <div class="panel">
+            <div class="panel__h"><div><h3>Risk profile</h3><p>Residual rating, 14 open risks</p></div><div class="r"><button class="btn ghost sm" onclick="goTab('risk')">Register</button></div></div>
+            <div class="panel__b"><div id="heat-ov"></div></div>
+          </div>
+        </div>
+
+        <div class="grid g-1-1">
+          <div class="panel">
+            <div class="panel__h"><div><h3>Governance calendar</h3><p>Next 90 days</p></div></div>
+            <div class="cl">
+              <div class="cl__i"><div class="cl__d"><b>01</b><span>OCT</span></div><div><div class="t">Board pack issue deadline</div><div class="s">Q3 Board meeting</div></div><span class="st warn">3 days</span></div>
+              <div class="cl__i"><div class="cl__d"><b>08</b><span>OCT</span></div><div><div class="t">Q3 Board meeting</div><div class="s">Full Board, Matsapha</div></div><span class="st navy">Scheduled</span></div>
+              <div class="cl__i"><div class="cl__d"><b>15</b><span>OCT</span></div><div><div class="t">Audit &amp; Risk Committee</div><div class="s">Internal audit plan, risk register review</div></div><span class="st navy">Scheduled</span></div>
+              <div class="cl__i"><div class="cl__d"><b>31</b><span>OCT</span></div><div><div class="t">Annual report to Ministry of Commerce</div><div class="s">Statutory submission</div></div><span class="st mute">Due</span></div>
+              <div class="cl__i"><div class="cl__d"><b>30</b><span>NOV</span></div><div><div class="t">Term ends — Mr. Themba Shongwe</div><div class="s">Reappointment or replacement needed</div></div><span class="st warn">Action</span></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel__h"><div><h3>Recent resolutions</h3><p>Last two meetings</p></div><div class="r"><button class="btn ghost sm" onclick="goTab('resolutions')">Register</button></div></div>
+            <div class="list" id="ov-res"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ MEETINGS ============ -->
+      <section class="tab" id="tab-meetings">
+        <div class="toolbar">
+          <select class="sel" id="m-body"><option value="">All bodies</option><option>Full Board</option><option>Audit &amp; Risk Committee</option><option>Finance &amp; Investment Committee</option><option>HR &amp; Remuneration Committee</option><option>Technical Committee</option></select>
+          <select class="sel" id="m-status"><option value="">All statuses</option><option>Scheduled</option><option>Pack issued</option><option>Held</option><option>Minutes in draft</option><option>Minutes approved</option></select>
+          <label class="search"><svg><use href="#i-search"/></svg><input id="m-q" placeholder="Search meetings"></label>
+          <button class="btn pri" onclick="openForm('meeting')"><svg><use href="#i-plus"/></svg>Schedule meeting</button>
+        </div>
+        <div class="panel"><div class="tbl-wrap"><table>
+          <thead><tr><th>Meeting</th><th>Date</th><th>Pack</th><th>Attendance</th><th>Minutes</th><th>Status</th></tr></thead>
+          <tbody id="m-rows"></tbody>
+        </table></div></div>
+      </section>
+
+      <!-- ============ BOARD PACK ============ -->
+      <section class="tab" id="tab-pack">
+        <div class="grid g-3-2">
+          <div class="panel">
+            <div class="panel__h">
+              <div><h3>Q3 Board meeting — pack v3 (draft)</h3><p>Sections pull live figures from each module. Drag to reorder.</p></div>
+              <div class="r"><button class="btn ghost sm" onclick="openForm('paper')"><svg><use href="#i-plus"/></svg>Add paper</button></div>
+            </div>
+            <div class="pk" id="pk"></div>
+          </div>
+          <div class="side-sum">
+            <div class="panel">
+              <div class="panel__h"><div><h3>Pack status</h3></div></div>
+              <div class="panel__b">
+                <div class="kv"><b>Meeting</b><span>Q3 Board, 8 Oct 2026</span></div>
+                <div class="kv"><b>Sections included</b><span id="pk-count">9 of 9</span></div>
+                <div class="kv"><b>Ready</b><span id="pk-ready">7</span></div>
+                <div class="kv"><b>Issue deadline</b><span>Thu 1 Oct (3 days)</span></div>
+                <div class="kv"><b>Classification</b><span>Confidential — Board only</span></div>
+                <div class="note" style="margin-top:10px" id="pk-note">2 sections are not ready. You can assemble a draft to review, but the pack can only be issued once every included section is ready.</div>
+                <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+                  <button class="btn ghost" onclick="confirmAct('assemble')"><svg><use href="#i-stack"/></svg>Assemble draft</button>
+                  <button class="btn pri" id="pk-issue" disabled onclick="confirmAct('issue')"><svg><use href="#i-send"/></svg>Issue to members</button>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel__h"><div><h3>Versions</h3></div></div>
+              <div class="panel__b">
+                <div class="ver"><span class="mono">v3</span><span>Draft, editing now</span></div>
+                <div class="ver"><span class="mono">v2</span><span>Assembled 24 Sep, 64 pp</span><a>Download</a></div>
+                <div class="ver"><span class="mono">v1</span><span>Assembled 18 Sep, 58 pp</span><a>Download</a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ RESOLUTIONS ============ -->
+      <section class="tab" id="tab-resolutions">
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel__h"><div><h3>Action tracker</h3><p>Every action raised by a resolution, until it is closed</p></div>
+            <div class="r"><select class="sel" id="a-filter"><option value="">All open</option><option value="overdue">Overdue</option><option value="due">Due in 14 days</option><option value="done">Completed</option></select></div></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Action</th><th>Resolution</th><th>Owner</th><th>Due</th><th>Progress</th><th>Status</th></tr></thead>
+            <tbody id="a-rows"></tbody>
+          </table></div>
+        </div>
+        <div class="panel">
+          <div class="panel__h"><div><h3>Resolutions register</h3><p>All resolutions of the Board and its committees</p></div>
+            <div class="r"><button class="btn pri sm" onclick="openForm('resolution')"><svg><use href="#i-plus"/></svg>Record resolution</button></div></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Ref</th><th>Resolution</th><th>Meeting</th><th>Vote</th><th>Actions</th><th>Status</th></tr></thead>
+            <tbody id="r-rows"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- ============ RISK ============ -->
+      <section class="tab" id="tab-risk">
+        <div class="grid g-3-2">
+          <div class="panel">
+            <div class="panel__h"><div><h3>Risk register</h3><p id="rk-sub">14 open risks</p></div>
+              <div class="r"><button class="btn ghost sm" id="rk-clear" style="display:none" onclick="setHeatFilter(null)">Clear filter</button><button class="btn pri sm" onclick="openForm('risk')"><svg><use href="#i-plus"/></svg>Add risk</button></div></div>
+            <div class="tbl-wrap"><table>
+              <thead><tr><th>Risk</th><th>Owner</th><th>Inherent</th><th>Residual</th><th>Trend</th><th>Last update</th></tr></thead>
+              <tbody id="rk-rows"></tbody>
+            </table></div>
+          </div>
+          <div class="panel">
+            <div class="panel__h"><div><h3>Heat map</h3><p>Residual rating. Select a cell to filter.</p></div></div>
+            <div class="panel__b"><div id="heat-rk"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ MEMBERS ============ -->
+      <section class="tab" id="tab-members">
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel__h"><div><h3>Board members</h3><p>9 members including the CEO ex officio</p></div></div>
+          <div class="mem" id="mem"></div>
+        </div>
+        <div class="grid g-1-1">
+          <div class="panel">
+            <div class="panel__h"><div><h3>Committees</h3></div></div>
+            <div class="tbl-wrap"><table>
+              <thead><tr><th>Committee</th><th>Chair</th><th>Members</th><th>Meets</th></tr></thead>
+              <tbody>
+                <tr><td class="t">Audit &amp; Risk</td><td>Adv. Lindiwe Nxumalo</td><td>4</td><td>Quarterly</td></tr>
+                <tr><td class="t">Finance &amp; Investment</td><td>Mr. Mandla Mamba</td><td>4</td><td>Quarterly</td></tr>
+                <tr><td class="t">HR &amp; Remuneration</td><td>Ms. Nokuthula Simelane</td><td>3</td><td>Bi-annually</td></tr>
+                <tr><td class="t">Technical (Standards)</td><td>Dr. Zanele Magagula</td><td>5</td><td>Quarterly</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+          <div class="panel">
+            <div class="panel__h"><div><h3>Declarations of interest</h3><p>Annual declaration plus per-meeting conflicts</p></div></div>
+            <div class="tbl-wrap"><table>
+              <thead><tr><th>Member</th><th>Annual declaration</th><th>Conflicts, Q3 agenda</th></tr></thead>
+              <tbody>
+                <tr><td class="t">Mr. Themba Shongwe</td><td><span class="st warn">Due 8 Oct</span></td><td>—</td></tr>
+                <tr><td class="t">Mr. Peter Kunene</td><td><span class="st warn">Due 8 Oct</span></td><td>—</td></tr>
+                <tr><td class="t">Mr. Mandla Mamba</td><td><span class="st ok">Filed Feb 2026</span></td><td><span class="st bad">Item 6 — recuse</span></td></tr>
+                <tr><td class="t">Dr. Sibusiso Dlamini</td><td><span class="st ok">Filed Jan 2026</span></td><td>None declared</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="drawer__h"><button class="x" onclick="closeDrawer()" aria-label="Close">×</button><div class="drawer__ref" id="d-ref"></div><div class="drawer__t" id="d-t"></div><div class="drawer__sub" id="d-sub"></div></div>
+  <div class="drawer__b" id="d-b"></div>
+  <div class="drawer__f" id="d-f"></div>
+</aside>
+
+<div class="ov" id="ov"><div class="modal" role="alertdialog" aria-modal="true"><div class="bar"></div><h3 id="mo-t"></h3><p id="mo-p"></p><ul id="mo-ul"></ul><div class="acts"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn pri" id="mo-ok"></button></div></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ---------- data (replace with Core /api/governance/*) ---------- */
+const PACK=[
+  {t:"Chair's agenda and previous minutes",src:"Secretariat",own:"T. Motsa",st:"ready"},
+  {t:"CEO's report",src:"Paper upload",own:"B. Hlophe",st:"ready"},
+  {t:"Certification performance",src:"Live from Certification",own:"Certification",st:"ready"},
+  {t:"Standards development",src:"Live from Standards Dev",own:"Standards",st:"ready"},
+  {t:"Metrology and laboratory",src:"Live from Metrology",own:"Metrology",st:"ready"},
+  {t:"Management accounts, Aug 2026",src:"Live from Finance",own:"Finance",st:"late"},
+  {t:"Risk register and heat map",src:"Live from Risk register",own:"Risk & Compliance",st:"ready"},
+  {t:"Resolution action tracker",src:"Live from Resolutions",own:"Secretariat",st:"ready"},
+  {t:"Internal audit progress",src:"Paper upload",own:"Internal Audit",st:"wait"}
+].map(s=>({...s,inc:true}));
+const ST={ready:["ok","Ready"],wait:["warn","Awaiting owner"],late:["bad","Overdue"]};
+
+const MEET=[
+  {ref:"BM-2026-Q3",t:"Q3 Board meeting",body:"Full Board",date:"8 Oct 2026",pack:"Building (7/9)",att:"6/9 confirmed",min:"—",st:"Scheduled"},
+  {ref:"ARC-2026-03",t:"Audit & Risk Committee",body:"Audit & Risk Committee",date:"15 Oct 2026",pack:"Not started",att:"—",min:"—",st:"Scheduled"},
+  {ref:"TC-2026-03",t:"Technical Committee",body:"Technical Committee",date:"17 Sep 2026",pack:"Issued 10 Sep",att:"5/5",min:"Draft",st:"Minutes in draft"},
+  {ref:"FIC-2026-03",t:"Finance & Investment Committee",body:"Finance & Investment Committee",date:"3 Sep 2026",pack:"Issued 27 Aug",att:"4/4",min:"Draft",st:"Held"},
+  {ref:"BM-2026-SP1",t:"Special Board meeting — tariff review",body:"Full Board",date:"21 Aug 2026",pack:"Issued 14 Aug",att:"8/9",min:"Approved",st:"Minutes approved"},
+  {ref:"BM-2026-Q2",t:"Q2 Board meeting",body:"Full Board",date:"9 Jul 2026",pack:"Issued 2 Jul",att:"9/9",min:"Approved",st:"Minutes approved"},
+  {ref:"HRC-2026-02",t:"HR & Remuneration Committee",body:"HR & Remuneration Committee",date:"25 Jun 2026",pack:"Issued 18 Jun",att:"3/3",min:"Approved",st:"Minutes approved"}
+];
+const MST={"Scheduled":"navy","Pack issued":"info","Held":"warn","Minutes in draft":"warn","Minutes approved":"ok"};
+const NEXT={"Scheduled":[["pri","Issue pack"],["ghost","Reschedule"],["danger","Cancel meeting"]],"Pack issued":[["pri","Record attendance"],["ghost","Reschedule"]],"Held":[["pri","Start minutes"]],"Minutes in draft":[["pri","Submit minutes for approval"],["ghost","Edit minutes"]],"Minutes approved":[["ghost","Download minutes"]]};
+
+const RES=[
+  {ref:"RES-2026-031",t:"Approve revised certification fee schedule for 2027",m:"BM-2026-SP1",v:[7,1,0],n:2,st:"Passed"},
+  {ref:"RES-2026-030",t:"Adopt ICT disaster recovery policy v2",m:"BM-2026-SP1",v:[8,0,0],n:1,st:"Passed"},
+  {ref:"RES-2026-027",t:"Establish national metrology traceability programme",m:"BM-2026-Q2",v:[9,0,0],n:3,st:"Passed"},
+  {ref:"RES-2026-026",t:"Defer laboratory expansion to FY2027/28 budget",m:"BM-2026-Q2",v:[6,2,1],n:1,st:"Passed"},
+  {ref:"RES-2026-025",t:"Procure LIMS upgrade via open tender",m:"BM-2026-Q2",v:[0,0,0],n:0,st:"Deferred"},
+  {ref:"RES-2026-019",t:"Approve Q1 management accounts",m:"BM-2026-Q1",v:[9,0,0],n:0,st:"Implemented"}
+];
+const RST={Passed:"navy",Deferred:"warn",Implemented:"ok",Rejected:"bad"};
+
+const ACT=[
+  {t:"Publish 2027 fee schedule in the Government Gazette",r:"RES-2026-031",o:"Legal Services",d:"15 Sep",p:60,s:"overdue"},
+  {t:"Test DR failover for Frappe and Core",r:"RES-2026-030",o:"ICT",d:"20 Sep",p:40,s:"overdue"},
+  {t:"Draft traceability programme charter",r:"RES-2026-027",o:"Metrology",d:"25 Sep",p:80,s:"overdue"},
+  {t:"Notify industry of fee changes (CRM campaign)",r:"RES-2026-031",o:"Marketing",d:"5 Oct",p:20,s:"due"},
+  {t:"Sign MoU with SADCMET for calibration intercomparison",r:"RES-2026-027",o:"CEO",d:"10 Oct",p:50,s:"due"},
+  {t:"Revise capex plan without lab expansion",r:"RES-2026-026",o:"Finance",d:"30 Oct",p:30,s:"open"},
+  {t:"Recruit two metrologists",r:"RES-2026-027",o:"HR",d:"30 Nov",p:10,s:"open"},
+  {t:"Circulate approved ICT DR policy to staff",r:"RES-2026-030",o:"ICT",d:"2 Sep",p:100,s:"done"}
+];
+const AST={overdue:["bad","Overdue"],due:["warn","Due soon"],open:["navy","On track"],done:["ok","Completed"]};
+
+const RISK=[
+  {ref:"RSK-004",t:"Loss of ISO/IEC 17025 accreditation at the metrology lab",c:"Operational",o:"Head, Metrology",iL:4,iI:5,L:3,I:5,tr:"up",u:"22 Sep"},
+  {ref:"RSK-011",t:"Revenue shortfall from delayed certification renewals",c:"Financial",o:"CFO",iL:4,iI:4,L:4,I:4,tr:"flat",u:"18 Sep"},
+  {ref:"RSK-002",t:"Cyber attack on public portals and e-store",c:"Technology",o:"Head, ICT",iL:4,iI:5,L:2,I:5,tr:"down",u:"12 Sep"},
+  {ref:"RSK-007",t:"Inability to retain technical auditors",c:"People",o:"HR Manager",iL:4,iI:3,L:3,I:3,tr:"up",u:"9 Sep"},
+  {ref:"RSK-013",t:"Non-compliance with PFM Act reporting deadlines",c:"Compliance",o:"CFO",iL:3,iI:4,L:2,I:4,tr:"flat",u:"5 Sep"},
+  {ref:"RSK-009",t:"Delay in adopting regional (SADC) harmonised standards",c:"Strategic",o:"Head, Standards",iL:3,iI:3,L:3,I:2,tr:"flat",u:"1 Sep"},
+  {ref:"RSK-015",t:"Reputational damage from a mis-certified product",c:"Reputational",o:"Head, Certification",iL:2,iI:5,L:1,I:5,tr:"down",u:"28 Aug"},
+  {ref:"RSK-006",t:"Dependence on a single e-payment provider",c:"Operational",o:"CFO",iL:3,iI:3,L:2,I:3,tr:"flat",u:"20 Aug"},
+  {ref:"RSK-010",t:"Laboratory equipment obsolescence",c:"Operational",o:"Head, Metrology",iL:4,iI:3,L:3,I:3,tr:"flat",u:"15 Aug"},
+  {ref:"RSK-012",t:"Data protection breach of client records",c:"Compliance",o:"Head, ICT",iL:3,iI:4,L:2,I:3,tr:"down",u:"12 Aug"},
+  {ref:"RSK-003",t:"Board vacancies affecting quorum",c:"Governance",o:"Company Secretary",iL:2,iI:3,L:2,I:2,tr:"flat",u:"8 Aug"},
+  {ref:"RSK-014",t:"Fraud in cash handling at regional offices",c:"Financial",o:"CFO",iL:2,iI:3,L:1,I:3,tr:"flat",u:"1 Aug"},
+  {ref:"RSK-001",t:"Business continuity — Matsapha site outage",c:"Operational",o:"Head, Corporate Services",iL:2,iI:4,L:1,I:4,tr:"flat",u:"25 Jul"},
+  {ref:"RSK-008",t:"Slow uptake of training services",c:"Strategic",o:"Head, Training",iL:3,iI:2,L:2,I:2,tr:"flat",u:"20 Jul"}
+];
+const score=(l,i)=>l*i;
+const band=s=>s>=15?["bad","Critical"]:s>=10?["warn","High"]:s>=5?["info","Medium"]:["ok","Low"];
+const heatLevel=s=>s>=15?4:s>=10?3:s>=5?2:1;
+
+const MEM=[
+  {n:"Dr. Sibusiso Dlamini",r:"Chairperson",c:["Technical"],term:"Mar 2028",att:"100%",dec:"ok"},
+  {n:"Ms. Nokuthula Simelane",r:"Vice Chairperson",c:["HR & Rem (Chair)"],term:"Mar 2028",att:"100%",dec:"ok"},
+  {n:"Adv. Lindiwe Nxumalo",r:"Member",c:["Audit & Risk (Chair)"],term:"Jun 2027",att:"92%",dec:"ok"},
+  {n:"Mr. Mandla Mamba",r:"Member",c:["Finance (Chair)","Audit & Risk"],term:"Jun 2027",att:"92%",dec:"ok"},
+  {n:"Dr. Zanele Magagula",r:"Member",c:["Technical (Chair)"],term:"Jan 2029",att:"85%",dec:"ok"},
+  {n:"Mr. Themba Shongwe",r:"Member",c:["Finance","HR & Rem"],term:"Nov 2026",att:"77%",dec:"due"},
+  {n:"Mr. Peter Kunene",r:"Member",c:["Audit & Risk"],term:"Jan 2029",att:"88%",dec:"due"},
+  {n:"Ms. Sakhile Gama",r:"Member",c:["Technical","Finance"],term:"Jun 2027",att:"85%",dec:"ok"},
+  {n:"Mr. Bongani Hlophe",r:"CEO (ex officio)",c:["All committees, in attendance"],term:"—",att:"100%",dec:"ok"}
+];
+const ini=n=>n.replace(/^(Dr|Ms|Mr|Adv)\.\s*/,"").split(" ").map(w=>w[0]).join("").slice(0,2);
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2600)}
+function goTab(k){document.querySelectorAll(".subtab").forEach(b=>b.classList.toggle("on",b.dataset.tab===k));document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.id==="tab-"+k));window.scrollTo({top:0})}
+document.querySelectorAll(".subtab").forEach(b=>b.onclick=()=>goTab(b.dataset.tab));
+
+/* ---------- pack ---------- */
+function renderTrack(){
+  $("#track").innerHTML=PACK.filter(s=>s.inc).map((s,i)=>`<button class="seg ${s.st}" title="${esc(s.t)} — ${ST[s.st][1]}" onclick="goTab('pack')"><b>${esc(s.t)}</b><span>${ST[s.st][1]}</span></button>`).join("");
+}
+function renderPack(){
+  $("#pk").innerHTML=PACK.map((s,i)=>`
+    <div class="pk__row">
+      <span class="pk__grip" aria-hidden="true"><svg><use href="#i-grip"/></svg></span>
+      <input type="checkbox" class="cb" ${s.inc?"checked":""} aria-label="Include ${esc(s.t)}" onchange="PACK[${i}].inc=this.checked;refreshPack()">
+      <div><b>${esc(s.t)}</b><span class="pk__src"><svg><use href="#${s.src.startsWith("Live")?"i-sync":"i-doc"}"/></svg>${esc(s.src)}</span></div>
+      <span class="pk__own">${esc(s.own)}</span>
+      <span class="pk__st"><span class="st ${ST[s.st][0]}">${ST[s.st][1]}</span></span>
+      <span class="pk__act">${s.st==="ready"
+        ? (s.src.startsWith("Live")?`<button class="btn ghost sm" onclick="toast('Figures refreshed from ${esc(s.own)}')">Refresh</button>`:`<button class="btn ghost sm" onclick="toast('Opening paper')">View</button>`)
+        : `<button class="btn ghost sm" onclick="toast('Reminder sent to ${esc(s.own)}')">Remind</button>${s.src.startsWith("Live")?"":`<button class="btn ghost sm" onclick="openForm('paper')">Upload</button>`}`}
+      </span>
+    </div>`).join("");
+}
+function refreshPack(){
+  const inc=PACK.filter(s=>s.inc),ready=inc.filter(s=>s.st==="ready").length,left=inc.length-ready;
+  $("#pk-count").textContent=`${inc.length} of ${PACK.length}`;$("#pk-ready").textContent=ready;
+  $("#pk-issue").disabled=left>0;
+  $("#pk-note").textContent=left>0?`${left} section${left>1?"s are":" is"} not ready. You can assemble a draft to review, but the pack can only be issued once every included section is ready.`:"Every included section is ready. Assemble the final version, then issue it to members.";
+  renderTrack();
+}
+
+/* ---------- meetings ---------- */
+function renderMeetings(){
+  const b=$("#m-body").value,s=$("#m-status").value,q=$("#m-q").value.toLowerCase();
+  $("#m-rows").innerHTML=MEET.map((m,i)=>({m,i})).filter(({m})=>(!b||m.body===b)&&(!s||m.st===s)&&(!q||(m.t+m.ref).toLowerCase().includes(q)))
+    .map(({m,i})=>`<tr onclick="openMeeting(${i})"><td><div class="t">${esc(m.t)}</div><div class="s mono">${m.ref}</div></td><td>${m.date}</td><td>${m.pack}</td><td>${m.att}</td><td>${m.min}</td><td><span class="st ${MST[m.st]}">${m.st}</span></td></tr>`).join("")
+    || `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">No meetings match these filters.</td></tr>`;
+}
+["#m-body","#m-status","#m-q"].forEach(s=>$(s).addEventListener("input",renderMeetings));
+
+function openMeeting(i){
+  const m=MEET[i];
+  const agenda=[["Opening, apologies and quorum","Chair"],["Declarations of interest","All"],["Minutes of the previous meeting","Company Secretary"],["Matters arising and action tracker","Company Secretary"],["CEO's report","CEO"],["Management accounts and 2027 budget framework","CFO — Mr. Mamba to recuse"],["Risk register: RSK-004 accreditation","Audit & Risk Chair"],["Certification and standards performance","CEO"],["Any other business","Chair"]];
+  openDrawer(m.ref,m.t,`<span class="st ${MST[m.st]}">${m.st}</span><span>${m.date}, 09:00</span><span>${m.body}</span>`,
+    `<div class="dh">Agenda</div><ol class="agenda">${agenda.map(a=>`<li><div>${esc(a[0])}</div><span>${esc(a[1])}</span></li>`).join("")}</ol>
+     <div class="dh">Attendance</div>
+     <div class="kv"><b>Confirmed</b><span>${m.att}</span></div><div class="kv"><b>Quorum</b><span>5 members</span></div><div class="kv"><b>Apologies</b><span>Ms. Sakhile Gama</span></div>
+     <div class="dh">Documents</div>
+     <div class="kv"><b>Board pack</b><span>${m.pack}</span></div><div class="kv"><b>Minutes</b><span>${m.min}</span></div>`,
+    (NEXT[m.st]||[]).map(([k,l])=>`<button class="btn ${k}" onclick="meetingAct('${esc(l)}','${m.ref}')">${l}</button>`).join(""));
+}
+function meetingAct(l,ref){
+  if(l==="Issue pack"){closeDrawer();goTab("pack");return}
+  if(l==="Reschedule"){closeDrawer();openForm("meeting");return}
+  confirmAct("generic",{title:`${l}?`,body:`This applies to ${ref}. Members are notified by email and in the member portal.`,ok:l});
+}
+
+/* ---------- resolutions / actions ---------- */
+function renderActions(){
+  const f=$("#a-filter").value;
+  const rows=ACT.filter(a=>f==="done"?a.s==="done":f?a.s===f:a.s!=="done");
+  $("#a-rows").innerHTML=rows.map(a=>`<tr onclick="openResolution('${a.r}')"><td><div class="t">${esc(a.t)}</div></td><td class="mono">${a.r}</td><td>${esc(a.o)}</td><td>${a.d}</td><td><div class="prog ${a.s==="overdue"?"late":""}"><i style="width:${a.p}%"></i></div></td><td><span class="st ${AST[a.s][0]}">${AST[a.s][1]}</span></td></tr>`).join("");
+  $("#ov-actions").innerHTML=ACT.filter(a=>a.s==="overdue"||a.s==="due").map(a=>`<div class="li" onclick="openResolution('${a.r}')"><div><b>${esc(a.t)}</b><div class="sub"><span class="ref">${a.r}</span><span>${esc(a.o)}</span><span>Due ${a.d}</span></div></div><span class="st ${AST[a.s][0]}">${AST[a.s][1]}</span></div>`).join("");
+}
+$("#a-filter").addEventListener("input",renderActions);
+function renderRes(){
+  $("#r-rows").innerHTML=RES.map(r=>`<tr onclick="openResolution('${r.ref}')"><td class="mono">${r.ref}</td><td><div class="t">${esc(r.t)}</div></td><td class="mono">${r.m}</td><td>${r.st==="Deferred"?"—":`${r.v[0]} for · ${r.v[1]} against · ${r.v[2]} abst.`}</td><td>${r.n}</td><td><span class="st ${RST[r.st]}">${r.st}</span></td></tr>`).join("");
+  $("#ov-res").innerHTML=RES.slice(0,4).map(r=>`<div class="li" onclick="openResolution('${r.ref}')"><div><b>${esc(r.t)}</b><div class="sub"><span class="ref">${r.ref}</span><span>${r.m}</span></div></div><span class="st ${RST[r.st]}">${r.st}</span></div>`).join("");
+}
+function openResolution(ref){
+  const r=RES.find(x=>x.ref===ref)||RES[0];const acts=ACT.filter(a=>a.r===r.ref);
+  openDrawer(r.ref,r.t,`<span class="st ${RST[r.st]}">${r.st}</span><span>Meeting ${r.m}</span>`,
+    `<div class="dh">Resolution</div><div class="quote">RESOLVED that the Board ${esc(r.t.charAt(0).toLowerCase()+r.t.slice(1))}, and that management implement it as set out in the actions below.</div>
+     ${r.st!=="Deferred"?`<div class="dh">Vote</div><div class="vote"><div><b>${r.v[0]}</b><span>For</span></div><div><b>${r.v[1]}</b><span>Against</span></div><div><b>${r.v[2]}</b><span>Abstained</span></div></div>`:""}
+     <div class="dh">Actions (${acts.length})</div>
+     ${acts.length?acts.map(a=>`<div class="kv" style="align-items:center"><div style="flex:1"><div style="font-weight:700">${esc(a.t)}</div><div style="font-size:12px;color:var(--muted)">${esc(a.o)}, due ${a.d}</div></div><span class="st ${AST[a.s][0]}">${AST[a.s][1]}</span></div>`).join(""):`<p style="font-size:13px;color:var(--muted)">No actions yet. Add one so the resolution can be tracked to completion.</p>`}`,
+    `<button class="btn pri" onclick="openForm('action')"><svg><use href="#i-plus"/></svg>Add action</button>${r.st==="Passed"?`<button class="btn ghost" onclick="confirmAct('generic',{title:'Mark ${r.ref} implemented?',body:'Only possible once every action is completed. It moves to the implemented register.',ok:'Mark implemented'})">Mark implemented</button>`:""}`);
+}
+
+/* ---------- risk ---------- */
+let heatFilter=null;
+function heatHTML(interactive){
+  const cells={};RISK.forEach(r=>{const k=r.L+"-"+r.I;cells[k]=(cells[k]||0)+1});
+  let h=`<div class="heat-y">Likelihood ↑</div><div class="heat">`;
+  for(let L=5;L>=1;L--){h+=`<span class="ax">${L}</span>`;for(let I=1;I<=5;I++){const n=cells[L+"-"+I]||0,k=L+"-"+I;
+    h+=`<button class="cell l${heatLevel(score(L,I))} ${n?"has":""} ${heatFilter===k?"sel":""}" aria-label="Likelihood ${L}, impact ${I}: ${n} risks" onclick="${interactive?`setHeatFilter('${k}')`:`goTab('risk');setHeatFilter('${k}')`}">${n||""}</button>`}}
+  return h+`</div><div class="heat-foot"><span>Impact 1</span><span>Impact 5 →</span></div>`;
+}
+function setHeatFilter(k){heatFilter=heatFilter===k?null:k;renderRisk()}
+const trend={up:["bad","Worsening"],down:["ok","Improving"],flat:["mute","Stable"]};
+function renderRisk(){
+  const rows=RISK.filter(r=>!heatFilter||r.L+"-"+r.I===heatFilter);
+  $("#rk-rows").innerHTML=rows.map(r=>{const ib=band(score(r.iL,r.iI)),rb=band(score(r.L,r.I));
+    return `<tr onclick="openRisk('${r.ref}')"><td><div class="t">${esc(r.t)}</div><div class="s"><span class="mono">${r.ref}</span> · ${r.c}</div></td><td>${esc(r.o)}</td><td><span class="st ${ib[0]}">${ib[1]} ${score(r.iL,r.iI)}</span></td><td><span class="st ${rb[0]}">${rb[1]} ${score(r.L,r.I)}</span></td><td><span class="st ${trend[r.tr][0]}">${trend[r.tr][1]}</span></td><td>${r.u}</td></tr>`}).join("");
+  $("#rk-sub").textContent=heatFilter?`${rows.length} risk${rows.length!==1?"s":""} at likelihood ${heatFilter.split("-")[0]}, impact ${heatFilter.split("-")[1]}`:"14 open risks";
+  $("#rk-clear").style.display=heatFilter?"":"none";
+  $("#heat-rk").innerHTML=heatHTML(true);$("#heat-ov").innerHTML=heatHTML(false);
+}
+function openRisk(ref){
+  const r=RISK.find(x=>x.ref===ref);const rb=band(score(r.L,r.I));
+  openDrawer(r.ref,r.t,`<span class="st ${rb[0]}">${rb[1]} ${score(r.L,r.I)}</span><span class="st ${trend[r.tr][0]}">${trend[r.tr][1]}</span><span>${r.c}</span>`,
+    `<div class="dh">Rating</div>
+     <div class="kv"><b>Owner</b><span>${esc(r.o)}</span></div>
+     <div class="kv"><b>Inherent</b><span>Likelihood ${r.iL} × impact ${r.iI} = ${score(r.iL,r.iI)}</span></div>
+     <div class="kv"><b>Residual</b><span>Likelihood ${r.L} × impact ${r.I} = ${score(r.L,r.I)}</span></div>
+     <div class="kv"><b>Appetite</b><span>Low — escalate to Board above 12</span></div>
+     <div class="dh">Controls</div>
+     <div class="kv"><b>Existing</b><span>Quarterly internal audit, proficiency testing, documented quality manual</span></div>
+     <div class="dh">Mitigation updates</div>
+     <div class="tl">
+      <div class="tl__i"><span class="tl__dot"></span><div><b>${esc(r.o)}</b><p>Assessor visit rescheduled to November. Two corrective actions from the last surveillance still open.</p><span>${r.u} 2026</span></div></div>
+      <div class="tl__i"><span class="tl__dot" style="background:var(--muted-2);box-shadow:0 0 0 3px var(--line-2)"></span><div><b>Audit &amp; Risk Committee</b><p>Requested monthly updates until the residual rating is back below 12.</p><span>2 Jul 2026</span></div></div>
+     </div>
+     <div class="dh">Post an update</div>
+     <form class="form" onsubmit="event.preventDefault();toast('Update posted to ${r.ref}');this.reset()">
+       <textarea required placeholder="What changed since the last update?"></textarea>
+       <div class="two"><label>Residual likelihood<select><option>1</option><option>2</option><option ${r.L===3?"selected":""}>3</option><option ${r.L===4?"selected":""}>4</option><option>5</option></select></label>
+       <label>Residual impact<select><option>1</option><option>2</option><option>3</option><option ${r.I===4?"selected":""}>4</option><option ${r.I===5?"selected":""}>5</option></select></label></div>
+       <button class="btn pri" type="submit">Post update</button>
+     </form>`,
+    `<button class="btn ghost" onclick="confirmAct('generic',{title:'Add ${r.ref} to the board pack?',body:'The risk and its latest update go into the Risk section of the Q3 pack.',ok:'Add to pack'})">Add to board pack</button><button class="btn ghost" onclick="toast('Opening edit form')">Edit risk</button>`);
+}
+
+/* ---------- members ---------- */
+function renderMembers(){
+  $("#mem").innerHTML=MEM.map(m=>`<div class="mc" tabindex="0"><div class="mc__top"><span class="mc__av">${ini(m.n)}</span><div><b>${esc(m.n)}</b><span>${m.r}</span></div></div>
+    <div class="mc__tags">${m.c.map(c=>`<i>${esc(c)}</i>`).join("")}</div>
+    <div class="mc__foot"><span>Term to <b>${m.term}</b></span><span>Attendance <b>${m.att}</b></span>${m.dec==="due"?`<span class="st warn">Declaration due</span>`:""}</div></div>`).join("");
+}
+
+/* ---------- drawer / forms / modal ---------- */
+function openDrawer(ref,t,sub,body,foot){
+  $("#d-ref").textContent=ref;$("#d-t").textContent=t;$("#d-sub").innerHTML=sub;$("#d-b").innerHTML=body;$("#d-f").innerHTML=foot||"";
+  $("#d-f").style.display=foot?"":"none";
+  $("#scrim").classList.add("show");$("#drawer").classList.add("show");$("#drawer").setAttribute("aria-hidden","false");
+  setTimeout(()=>$("#drawer .x").focus(),50);
+}
+function closeDrawer(){$("#scrim").classList.remove("show");$("#drawer").classList.remove("show");$("#drawer").setAttribute("aria-hidden","true")}
+
+const FORMS={
+  meeting:{ref:"New meeting",t:"Schedule a meeting",ok:"Schedule meeting",done:"Meeting scheduled. Section owners have been asked for pack papers.",html:`
+    <label>Body<select required><option>Full Board</option><option>Audit &amp; Risk Committee</option><option>Finance &amp; Investment Committee</option><option>HR &amp; Remuneration Committee</option><option>Technical Committee</option></select></label>
+    <label>Title<input required placeholder="e.g. Q4 Board meeting"></label>
+    <div class="two"><label>Date<input type="date" required></label><label>Start time<input type="time" value="09:00" required></label></div>
+    <label>Type<select><option>Ordinary</option><option>Special</option><option>Annual general</option></select></label>
+    <label>Venue<input value="ESWASA Boardroom, Matsapha"></label>
+    <label class="chk"><input type="checkbox" class="cb" checked> Hybrid — include an online meeting link</label>
+    <label>Pack issue deadline <small>Default is 7 days before the meeting</small><input type="date"></label>
+    <label>Agenda template<select><option>Standard board agenda</option><option>Committee agenda</option><option>Blank</option></select></label>`},
+  resolution:{ref:"New resolution",t:"Record a resolution",ok:"Record resolution",done:"Resolution recorded. Add actions so it can be tracked.",html:`
+    <label>Meeting<select required>${MEET.map(m=>`<option>${m.ref} — ${esc(m.t)}</option>`).join("")}</select></label>
+    <label>Resolution<textarea required placeholder="RESOLVED that the Board…"></textarea></label>
+    <label>Outcome<select><option>Passed</option><option>Rejected</option><option>Deferred</option></select></label>
+    <div class="two"><label>For<input type="number" min="0" value="0"></label><label>Against<input type="number" min="0" value="0"></label></div>
+    <label>Abstained<input type="number" min="0" value="0"></label>
+    <label>Members who recused<input placeholder="Optional"></label>`},
+  action:{ref:"New action",t:"Add an action",ok:"Add action",done:"Action added and the owner notified.",html:`
+    <label>Action<textarea required placeholder="What needs to be done?"></textarea></label>
+    <div class="two"><label>Owner<select><option>CEO</option><option>CFO</option><option>Legal Services</option><option>Metrology</option><option>ICT</option><option>HR</option><option>Marketing</option></select></label><label>Due date<input type="date" required></label></div>
+    <label class="chk"><input type="checkbox" class="cb" checked> Report progress in the next board pack</label>`},
+  risk:{ref:"New risk",t:"Add a risk",ok:"Add risk",done:"Risk added to the register.",html:`
+    <label>Risk<input required placeholder="What could happen?"></label>
+    <label>Cause and consequence<textarea></textarea></label>
+    <div class="two"><label>Category<select><option>Strategic</option><option>Operational</option><option>Financial</option><option>Compliance</option><option>Technology</option><option>People</option><option>Reputational</option><option>Governance</option></select></label><label>Owner<select><option>CEO</option><option>CFO</option><option>Head, Metrology</option><option>Head, ICT</option><option>Head, Certification</option></select></label></div>
+    <div class="two"><label>Inherent likelihood<select><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label><label>Inherent impact<select><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label></div>
+    <label>Existing controls<textarea></textarea></label>
+    <div class="two"><label>Residual likelihood<select><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select></label><label>Residual impact<select><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label></div>`},
+  paper:{ref:"Q3 Board pack",t:"Add a board paper",ok:"Add paper",done:"Paper added to the pack.",html:`
+    <label>Title<input required placeholder="e.g. Internal audit progress report"></label>
+    <label>Presenter<input placeholder="e.g. Head of Internal Audit"></label>
+    <label>Purpose<select><option>For decision</option><option>For noting</option><option>For discussion</option></select></label>
+    <label>File <small>PDF or Word, up to 20 MB</small><input type="file" accept=".pdf,.doc,.docx" required style="padding:9px 12px"></label>
+    <label class="chk"><input type="checkbox" class="cb"> Restricted — excluded for conflicted members</label>`}
+};
+function openForm(k){
+  const f=FORMS[k];
+  openDrawer(f.ref,f.t,"",`<form class="form" id="dform">${f.html}</form>`,`<button class="btn ghost" onclick="closeDrawer()">Cancel</button><button class="btn pri" onclick="submitForm('${k}')">${f.ok}</button>`);
+}
+function submitForm(k){const f=$("#dform");if(!f.reportValidity())return;closeDrawer();toast(FORMS[k].done)}
+
+let modalOk=null;
+function confirmAct(kind,o){
+  const C={
+    assemble:{title:"Assemble a draft pack?",body:"This builds v3 as a single PDF from the included sections, with live figures taken now.",list:["Draft watermark on every page","Sections not ready are marked as placeholders","Only the Company Secretary can see drafts"],ok:"Assemble draft",done:"Draft v3 assembled — 67 pages"},
+    issue:{title:"Issue the pack to members?",body:"The final pack goes to all 9 members through the member portal and by email. It cannot be edited after issue; changes need a supplementary paper.",list:["Conflicted members do not receive restricted papers","Pack is logged as issued on the meeting record"],ok:"Issue pack",done:"Pack issued to 9 members"}
+  };
+  const c=kind==="generic"?{...o,list:[],done:o.ok+" — done"}:C[kind];
+  $("#mo-t").textContent=c.title;$("#mo-p").textContent=c.body;$("#mo-ul").innerHTML=(c.list||[]).map(x=>`<li>${esc(x)}</li>`).join("");$("#mo-ul").style.display=c.list&&c.list.length?"":"none";
+  $("#mo-ok").textContent=c.ok;modalOk=()=>{closeModal();closeDrawer();toast(c.done)};
+  $("#ov").classList.add("show");setTimeout(()=>$("#mo-ok").focus(),30);
+}
+$("#mo-ok").onclick=()=>modalOk&&modalOk();
+function closeModal(){$("#ov").classList.remove("show")}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal();closeDrawer()}});
+
+/* ---------- init ---------- */
+renderPack();refreshPack();renderMeetings();renderActions();renderRes();renderRisk();renderMembers();
+</script>
+</body>
+</html>

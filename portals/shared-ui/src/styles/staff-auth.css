@@ -1,0 +1,162 @@
+/* Staff auth gate + demo user picker — shared by Institution + Field.
+   Loaded via global.css. Do not import from pages.
+*/
+
+.staff-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(18, 38, 63, 0.12), transparent),
+    var(--bg);
+}
+.staff-gate__card {
+  width: min(440px, 100%);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 32px 28px;
+  box-shadow: 0 18px 48px rgba(16, 24, 40, 0.08);
+}
+.staff-gate__brand {
+  max-width: 220px;
+  margin-bottom: 18px;
+}
+.staff-gate__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  color: var(--muted-2);
+  margin: 0;
+}
+.staff-gate__title {
+  margin: 8px 0 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.staff-gate__lead {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.staff-gate__error {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--red) 8%, transparent);
+  color: var(--red);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.staff-gate__form {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+.staff-gate__form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.staff-gate__form input {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.staff-gate__form input:focus {
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--navy) 13%, transparent);
+}
+.staff-gate__foot {
+  margin: 18px 0 0;
+  font-size: 12.5px;
+  color: var(--muted-2);
+}
+.staff-gate__foot a {
+  color: var(--navy);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.staff-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.staff-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.staff-pick-row:hover {
+  border-color: var(--navy);
+  background: var(--navy-l);
+}
+.staff-pick-av {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #2e4b96, var(--navy));
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.staff-pick-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.staff-pick-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.staff-pick-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.staff-pick-roles {
+  display: flex;
+  gap: 4px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+.staff-pick-roles .tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted-2);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+.staff-pick-row > svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--muted-2);
+  flex-shrink: 0;
+  margin-left: auto;
+}

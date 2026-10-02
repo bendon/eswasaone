@@ -1,0 +1,84 @@
+/* EswasaOne design tokens — single source of truth (ESWASA brand)
+   Used by service-portal, institution-portal, and all shared-ui components.
+   See eswasa.co.sz: navy identity, gold accent, cool surfaces. */
+
+:root {
+  /* Surfaces */
+  --bg: #f4f7fa;
+  --card: #ffffff;
+  --line: #e4eaf2;
+  --line-2: #eff3f8;
+
+  /* Text */
+  --ink: #0f172a;
+  --muted: #5a6b84;
+  --muted-2: #8a9ab1;
+
+  /* Brand — primary navy (sampled from official ESWASA logo) */
+  --navy: #313391;
+  --navy-d: #24286f;
+  --navy-l: #eceefc;
+
+  /* Brand — secondary / links */
+  --royal: #2b3399;
+
+  /* Brand — accent gold */
+  --gold: #f5c518;
+  --gold-d: #d9a800;
+  --gold-ink: #24286f;
+  --gold-l: #fef6dc;
+
+  /* Status */
+  --green: #16a34a;
+  --green-l: #dcfce7;
+  --live: #22c55e;
+  --red: #e11d6e;
+  --red-l: #fdecec;
+  --blue: #2563eb;
+  --blue-l: #e0f2fe;
+  --purple: #7c3aed;
+  --purple-l: #f0e9fb;
+  --amber: #d97706;
+  --amber-l: #fef3c7;
+  --indigo: #4f46e5;
+  --orange: #ea6c1e;
+
+  /* Legacy aliases (institution sidebar chrome) */
+  --teal: var(--navy);
+  --teal-d: var(--navy-d);
+  --teal-l: var(--navy-l);
+  --sidebar: #0e1524;
+  --sidebar-2: #161f32;
+  --sidebar-line: #1e2942;
+  --sidebar-width: 248px;
+  --sidebar-fg: #c7d2e4;
+  --sidebar-fg-muted: #8a97b4;
+  --sidebar-fg-dim: #7e8ca8;
+  --sidebar-fg-nav: #aebbd3;
+  --sidebar-fg-hover: #e6edf9;
+  --gold-soft: var(--gold-l);
+
+  /* Radii */
+  --r-sm: 10px;
+  --r: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --radius: var(--r);
+
+  /* Shadows */
+  --sh-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --sh-sm: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --sh-md: 0 6px 16px -4px rgba(16, 24, 40, 0.1), 0 2px 6px -2px rgba(16, 24, 40, 0.05);
+  --sh-lg: 0 20px 44px -20px rgba(16, 24, 40, 0.24);
+  --shadow: var(--sh-sm);
+
+  /* Layout */
+  --maxw: 1400px;
+  --nav-h: 68px;
+  --gutter: 32px;
+
+  /* Typography */
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  /* Identifiers: SZNS / ISO codes, refs, order IDs — never the display sans */
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}

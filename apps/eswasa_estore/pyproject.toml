@@ -1,0 +1,20 @@
+[project]
+name = "eswasa_estore"
+authors = [
+    { name = "ESWASA", email = "ict@eswasa.org.sz"}
+]
+description = "Licensed standards sales — extends ERPNext website/item model."
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = []
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.bench.dev-dependencies]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"

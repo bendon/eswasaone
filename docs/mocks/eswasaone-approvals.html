@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#313391">
+<title>EswasaOne — Approvals (SoT)</title>
+<!--
+  Fidelity SoT for Institution Portal /approvals.
+  Chrome (dark rail + top bar) comes from InstitutionLayout.
+  React port: portals/institution-portal/src/pages/ApprovalsPage.tsx
+  Styles: portals/shared-ui/src/styles/approvals.css
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F7FA;--card:#FFFFFF;--line:#E4EAF2;--line-2:#EFF3F8;
+    --ink:#0F172A;--muted:#5A6B84;--muted-2:#8A9AB1;
+    --navy:#313391;--navy-d:#24286F;--navy-l:#ECEEFC;
+    --gold:#F5C518;--gold-ink:#24286F;--gold-l:#FEF6DC;
+    --green:#16A34A;--green-l:#DCFCE7;--red:#E11D6E;--red-l:#FDECEC;
+    --amber:#D97706;--amber-l:#FEF3C7;--purple:#7C3AED;--purple-l:#F0E9FB;
+    --r:14px;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box}*{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:14px;padding:24px}
+  .note{max-width:720px;margin-bottom:20px;padding:12px 14px;background:var(--gold-l);border-radius:10px;font-size:13px;color:#92400E}
+  .inbox-head{display:flex;align-items:flex-end;gap:16px;margin-bottom:18px}
+  .inbox-head h2{font-size:22px;font-weight:800}
+  .inbox-head p{color:var(--muted);font-size:13.5px;margin-top:3px}
+  .inbox-summary{margin-left:auto;display:flex;gap:10px}
+  .inbox-sm{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+  .inbox-sm .n{font-size:20px;font-weight:800}
+  .inbox-sm .l{font-size:11.5px;color:var(--muted);line-height:1.2}
+  .inbox-sm.breach .n{color:var(--red)}.inbox-sm.due .n{color:var(--amber)}
+  .inbox-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px}
+  .inbox-tab{padding:11px 15px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+  .inbox-tab.on{color:var(--navy);border-bottom-color:var(--navy)}
+  .inbox-tab .c{background:var(--navy-l);color:var(--navy);font-size:11px;font-weight:800;border-radius:999px;padding:1px 8px;margin-left:6px}
+  .inbox-row{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:15px 18px;margin-bottom:10px;position:relative}
+  .inbox-row::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red)}
+  .inbox-row__title{font-weight:700}
+  .inbox-rule{font-family:var(--mono);font-size:10px;color:var(--muted-2);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:1px 6px;margin-left:8px}
+  .inbox-sla{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;border-radius:999px;padding:3px 9px;background:var(--red-l);color:#9F1239;margin-top:6px}
+</style>
+</head>
+<body>
+  <p class="note">
+    <b>Approvals SoT</b> — full interactive mock lived in the design handoff.
+    Production UI: Institution Portal <code>/approvals</code> (tabs Approvals / Tasks / Alerts,
+    SLA summary, bulk bar, expandable rows, confirm-before-commit on live items).
+  </p>
+  <div class="inbox-head">
+    <div><h2>Your inbox</h2><p>Everything waiting on you — sorted by SLA, scoped to your roles.</p></div>
+    <div class="inbox-summary">
+      <div class="inbox-sm breach"><span class="n">3</span><span class="l">SLA<br>breached</span></div>
+      <div class="inbox-sm due"><span class="n">4</span><span class="l">Due<br>today</span></div>
+      <div class="inbox-sm"><span class="n">13</span><span class="l">Total<br>pending</span></div>
+    </div>
+  </div>
+  <div class="inbox-tabs">
+    <span class="inbox-tab on">Approvals <span class="c">4</span></span>
+    <span class="inbox-tab">Tasks <span class="c">6</span></span>
+    <span class="inbox-tab">Alerts <span class="c">3</span></span>
+  </div>
+  <div class="inbox-row">
+    <div class="inbox-row__title">Q3 2025 Board Pack — ready for review <span class="inbox-rule">R-A1</span></div>
+    <span class="inbox-sla">Overdue 2d</span>
+    <p style="margin-top:8px;font-size:12px;color:var(--muted)">Governance · Board Pack · BP-2025-Q3 · from Board Secretary</p>
+  </div>
+</body>
+</html>

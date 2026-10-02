@@ -15,8 +15,9 @@ dist/
 *.local
 .DS_Store
 
-# Frappe bench (created by bootstrap; large)
+# Frappe bench (created by bootstrap; large) — local runtime only
 engine/frappe-bench/
+engine/logs/
 
 # IDE / OS
 .idea/
@@ -28,8 +29,10 @@ engine/frappe-bench/
 *.key
 .env.*
 !.env.example
+engine/.mariadb_root_pass
 
 # Generated noise
 *.log
+*.tsbuildinfo
 .coverage
 htmlcov/

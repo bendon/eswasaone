@@ -1,0 +1,307 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Workflow",
+  "document_type": "Certification Application",
+  "is_active": 1,
+  "name": "Certification Application Flow",
+  "override_status": 0,
+  "send_email_alert": 0,
+  "states": [
+   {
+    "allow_edit": "Certification Officer",
+    "doc_status": "0",
+    "parent": "Certification Application Flow",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "state": "Application",
+    "update_field": "workflow_state",
+    "update_value": "Application"
+   },
+   {
+    "allow_edit": "Certification Officer",
+    "doc_status": "0",
+    "parent": "Certification Application Flow",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "state": "Assessment",
+    "update_field": "workflow_state",
+    "update_value": "Assessment"
+   },
+   {
+    "allow_edit": "Certification Officer",
+    "doc_status": "0",
+    "parent": "Certification Application Flow",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "state": "Audit Scheduled",
+    "update_field": "workflow_state",
+    "update_value": "Audit Scheduled"
+   },
+   {
+    "allow_edit": "Certification Auditor",
+    "doc_status": "0",
+    "parent": "Certification Application Flow",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "state": "Audit",
+    "update_field": "workflow_state",
+    "update_value": "Audit"
+   },
+   {
+    "allow_edit": "Certification Officer",
+    "doc_status": "0",
+    "parent": "Certification Application Flow",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "state": "NC Resolution",
+    "update_field": "workflow_state",
+    "update_value": "NC Resolution"
+   },
+   {
+    "allow_edit": "Certification Manager",
+    "doc_status": "0",
+    "parent": "Certification Application Flow",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "state": "Certified",
+    "update_field": "workflow_state",
+    "update_value": "Certified"
+   },
+   {
+    "allow_edit": "Certification Officer",
+    "doc_status": "0",
+    "parent": "Certification Application Flow",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "state": "Surveillance",
+    "update_field": "workflow_state",
+    "update_value": "Surveillance"
+   },
+   {
+    "allow_edit": "Certification Officer",
+    "doc_status": "0",
+    "parent": "Certification Application Flow",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "state": "Renewal",
+    "update_field": "workflow_state",
+    "update_value": "Renewal"
+   },
+   {
+    "allow_edit": "Certification Manager",
+    "doc_status": "0",
+    "parent": "Certification Application Flow",
+    "parentfield": "states",
+    "parenttype": "Workflow",
+    "state": "Withdraw",
+    "update_field": "workflow_state",
+    "update_value": "Withdraw"
+   }
+  ],
+  "transitions": [
+   {
+    "action": "Submit for Assessment",
+    "allow_self_approval": 1,
+    "allowed": "Certification Officer",
+    "next_state": "Assessment",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Application"
+   },
+   {
+    "action": "Schedule Audit",
+    "allow_self_approval": 1,
+    "allowed": "Certification Officer",
+    "next_state": "Audit Scheduled",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Assessment"
+   },
+   {
+    "action": "Start Audit",
+    "allow_self_approval": 1,
+    "allowed": "Certification Auditor",
+    "next_state": "Audit",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Audit Scheduled"
+   },
+   {
+    "action": "Raise NC",
+    "allow_self_approval": 1,
+    "allowed": "Certification Auditor",
+    "next_state": "NC Resolution",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Audit"
+   },
+   {
+    "action": "Certify",
+    "allow_self_approval": 1,
+    "allowed": "Certification Manager",
+    "next_state": "Certified",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Audit"
+   },
+   {
+    "action": "Clear NC",
+    "allow_self_approval": 1,
+    "allowed": "Certification Officer",
+    "next_state": "Certified",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "NC Resolution"
+   },
+   {
+    "action": "Certify",
+    "allow_self_approval": 1,
+    "allowed": "Certification Manager",
+    "next_state": "Certified",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "NC Resolution"
+   },
+   {
+    "action": "Start Surveillance",
+    "allow_self_approval": 1,
+    "allowed": "Certification Officer",
+    "next_state": "Surveillance",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Certified"
+   },
+   {
+    "action": "Start Renewal",
+    "allow_self_approval": 1,
+    "allowed": "Certification Officer",
+    "next_state": "Renewal",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Surveillance"
+   },
+   {
+    "action": "Start Renewal",
+    "allow_self_approval": 1,
+    "allowed": "Certification Officer",
+    "next_state": "Renewal",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Certified"
+   },
+   {
+    "action": "Reassess",
+    "allow_self_approval": 1,
+    "allowed": "Certification Officer",
+    "next_state": "Assessment",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Renewal"
+   },
+   {
+    "action": "Schedule Audit",
+    "allow_self_approval": 1,
+    "allowed": "Certification Officer",
+    "next_state": "Audit Scheduled",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Renewal"
+   },
+   {
+    "action": "Withdraw",
+    "allow_self_approval": 1,
+    "allowed": "Certification Manager",
+    "next_state": "Withdraw",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Application"
+   },
+   {
+    "action": "Withdraw",
+    "allow_self_approval": 1,
+    "allowed": "Certification Manager",
+    "next_state": "Withdraw",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Assessment"
+   },
+   {
+    "action": "Withdraw",
+    "allow_self_approval": 1,
+    "allowed": "Certification Manager",
+    "next_state": "Withdraw",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Audit Scheduled"
+   },
+   {
+    "action": "Withdraw",
+    "allow_self_approval": 1,
+    "allowed": "Certification Manager",
+    "next_state": "Withdraw",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Audit"
+   },
+   {
+    "action": "Withdraw",
+    "allow_self_approval": 1,
+    "allowed": "Certification Manager",
+    "next_state": "Withdraw",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "NC Resolution"
+   },
+   {
+    "action": "Withdraw",
+    "allow_self_approval": 1,
+    "allowed": "Certification Manager",
+    "next_state": "Withdraw",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Certified"
+   },
+   {
+    "action": "Withdraw",
+    "allow_self_approval": 1,
+    "allowed": "Certification Manager",
+    "next_state": "Withdraw",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Surveillance"
+   },
+   {
+    "action": "Withdraw",
+    "allow_self_approval": 1,
+    "allowed": "Certification Manager",
+    "next_state": "Withdraw",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Renewal"
+   }
+  ],
+  "workflow_name": "Certification Application Flow",
+  "workflow_state_field": "workflow_state"
+ }
+]

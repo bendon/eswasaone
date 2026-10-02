@@ -1,0 +1,220 @@
+/* EswasaOne Auth Pages — login / logout / update-password / forgot-password
+   Shared brand skin. Loaded directly via <link> from each www/*.html page,
+   NOT through Frappe's login.bundle.css. Targets the .es-auth wrapper so
+   Frappe's desk/portal styles are never touched.
+
+   Design tokens mirror portals/shared-ui/src/styles/tokens.css. */
+
+:root {
+  --bg: #f4f7fa;
+  --card: #ffffff;
+  --ink: #0f172a;
+  --muted: #5a6b84;
+  --muted-2: #8a9ab1;
+  --line: #e4eaf2;
+  --line-2: #eff3f8;
+  --navy: #313391;
+  --navy-d: #24286f;
+  --navy-l: #eceefc;
+  --gold: #f5c518;
+  --gold-d: #d9a800;
+  --gold-ink: #24286f;
+  --gold-l: #fef6dc;
+  --green: #16a34a;
+  --green-l: #dcfce7;
+  --red: #e11d6e;
+  --red-l: #fdecec;
+  --blue: #2563eb;
+  --blue-l: #e0f2fe;
+  --amber: #d97706;
+  --amber-l: #fef3c7;
+  --r-sm: 10px;
+  --r: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --sh-sm: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --sh-md: 0 6px 16px -4px rgba(16, 24, 40, 0.1), 0 2px 6px -2px rgba(16, 24, 40, 0.05);
+  --sh-lg: 0 20px 44px -20px rgba(16, 24, 40, 0.24);
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Reset Frappe's page chrome on these routes */
+.es-auth,
+.es-auth * {
+  box-sizing: border-box;
+}
+.es-auth {
+  min-height: 100dvh;
+  margin: 0;
+  padding: 40px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(120% 80% at 50% -10%, var(--navy-l) 0%, transparent 60%),
+    linear-gradient(180deg, #eef2f9 0%, var(--bg) 55%);
+  font-family: var(--font-sans);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+.es-auth body { margin: 0; }
+
+/* Hide Frappe's default navbar/footer/breadcrumbs if present */
+.es-auth .navbar,
+.es-auth .web-footer,
+.es-auth .page-header-wrapper,
+.es-auth .page-footer,
+.es-auth .page-breadcrumbs { display: none !important; }
+
+/* The card */
+.es-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-lg);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+@media (max-width: 480px) {
+  .es-auth { padding: 0; align-items: stretch; }
+  .es-card {
+    max-width: 100%;
+    min-height: 100dvh;
+    border-radius: 0;
+    border: none;
+    padding: 56px 24px 32px;
+    justify-content: center;
+  }
+}
+
+/* Head: logo + titles */
+.es-head { display: flex; flex-direction: column; gap: 18px; align-items: flex-start; }
+.es-head .es-logo {
+  max-height: 44px; width: auto; height: auto; object-fit: contain;
+}
+.es-head .es-title-text { display: flex; flex-direction: column; gap: 4px; }
+.es-head h1 {
+  margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em;
+  line-height: 1.2; color: var(--ink);
+}
+.es-head .es-subtitle { margin: 0; font-size: 14px; color: var(--muted); }
+
+/* Form */
+.es-form { display: flex; flex-direction: column; gap: 16px; }
+.es-field { display: flex; flex-direction: column; gap: 7px; }
+/* Respect the HTML hidden attribute — .es-field's display:flex would
+   otherwise override [hidden] and show the Old Password field on
+   reset-key flows where the user has no old password to enter. */
+.es-field[hidden],
+.es-auth [hidden] { display: none !important; }
+.es-label {
+  font-size: 13px; font-weight: 600; color: var(--ink); letter-spacing: 0;
+}
+.es-input-wrap { position: relative; width: 100%; }
+.es-input {
+  width: 100%; height: 44px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--card); color: var(--ink);
+  font-family: var(--font-sans); font-size: 15px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.es-input::placeholder { color: var(--muted-2); }
+.es-input:focus {
+  outline: none; border-color: var(--navy);
+  box-shadow: 0 0 0 4px rgba(49, 51, 145, 0.12);
+}
+.es-input-wrap.has-icon-left .es-input { padding-left: 40px; }
+.es-input-wrap.has-icon-right .es-input { padding-right: 40px; }
+.es-input-wrap .es-icon-left,
+.es-input-wrap .es-icon-right {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  color: var(--muted-2); width: 18px; height: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.es-input-wrap .es-icon-left { left: 11px; }
+.es-input-wrap .es-icon-right { right: 11px; cursor: pointer; }
+.es-input-wrap .es-icon-right:hover { color: var(--navy); }
+.es-field-error { font-size: 12.5px; color: var(--red); font-weight: 500; min-height: 0; }
+.es-field-error:not(:empty) { margin-top: 2px; }
+
+/* Password strength meter */
+.es-strength { display: flex; flex-direction: column; gap: 8px; }
+.es-strength-track {
+  height: 5px; background: var(--line); border-radius: 999px; overflow: hidden;
+}
+.es-strength-fill {
+  height: 100%; width: 0; border-radius: 999px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.es-strength-fill.s-red { background: var(--red); }
+.es-strength-fill.s-orange { background: var(--amber); }
+.es-strength-fill.s-blue { background: var(--blue); }
+.es-strength-fill.s-green { background: var(--green); }
+.es-strength-label { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.es-hint {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 12.5px; color: var(--muted); line-height: 1.5;
+  background: var(--line-2); border: 1px solid var(--line);
+  border-radius: var(--r-sm); padding: 8px 10px;
+}
+.es-hint svg { color: var(--amber); flex-shrink: 0; margin-top: 1px; }
+
+/* Primary button — EswasaOne navy */
+.es-btn {
+  width: 100%; height: 44px; padding: 10px 16px;
+  font-family: var(--font-sans); font-size: 15px; font-weight: 600;
+  letter-spacing: 0; line-height: 1.2;
+  border-radius: var(--r-sm); border: none; box-shadow: none;
+  cursor: pointer; transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+.es-btn-primary { background: var(--navy); color: #fff; }
+.es-btn-primary:hover,
+.es-btn-primary:focus { background: var(--navy-d); box-shadow: 0 0 0 4px rgba(49, 51, 145, 0.16); }
+.es-btn-primary:active { transform: translateY(1px); }
+.es-btn-primary:disabled {
+  background: var(--line); color: var(--muted-2); cursor: not-allowed; box-shadow: none;
+}
+.es-btn-ghost {
+  background: transparent; color: var(--navy); border: 1px solid var(--line);
+}
+.es-btn-ghost:hover { background: var(--navy-l); border-color: var(--navy); }
+
+/* Footer link row */
+.es-foot {
+  margin-top: 0; display: flex; justify-content: center; gap: 6px;
+  color: var(--muted); font-size: 13.5px;
+}
+.es-foot a { color: var(--navy); font-weight: 600; text-decoration: none; }
+.es-foot a:hover { text-decoration: underline; }
+.es-foot .es-foot-divider { color: var(--muted-2); }
+
+/* Inline banner (success / error) */
+.es-banner {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: var(--r-sm); font-size: 13.5px; line-height: 1.45;
+}
+.es-banner svg { flex-shrink: 0; margin-top: 1px; }
+.es-banner.ok { background: var(--green-l); color: #15803d; }
+.es-banner.ok svg { color: var(--green); }
+.es-banner.err { background: var(--red-l); color: #be123c; }
+.es-banner.err svg { color: var(--red); }
+.es-banner[hidden] { display: none !important; }
+
+/* Loading spinner inside button */
+.es-btn .es-spin {
+  width: 16px; height: 16px; border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff; border-radius: 50%; animation: es-spin 0.6s linear infinite;
+  display: inline-block; vertical-align: middle; margin-right: 8px;
+}
+@keyframes es-spin { to { transform: rotate(360deg); } }
+
+/* Screen-reader only */
+.es-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

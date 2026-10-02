@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1B2A5C">
+<title>EswasaOne — Goals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F7FA;--card:#FFFFFF;--line:#E4EAF2;--line-2:#EFF3F8;
+    --ink:#0F172A;--muted:#5A6B84;--muted-2:#8A9AB1;
+    --navy:#1B2A5C;--navy-d:#131E44;--navy-l:#EAEEF9;
+    --gold:#F5C518;--r-lg:18px;--r-xl:24px;
+    --sh-xs:0 1px 2px rgba(16,24,40,.05);--sh-lg:0 20px 44px -20px rgba(16,24,40,.24);
+    --maxw:1400px;--nav-h:68px;--gutter:32px;
+    --font-sans:"Plus Jakarta Sans",system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box}*{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:1.5}
+  a{color:inherit;text-decoration:none}svg{flex:0 0 auto}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 var(--gutter)}
+  .topnav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .topnav__in{max-width:var(--maxw);margin:0 auto;height:var(--nav-h);display:flex;align-items:center;gap:32px;padding:0 var(--gutter)}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand__logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(150deg,#F5C518,#D9A800);display:grid;place-items:center}
+  .brand__logo svg{width:20px;height:20px;stroke:#1B2A5C}
+  .brand b{font-weight:800;font-size:16.5px;display:block;line-height:1.1}
+  .brand span{font-size:9px;letter-spacing:.16em;color:var(--muted-2);font-weight:700}
+  .navlinks{display:flex;gap:2px;flex:1}
+  .navlinks a{padding:9px 14px;border-radius:10px;font-size:13.5px;font-weight:600;color:var(--muted)}
+  .navlinks a.on{color:var(--navy-d);background:var(--navy-l)}
+  .authbtn{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer}
+  .mtop{display:none}
+  .content{padding:26px 0 56px}
+  .phero{position:relative;overflow:hidden;border-radius:var(--r-xl);color:#fff;padding:40px 44px;background:linear-gradient(130deg,#223A78 0%,#1B2A5C 55%,#131E44 100%);box-shadow:0 24px 60px -24px rgba(19,30,68,.55)}
+  .phero__label{display:inline-flex;align-items:center;gap:8px;font-size:10.5px;letter-spacing:.17em;font-weight:800;color:rgba(255,255,255,.62)}
+  .phero__label::before{content:"";width:6px;height:6px;border-radius:50%;background:#F5C518}
+  .phero h1{font-size:clamp(26px,3.1vw,38px);font-weight:800;letter-spacing:-.03em;margin-top:14px}
+  .phero p{color:rgba(255,255,255,.78);font-size:15px;margin-top:12px;max-width:60ch}
+  .searchrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;max-width:640px}
+  .searchrow .inp{flex:1;min-width:240px;display:flex;align-items:center;gap:10px;height:52px;background:#fff;border-radius:13px;padding:0 16px}
+  .searchrow .inp input{flex:1;border:0;outline:0;font:inherit;font-size:15px;font-weight:500}
+  .askesi{display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 18px;border-radius:13px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+  .pills{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 4px}
+  .pill{padding:9px 15px;border-radius:999px;background:#fff;border:1px solid var(--line);font:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+  .pill.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .count{font-size:13px;color:var(--muted);margin:18px 0 14px;font-weight:600}
+  .count b{color:var(--ink)}
+  .goals{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .goal{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;box-shadow:var(--sh-xs);transition:transform .2s,box-shadow .2s}
+  .goal:hover{transform:translateY(-3px);box-shadow:var(--sh-lg)}
+  .goal__top{display:flex;align-items:center;gap:12px}
+  .goal__ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:var(--tint);color:var(--tone)}
+  .goal__ic svg{width:23px;height:23px;stroke:currentColor}
+  .goal__tag{margin-left:auto;font-size:10.5px;font-weight:800;text-transform:uppercase;color:var(--tone);background:var(--tint);padding:4px 9px;border-radius:7px}
+  .goal h3{font-size:16.5px;font-weight:800;margin-top:15px}
+  .goal p{font-size:13px;color:var(--muted);margin-top:6px;flex:1}
+  .goal__meta{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-2);font-size:12px;color:var(--muted-2);font-weight:600}
+  .goal__foot{display:flex;align-items:center;margin-top:15px}
+  .goal__start{font-size:13px;font-weight:700;color:var(--navy)}
+  .goal__go{margin-left:auto;width:34px;height:34px;border-radius:10px;background:var(--bg);display:grid;place-items:center}
+  .goal[hidden]{display:none}
+  .empty{grid-column:1/-1;text-align:center;padding:40px;border:1px dashed var(--line);border-radius:var(--r-lg);background:#fff;color:var(--muted)}
+  .dock{position:fixed;right:24px;bottom:24px;z-index:50}
+  .dock__trigger{display:flex;align-items:center;gap:12px;height:58px;padding:8px 22px 8px 8px;background:#fff;border:1px solid var(--line);border-radius:999px;box-shadow:0 14px 36px -10px rgba(16,24,40,.26);cursor:pointer;font:inherit;font-weight:600}
+  .dock__av{width:42px;height:42px;border-radius:50%;background:linear-gradient(140deg,#2E4B96,#1B2A5C);color:#fff;display:grid;place-items:center;font-weight:800}
+  .tabbar{display:none}
+  @media(max-width:1150px){.goals{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:900px){
+    .topnav{display:none}.mtop{display:flex;position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid var(--line);height:60px;align-items:center;justify-content:space-between;padding:0 18px}
+    .wrap{padding:0 16px}body{padding-bottom:84px}.goals{grid-template-columns:1fr}
+    .phero{padding:26px 22px}.searchrow .inp,.askesi{width:100%}
+    .dock{left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+    .dock__trigger{width:100%;justify-content:center}
+    .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:45;background:#fff;border-top:1px solid var(--line);justify-content:space-around;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+    .tab{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:56px;min-height:52px;padding:4px 8px;background:none;border:0;color:var(--muted-2);font:inherit;font-size:10.5px;font-weight:700}
+    .tab.on{color:var(--navy);background:var(--navy-l)}
+  }
+</style>
+</head>
+<body>
+<!-- SoT for portals/service-portal /goals — Goals are generated+cached guides from the requirements graph.
+     Home never stacks steps; selection → /goals/:slug. Mobile: Goals is a primary tab; Certification in More. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/></symbol>
+  <symbol id="i-badge" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="9" r="5.5"/><path d="M9.7 13.5L8 21l4-2 4 2-1.7-7.5"/></symbol>
+  <symbol id="i-shield-c" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-cap" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 4l10 5-10 5L2 9z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h5v-5h2v5h5v-9"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v15H6.5A2.5 2.5 0 004 20.5z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></symbol>
+  <symbol id="i-cright" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-steps" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 18h4v-4H4zM10 14h4v-4h-4zM16 10h4V6h-4z"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></symbol>
+</svg>
+<header class="topnav"><div class="topnav__in">
+  <a class="brand" href="/"><span class="brand__logo"><svg><use href="#i-shield"/></svg></span><div><b>EswasaOne</b><span>SERVICE PORTAL</span></div></a>
+  <nav class="navlinks">
+    <a href="/">Home</a><a href="/goals" class="on">Goals</a><a href="/standards">Standards</a>
+    <a href="/certification">Certification</a><a href="/training">Training</a><a href="/export">Export</a><a href="/complaints">Complaints</a>
+  </nav>
+  <button class="authbtn">Sign in</button>
+</div></header>
+<header class="mtop">
+  <a class="brand" href="/"><span class="brand__logo"><svg><use href="#i-shield"/></svg></span><div><b>EswasaOne</b><span>SERVICE PORTAL</span></div></a>
+  <button class="authbtn">Sign in</button>
+</header>
+<main class="wrap"><div class="content">
+  <section class="phero"><div>
+    <span class="phero__label">GOALS</span>
+    <h1>What do you want to do?</h1>
+    <p>Pick a goal and we'll build the exact steps — which standards apply, what to prepare, and what it costs. Every guide is free; you only sign in to act.</p>
+    <div class="searchrow">
+      <div class="inp"><svg><use href="#i-search"/></svg><input id="q" type="text" placeholder="Search goals — e.g. honey, ISO 9001…" oninput="filter()"></div>
+      <button class="askesi"><svg><use href="#i-spark"/></svg> Ask Esi instead</button>
+    </div>
+  </div></section>
+  <div class="pills" id="pills">
+    <button class="pill on" data-cat="all" onclick="setCat(this)">All goals</button>
+    <button class="pill" data-cat="export" onclick="setCat(this)">Export &amp; trade</button>
+    <button class="pill" data-cat="cert" onclick="setCat(this)">Certification</button>
+    <button class="pill" data-cat="mark" onclick="setCat(this)">Product marks</button>
+    <button class="pill" data-cat="food" onclick="setCat(this)">Food &amp; drink</button>
+    <button class="pill" data-cat="compliance" onclick="setCat(this)">Compliance</button>
+    <button class="pill" data-cat="training" onclick="setCat(this)">Training</button>
+  </div>
+  <div class="count" id="count"></div>
+  <section class="goals" id="grid">
+    <a class="goal" href="/goals/export-honey-eu" data-cat="export food" data-t="export honey eu" style="--tint:#EAEEF9;--tone:#1B2A5C"><div class="goal__top"><span class="goal__ic"><svg><use href="#i-globe"/></svg></span><span class="goal__tag">Export</span></div><h3>Export honey to the EU</h3><p>Natural honey (HS 0409) — composition standards, testing and EU market rules.</p><div class="goal__meta"><span>5 steps</span><span>4–8 weeks</span><span>from SZL 3,200</span></div><div class="goal__foot"><span class="goal__start">Start guide</span><span class="goal__go"><svg><use href="#i-cright"/></svg></span></div></a>
+    <a class="goal" href="/goals/iso-9001" data-cat="cert" data-t="iso 9001" style="--tint:#DCFCE7;--tone:#15803D"><div class="goal__top"><span class="goal__ic"><svg><use href="#i-badge"/></svg></span><span class="goal__tag">Certify</span></div><h3>Get ISO 9001 certified</h3><p>Quality Management System certification — scope, implement, audit, certify.</p><div class="goal__meta"><span>5 steps</span><span>10–12 weeks</span></div><div class="goal__foot"><span class="goal__start">Start guide</span><span class="goal__go"><svg><use href="#i-cright"/></svg></span></div></a>
+    <a class="goal" href="/goals/sell-bottled-water" data-cat="mark food" data-t="bottled water" style="--tint:#E0F2FE;--tone:#075985"><div class="goal__top"><span class="goal__ic"><svg><use href="#i-shield-c"/></svg></span><span class="goal__tag">Product mark</span></div><h3>Sell bottled water locally</h3><p>Packaged drinking water (SZNS 042) — standard, testing, product certification mark.</p><div class="goal__meta"><span>4 steps</span><span>4–6 weeks</span><span>from SZL 1,800</span></div><div class="goal__foot"><span class="goal__start">Start guide</span><span class="goal__go"><svg><use href="#i-cright"/></svg></span></div></a>
+    <a class="goal" href="/goals/export-beef-sacu" data-cat="export food" data-t="beef sacu" style="--tint:#EAEEF9;--tone:#1B2A5C"><div class="goal__top"><span class="goal__ic"><svg><use href="#i-globe"/></svg></span><span class="goal__tag">Export</span></div><h3>Export beef to South Africa</h3><p>SACU market access, residue monitoring and health certificates.</p><div class="goal__meta"><span>6 steps</span><span>6–10 weeks</span></div><div class="goal__foot"><span class="goal__start">Start guide</span><span class="goal__go"><svg><use href="#i-cright"/></svg></span></div></a>
+    <a class="goal" href="/goals/iso-22000" data-cat="cert food" data-t="iso 22000 food" style="--tint:#DCFCE7;--tone:#15803D"><div class="goal__top"><span class="goal__ic"><svg><use href="#i-badge"/></svg></span><span class="goal__tag">Certify</span></div><h3>Get ISO 22000 (food safety)</h3><p>Food safety management with HACCP for producers and processors.</p><div class="goal__meta"><span>6 steps</span><span>10–14 weeks</span></div><div class="goal__foot"><span class="goal__start">Start guide</span><span class="goal__go"><svg><use href="#i-cright"/></svg></span></div></a>
+    <a class="goal" href="/goals/internal-auditor" data-cat="training" data-t="internal auditor" style="--tint:#F0E9FB;--tone:#6D28D9"><div class="goal__top"><span class="goal__ic"><svg><use href="#i-cap"/></svg></span><span class="goal__tag">Training</span></div><h3>Become an internal auditor</h3><p>Course, assessment and digital certificate.</p><div class="goal__meta"><span>3 steps</span><span>2–4 weeks</span></div><div class="goal__foot"><span class="goal__start">Start guide</span><span class="goal__go"><svg><use href="#i-cright"/></svg></span></div></a>
+    <a class="goal" href="/goals/label-product" data-cat="compliance" data-t="labelling" style="--tint:#FEF3C7;--tone:#92400E"><div class="goal__top"><span class="goal__ic"><svg><use href="#i-file"/></svg></span><span class="goal__tag">Compliance</span></div><h3>Label my product correctly</h3><p>Mandatory labelling, units and claims for your product category.</p><div class="goal__meta"><span>3 steps</span><span>1–2 weeks</span></div><div class="goal__foot"><span class="goal__start">Start guide</span><span class="goal__go"><svg><use href="#i-cright"/></svg></span></div></a>
+    <a class="goal" href="/applicability" data-cat="compliance" data-t="applicability standard" style="--tint:#FEF3C7;--tone:#92400E"><div class="goal__top"><span class="goal__ic"><svg><use href="#i-shield-c"/></svg></span><span class="goal__tag">Free tool</span></div><h3>Find the standard for my product</h3><p>Describe your product and get the exact standards list.</p><div class="goal__meta"><span>Instant</span><span>Free</span></div><div class="goal__foot"><span class="goal__start">Open checker</span><span class="goal__go"><svg><use href="#i-cright"/></svg></span></div></a>
+    <div class="empty" id="empty" hidden>No goals match. <button class="askesi" style="height:auto;padding:8px 14px;margin-top:8px">Ask Esi</button></div>
+  </section>
+</div></main>
+<div class="dock"><button class="dock__trigger"><span class="dock__av">E</span><span>Ask Esi anything…</span></button></div>
+<nav class="tabbar">
+  <a class="tab" href="/"><svg><use href="#i-home"/></svg>Home</a>
+  <a class="tab on" href="/goals"><svg><use href="#i-steps"/></svg>Goals</a>
+  <a class="tab" href="/standards"><svg><use href="#i-book"/></svg>Standards</a>
+  <a class="tab" href="/export"><svg><use href="#i-globe"/></svg>Export</a>
+  <button class="tab"><svg><use href="#i-more"/></svg>More</button>
+</nav>
+<script>
+let cat='all';
+function setCat(el){cat=el.dataset.cat;document.querySelectorAll('.pill').forEach(p=>p.classList.toggle('on',p===el));filter()}
+function filter(){
+  const q=(document.getElementById('q').value||'').toLowerCase().trim();let n=0;
+  document.querySelectorAll('.goal').forEach(g=>{
+    const inCat=cat==='all'||(g.dataset.cat||'').split(' ').includes(cat);
+    const inText=!q||(g.dataset.t||'').includes(q)||g.querySelector('h3').textContent.toLowerCase().includes(q);
+    g.hidden=!(inCat&&inText);if(inCat&&inText)n++;
+  });
+  document.getElementById('empty').hidden=n>0;
+  document.getElementById('count').innerHTML=`<b>${n}</b> goal${n===1?'':'s'}${cat==='all'?'':' in this category'}`;
+}
+filter();
+</script>
+</body>
+</html>

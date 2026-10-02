@@ -1,0 +1,52 @@
+[
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Submit for Assessment",
+  "workflow_action_name": "Submit for Assessment"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Schedule Audit",
+  "workflow_action_name": "Schedule Audit"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Start Audit",
+  "workflow_action_name": "Start Audit"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Raise NC",
+  "workflow_action_name": "Raise NC"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Clear NC",
+  "workflow_action_name": "Clear NC"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Certify",
+  "workflow_action_name": "Certify"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Start Surveillance",
+  "workflow_action_name": "Start Surveillance"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Start Renewal",
+  "workflow_action_name": "Start Renewal"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Withdraw",
+  "workflow_action_name": "Withdraw"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Reassess",
+  "workflow_action_name": "Reassess"
+ }
+]

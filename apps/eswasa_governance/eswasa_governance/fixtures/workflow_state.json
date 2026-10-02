@@ -1,0 +1,20 @@
+[
+ {
+  "doctype": "Workflow State",
+  "name": "Adopted",
+  "workflow_state_name": "Adopted",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Draft",
+  "workflow_state_name": "Draft",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Review",
+  "workflow_state_name": "Review",
+  "style": ""
+ }
+]

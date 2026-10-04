@@ -144,7 +144,13 @@ export type {
   Session,
 } from "./auth";
 
-export { BrandLogo, SiteFooter, type SiteFooterHealth } from "./brand";
+export {
+  BrandLogo,
+  SiteFooter,
+  type SiteFooterHealth,
+  type SiteFooterColumn,
+  type SiteFooterContact,
+} from "./brand";
 
 export {
   brand,

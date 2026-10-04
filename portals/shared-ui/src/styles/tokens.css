@@ -14,17 +14,20 @@
   --muted: #5a6b84;
   --muted-2: #8a9ab1;
 
-  /* Brand — primary navy (sampled from official ESWASA logo) */
-  --navy: #313391;
+  /* Brand — primary navy (eswasa.co.sz main.css #2E3191) */
+  --navy: #2e3191;
   --navy-d: #24286f;
   --navy-l: #eceefc;
+  --navy-deep: #1b1d5c;
+  --slate: #5a7093;
+  --surface: #f6f7fa;
 
   /* Brand — secondary / links */
   --royal: #2b3399;
 
   /* Brand — accent gold */
-  --gold: #f5c518;
-  --gold-d: #d9a800;
+  --gold: #f8bc24;
+  --gold-d: #e0a50c;
   --gold-ink: #24286f;
   --gold-l: #fef6dc;
 
@@ -79,6 +82,8 @@
 
   /* Typography */
   --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  /* Display headings (service portal, EGov layout) */
+  --font-display: "Catamaran", "Plus Jakarta Sans", system-ui, sans-serif;
   /* Identifiers: SZNS / ISO codes, refs, order IDs — never the display sans */
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }

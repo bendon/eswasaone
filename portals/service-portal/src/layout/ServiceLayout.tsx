@@ -7,6 +7,7 @@ import {
   IconSprite,
   SiteFooter,
   type IconName,
+  type SiteFooterColumn,
 } from "@eswasaone/shared-ui";
 import { useAuth } from "../auth/AuthProvider";
 import { useCartToast } from "../ui/CartToast";
@@ -20,7 +21,6 @@ const DESKTOP_NAV = [
   { to: "/training", label: "Training" },
   { to: "/export", label: "Export" },
   { to: "/ai-tech", label: "AI & Tech", dot: true },
-  { to: "/complaints", label: "Complaints" },
 ] as const;
 
 const TAB_PRIMARY = [
@@ -39,6 +39,41 @@ const MORE_LINKS = [
   { to: "/verify", label: "Verify", icon: "i-eye" as IconName },
   { to: "/account", label: "My account", icon: "i-users" as IconName },
 ] as const;
+
+const UTILITY_LINKS = [
+  { to: "/verify", label: "Verify a certificate" },
+  { to: "/applicability", label: "Applicability checker" },
+  { to: "/account", label: "My account" },
+] as const;
+
+const FOOTER_COLUMNS: SiteFooterColumn[] = [
+  {
+    title: "Services",
+    links: [
+      { to: "/standards", label: "Standards & E-Store" },
+      { to: "/certification", label: "Certification" },
+      { to: "/training", label: "Training & Courses" },
+      { to: "/export", label: "Export Guidance" },
+      { to: "/ai-tech", label: "AI & Technology" },
+    ],
+  },
+  {
+    title: "Quick links",
+    links: [
+      { to: "/goals", label: "Goals" },
+      { to: "/applicability", label: "Standards Applicability" },
+      { to: "/verify", label: "Verify a certificate" },
+      { to: "/complaints", label: "Complaints & Enquiries" },
+      { to: "/account", label: "My account" },
+    ],
+  },
+];
+
+const FOOTER_CONTACT = {
+  phone: "(+268) 2518 4633 / 4610",
+  phoneHref: "+26825184633",
+  email: "info@eswasa.co.sz",
+};
 
 function CartButton() {
   const { cartCount, showToast } = useCartToast();
@@ -72,6 +107,7 @@ export function ServiceLayout() {
   const loc = useLocation();
   const navigate = useNavigate();
   const isHome = loc.pathname === "/";
+  const routeKey = loc.pathname.split("/")[1] || "home";
 
   const openDock = useCallback(() => {
     setExpandSignal((n) => n + 1);
@@ -97,6 +133,26 @@ export function ServiceLayout() {
   return (
     <>
       <IconSprite />
+
+      <div className="utilbar">
+        <div className="utilbar__in">
+          <div className="utilbar__l">
+            <a href={`tel:${FOOTER_CONTACT.phoneHref}`}>
+              <Icon name="i-phone" /> Call: {FOOTER_CONTACT.phone}
+            </a>
+            <a href={`mailto:${FOOTER_CONTACT.email}`}>
+              <Icon name="i-mail" /> {FOOTER_CONTACT.email}
+            </a>
+          </div>
+          <nav className="utilbar__r" aria-label="Utility">
+            {UTILITY_LINKS.map((l) => (
+              <NavLink key={l.to} to={l.to}>
+                {l.label}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+      </div>
 
       <header className="topnav">
         <div className="topnav__in">
@@ -125,6 +181,9 @@ export function ServiceLayout() {
             ))}
           </nav>
           <div className="authctl">
+            <NavLink className="navsearch" to="/standards" aria-label="Search standards">
+              <Icon name="i-search" />
+            </NavLink>
             <CartButton />
             {!user ? (
               <button type="button" className="authbtn" onClick={() => openAuth()}>
@@ -133,6 +192,9 @@ export function ServiceLayout() {
             ) : (
               <CitizenMenu user={user} onSignOut={handleSignOut} />
             )}
+            <NavLink className="reportbtn" to="/complaints">
+              Report an Issue
+            </NavLink>
           </div>
         </div>
       </header>
@@ -159,7 +221,7 @@ export function ServiceLayout() {
         </div>
       </header>
 
-      <main className="wrap">
+      <main className={`wrap${isHome ? " wrap--home" : ""}`} data-route={routeKey}>
         <div className="content">
           {isHome ? <div className="hero-sentinel" aria-hidden /> : null}
           <Outlet
@@ -172,7 +234,7 @@ export function ServiceLayout() {
               openDock,
             }}
           />
-          <SiteFooter />
+          <SiteFooter variant="full" columns={FOOTER_COLUMNS} contact={FOOTER_CONTACT} />
         </div>
       </main>
 

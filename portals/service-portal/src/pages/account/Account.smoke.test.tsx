@@ -264,7 +264,8 @@ describe("Account workspace", () => {
       expect(screen.getByText(/SZNS 060 — Honey specification/i)).toBeInTheDocument();
     });
     expect(screen.getByText("#8851")).toBeInTheDocument();
-    expect(screen.getByText("Completed")).toBeInTheDocument();
+    // "Completed" is also a status-filter <option>; assert the row's pill.
+    expect(screen.getByText("Completed", { selector: ".pill" })).toBeInTheDocument();
   });
 
   it("lists certificates as cards", async () => {

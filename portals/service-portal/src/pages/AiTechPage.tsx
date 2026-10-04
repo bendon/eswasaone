@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Icon, type IconName } from "@eswasaone/shared-ui";
 import { Breadcrumbs } from "../components/Breadcrumbs";
@@ -122,13 +122,6 @@ export function AiTechPage() {
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [pathname]);
 
-  // Fill the sample-report meters once the hero has painted.
-  const [filled, setFilled] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setFilled(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
   const scrollTo = (el: HTMLElement | null) => el?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
@@ -163,7 +156,8 @@ export function AiTechPage() {
           </ul>
         </div>
 
-        <figure className={`aireport${filled ? " is-filled" : ""}`} aria-label="Sample lab test report">
+        {/* Meters fill via ScrollFx each time the panel scrolls into view. */}
+        <figure className="aireport" aria-label="Sample lab test report">
           <div className="aireport__head">
             <span className="aireport__ic">
               <Icon name="i-chip" />

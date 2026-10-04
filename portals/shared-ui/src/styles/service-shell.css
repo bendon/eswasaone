@@ -782,3 +782,11 @@ a.goal{text-decoration:none;color:inherit}
 .modal .alt{width:100%;min-height:46px;margin-top:8px;background:#fff;border:1px solid var(--line);border-radius:12px;font-weight:600;font-size:13.5px;cursor:pointer}
 .modal .alt:hover{background:var(--bg)}
 .modal .note{font-size:12px;color:var(--muted-2);text-align:center;margin-top:16px}
+
+/* Scroll progress bar (ScrollFx.tsx) — fills left→right as the page scrolls. */
+.scroll-progress{
+  position:fixed;top:0;left:0;right:0;height:3px;z-index:1000;pointer-events:none;
+  background:linear-gradient(90deg,var(--gold,#F5C518),#FFE07A);
+  transform:scaleX(0);transform-origin:0 50%;
+}
+@media (prefers-reduced-motion:reduce){.scroll-progress{display:none}}

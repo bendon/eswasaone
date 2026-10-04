@@ -114,6 +114,8 @@ function WorkspaceHeader() {
           <span>{activeEntity.role}</span>
         </div>
       </div>
+      {/* KPI slot — filled by AccountOverviewPage's StatsInjector */}
+      <div className="workspace__stats" role="group" aria-label="Account summary" />
     </section>
   );
 }

@@ -6,7 +6,7 @@ import { getOverview } from "../../api/account";
 import { Skeleton } from "./Skeleton";
 
 export function AccountOverviewPage() {
-  const { entity, activeEntity } = useAccount();
+  const { entity } = useAccount();
   const [data, setData] = useState<AccountOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +69,7 @@ export function AccountOverviewPage() {
                     <div className="alert__body">
                       <b>{a.title}</b>
                       <span>{a.body}</span>
-                      <Link className="alert__cta" to={a.href}>
+                      <Link className="alert__cta" to={a.href ?? "/account"}>
                         {a.cta}
                         <Icon name="i-cright" width={12} height={12} />
                       </Link>
@@ -102,7 +102,7 @@ export function AccountOverviewPage() {
                     <span>{f.subtitle}</span>
                     <time>{f.time}</time>
                   </div>
-                  <Link className="actfeed__link" to={f.href} aria-label="View">
+                  <Link className="actfeed__link" to={f.href ?? "/account"} aria-label="View">
                     <Icon name="i-cright" width={14} height={14} />
                   </Link>
                 </li>

@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   BrandLogo,
   Dock,
@@ -13,6 +13,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useCartToast } from "../ui/CartToast";
 import { CitizenMenu } from "../components/CitizenMenu";
 import { ESWASA_CONTACT } from "../lib/contact";
+import { ScrollFx, ScrollProgress } from "../components/ScrollFx";
 
 const DESKTOP_NAV = [
   { to: "/", label: "Home", end: true },
@@ -72,6 +73,16 @@ const FOOTER_COLUMNS: SiteFooterColumn[] = [
 
 const FOOTER_CONTACT = ESWASA_CONTACT;
 
+/** Esi's example questions per section; other routes use the dock's general defaults. */
+const DOCK_SUGGESTIONS: Record<string, string[]> = {
+  standards: ["Standards for bottled water", "Labelling rules for packaged food", "Is ISO 9001 an SZNS?"],
+  certification: ["Certify my bakery", "ISO 22000 or HACCP?", "How long does certification take?"],
+  training: ["HACCP training for my staff", "Become a lead auditor", "Courses for a quality manager"],
+  "ai-tech": ["Bias testing for a credit model", "Which AI standards are in draft?", "Security audit for my app"],
+  goals: ["Export honey to the EU", "Get the SZNS Product Mark", "Start a food business"],
+  export: ["Export honey to the EU", "Documents for SACU exports", "Test my product for export"],
+};
+
 function CartButton() {
   const { cartCount, showToast } = useCartToast();
   return (
@@ -105,6 +116,7 @@ export function ServiceLayout() {
   const navigate = useNavigate();
   const isHome = loc.pathname === "/";
   const routeKey = loc.pathname.split("/")[1] || "home";
+  const mainRef = useRef<HTMLElement>(null);
 
   const openDock = useCallback(() => {
     setExpandSignal((n) => n + 1);
@@ -218,7 +230,8 @@ export function ServiceLayout() {
         </div>
       </header>
 
-      <main className={`wrap${isHome ? " wrap--home" : ""}`} data-route={routeKey}>
+      <ScrollProgress />
+      <main ref={mainRef} className={`wrap${isHome ? " wrap--home" : ""}`} data-route={routeKey}>
         <div className="content">
           {isHome ? <div className="hero-sentinel" aria-hidden /> : null}
           <Outlet
@@ -234,8 +247,15 @@ export function ServiceLayout() {
           <SiteFooter variant="full" columns={FOOTER_COLUMNS} contact={FOOTER_CONTACT} />
         </div>
       </main>
+      <ScrollFx root={mainRef} />
 
-      <Dock visible onAsk={runAsk} busy={askBusy} expandSignal={expandSignal} />
+      <Dock
+        visible
+        onAsk={runAsk}
+        busy={askBusy}
+        expandSignal={expandSignal}
+        suggestions={DOCK_SUGGESTIONS[routeKey]}
+      />
 
       <nav className="tabbar" aria-label="Mobile primary">
         {TAB_PRIMARY.map((tab) => (

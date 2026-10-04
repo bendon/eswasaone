@@ -88,7 +88,7 @@ export function GuidesPage({ onNavigate }: Props) {
       setDone({});
       setResumeNote(null);
       try {
-        const res = await buildGuide({ goal: value });
+        const { guide: res } = await buildGuide({ goal: value });
         setGuide(res);
       } catch (err) {
         console.error(err);

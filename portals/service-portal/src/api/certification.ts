@@ -196,15 +196,26 @@ export async function createApplication(scheme: string): Promise<CertificationAp
   }
 }
 
-/** Account workspace — issued certificates for the active entity. */
+/**
+ * Account workspace — issued certificate card, display-ready.
+ * No `/account/certificates` contract yet: this is the shape the
+ * Certificates tab renders (and the smoke test mocks). TODO: wire real.
+ */
 export type Certificate = {
   id: string;
-  scheme: string;
-  holder: string;
-  status: string;
-  issued_on?: string;
-  expires_on?: string;
-  number?: string;
+  /** Scheme chip label, e.g. "Training", "ISO 9001". */
+  chip: string;
+  tint?: string;
+  tone?: string;
+  accent?: string;
+  /** Certificate number, e.g. "TRN-2024-00841". */
+  num: string;
+  title: string;
+  holder?: string;
+  /** Display dates, e.g. "12 Nov 2024". */
+  issued: string;
+  expires: string;
+  expiring?: boolean;
 };
 
 export async function listCertificates(entity = "personal"): Promise<Certificate[]> {

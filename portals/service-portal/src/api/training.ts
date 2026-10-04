@@ -359,16 +359,27 @@ export async function enrolCourse(id: string): Promise<{ ok: boolean }> {
   }
 }
 
-/** Account workspace — enrolments for the active entity. */
+/**
+ * Account workspace — enrolment card, display-ready.
+ * No `/account/training` contract yet: this is the shape the Training
+ * tab renders (and the smoke test mocks). TODO: wire real.
+ */
 export type Enrolment = {
   id: string;
-  course_id: string;
+  /** Course slug, e.g. "haccp-implementation". */
+  course?: string;
+  /** Status chip: "In progress" | "Completed" | "Available" | "Team enrolment". */
+  chip: string;
+  tint?: string;
+  tone?: string;
+  accent?: string;
+  code?: string;
   title: string;
-  status: string;
-  progress_pct?: number;
-  enrolled_on?: string;
-  completed_on?: string;
-  modules?: { id: string; title: string; done?: boolean }[];
+  desc: string;
+  /** 0–100; bar shown when > 0. */
+  progress?: number;
+  progressLabel?: string;
+  meta: string[];
 };
 
 export async function listEnrolments(entity = "personal"): Promise<Enrolment[]> {

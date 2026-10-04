@@ -15,7 +15,6 @@ export function VerifyPage() {
       setToken(pathToken);
       void run(pathToken);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathToken]);
 
   async function run(t: string) {

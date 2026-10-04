@@ -26,6 +26,7 @@ import {
 } from "./pages/account";
 import { LoginPage } from "./pages/LoginPage";
 import { OfflinePage } from "./pages/OfflinePage";
+import { ErrorPage } from "./pages/ErrorPage";
 import { GoalsPage } from "./goals/GoalsPage";
 import { AdHocGuidePage, GoalGuidePage } from "./goals/GoalGuidePage";
 import { ToastProvider } from "./ui/Toast";
@@ -49,61 +50,69 @@ export const router = createBrowserRouter(
     {
       path: "/",
       element: <Root />,
+      // Layout itself failed — no header/footer to render inside.
+      errorElement: <ErrorPage standalone />,
       children: [
-        { index: true, element: <HomePage /> },
-        { path: "standards", element: <StandardsPage /> },
-        { path: "standards/:id", element: <StandardDetailPage /> },
-        { path: "estore/checkout", element: <CheckoutPage /> },
-        { path: "estore/orders/:id", element: <OrderStatusPage /> },
-        { path: "certification", element: <CertificationPage /> },
         {
-          path: "certification/apply",
-          element: (
-            <RequireAuth>
-              <CertificationApplyPage />
-            </RequireAuth>
-          ),
-        },
-        {
-          path: "certification/:id",
-          element: (
-            <RequireAuth>
-              <CertificationTrackPage />
-            </RequireAuth>
-          ),
-        },
-        { path: "training", element: <TrainingPage /> },
-        { path: "training/:id", element: <TrainingDetailPage /> },
-        { path: "export", element: <ExportPage /> },
-        { path: "applicability", element: <ApplicabilityPage /> },
-        { path: "verify", element: <VerifyPage /> },
-        { path: "verify/:token", element: <VerifyPage /> },
-        { path: "complaints", element: <ComplaintsPage /> },
-        { path: "ai-tech", element: <AiTechPage /> },
-        { path: "ai-tech/standards", element: <AiTechPage /> },
-        { path: "ai-tech/lab", element: <AiTechPage /> },
-        { path: "goals", element: <GoalsPage /> },
-        { path: "goals/:slug", element: <GoalGuidePage /> },
-        { path: "guide", element: <AdHocGuidePage /> },
-        { path: "login", element: <LoginPage /> },
-        { path: "offline", element: <OfflinePage /> },
-        {
-          path: "account",
-          element: (
-            <RequireAuth>
-              <AccountLayout />
-            </RequireAuth>
-          ),
+          // Page-level failures render inside the layout so navigation stays usable.
+          errorElement: <ErrorPage />,
           children: [
-            { index: true, element: <AccountOverviewPage /> },
-            { path: "orders", element: <AccountOrdersPage /> },
-            { path: "certificates", element: <AccountCertificatesPage /> },
-            { path: "training", element: <AccountTrainingPage /> },
-            { path: "team", element: <AccountTeamPage /> },
-            { path: "settings", element: <AccountSettingsPage /> },
+            { index: true, element: <HomePage /> },
+            { path: "standards", element: <StandardsPage /> },
+            { path: "standards/:id", element: <StandardDetailPage /> },
+            { path: "estore/checkout", element: <CheckoutPage /> },
+            { path: "estore/orders/:id", element: <OrderStatusPage /> },
+            { path: "certification", element: <CertificationPage /> },
+            {
+              path: "certification/apply",
+              element: (
+                <RequireAuth>
+                  <CertificationApplyPage />
+                </RequireAuth>
+              ),
+            },
+            {
+              path: "certification/:id",
+              element: (
+                <RequireAuth>
+                  <CertificationTrackPage />
+                </RequireAuth>
+              ),
+            },
+            { path: "training", element: <TrainingPage /> },
+            { path: "training/:id", element: <TrainingDetailPage /> },
+            { path: "export", element: <ExportPage /> },
+            { path: "applicability", element: <ApplicabilityPage /> },
+            { path: "verify", element: <VerifyPage /> },
+            { path: "verify/:token", element: <VerifyPage /> },
+            { path: "complaints", element: <ComplaintsPage /> },
+            { path: "ai-tech", element: <AiTechPage /> },
+            { path: "ai-tech/standards", element: <AiTechPage /> },
+            { path: "ai-tech/lab", element: <AiTechPage /> },
+            { path: "goals", element: <GoalsPage /> },
+            { path: "goals/:slug", element: <GoalGuidePage /> },
+            { path: "guide", element: <AdHocGuidePage /> },
+            { path: "login", element: <LoginPage /> },
+            { path: "offline", element: <OfflinePage /> },
+            {
+              path: "account",
+              element: (
+                <RequireAuth>
+                  <AccountLayout />
+                </RequireAuth>
+              ),
+              children: [
+                { index: true, element: <AccountOverviewPage /> },
+                { path: "orders", element: <AccountOrdersPage /> },
+                { path: "certificates", element: <AccountCertificatesPage /> },
+                { path: "training", element: <AccountTrainingPage /> },
+                { path: "team", element: <AccountTeamPage /> },
+                { path: "settings", element: <AccountSettingsPage /> },
+              ],
+            },
+            { path: "*", element: <Navigate to="/" replace /> },
           ],
         },
-        { path: "*", element: <Navigate to="/" replace /> },
       ],
     },
   ],

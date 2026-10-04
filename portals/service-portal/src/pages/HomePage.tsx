@@ -129,8 +129,6 @@ const AI_CARDS: {
   eyebrow: string;
   icon: IconName;
   items: ServiceItem[];
-  statusLabel: string;
-  statusType: "live" | "soon";
   goLabel: string;
 }[] = [
   {
@@ -144,8 +142,6 @@ const AI_CARDS: {
       { label: "SZNS AI 002 — Algorithmic transparency", meta: "Draft" },
       { label: "SZNS AI 003 — Training data quality", meta: "Review" },
     ],
-    statusLabel: "Framework published",
-    statusType: "live",
     goLabel: "Explore standards",
   },
   {
@@ -159,8 +155,6 @@ const AI_CARDS: {
       { label: "Software conformity testing", meta: "1–3 weeks" },
       { label: "Cybersecurity & data protection audit", meta: "2–4 weeks" },
     ],
-    statusLabel: "Lab accepting clients",
-    statusType: "live",
     goLabel: "Book a test",
   },
 ];
@@ -357,9 +351,6 @@ export function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <span className={`ncard__status ncard__status--${card.statusType}`}>
-                  {card.statusLabel}
-                </span>
                 <NotchButton label={card.goLabel} />
               </Link>
             ))}

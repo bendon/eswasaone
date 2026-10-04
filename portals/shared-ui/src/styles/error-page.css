@@ -1,0 +1,50 @@
+/* Route error boundary (ErrorPage.tsx) — in-layout and standalone variants. */
+.errpage{display:grid;place-items:center;padding:56px 0 96px}
+.errpage--standalone{min-height:100vh;padding:40px 16px;background:var(--bg)}
+.errpage__card{
+  --tone:#B42318;--tint:#FEECEB;
+  width:100%;max-width:640px;background:var(--card,#fff);
+  border:1.5px solid color-mix(in srgb,var(--tone) 28%,transparent);
+  border-radius:20px 0 20px 0;padding:32px 32px 28px;
+}
+.errpage__top{display:flex;align-items:center;gap:12px}
+.errpage__ic{
+  width:50px;height:50px;border-radius:14px;display:grid;place-items:center;
+  background:var(--tint);color:var(--tone);
+}
+.errpage__ic svg{width:24px;height:24px;stroke:currentColor;stroke-width:1.9}
+.errpage__code{
+  margin-left:auto;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--tone);background:var(--tint);padding:4px 9px;border-radius:7px;
+}
+.errpage h1{font-size:24px;font-weight:800;letter-spacing:-.025em;line-height:1.2;margin-top:20px}
+.errpage__lead{font-size:14.5px;color:var(--muted);line-height:1.6;margin-top:8px}
+.errpage__actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.errpage__actions .btn-primary,.errpage__actions .btn-ghost{gap:8px;text-decoration:none}
+.errpage__actions svg{width:16px;height:16px;stroke:currentColor;stroke-width:2}
+.errpage__links{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:24px;padding-top:20px;
+  border-top:1px dashed var(--line);font-size:13px;
+}
+.errpage__links > span{color:var(--muted-2);font-weight:600;margin-right:4px}
+.errpage__links a{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;
+  border:1px solid var(--line);color:var(--ink);font-weight:600;text-decoration:none;
+  transition:border-color .15s,color .15s;
+}
+.errpage__links a:hover{border-color:var(--navy);color:var(--navy)}
+.errpage__links svg{width:14px;height:14px;stroke:currentColor}
+.errpage__dev{margin-top:22px;font-size:12.5px;color:var(--muted)}
+.errpage__dev summary{cursor:pointer;font-weight:700}
+.errpage__dev p{margin-top:10px;font-weight:700;color:var(--ink)}
+.errpage__dev pre{
+  margin-top:8px;max-height:220px;overflow:auto;padding:12px 14px;border-radius:10px;
+  background:var(--bg);font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;
+}
+
+@media (max-width:640px){
+  .errpage{padding:32px 0 64px}
+  .errpage__card{padding:24px 20px 22px}
+  .errpage h1{font-size:20px}
+  .errpage__actions > *{flex:1 1 auto}
+}

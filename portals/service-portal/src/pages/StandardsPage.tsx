@@ -4,6 +4,8 @@ import { Icon, type IconName } from "@eswasaone/shared-ui";
 import { listStandards, slug, type StandardSummary } from "../api/standards";
 import type { LayoutOutletContext } from "../layout/ServiceLayout";
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { OutlineCard } from "../components/OutlineCard";
+import { StaggeredGrid } from "../components/StaggeredGrid";
 import { safeText } from "../lib/safe";
 import { useCartToast } from "../ui/CartToast";
 
@@ -47,6 +49,10 @@ type Collection = {
   title: string;
   body: string;
   count: string;
+  countIcon: IconName;
+  tag: string;
+  cta: string;
+  hint: string;
   icon: IconName;
   tint: string;
   tone: string;
@@ -58,6 +64,10 @@ const COLLECTIONS: Collection[] = [
     title: "Food export starter pack",
     body: "Eleven standards covering labelling, hygiene, and contaminant limits for exporters of packaged food and agro-processed goods.",
     count: "11 standards",
+    countIcon: "i-layers",
+    tag: "Bundle",
+    cta: "Browse pack",
+    hint: "See all 11",
     icon: "i-globe",
     tint: "#E3F4E9",
     tone: "#15803D",
@@ -67,6 +77,10 @@ const COLLECTIONS: Collection[] = [
     title: "SME certification toolkit",
     body: "ISO 9001, ISO 22000, and the SZNS Product Mark — everything an MSME needs to prepare for ESWASA certification.",
     count: "6 standards",
+    countIcon: "i-layers",
+    tag: "Toolkit",
+    cta: "Browse toolkit",
+    hint: "See all 6",
     icon: "i-badge",
     tint: "#ECEEFC",
     tone: "#313391",
@@ -76,6 +90,10 @@ const COLLECTIONS: Collection[] = [
     title: "Free to download",
     body: "Forty-five standards and technical references available at no cost, including all terminology and basic labelling guidance.",
     count: "45 standards",
+    countIcon: "i-download",
+    tag: "Free",
+    cta: "Browse free",
+    hint: "No cost",
     icon: "i-download",
     tint: "#FEF6DC",
     tone: "#D9A800",
@@ -85,6 +103,10 @@ const COLLECTIONS: Collection[] = [
     title: "Construction & materials",
     body: "Cement, aggregates, structural steel, and plumbing standards for contractors and local manufacturers.",
     count: "28 standards",
+    countIcon: "i-layers",
+    tag: "Sector",
+    cta: "Browse sector",
+    hint: "See all 28",
     icon: "i-layers",
     tint: "#FDF3E3",
     tone: "#B45309",
@@ -94,6 +116,10 @@ const COLLECTIONS: Collection[] = [
     title: "New & updated this year",
     body: "Everything published or revised in the last twelve months, with a short summary of what changed and why.",
     count: "17 new",
+    countIcon: "i-clock",
+    tag: "New",
+    cta: "See what changed",
+    hint: "17 updates",
     icon: "i-star",
     tint: "#F0E9FB",
     tone: "#7C3AED",
@@ -103,6 +129,10 @@ const COLLECTIONS: Collection[] = [
     title: "Annual subscription",
     body: "Unlimited access to the full SZNS catalogue for your whole team — with automatic notifications when a standard changes.",
     count: "From SZL 12,500/yr",
+    countIcon: "i-dollar",
+    tag: "Subscription",
+    cta: "View plans",
+    hint: "Whole team",
     icon: "i-refresh",
     tint: "#E4F4F1",
     tone: "#0E7C7B",
@@ -579,28 +609,26 @@ export function StandardsPage() {
             All collections <Icon name="i-cright" />
           </button>
         </div>
-        <div className="collections">
-          {COLLECTIONS.map((c) => (
-            <Link
-              key={c.title}
-              className="collection"
+        <StaggeredGrid
+          label="Curated collections"
+          className="ggrid--featured"
+          items={COLLECTIONS}
+          itemKey={(c) => c.title}
+          renderItem={(c) => (
+            <OutlineCard
               to={c.to}
-              style={{ "--chip-tint": c.tint, "--chip-tone": c.tone } as CSSProperties}
-            >
-              <span className="collection__ic">
-                <Icon name={c.icon} />
-              </span>
-              <h3>{c.title}</h3>
-              <p>{c.body}</p>
-              <div className="collection__foot">
-                <span className="collection__count">{c.count}</span>
-                <span className="collection__arrow">
-                  <Icon name="i-cright" />
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+              icon={c.icon}
+              title={c.title}
+              body={c.body}
+              tint={c.tint}
+              tone={c.tone}
+              tag={c.tag}
+              meta={[{ icon: c.countIcon, label: c.count }]}
+              cta={c.cta}
+              hint={c.hint}
+            />
+          )}
+        />
       </section>
 
       <section className="support">

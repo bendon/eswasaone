@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import { Icon } from "@eswasaone/shared-ui";
 import {
   GOAL_FILTERS,
@@ -7,7 +7,9 @@ import {
   type GoalCard,
   type GoalCategory,
 } from "./catalogue";
+import { GoalCardLink } from "./GoalCardLink";
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { StaggeredGrid } from "../components/StaggeredGrid";
 import type { LayoutOutletContext } from "../layout/ServiceLayout";
 
 function matches(card: GoalCard, cat: "all" | GoalCategory, q: string): boolean {
@@ -76,55 +78,20 @@ export function GoalsPage() {
         {cat === "all" ? "" : " in this category"}
       </p>
 
-      <section className="ggrid" aria-label="Goals">
-        {visible.map((g) => (
-          <Link
-            key={g.slug}
-            className="gcard"
-            to={g.slug === "find-standard" ? "/applicability" : `/goals/${g.slug}`}
-            style={{ ["--tint" as string]: g.tint, ["--tone" as string]: g.tone }}
-          >
-            <div className="gcard__top">
-              <span className="gcard__ic">
-                <Icon name={g.icon} />
-              </span>
-              <span className="gcard__tag">{g.typeLabel}</span>
-            </div>
-            <h3>{g.title}</h3>
-            <p>{g.summary}</p>
-            <div className="gcard__meta">
-              {g.steps > 1 ? (
-                <span>
-                  <Icon name="i-layers" /> {g.steps} steps
-                </span>
-              ) : null}
-              <span>
-                <Icon name="i-clock" /> {g.timeline}
-              </span>
-              {g.fee ? (
-                <span>
-                  <Icon name="i-dollar" /> {g.fee}
-                </span>
-              ) : null}
-            </div>
-            <div className="gcard__foot">
-              <span className="gcard__start">{g.cta || "Start guide"}</span>
-              <span className="gcard__go">
-                <Icon name="i-cright" />
-              </span>
-            </div>
-          </Link>
-        ))}
-
-        {visible.length === 0 ? (
+      <StaggeredGrid
+        label="Goals"
+        items={visible}
+        itemKey={(g) => g.slug}
+        renderItem={(g) => <GoalCardLink goal={g} />}
+        empty={
           <div className="gempty">
             <p>No goals match that. Try a different search, or ask Esi to build a new one.</p>
             <button type="button" className="goals-search__ask" onClick={openDock}>
               <Icon name="i-spark" /> Ask Esi
             </button>
           </div>
-        ) : null}
-      </section>
+        }
+      />
     </div>
   );
 }

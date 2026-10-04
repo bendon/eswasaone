@@ -11,6 +11,8 @@ import { SCHEMES, type Scheme } from "../api/certification";
 import { verifyToken, type VerificationResult } from "../api/misc";
 import { useAuth } from "../auth/AuthProvider";
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { OutlineCard } from "../components/OutlineCard";
+import { StaggeredGrid } from "../components/StaggeredGrid";
 import type { LayoutOutletContext } from "../layout/ServiceLayout";
 import { safeText } from "../lib/safe";
 import { useCartToast } from "../ui/CartToast";
@@ -60,6 +62,10 @@ type PathCard = {
   title: string;
   body: string;
   count: string;
+  countIcon: IconName;
+  tag: string;
+  cta: string;
+  hint: string;
   icon: IconName;
   tint: string;
   tone: string;
@@ -71,6 +77,10 @@ const PATHS: PathCard[] = [
     title: "First-time exporter pack",
     body: "ISO 9001 plus the relevant product standards and export-desk support — the shortest credible path to your first international shipment.",
     count: "4 steps",
+    countIcon: "i-layers",
+    tag: "Export",
+    cta: "Start path",
+    hint: "Ship sooner",
     icon: "i-globe",
     tint: "#ECEEFC",
     tone: "#313391",
@@ -80,6 +90,10 @@ const PATHS: PathCard[] = [
     title: "Food processor readiness",
     body: "HACCP first, then ISO 22000 — with our internal-auditor training bundled so your team can maintain the system after certification.",
     count: "3 stages",
+    countIcon: "i-layers",
+    tag: "Food safety",
+    cta: "Start path",
+    hint: "HACCP first",
     icon: "i-clipboard",
     tint: "#E3F4E9",
     tone: "#15803D",
@@ -89,6 +103,10 @@ const PATHS: PathCard[] = [
     title: "MSME starter path",
     body: "For small businesses new to standards. Starts with the Ingelo scheme — subsidised training, testing and assessment — then SZNS Product Mark.",
     count: "Subsidised",
+    countIcon: "i-badge",
+    tag: "MSME",
+    cta: "Start path",
+    hint: "Ingelo scheme",
     icon: "i-users",
     tint: "#DCFCE7",
     tone: "#166534",
@@ -98,6 +116,10 @@ const PATHS: PathCard[] = [
     title: "Integrated management system",
     body: "ISO 9001, ISO 14001 and ISO 45001 audited together. One integrated audit schedule, three certificates, lower total cost.",
     count: "3 schemes",
+    countIcon: "i-layers",
+    tag: "Integrated",
+    cta: "See the bundle",
+    hint: "One audit",
     icon: "i-layers",
     tint: "#F0E9FB",
     tone: "#7C3AED",
@@ -107,6 +129,10 @@ const PATHS: PathCard[] = [
     title: "Recertification",
     body: "Already certified and coming up to the end of your three-year cycle? Book your recertification audit and keep the certificate continuous.",
     count: "6–10 weeks",
+    countIcon: "i-clock",
+    tag: "Renewal",
+    cta: "Book audit",
+    hint: "Stay certified",
     icon: "i-trend",
     tint: "#E4F4F1",
     tone: "#0E7C7B",
@@ -116,6 +142,10 @@ const PATHS: PathCard[] = [
     title: "Upgrade from HACCP",
     body: "Already HACCP certified? Bridge to ISO 22000 with a reduced-scope audit — your existing HACCP plan counts toward the new system.",
     count: "Reduced scope",
+    countIcon: "i-trend",
+    tag: "Upgrade",
+    cta: "Bridge to ISO 22000",
+    hint: "Reuse HACCP",
     icon: "i-star",
     tint: "#FEF6DC",
     tone: "#B8860B",
@@ -624,28 +654,26 @@ export function CertificationPage() {
             All paths <Icon name="i-cright" />
           </button>
         </div>
-        <div className="collections">
-          {PATHS.map((c) => (
-            <Link
-              key={c.title}
-              className="collection"
+        <StaggeredGrid
+          label="Common starting points"
+          className="ggrid--featured"
+          items={PATHS}
+          itemKey={(c) => c.title}
+          renderItem={(c) => (
+            <OutlineCard
               to={c.to}
-              style={{ "--chip-tint": c.tint, "--chip-tone": c.tone } as CSSProperties}
-            >
-              <span className="collection__ic">
-                <Icon name={c.icon} />
-              </span>
-              <h3>{c.title}</h3>
-              <p>{c.body}</p>
-              <div className="collection__foot">
-                <span className="collection__count">{c.count}</span>
-                <span className="collection__arrow">
-                  <Icon name="i-cright" />
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+              icon={c.icon}
+              title={c.title}
+              body={c.body}
+              tint={c.tint}
+              tone={c.tone}
+              tag={c.tag}
+              meta={[{ icon: c.countIcon, label: c.count }]}
+              cta={c.cta}
+              hint={c.hint}
+            />
+          )}
+        />
       </section>
 
       <section className="support">

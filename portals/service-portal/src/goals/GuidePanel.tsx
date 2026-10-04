@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { safeText } from "../lib/safe";
 import type { GoalCard } from "../goals/catalogue";
+import { GoalCardLink } from "../goals/GoalCardLink";
 
 const ACTION_ICON: Record<GuideAction["type"], IconName> = {
   buy: "i-cart",
@@ -225,27 +226,7 @@ export function GuidePanel({
           </div>
           <div className="related__grid">
             {related.map((g) => (
-              <Link
-                key={g.slug}
-                className="gcard"
-                to={`/goals/${g.slug}`}
-                style={{ ["--tint" as string]: g.tint, ["--tone" as string]: g.tone }}
-              >
-                <div className="gcard__top">
-                  <span className="gcard__ic">
-                    <Icon name={g.icon} />
-                  </span>
-                  <span className="gcard__tag">{g.typeLabel}</span>
-                </div>
-                <h3>{g.title}</h3>
-                <p>{g.summary}</p>
-                <div className="gcard__foot">
-                  <span className="gcard__start">Start guide</span>
-                  <span className="gcard__go">
-                    <Icon name="i-cright" />
-                  </span>
-                </div>
-              </Link>
+              <GoalCardLink key={g.slug} goal={g} compact />
             ))}
           </div>
         </section>

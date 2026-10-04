@@ -16,9 +16,20 @@ import {
 } from "../api/training";
 import { useAuth } from "../auth/AuthProvider";
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { OutlineCard, type OutlineCardMeta } from "../components/OutlineCard";
+import { StaggeredGrid } from "../components/StaggeredGrid";
 import type { LayoutOutletContext } from "../layout/ServiceLayout";
 import { safeText } from "../lib/safe";
 import { useCartToast } from "../ui/CartToast";
+
+/** "4 courses · ~9 days" → meta chips for the path card. */
+function pathMeta(meta: string): OutlineCardMeta[] {
+  return meta.split("·").map((part, i) => {
+    const label = part.trim();
+    const icon: IconName = i === 0 ? "i-layers" : /day|week/i.test(label) ? "i-clock" : "i-badge";
+    return { icon, label };
+  });
+}
 
 const HERO_STATS = [
   { value: "2,840", label: "Learners enrolled" },
@@ -627,35 +638,34 @@ export function TrainingPage() {
             All paths <Icon name="i-cright" />
           </button>
         </div>
-        <div className="pathgrid">
-          {LEARNING_PATHS.map((p) => (
-            <Link
-              key={p.id}
-              className="path"
+        <StaggeredGrid
+          label="Learning paths"
+          className="ggrid--featured"
+          items={LEARNING_PATHS}
+          itemKey={(p) => p.id}
+          renderItem={(p) => (
+            <OutlineCard
               to={`/training?path=${encodeURIComponent(p.id)}`}
-              style={{ "--chip-tint": p.tint, "--chip-tone": p.tone } as CSSProperties}
+              icon={p.icon}
+              title={p.title}
+              body={p.body}
+              tint={p.tint}
+              tone={p.tone}
+              tag={`${p.steps.length} steps`}
+              meta={pathMeta(p.meta)}
+              cta="View path"
+              hint="See the courses"
             >
-              <span className="path__ic">
-                <Icon name={p.icon} />
-              </span>
-              <h3>{p.title}</h3>
-              <p>{p.body}</p>
-              <div className="path__steps">
+              <ol className="gcard__seq" aria-label="Course sequence">
                 {p.steps.map((step) => (
-                  <span className="path__step" key={step}>
-                    {step}
-                  </span>
+                  <li key={step}>
+                    <span>{step}</span>
+                  </li>
                 ))}
-              </div>
-              <div className="path__foot">
-                <span className="path__count">{p.meta}</span>
-                <span className="path__arrow">
-                  <Icon name="i-cright" />
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </ol>
+            </OutlineCard>
+          )}
+        />
       </section>
 
       <section className="support">

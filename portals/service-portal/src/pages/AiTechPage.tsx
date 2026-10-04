@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { Link, useLocation, useOutletContext } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Icon, type IconName } from "@eswasaone/shared-ui";
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { HelpBand } from "../components/HelpBand";
 import { OutlineCard } from "../components/OutlineCard";
 import { StaggeredGrid } from "../components/StaggeredGrid";
-import type { LayoutOutletContext } from "../layout/ServiceLayout";
 import { useCartToast } from "../ui/CartToast";
 
 // TODO: wire real — AI standards + lab catalogue still static; copy pending ESWASA review.
@@ -107,7 +107,6 @@ const LAB_STEPS = [
 ] as const satisfies readonly { icon: IconName; title: string; body: string }[];
 
 export function AiTechPage() {
-  const { openDock } = useOutletContext<LayoutOutletContext>();
   const { showToast } = useCartToast();
   const { pathname } = useLocation();
   const standardsRef = useRef<HTMLElement>(null);
@@ -318,24 +317,18 @@ export function AiTechPage() {
         </ol>
       </section>
 
-      <section className="support">
-        <div className="support__copy">
-          <span>BUILDING OR BUYING AI?</span>
-          <h2>Not sure which standard or test applies to your system?</h2>
-          <p>
-            Describe what your system does and where it will be used. Esi will point you to the
-            relevant SZNS standards and lab tests, or connect you with the lab for a scoping call.
-          </p>
-        </div>
-        <div className="support__actions">
-          <button type="button" className="sbtn gold" onClick={() => openDock()}>
-            <Icon name="i-spark" /> Ask Esi
-          </button>
-          <a className="sbtn ghost" href="mailto:info@eswasa.co.sz?subject=AI%20%26%20Technology%20Lab">
-            <Icon name="i-send" /> Email the lab
-          </a>
-        </div>
-      </section>
+      <HelpBand
+        kicker="Building or buying AI?"
+        title="Not sure which standard or test applies to your system?"
+        body="Tell the lab what your system does and where it will be used. They’ll point you to the relevant SZNS standards and tests, and set up a scoping call."
+        desk={{ label: "the AI & Technology Lab", email: "info@eswasa.co.sz", subject: "AI & Technology Lab" }}
+        shortcut={{
+          icon: "i-book",
+          label: "Browse all standards",
+          hint: "Search the full SZNS catalogue",
+          to: "/standards",
+        }}
+      />
     </div>
   );
 }

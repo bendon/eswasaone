@@ -4,6 +4,7 @@ import { Icon, type IconName } from "@eswasaone/shared-ui";
 import { listStandards, slug, type StandardSummary } from "../api/standards";
 import type { LayoutOutletContext } from "../layout/ServiceLayout";
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { HelpBand } from "../components/HelpBand";
 import { OutlineCard } from "../components/OutlineCard";
 import { StaggeredGrid } from "../components/StaggeredGrid";
 import { safeText } from "../lib/safe";
@@ -631,24 +632,18 @@ export function StandardsPage() {
         />
       </section>
 
-      <section className="support">
-        <div className="support__copy">
-          <span>NEED HELP?</span>
-          <h2>Can&apos;t find the standard you need?</h2>
-          <p>
-            Tell Esi what you&apos;re working on and she&apos;ll match it to the right SZNS
-            reference, or connect you directly with the standards desk at ESWASA.
-          </p>
-        </div>
-        <div className="support__actions">
-          <button type="button" className="btn gold" onClick={() => openDock()}>
-            <Icon name="i-spark" /> Ask Esi
-          </button>
-          <a className="btn ghost" href="mailto:info@eswasa.co.sz">
-            <Icon name="i-send" /> Email the standards desk
-          </a>
-        </div>
-      </section>
+      <HelpBand
+        kicker="Need help?"
+        title="Can’t find the standard you need?"
+        body="The standards desk can match your product or process to the right SZNS reference, tell you what’s in development, and help with orders and subscriptions."
+        desk={{ label: "the standards desk", email: "info@eswasa.co.sz", subject: "Standards enquiry" }}
+        shortcut={{
+          icon: "i-search",
+          label: "Check which standards apply",
+          hint: "Answer a few questions about your product",
+          to: "/applicability",
+        }}
+      />
     </div>
   );
 }

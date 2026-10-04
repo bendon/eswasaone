@@ -1,0 +1,73 @@
+/* End-of-page help band (HelpBand.tsx) — Standards, Certification, Training, AI & Tech.
+   Ask Esi opens the floating dock; the other rows reach a desk or a self-serve route. */
+
+.helpband{
+  margin-top:72px;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,460px);gap:48px;align-items:center;
+  padding:40px 40px 40px 44px;background:var(--card,#fff);
+  border:1.5px solid color-mix(in srgb,var(--navy) 18%,transparent);
+  border-radius:28px 0 28px 0;
+}
+
+/* ---- Copy ---- */
+.helpband__kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);
+}
+.helpband__kicker::before{content:"";width:22px;height:2px;background:var(--gold)}
+.helpband h2{
+  font-size:clamp(23px,2.4vw,30px);font-weight:800;letter-spacing:-.03em;line-height:1.15;
+  margin-top:14px;max-width:20ch;color:var(--ink);
+}
+.helpband__copy > p{font-size:14.5px;color:var(--muted);line-height:1.6;margin-top:12px;max-width:52ch}
+
+/* ---- Contact rows ---- */
+.helpband__rows{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.helpband__row{
+  display:flex;align-items:center;gap:14px;padding:14px 14px 14px 16px;
+  width:100%;font:inherit;text-align:left;cursor:pointer;
+  background:var(--card,#fff);color:inherit;text-decoration:none;
+  border:1.5px solid color-mix(in srgb,var(--tone) 22%,transparent);
+  border-radius:16px 0 16px 0;
+  transition:border-color .2s,box-shadow .2s;
+}
+.helpband__row:hover,.helpband__row:focus-visible{
+  border-color:var(--tone);
+  box-shadow:0 12px 24px -18px color-mix(in srgb,var(--tone) 60%,transparent);
+}
+.helpband__row:focus-visible{outline:2px solid var(--tone);outline-offset:3px}
+.helpband__ic{
+  width:42px;height:42px;border-radius:12px;flex:0 0 auto;display:grid;place-items:center;
+  background:var(--tint);color:var(--tone);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.helpband__ic svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.9}
+.helpband__row:hover .helpband__ic{transform:rotate(-8deg) scale(1.06)}
+.helpband__txt{display:flex;flex-direction:column;min-width:0;flex:1}
+.helpband__txt b{font-size:14px;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
+.helpband__txt span{
+  font-size:12.5px;color:var(--muted);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.helpband__go{
+  width:34px;height:34px;border-radius:999px;flex:0 0 auto;display:grid;place-items:center;
+  border:1.5px solid color-mix(in srgb,var(--tone) 22%,transparent);color:var(--tone);
+  transition:background .25s,color .25s,border-color .25s,transform .25s;
+}
+.helpband__go svg{width:14px;height:14px;stroke:currentColor;stroke-width:2.2}
+.helpband__row:hover .helpband__go{
+  background:var(--tone);border-color:var(--tone);color:#fff;transform:translateX(3px);
+}
+
+/* ---- Responsive ---- */
+@media (max-width:980px){
+  .helpband{grid-template-columns:1fr;gap:26px;padding:30px 26px}
+  .helpband h2{max-width:none}
+}
+@media (max-width:560px){
+  .helpband{margin-top:48px;padding:24px 18px;border-radius:22px 0 22px 0}
+  .helpband__row{padding:12px}
+}
+@media (prefers-reduced-motion:reduce){
+  .helpband__row *,.helpband__row{transition:none !important}
+}

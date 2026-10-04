@@ -5,15 +5,15 @@ import {
   type CSSProperties,
   type FormEvent,
 } from "react";
-import { Link, useNavigate, useOutletContext } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon, type IconName } from "@eswasaone/shared-ui";
 import { SCHEMES, type Scheme } from "../api/certification";
 import { verifyToken, type VerificationResult } from "../api/misc";
 import { useAuth } from "../auth/AuthProvider";
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { HelpBand } from "../components/HelpBand";
 import { OutlineCard } from "../components/OutlineCard";
 import { StaggeredGrid } from "../components/StaggeredGrid";
-import type { LayoutOutletContext } from "../layout/ServiceLayout";
 import { safeText } from "../lib/safe";
 import { useCartToast } from "../ui/CartToast";
 
@@ -216,7 +216,6 @@ const FILTERS: FilterGroup[] = [
 ];
 
 export function CertificationPage() {
-  const { openDock } = useOutletContext<LayoutOutletContext>();
   const { user, openAuth } = useAuth();
   const { showToast } = useCartToast();
   const navigate = useNavigate();
@@ -676,25 +675,18 @@ export function CertificationPage() {
         />
       </section>
 
-      <section className="support">
-        <div className="support__copy">
-          <span>NOT SURE WHERE TO START?</span>
-          <h2>Tell us what you&apos;re making, and we&apos;ll tell you what to certify.</h2>
-          <p>
-            Esi knows the full ESWASA scheme catalogue. Describe your product or process and
-            she&apos;ll match you to the right certification, or connect you with the
-            certification desk for a scoping call.
-          </p>
-        </div>
-        <div className="support__actions">
-          <button type="button" className="sbtn gold" onClick={() => openDock()}>
-            <Icon name="i-spark" /> Ask Esi
-          </button>
-          <a className="sbtn ghost" href="mailto:info@eswasa.co.sz">
-            <Icon name="i-send" /> Email the certification desk
-          </a>
-        </div>
-      </section>
+      <HelpBand
+        kicker="Not sure where to start?"
+        title="Tell us what you’re making — we’ll tell you what to certify."
+        body="The certification desk can match your product or process to the right scheme and book a scoping call before you apply."
+        desk={{ label: "the certification desk", email: "info@eswasa.co.sz", subject: "Certification enquiry" }}
+        shortcut={{
+          icon: "i-steps",
+          label: "Start from a goal",
+          hint: "Step-by-step guides with costs and timelines",
+          to: "/goals",
+        }}
+      />
     </div>
   );
 }

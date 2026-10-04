@@ -342,22 +342,6 @@
   background:var(--green-l);border-color:#B7E0C4;
 }
 
-.support__actions .sbtn{
-  display:inline-flex;align-items:center;gap:9px;
-  min-height:48px;padding:0 20px;border-radius:12px;
-  font-weight:800;font-size:13.5px;cursor:pointer;
-  border:1px solid transparent;
-  transition:background .15s,border-color .15s,transform .15s;
-  text-decoration:none;color:inherit;
-}
-.support__actions .sbtn:active{transform:scale(.97)}
-.support__actions .sbtn svg{width:16px;height:16px}
-.support__actions .sbtn.gold{background:var(--gold);color:var(--navy-d)}
-.support__actions .sbtn.gold:hover{background:var(--gold-d)}
-.support__actions .sbtn.gold svg{stroke:var(--navy-d)}
-.support__actions .sbtn.ghost{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.24)}
-.support__actions .sbtn.ghost:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4)}
-.support__actions .sbtn.ghost svg{stroke:#fff}
 
 @media (max-width:900px){
   .actioncard{
@@ -384,5 +368,4 @@
   .verify-widget__row{flex-direction:column}
   .verify-widget__submit{width:100%;justify-content:center}
 
-  .support__actions .sbtn{flex:1 1 auto;justify-content:center}
 }

@@ -12,6 +12,7 @@ import {
 import { useAuth } from "../auth/AuthProvider";
 import { useCartToast } from "../ui/CartToast";
 import { CitizenMenu } from "../components/CitizenMenu";
+import { ESWASA_CONTACT } from "../lib/contact";
 
 const DESKTOP_NAV = [
   { to: "/", label: "Home", end: true },
@@ -69,11 +70,7 @@ const FOOTER_COLUMNS: SiteFooterColumn[] = [
   },
 ];
 
-const FOOTER_CONTACT = {
-  phone: "(+268) 2518 4633 / 4610",
-  phoneHref: "+26825184633",
-  email: "info@eswasa.co.sz",
-};
+const FOOTER_CONTACT = ESWASA_CONTACT;
 
 function CartButton() {
   const { cartCount, showToast } = useCartToast();

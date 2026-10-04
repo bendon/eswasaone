@@ -367,7 +367,9 @@ body{overflow-x:clip}
 .page-hero__stats{border-radius:2px}
 .chip-cta{border-radius:2px}
 nav.crumb{margin:22px 0 22px}
-.page{margin-bottom:80px}
+/* Breathing room above the navy footer on every inner page, whatever
+   the page's root element is (.page, GuidePanel, etc.) */
+.wrap:not(.wrap--home) .content > :nth-last-child(2){margin-bottom:80px}
 .page > .page-hero:first-child,
 .page > nav.crumb + .page-hero{margin-bottom:40px}
 
@@ -411,6 +413,7 @@ nav.crumb{margin:22px 0 22px}
   .site-footer-full__in{padding:56px 18px 40px}
   .site-footer-full{padding-bottom:84px}
   .page-hero{padding:48px 18px}
+  .wrap:not(.wrap--home) .content > :nth-last-child(2){margin-bottom:56px}
 }
 @media (max-width:640px){
   .eg-tiles{grid-template-columns:repeat(2,1fr)}

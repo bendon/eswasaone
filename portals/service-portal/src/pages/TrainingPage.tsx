@@ -6,7 +6,7 @@ import {
   type CSSProperties,
   type FormEvent,
 } from "react";
-import { Link, useNavigate, useOutletContext } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon, type IconName } from "@eswasaone/shared-ui";
 import {
   LEARNING_PATHS,
@@ -16,9 +16,9 @@ import {
 } from "../api/training";
 import { useAuth } from "../auth/AuthProvider";
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { HelpBand } from "../components/HelpBand";
 import { OutlineCard, type OutlineCardMeta } from "../components/OutlineCard";
 import { StaggeredGrid } from "../components/StaggeredGrid";
-import type { LayoutOutletContext } from "../layout/ServiceLayout";
 import { safeText } from "../lib/safe";
 import { useCartToast } from "../ui/CartToast";
 
@@ -124,7 +124,6 @@ const DEFAULT_STYLE = {
 };
 
 export function TrainingPage() {
-  const { openDock } = useOutletContext<LayoutOutletContext>();
   const { user, openAuth } = useAuth();
   const { showToast } = useCartToast();
   const navigate = useNavigate();
@@ -668,25 +667,18 @@ export function TrainingPage() {
         />
       </section>
 
-      <section className="support">
-        <div className="support__copy">
-          <span>NOT SURE WHICH COURSE?</span>
-          <h2>Tell us your role, and we&apos;ll suggest the right path.</h2>
-          <p>
-            Esi knows the full ESWASA training catalogue. Describe what you do and what
-            you&apos;re trying to achieve — she&apos;ll point you to the shortest path, or connect
-            you with the training centre to scope an in-house programme.
-          </p>
-        </div>
-        <div className="support__actions">
-          <button type="button" className="sbtn gold" onClick={() => openDock()}>
-            <Icon name="i-spark" /> Ask Esi
-          </button>
-          <a className="sbtn ghost" href="mailto:training@eswasa.co.sz">
-            <Icon name="i-send" /> Email the training centre
-          </a>
-        </div>
-      </section>
+      <HelpBand
+        kicker="Not sure which course?"
+        title="Tell us your role, and we’ll suggest the right path."
+        body="The training centre can point you to the shortest path for your role, or scope an in-house programme for your whole team."
+        desk={{ label: "the training centre", email: "training@eswasa.co.sz", subject: "Training enquiry" }}
+        shortcut={{
+          icon: "i-steps",
+          label: "Start from a goal",
+          hint: "e.g. Train my team on food safety",
+          to: "/goals",
+        }}
+      />
     </div>
   );
 }

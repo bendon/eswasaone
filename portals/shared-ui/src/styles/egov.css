@@ -424,3 +424,135 @@ nav.crumb{margin:22px 0 22px}
   .eg-band{padding:26px 0 30px}
 }
 @media (min-width:901px) and (max-width:1100px){ .services{grid-template-columns:repeat(2,1fr)} }
+
+/* ============================================================
+   Notch cards — bottom-left cut-out holding a pill CTA.
+   The cut-out is painted with the section background (--notch-bg);
+   ::before / ::after draw the card's two convex corners around it.
+   ============================================================ */
+.eg-sec{--notch-bg:#fff}
+.eg-sec--alt{--notch-bg:var(--surface)}
+
+.ncard{
+  --nr:22px;                     /* corner radius, card + notch */
+  --ncard-bg:#E9EAF8;
+  --ncard-ink:var(--navy-deep);
+  --ncard-muted:var(--slate);
+  --ncard-line:rgba(27,29,92,.1);
+  --ncard-accent:var(--navy);
+  position:relative;
+  display:flex;flex-direction:column;
+  background:var(--ncard-bg);color:var(--ncard-ink);
+  border:0;border-radius:var(--nr);
+  box-shadow:none;
+  padding-bottom:86px;           /* room for the notch */
+  overflow:visible;
+  isolation:isolate;
+  transition:transform .25s ease;
+}
+.ncard:hover{transform:translateY(-4px);box-shadow:none}
+.ncard--tint{--ncard-bg:#E9EAF8}
+.ncard--light{
+  --ncard-bg:#FCE3A0;
+  --ncard-line:rgba(27,29,92,.14);
+  /* soft concentric rings, bottom-right (reference) */
+  background:
+    radial-gradient(circle at calc(100% + 20px) calc(100% + 30px), rgba(248,188,36,.6) 0 120px, transparent 121px),
+    radial-gradient(circle at calc(100% + 20px) calc(100% + 30px), transparent 0 170px, rgba(248,188,36,.45) 171px 173px, transparent 174px),
+    var(--ncard-bg);
+}
+.ncard--dark{
+  --ncard-bg:var(--navy-deep);
+  --ncard-ink:#fff;
+  --ncard-muted:rgba(255,255,255,.66);
+  --ncard-line:rgba(255,255,255,.12);
+  --ncard-accent:var(--gold);
+}
+
+/* The cut-out */
+.notch{
+  position:absolute;left:0;bottom:0;z-index:2;
+  padding:12px 14px 0 0;
+  background:var(--notch-bg);
+  border-top-right-radius:var(--nr);
+}
+.notch::before,
+.notch::after{
+  content:"";position:absolute;width:var(--nr);height:var(--nr);
+  background:radial-gradient(circle at 100% 0, transparent calc(var(--nr) - .5px), var(--notch-bg) var(--nr));
+  pointer-events:none;
+}
+.notch::before{left:0;top:calc(var(--nr) * -1)}
+.notch::after{right:calc(var(--nr) * -1);bottom:0}
+
+.notch__btn{
+  display:inline-flex;align-items:center;gap:8px;
+  min-height:44px;padding:0 20px;border-radius:999px;
+  background:var(--ncard-bg);color:var(--ncard-ink);
+  font-size:13.5px;font-weight:700;white-space:nowrap;
+  transition:background .2s,color .2s;
+}
+.ncard--light .notch__btn{background:#FCE3A0}
+.notch__chev{display:inline-flex}
+.notch__chev svg{stroke:currentColor;stroke-width:2.4}
+.notch__chev svg + svg{margin-left:-9px}
+.ncard:hover .notch__btn{background:var(--ncard-accent);color:var(--ncard-bg)}
+.ncard--dark:hover .notch__btn{color:var(--navy-deep)}
+.ncard--tint:hover .notch__btn,
+.ncard--light:hover .notch__btn{color:#fff;background:var(--navy-deep)}
+
+/* --- AI cards --- */
+.ai-ncard{padding:36px 36px 96px}
+.ncard__ic{color:var(--ncard-ink);margin-bottom:26px;display:inline-flex}
+.ncard__ic svg{stroke-width:1.4}
+.ncard--dark .ncard__ic{color:var(--gold)}
+.ncard__eyebrow{font-size:11.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ncard-muted)}
+.ai-ncard h3{
+  font-family:var(--font-display);font-size:clamp(22px,2vw,28px);font-weight:700;line-height:1.2;
+  margin-top:8px;color:var(--ncard-ink);
+}
+.ai-ncard > p{font-size:14.5px;line-height:1.65;color:var(--ncard-muted);margin-top:14px;max-width:56ch}
+.ncard__items{list-style:none;margin:22px 0 0;padding:14px 0 0;border-top:1px solid var(--ncard-line);display:flex;flex-direction:column}
+.ncard__items li{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13.5px}
+.ncard__items li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ncard-accent);flex:0 0 auto}
+.ncard__items em{font-style:normal;flex:1;min-width:0}
+.ncard__items b{font-size:12.5px;font-weight:700;color:var(--ncard-muted)}
+.ncard__status{
+  position:absolute;right:28px;bottom:26px;
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:12px;font-weight:700;color:var(--ncard-ink);
+}
+.ncard__status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--live);box-shadow:0 0 0 4px rgba(34,197,94,.2)}
+.ncard__status--soon::before{background:var(--amber);box-shadow:0 0 0 4px rgba(217,119,6,.2)}
+
+/* --- Core services --- */
+.svc.ncard{border-radius:var(--nr);box-shadow:none;padding-bottom:86px}
+.svc.ncard .svc__photo img{border-radius:var(--nr) var(--nr) 0 0}
+.svc.ncard .svc__body{padding:44px 26px 0}
+.svc.ncard .svc__body h3{color:var(--ncard-ink)}
+.svc.ncard .svc__body > p{color:var(--ncard-muted)}
+.svc.ncard .svc__items{border-top-color:var(--ncard-line)}
+.svc.ncard .svc__items em,
+.svc.ncard .svc__items b{color:var(--ncard-ink)}
+.svc.ncard .svc__items li::before{background:var(--ncard-accent)}
+.svc.ncard .svc__meta{
+  position:absolute;right:24px;bottom:28px;
+  background:transparent;color:var(--ncard-muted);padding:0;
+  font-size:12.5px;font-weight:700;
+}
+.svc.ncard .svc__photo .svc__ic{border-radius:12px}
+.ncard--dark.svc .svc__ic{background:var(--gold);color:var(--navy-deep)}
+.ncard--tint.svc .svc__ic{background:var(--navy);color:#fff}
+
+/* --- Updates --- */
+.upd.ncard{border:0;border-radius:var(--nr);box-shadow:none;padding:28px 28px 86px}
+.upd.ncard:hover{border:0}
+.upd.ncard .upd__foot{position:absolute;right:24px;bottom:28px;border:0;padding:0;margin:0}
+
+@media (max-width:900px){
+  .ai-ncard{padding:28px 24px 92px}
+  .ncard__status{right:20px}
+}
+@media (max-width:640px){
+  .ncard__status{position:static;margin-top:18px;align-self:flex-start}
+}

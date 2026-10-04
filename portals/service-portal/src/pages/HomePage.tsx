@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { Link, useNavigate, useOutletContext, useSearchParams } from "react-router-dom";
 import {
   Icon,
-  AiCardArt,
   useUpdates,
   type IconName,
   type UpdateItem,
@@ -34,8 +33,6 @@ const SERVICES: {
   body: string;
   to: string;
   pill: string;
-  tint: string;
-  tone: string;
   icon: IconName;
   /** Photo for the card header (public/img, see CREDITS.md). */
   img: string;
@@ -46,8 +43,6 @@ const SERVICES: {
     body: "Buy the SZNS standards your sector needs — delivered as a secured PDF.",
     to: "/standards",
     pill: "312 standards",
-    tint: "#ECEEFC",
-    tone: "#313391",
     icon: "i-book",
     img: "/img/standards.webp",
     items: [
@@ -61,8 +56,6 @@ const SERVICES: {
     body: "Get your product or management system certified by ESWASA.",
     to: "/certification",
     pill: "148 certified",
-    tint: "#E3F4E9",
-    tone: "#15803D",
     icon: "i-badge",
     img: "/img/certified.webp",
     items: [
@@ -76,8 +69,6 @@ const SERVICES: {
     body: "Market-access requirements broken down by product and destination.",
     to: "/export",
     pill: "45+ markets",
-    tint: "#E8EEFB",
-    tone: "#1E3A8A",
     icon: "i-globe",
     img: "/img/industry.webp",
     items: [
@@ -91,8 +82,6 @@ const SERVICES: {
     body: "Standards-based training with a verifiable digital certificate.",
     to: "/training",
     pill: "24 courses",
-    tint: "#F0E9FB",
-    tone: "#7C3AED",
     icon: "i-cap",
     img: "/img/training.webp",
     items: [
@@ -106,8 +95,6 @@ const SERVICES: {
     body: "Not sure which standard applies to your product? Run the free checker.",
     to: "/applicability",
     pill: "Free tool",
-    tint: "#E0F2FE",
-    tone: "#0369A1",
     icon: "i-shield",
     img: "/img/crafts.webp",
     items: [
@@ -121,8 +108,6 @@ const SERVICES: {
     body: "Report substandard products or submit a quality enquiry to our team.",
     to: "/complaints",
     pill: "Tracked reference",
-    tint: "#FEF3C7",
-    tone: "#B45309",
     icon: "i-alert-c",
     img: "/img/mbabane-street.webp",
     items: [
@@ -133,16 +118,16 @@ const SERVICES: {
   },
 ];
 
+/** Light/dark checkerboard for the 3-column services grid. */
+const SERVICE_VARIANT = ["tint", "dark", "tint", "dark", "tint", "dark"] as const;
+
 /** AI band cards — larger feature cards for the AI & Technology section. */
 const AI_CARDS: {
   title: string;
   body: string;
   href: string;
   eyebrow: string;
-  band: string;
-  dot: string;
-  btnBg: string;
-  art: "standards" | "lab";
+  icon: IconName;
   items: ServiceItem[];
   statusLabel: string;
   statusType: "live" | "soon";
@@ -153,10 +138,7 @@ const AI_CARDS: {
     body: "National standards for AI systems, algorithms, data, and digital trust — aligned with ISO/IEC JTC 1/SC 42 and the EU AI Act. Drafted with industry, academia and civil society, and open for public comment.",
     href: "/ai-tech/standards",
     eyebrow: "Standards Development",
-    band: "linear-gradient(135deg,#2E3191 0%,#24286F 60%,#1B1D5C 100%)",
-    dot: "#2E3191",
-    btnBg: "#2E3191",
-    art: "standards",
+    icon: "i-scroll",
     items: [
       { label: "SZNS AI 001 — AI governance & risk", meta: "Draft" },
       { label: "SZNS AI 002 — Algorithmic transparency", meta: "Draft" },
@@ -171,10 +153,7 @@ const AI_CARDS: {
     body: "Independent testing for AI models, software, and digital systems against national and international standards. Fairness audits, robustness testing, software conformity, and structured assurance reports — accredited to ISO/IEC 17025.",
     href: "/ai-tech/lab",
     eyebrow: "Conformity Assessment",
-    band: "linear-gradient(135deg,#1B1D5C 0%,#24286F 55%,#2E3191 100%)",
-    dot: "#E0A50C",
-    btnBg: "#1B1D5C",
-    art: "lab",
+    icon: "i-flask",
     items: [
       { label: "AI fairness & bias audit", meta: "2 weeks" },
       { label: "Software conformity testing", meta: "1–3 weeks" },
@@ -358,41 +337,30 @@ export function HomePage() {
           </div>
 
           <div className="ai-grid">
-            {AI_CARDS.map((card) => (
+            {AI_CARDS.map((card, i) => (
               <Link
                 key={card.title}
-                className="ai-card"
+                className={`ncard ncard--${i % 2 === 0 ? "light" : "dark"} ai-ncard`}
                 to={card.href}
-                style={{
-                  ["--band" as string]: card.band,
-                  ["--dot" as string]: card.dot,
-                  ["--btn-bg" as string]: card.btnBg,
-                }}
               >
-                <div className="ai-card__band">
-                  <span className="ai-card__eyebrow">{card.eyebrow}</span>
-                  <AiCardArt motif={card.art} />
-                </div>
-                <div className="ai-card__body">
-                  <h3>{card.title}</h3>
-                  <p>{card.body}</p>
-                  <ul className="ai-card__items">
-                    {card.items.map((it) => (
-                      <li key={it.label}>
-                        <em>{it.label}</em>
-                        <b>{it.meta}</b>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="ai-card__foot">
-                    <span className={`ai-card__status ai-card__status--${card.statusType}`}>
-                      {card.statusLabel}
-                    </span>
-                    <span className="ai-card__go">
-                      {card.goLabel} <Icon name="i-cright" />
-                    </span>
-                  </div>
-                </div>
+                <span className="ncard__ic" aria-hidden="true">
+                  <Icon name={card.icon} size={44} />
+                </span>
+                <span className="ncard__eyebrow">{card.eyebrow}</span>
+                <h3>{card.title}</h3>
+                <p>{card.body}</p>
+                <ul className="ncard__items">
+                  {card.items.map((it) => (
+                    <li key={it.label}>
+                      <em>{it.label}</em>
+                      <b>{it.meta}</b>
+                    </li>
+                  ))}
+                </ul>
+                <span className={`ncard__status ncard__status--${card.statusType}`}>
+                  {card.statusLabel}
+                </span>
+                <NotchButton label={card.goLabel} />
               </Link>
             ))}
           </div>
@@ -412,15 +380,11 @@ export function HomePage() {
             </Link>
           </div>
           <div className="services">
-            {SERVICES.map((svc) => (
+            {SERVICES.map((svc, i) => (
               <Link
                 key={svc.title}
-                className="svc"
+                className={`svc ncard ncard--${SERVICE_VARIANT[i]}`}
                 to={svc.to}
-                style={{
-                  ["--tint" as string]: svc.tint,
-                  ["--tone" as string]: svc.tone,
-                }}
               >
                 <span className="svc__photo" aria-hidden="true">
                   <img src={svc.img} alt="" />
@@ -439,13 +403,9 @@ export function HomePage() {
                       </li>
                     ))}
                   </ul>
-                  <div className="svc__foot">
-                    <span className="svc__meta">{svc.pill}</span>
-                    <span className="svc__go">
-                      <Icon name="i-cright" />
-                    </span>
-                  </div>
+                  <span className="svc__meta">{svc.pill}</span>
                 </div>
+                <NotchButton label="Explore more" />
               </Link>
             ))}
           </div>
@@ -542,12 +502,30 @@ export function HomePage() {
   );
 }
 
+/**
+ * Bottom-left notch CTA: a pill that sits in a cut-out of the card, the
+ * cut-out filled with the section background (see .notch in egov.css).
+ */
+function NotchButton({ label }: { label: string }) {
+  return (
+    <span className="notch">
+      <span className="notch__btn">
+        {label}
+        <span className="notch__chev" aria-hidden="true">
+          <Icon name="i-cright" size={14} />
+          <Icon name="i-cright" size={14} />
+        </span>
+      </span>
+    </span>
+  );
+}
+
 /** Single update card — rendered from API data. */
 function UpdateCard({ item }: { item: UpdateItem }) {
   const tagClass = `upd__tag upd__tag--${item.tag}`;
   const footIcon = item.foot_icon as IconName;
   return (
-    <Link className="upd" to={item.href}>
+    <Link className="upd ncard ncard--tint" to={item.href}>
       <div className="upd__top">
         <span className={tagClass}>{item.tag}</span>
         <time className="upd__date">{formatDate(item.date)}</time>
@@ -558,10 +536,8 @@ function UpdateCard({ item }: { item: UpdateItem }) {
         <span>
           <Icon name={footIcon} /> {item.foot_label}
         </span>
-        <span className="upd__arrow">
-          <Icon name="i-cright" />
-        </span>
       </div>
+      <NotchButton label="Read more" />
     </Link>
   );
 }

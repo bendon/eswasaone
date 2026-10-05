@@ -3,14 +3,30 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { InstitutionLayout } from "./layout/InstitutionLayout";
 import { PageSkeleton } from "./components/PageStates";
 
+type PageFactory = () => Promise<{ default: ComponentType }>;
+
+// lazy() must run once per page — calling it during render mints a new component
+// type each time, so every layout re-render unmounted and remounted the page
+// (skeleton flash + all fetches again = the post-login flicker loop).
+const lazyPages = new WeakMap<PageFactory, ComponentType>();
+
+function lazyOnce(factory: PageFactory): ComponentType {
+  let Comp = lazyPages.get(factory);
+  if (!Comp) {
+    Comp = lazy(factory);
+    lazyPages.set(factory, Comp);
+  }
+  return Comp;
+}
+
 function L({
   factory,
   skeleton = "list",
 }: {
-  factory: () => Promise<{ default: ComponentType }>;
+  factory: PageFactory;
   skeleton?: "list" | "dashboard" | "panel";
 }) {
-  const Comp = lazy(factory);
+  const Comp = lazyOnce(factory);
   return (
     <Suspense fallback={<PageSkeleton variant={skeleton} label="Loading module…" />}>
       <Comp />
@@ -95,6 +111,46 @@ export const router = createBrowserRouter(
                       import("./certification/sub-views").then((m) => ({
                         default: m.CertificatesView,
                       }))
+                    }
+                  />
+                ),
+              },
+              {
+                path: "quotes",
+                element: (
+                  <L
+                    factory={() =>
+                      import("./certification/sub-views").then((m) => ({ default: m.QuotesView }))
+                    }
+                  />
+                ),
+              },
+              {
+                path: "findings",
+                element: (
+                  <L
+                    factory={() =>
+                      import("./certification/sub-views").then((m) => ({ default: m.FindingsView }))
+                    }
+                  />
+                ),
+              },
+              {
+                path: "decisions",
+                element: (
+                  <L
+                    factory={() =>
+                      import("./certification/sub-views").then((m) => ({ default: m.DecisionsView }))
+                    }
+                  />
+                ),
+              },
+              {
+                path: "register",
+                element: (
+                  <L
+                    factory={() =>
+                      import("./certification/sub-views").then((m) => ({ default: m.RegisterView }))
                     }
                   />
                 ),

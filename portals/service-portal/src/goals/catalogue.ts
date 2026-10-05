@@ -409,7 +409,8 @@ export function stubGuideFromCard(card: GoalCard): GuideResponse {
         action: {
           type: "apply",
           label: "Apply for certification",
-          target: card.slug,
+          // Export goods need the product mark; the wizard keys on scheme ids.
+          target: "product",
           auth_required: true,
           reason: "Applying creates a tracked case under your account.",
         },
@@ -470,7 +471,8 @@ export function stubGuideFromCard(card: GoalCard): GuideResponse {
         action: {
           type: "apply",
           label: "Start application",
-          target: card.slug,
+          // "iso-9001" → scheme id "iso9001"
+          target: card.slug.replace("-", ""),
           auth_required: true,
           reason: "Applying creates a tracked case under your account.",
         },
@@ -478,7 +480,7 @@ export function stubGuideFromCard(card: GoalCard): GuideResponse {
       {
         title: "Certification decision",
         detail: "Close any nonconformities; receive your certificate once the decision is issued.",
-        citations: [{ label: "Track application", url: "/account", rights: "public" }],
+        citations: [{ label: "Track application", url: "/account/applications", rights: "public" }],
         action: null,
       },
     ],
@@ -514,7 +516,7 @@ export function stubGuideFromCard(card: GoalCard): GuideResponse {
         action: {
           type: "apply",
           label: "Apply for product mark",
-          target: card.slug,
+          target: "product",
           auth_required: true,
           reason: "Applying creates a tracked case under your account.",
         },

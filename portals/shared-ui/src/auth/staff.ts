@@ -113,16 +113,40 @@ export function redirectStaffAfterLogin(
   if (path.startsWith("/field") || path.startsWith("/institution")) {
     return false;
   }
-  if (hasDeskOnlyRole(roles)) {
-    window.location.assign(INSTITUTION_PORTAL_PATH);
-    return true;
+  // Bounced straight back here after a recent redirect — the staff SPA is not
+  // being served on this origin. Stop instead of reloading forever.
+  if (redirectedRecently()) {
+    console.warn(
+      "[staff-redirect] Staff portal redirect bounced back to the Service Portal; not retrying. " +
+        "Check that /institution/ and /field/ are routed to their SPAs on this origin.",
+    );
+    return false;
   }
-  if (hasFieldEssRole(roles)) {
-    window.location.assign(FIELD_PORTAL_PATH);
-    return true;
-  }
-  window.location.assign(INSTITUTION_PORTAL_PATH);
+  const dest =
+    hasDeskOnlyRole(roles) || !hasFieldEssRole(roles) ? INSTITUTION_PORTAL_PATH : FIELD_PORTAL_PATH;
+  markRedirect();
+  window.location.assign(dest);
   return true;
+}
+
+const REDIRECT_MARK_KEY = "eswasaone_staff_redirect_at";
+const REDIRECT_LOOP_WINDOW_MS = 15_000;
+
+function redirectedRecently(): boolean {
+  try {
+    const at = Number(window.sessionStorage?.getItem(REDIRECT_MARK_KEY));
+    return Number.isFinite(at) && at > 0 && Date.now() - at < REDIRECT_LOOP_WINDOW_MS;
+  } catch {
+    return false;
+  }
+}
+
+function markRedirect(): void {
+  try {
+    window.sessionStorage?.setItem(REDIRECT_MARK_KEY, String(Date.now()));
+  } catch {
+    /* storage unavailable — loop guard is best-effort */
+  }
 }
 
 /**

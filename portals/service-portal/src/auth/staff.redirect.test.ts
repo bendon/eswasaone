@@ -67,4 +67,21 @@ describe("redirectStaffAfterLogin", () => {
     expect(redirectStaffAfterLogin(["HR Manager"])).toBe(false);
     expect(assign).not.toHaveBeenCalled();
   });
+
+  it("does not redirect again when bounced back to the Service Portal", () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("window", {
+      location: { pathname: "/", assign },
+      sessionStorage: {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => void store.set(k, v),
+      },
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    expect(redirectStaffAfterLogin(["HR Manager"])).toBe(true);
+    // Staff SPA not served → landed back on "/" → second attempt must not loop.
+    expect(redirectStaffAfterLogin(["HR Manager"])).toBe(false);
+    expect(assign).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
 });

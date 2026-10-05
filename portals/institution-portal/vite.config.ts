@@ -33,6 +33,8 @@ export default defineConfig({
     port: 3016,
     strictPort: true,
     allowedHosts: ["eswasaone.aiceafrica.com", ".aiceafrica.com"],
+    // Serve shared-ui assets (fonts) and contracts from outside this portal's root.
+    fs: { allow: [path.resolve(__dirname, ".."), path.resolve(__dirname, "../../contracts")] },
     proxy: {
       "/api": { target: apiTarget, changeOrigin: true, secure: true, cookieDomainRewrite: "" },
       "/ws": { target: apiTarget.replace(/^http/, "ws"), ws: true, changeOrigin: true },

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
@@ -9,8 +9,10 @@ import type {
   AuditSummary,
 } from "../api/types";
 import {
+  AuthError,
   DataRow,
   ModuleHeader,
+  StaffPickerDrawer,
   RecordDrawer,
   Toolbar,
   Toast,
@@ -19,6 +21,19 @@ import {
   type DrawerSection,
   type DrawerAction,
 } from "@eswasaone/shared-ui";
+import { patchAudit } from "./deskApi";
+
+const AUDIT_TYPES = [
+  "Stage 1 audit",
+  "Stage 2 audit",
+  "Initial factory assessment",
+  "Ingelo certification assessment",
+  "Surveillance audit 1",
+  "Surveillance audit 2",
+  "Recertification audit",
+  "Post-permit inspection & sampling",
+  "Special audit (CER_PR_028)",
+];
 
 /** Audits — scheduled, completed and overdue audits with SLA tracking. */
 
@@ -118,6 +133,29 @@ export function AuditsView() {
   const [flash, setFlash] = useState<string | null>(null);
   const [openRef, setOpenRef] = useState<string | null>(null);
   const [draftDue, setDraftDue] = useState("");
+  const [draftType, setDraftType] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [picking, setPicking] = useState(false);
+
+  async function act(
+    a: AuditSummary,
+    action: "reschedule" | "assign" | "complete",
+    payload: Record<string, unknown>,
+    ok: string,
+  ) {
+    setBusy(true);
+    try {
+      await patchAudit(a.id, action, payload);
+      setFlash(ok);
+      reload();
+      overdue.reload();
+    } catch (err) {
+      if (err instanceof AuthError && err.authRequired) openAuth(err.reason);
+      else setFlash(err instanceof Error ? err.message : "Update failed");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (authRequired) openAuth("Staff sign-in required");
@@ -246,11 +284,34 @@ export function AuditsView() {
           ),
         },
         {
+          heading: "Audit type",
+          content: (
+            <div className="kv">
+              <b>Type</b>
+              <select
+                className="sel"
+                aria-label="Audit type"
+                value={draftType}
+                onChange={(e) => setDraftType(e.target.value)}
+              >
+                <option value="">Per schedule</option>
+                {AUDIT_TYPES.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+          ),
+        },
+        {
           heading: "Findings",
           content: (
             <div className="kv">
               <b>Findings</b>
-              <span>None recorded</span>
+              <span>
+                <Link to={`/certification/findings?open=${encodeURIComponent(selected.application_id)}`}>
+                  View / raise findings for {selected.application_id}
+                </Link>
+              </span>
             </div>
           ),
         },
@@ -275,18 +336,33 @@ export function AuditsView() {
   const drawerActions: DrawerAction[] = selected
     ? [
         {
-          label: "Confirm reschedule",
+          label: busy ? "…" : "Confirm reschedule",
           variant: "gold",
-          onClick: () => {
-            // TODO: wire real — PATCH /certification/audits/{id} when contract exists.
-            const next = draftDue || selected.due_date;
-            setFlash(
-              next
-                ? `Rescheduled ${selected.id} to ${next} (pending Core write)`
-                : `Pick a date for ${selected.id}`,
-            );
-          },
+          disabled: busy || !draftDue,
+          onClick: () =>
+            void act(
+              selected,
+              "reschedule",
+              { due_date: draftDue, audit_type: draftType || undefined },
+              `Rescheduled ${selected.id} to ${draftDue}. The client is notified.`,
+            ),
         },
+        {
+          label: selected.auditor ? "Reassign auditor" : "Assign auditor",
+          variant: "pri",
+          disabled: busy,
+          onClick: () => setPicking(true),
+        },
+        ...(!/complete|done|closed/i.test(selected.status)
+          ? [
+              {
+                label: "Mark complete",
+                variant: "ghost" as const,
+                disabled: busy,
+                onClick: () => void act(selected, "complete", { audit_type: draftType || undefined }, `${selected.id} marked complete`),
+              },
+            ]
+          : []),
         {
           label: "Close",
           variant: "ghost",
@@ -367,6 +443,22 @@ export function AuditsView() {
             }
             sections={drawerSections}
             actions={drawerActions}
+          />
+          <StaffPickerDrawer
+            open={picking}
+            title="Assign auditor"
+            roleFilter="Certification Auditor"
+            onClose={() => setPicking(false)}
+            onPick={(staff) => {
+              setPicking(false);
+              if (selected)
+                void act(
+                  selected,
+                  "assign",
+                  { auditor: staff.username, auditor_name: staff.full_name },
+                  `${staff.full_name || staff.username} assigned to ${selected.id}`,
+                );
+            }}
           />
         </>
       </ResourceGate>

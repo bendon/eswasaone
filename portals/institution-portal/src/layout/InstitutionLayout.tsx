@@ -37,6 +37,15 @@ export function useInstitution() {
   return useOutletContext<InstitutionOutletContext>();
 }
 
+function sameSessionUser(a: SessionUser, b: SessionUser): boolean {
+  return (
+    a.username === b.username &&
+    a.email === b.email &&
+    a.full_name === b.full_name &&
+    (a.roles ?? []).join("|") === (b.roles ?? []).join("|")
+  );
+}
+
 function routeIdFromPath(pathname: string): InstitutionRouteId {
   const clean = pathname.replace(/\/$/, "") || "/";
   const hit = INSTITUTION_NAV.find((n) => {
@@ -88,7 +97,9 @@ export function InstitutionLayout() {
             window.location.assign("/");
             return;
           }
-          setUser(u);
+          // Keep the same object when the session is unchanged so every
+          // `user`-keyed effect (dashboard fetches, badges) does not re-run.
+          setUser((prev) => (prev && sameSessionUser(prev, u) ? prev : u));
           setGateError(null);
           setAuthReady(true);
         });

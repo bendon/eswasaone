@@ -8,6 +8,15 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { Icon, type IconName } from "@eswasaone/shared-ui";
 import { SCHEMES, type Scheme } from "../api/certification";
+import {
+  CERT_DOCUMENTS,
+  CHARTER,
+  FLOW_LABEL,
+  FLOW_STAGES,
+  REQUIRED_DOCS,
+  type CertFlow,
+} from "../certification/flows";
+import { SideDrawer } from "../certification/ui";
 import { verifyToken, type VerificationResult } from "../api/misc";
 import { useAuth } from "../auth/AuthProvider";
 import { Breadcrumbs } from "../components/Breadcrumbs";
@@ -19,43 +28,11 @@ import { useCartToast } from "../ui/CartToast";
 
 const HERO_STATS = [
   { value: "148", label: "Companies certified" },
-  { value: "7", label: "Active schemes" },
+  { value: String(SCHEMES.length), label: "Active schemes" },
   { value: "4–14 wk", label: "Typical timeline" },
   { value: "3 yrs", label: "Certificate validity" },
 ] as const;
 
-const PROCESS_STEPS = [
-  {
-    n: "01",
-    title: "Apply online",
-    body: "Submit your organisation details, scope, and site information. You'll get a tracked reference number instantly.",
-    dur: "15 min",
-  },
-  {
-    n: "02",
-    title: "Gap assessment",
-    body: "We review your current systems against the standard and give you a written gap report with prioritised actions.",
-    dur: "1–2 weeks",
-  },
-  {
-    n: "03",
-    title: "Stage 1 audit",
-    body: "Documentation and readiness review at your site. We confirm your management system is ready for full evaluation.",
-    dur: "1–2 days",
-  },
-  {
-    n: "04",
-    title: "Stage 2 audit",
-    body: "Full on-site evaluation of your implemented system: processes, records, interviews, and observation of work in practice.",
-    dur: "2–5 days",
-  },
-  {
-    n: "05",
-    title: "Certification decision",
-    body: "The Certification Approval Committee reviews the audit report and, if compliant, issues a 3-year certificate.",
-    dur: "2–4 weeks",
-  },
-] as const;
 
 type PathCard = {
   to: string;
@@ -73,7 +50,7 @@ type PathCard = {
 
 const PATHS: PathCard[] = [
   {
-    to: "/certification?path=exporter",
+    to: "/goals/iso-9001",
     title: "First-time exporter pack",
     body: "ISO 9001 plus the relevant product standards and export-desk support: the shortest credible path to your first international shipment.",
     count: "4 steps",
@@ -86,7 +63,7 @@ const PATHS: PathCard[] = [
     tone: "#313391",
   },
   {
-    to: "/certification?path=food",
+    to: "/goals/iso-22000",
     title: "Food processor readiness",
     body: "HACCP first, then ISO 22000, with our internal-auditor training bundled so your team can maintain the system after certification.",
     count: "3 stages",
@@ -99,7 +76,7 @@ const PATHS: PathCard[] = [
     tone: "#15803D",
   },
   {
-    to: "/certification?path=msme",
+    to: "/certification/apply?scheme=ingelo",
     title: "MSME starter path",
     body: "For small businesses new to standards. Starts with the Ingelo scheme (subsidised training, testing and assessment), then SZNS Product Mark.",
     count: "Subsidised",
@@ -112,7 +89,7 @@ const PATHS: PathCard[] = [
     tone: "#166534",
   },
   {
-    to: "/certification?path=integrated",
+    to: "/certification/apply?scheme=iso9001",
     title: "Integrated management system",
     body: "ISO 9001, ISO 14001 and ISO 45001 audited together. One integrated audit schedule, three certificates, lower total cost.",
     count: "3 schemes",
@@ -125,7 +102,7 @@ const PATHS: PathCard[] = [
     tone: "#7C3AED",
   },
   {
-    to: "/certification?path=recertify",
+    to: "/account/applications",
     title: "Recertification",
     body: "Already certified and coming up to the end of your three-year cycle? Book your recertification audit and keep the certificate continuous.",
     count: "6–10 weeks",
@@ -138,7 +115,7 @@ const PATHS: PathCard[] = [
     tone: "#0E7C7B",
   },
   {
-    to: "/certification?path=upgrade",
+    to: "/certification/quote?scheme=iso22000",
     title: "Upgrade from HACCP",
     body: "Already HACCP certified? Bridge to ISO 22000 with a reduced-scope audit. Your existing HACCP plan counts toward the new system.",
     count: "Reduced scope",
@@ -152,12 +129,19 @@ const PATHS: PathCard[] = [
   },
 ];
 
-type FilterGroup = {
-  id: string;
-  label: string;
-  open: boolean;
-  options: { id: string; label: string; count: number; default?: boolean }[];
-};
+type FilterOption = { id: string; label: string; test: (s: Scheme) => boolean };
+type FilterGroup = { id: string; label: string; open: boolean; options: FilterOption[] };
+
+function minWeeks(s: Scheme): number {
+  const m = s.duration.match(/(\d+)/);
+  return m ? Number(m[1]) : 99;
+}
+
+function minFee(s: Scheme): number {
+  if (s.subsidised) return 0;
+  const m = s.fee.match(/(\d+)k/);
+  return m ? Number(m[1]) * 1000 : 0;
+}
 
 const FILTERS: FilterGroup[] = [
   {
@@ -165,10 +149,9 @@ const FILTERS: FilterGroup[] = [
     label: "Scheme type",
     open: true,
     options: [
-      { id: "ms", label: "Management systems", count: 4, default: true },
-      { id: "product", label: "Product certification", count: 2 },
-      { id: "sector", label: "Sector-specific", count: 2 },
-      { id: "msme", label: "MSME / Ingelo", count: 1 },
+      { id: "ms", label: "Management systems", test: (s) => s.flow === "ms" || s.flow === "combined" },
+      { id: "product", label: "Product certification", test: (s) => s.flow === "product" || s.flow === "combined" },
+      { id: "msme", label: "MSME / Ingelo", test: (s) => s.flow === "ingelo" },
     ],
   },
   {
@@ -176,10 +159,10 @@ const FILTERS: FilterGroup[] = [
     label: "Sector",
     open: true,
     options: [
-      { id: "food", label: "Food & agriculture", count: 4, default: true },
-      { id: "all", label: "All industries", count: 3 },
-      { id: "construction", label: "Construction", count: 1 },
-      { id: "manufacturing", label: "Manufacturing", count: 2 },
+      { id: "food", label: "Food & agriculture", test: (s) => s.sectors.includes("food") },
+      { id: "all", label: "All industries", test: (s) => s.sectors.includes("all") },
+      { id: "construction", label: "Construction", test: (s) => s.sectors.includes("construction") },
+      { id: "manufacturing", label: "Manufacturing", test: (s) => s.sectors.includes("manufacturing") },
     ],
   },
   {
@@ -187,33 +170,35 @@ const FILTERS: FilterGroup[] = [
     label: "Duration",
     open: true,
     options: [
-      { id: "lt6", label: "Under 6 weeks", count: 2 },
-      { id: "6-10", label: "6 – 10 weeks", count: 4 },
-      { id: "10-14", label: "10 – 14 weeks", count: 2 },
+      { id: "lt6", label: "Starts under 6 weeks", test: (s) => minWeeks(s) < 6 },
+      { id: "6-10", label: "6 – 10 weeks", test: (s) => minWeeks(s) >= 6 && minWeeks(s) < 10 },
+      { id: "10-14", label: "10 weeks or more", test: (s) => minWeeks(s) >= 10 },
     ],
   },
   {
     id: "fee",
     label: "Fee range",
-    open: true,
-    options: [
-      { id: "free", label: "Subsidised / free", count: 1 },
-      { id: "lt20", label: "Under SZL 20,000", count: 2 },
-      { id: "20-50", label: "SZL 20,000 – 50,000", count: 4 },
-      { id: "gt50", label: "Over SZL 50,000", count: 1 },
-    ],
-  },
-  {
-    id: "avail",
-    label: "Availability",
     open: false,
     options: [
-      { id: "open", label: "Open for applications", count: 7, default: true },
-      { id: "wait", label: "Waitlist", count: 0 },
-      { id: "soon", label: "Coming soon", count: 1 },
+      { id: "free", label: "Subsidised / free", test: (s) => !!s.subsidised },
+      { id: "lt20", label: "From under SZL 20,000", test: (s) => !s.subsidised && minFee(s) < 20000 },
+      { id: "20-50", label: "From SZL 20,000 – 50,000", test: (s) => minFee(s) >= 20000 && minFee(s) < 50000 },
+      { id: "gt50", label: "From over SZL 50,000", test: (s) => minFee(s) >= 50000 },
     ],
   },
 ];
+
+function applyFilters(list: Scheme[], checked: Record<string, boolean>, skipGroup?: string): Scheme[] {
+  return list.filter((s) =>
+    FILTERS.every((g) => {
+      if (g.id === skipGroup) return true;
+      const on = g.options.filter((o) => checked[`${g.id}:${o.id}`]);
+      return on.length === 0 || on.some((o) => o.test(s));
+    }),
+  );
+}
+
+const PROCESS_TABS: CertFlow[] = ["ms", "product", "ingelo"];
 
 export function CertificationPage() {
   const { user, openAuth } = useAuth();
@@ -229,19 +214,15 @@ export function CertificationPage() {
   const [filterOpen, setFilterOpen] = useState<Record<string, boolean>>(
     Object.fromEntries(FILTERS.map((g) => [g.id, g.open])),
   );
-  const [checked, setChecked] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {};
-    for (const g of FILTERS) {
-      for (const o of g.options) init[`${g.id}:${o.id}`] = Boolean(o.default);
-    }
-    return init;
-  });
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [processTab, setProcessTab] = useState<CertFlow>("ms");
+  const [drawer, setDrawer] = useState<Scheme | null>(null);
   const [verifyValue, setVerifyValue] = useState("");
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [verifyResult, setVerifyResult] = useState<VerificationResult | null>(null);
 
   const schemes = useMemo(() => {
-    const list = [...SCHEMES];
+    const list = applyFilters(SCHEMES, checked);
     if (sort === "code") list.sort((a, b) => a.code.localeCompare(b.code));
     else if (sort === "fastest") {
       list.sort((a, b) => durationRank(a.duration) - durationRank(b.duration));
@@ -249,7 +230,7 @@ export function CertificationPage() {
       list.sort((a, b) => feeRank(a) - feeRank(b));
     }
     return list;
-  }, [sort]);
+  }, [sort, checked]);
 
   const openCount = schemes.filter((s) => s.open).length;
   const activeFilterCount = Object.values(checked).filter(Boolean).length;
@@ -267,13 +248,13 @@ export function CertificationPage() {
 
   function trackApplication() {
     if (user) {
-      navigate("/account");
+      navigate("/account/applications");
       return;
     }
     openAuth({
       title: "Sign in to track",
       reason: "See live stage, pending documents, and audit dates for your application.",
-      next: "/account",
+      next: "/account/applications",
     });
   }
 
@@ -348,7 +329,7 @@ export function CertificationPage() {
                     }
                   />
                   <span>{opt.label}</span>
-                  <em>{opt.count}</em>
+                  <em>{applyFilters(SCHEMES, checked, group.id).filter(opt.test).length}</em>
                 </label>
               ))}
             </div>
@@ -380,6 +361,9 @@ export function CertificationPage() {
             <button type="button" className="chip-cta gold" onClick={scrollToCatalogue}>
               <Icon name="i-badge" /> Browse schemes
             </button>
+            <Link className="chip-cta" to="/certification/quote">
+              <Icon name="i-dollar" /> Request a quote
+            </Link>
             <button type="button" className="chip-cta" onClick={scrollToVerify}>
               <Icon name="i-eye" /> Verify a certificate
             </button>
@@ -479,7 +463,8 @@ export function CertificationPage() {
           </div>
           <p className="verify-widget__note">
             <Icon name="i-shield" />
-            Certificate data is drawn live from the ESWASA register.
+            Certificate data is drawn live from the ESWASA register. See also the{" "}
+            <Link to="/certification/status">suspended, withdrawn &amp; reduced-scope register</Link>.
           </p>
           {verifyResult ? (
             <div className={`verify-widget__result${verifyResult.valid ? " ok" : ""}`}>
@@ -582,7 +567,7 @@ export function CertificationPage() {
                     <button
                       type="button"
                       className="abtn ghost"
-                      onClick={() => showToast(`${s.secondaryLabel} coming soon`)}
+                      onClick={() => setDrawer(s)}
                     >
                       <Icon name="i-file" /> {s.secondaryLabel}
                     </button>
@@ -599,20 +584,20 @@ export function CertificationPage() {
             ))}
           </ul>
 
-          <div className="loadmore">
-            <div className="loadmore__bar">
-              <i style={{ width: "62%" }} />
+          {schemes.length === 0 ? (
+            <div className="empty">
+              <b>No schemes match these filters</b>
+              <p>Clear a filter, or ask the certification desk which scheme fits.</p>
+              <button type="button" className="abtn ghost" onClick={clearFilters}>
+                Clear filters
+              </button>
             </div>
-            <p>
-              Showing {schemes.length} of 11 certification schemes offered by ESWASA
+          ) : (
+            <p className="page-note">
+              Showing {schemes.length} of {SCHEMES.length} certification schemes. Not listed?{" "}
+              <Link to="/certification/quote">Request a quote</Link> and ESWASA will confirm the right scheme.
             </p>
-            <button
-              type="button"
-              onClick={() => showToast("Loaded more schemes (TODO: wire real catalogue)")}
-            >
-              Load more schemes
-            </button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -620,23 +605,82 @@ export function CertificationPage() {
         <div className="process__head">
           <h2 id="processTitle">How certification works</h2>
           <p>
-            Every management-system certification at ESWASA follows the same five-stage path.
-            Most applicants complete it in six to fourteen weeks, depending on the size of the
-            organisation and the readiness of existing systems.
+            ESWASA runs three certification paths. Each follows its own accredited process. Request a
+            quote first, or apply straight away and ESWASA will price the work after review.
           </p>
         </div>
-        <div className="process__steps">
-          {PROCESS_STEPS.map((step) => (
-            <div className="pstep" key={step.n}>
-              <span className="pstep__n">{step.n}</span>
+        <div className="cf-tabs" role="tablist" aria-label="Certification path">
+          {PROCESS_TABS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              role="tab"
+              aria-selected={processTab === f}
+              onClick={() => setProcessTab(f)}
+            >
+              {FLOW_LABEL[f]}
+            </button>
+          ))}
+        </div>
+        <div className="cf-steps" role="tabpanel">
+          {FLOW_STAGES[processTab].map((step, i) => (
+            <div className="cf-step" key={step.key}>
+              <span className="cf-step__n">{String(i + 1).padStart(2, "0")}</span>
               <h3>{step.title}</h3>
               <p>{step.body}</p>
-              <span className="pstep__dur">
-                <Icon name="i-clock" /> {step.dur}
+              {step.sla ? (
+                <span className="sla">
+                  <Icon name="i-clock" /> {step.sla}
+                </span>
+              ) : null}
+              <span className="who">
+                {step.who === "you" ? "You" : step.who === "eswasa" ? "ESWASA" : "You + ESWASA"}
               </span>
             </div>
           ))}
         </div>
+        <div className="cf-nav">
+          {processTab === "ingelo" ? (
+            <Link className="cf-btn cf-btn--gold" to="/certification/apply?scheme=ingelo">
+              <Icon name="i-check-c" /> Check Ingelo eligibility
+            </Link>
+          ) : (
+            <Link
+              className="cf-btn cf-btn--pri"
+              to={`/certification/apply?scheme=${processTab === "product" ? "product" : "iso9001"}`}
+            >
+              <Icon name="i-send" /> Start an application
+            </Link>
+          )}
+          <Link className="cf-btn cf-btn--ghost" to={`/certification/quote?flow=${processTab}`}>
+            <Icon name="i-dollar" /> Request a quote
+          </Link>
+        </div>
+      </section>
+
+      <section className="process" aria-labelledby="docsTitle">
+        <div className="process__head">
+          <h2 id="docsTitle">Rules, policies &amp; procedures</h2>
+          <p>
+            The documents that govern ESWASA certification: impartiality, appeals (within{" "}
+            {CHARTER.appealWindowDays} days), complaints, suspension and withdrawal, and use of the mark.
+          </p>
+        </div>
+        <div className="cf-docs">
+          {CERT_DOCUMENTS.map((d) => (
+            <div className="cf-doc" key={d.code}>
+              <Icon name="i-file" />
+              <div>
+                <code>{d.code}</code>
+                {d.title}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="page-note">
+          Status of certified clients: <Link to="/certification/status">public status register</Link>.
+          Concerns about a certified client? <Link to="/complaints?topic=certification">Raise a complaint</Link>.
+        </p>
       </section>
 
       <section className="featured" aria-labelledby="featuredTitle">
@@ -675,6 +719,8 @@ export function CertificationPage() {
         />
       </section>
 
+      {drawer ? <SchemeDrawer scheme={drawer} onClose={() => setDrawer(null)} /> : null}
+
       <HelpBand
         kicker="Not sure where to start?"
         title="Tell us what you’re making and we’ll tell you what to certify."
@@ -700,4 +746,61 @@ function feeRank(s: Scheme): number {
   if (s.subsidised || /subsid/i.test(s.fee)) return 0;
   const m = s.fee.replace(/,/g, "").match(/(\d+)/);
   return m ? Number(m[1]) : 99;
+}
+
+function SchemeDrawer({ scheme, onClose }: { scheme: Scheme; onClose: () => void }) {
+  const ingelo = scheme.flow === "ingelo";
+  const docs = REQUIRED_DOCS[scheme.flow];
+  return (
+    <SideDrawer kicker={scheme.code} title={ingelo ? "Ingelo eligibility" : "Application checklist"} onClose={onClose}>
+      {ingelo ? (
+        <>
+          <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 8 }}>
+            Ingelo is a Ministry of Commerce, Industry and Trade initiative run by ESWASA for local producers.
+          </p>
+          <div className="cf-sec">You qualify if</div>
+          <ul className="cf-bul">
+            <li><Icon name="i-check" /> The business is owned by Emaswati</li>
+            <li><Icon name="i-check" /> It is a local MSME producing goods or services</li>
+            <li><Icon name="i-check" /> You are willing to scale up for export quota requirements</li>
+          </ul>
+          <div className="cf-sec">What you get</div>
+          <ul className="cf-bul">
+            <li><Icon name="i-check" /> Free pre-application consultation and gap-analysis workshop</li>
+            <li><Icon name="i-check" /> Expert guidance through certification</li>
+            <li><Icon name="i-check" /> The ESWASA Approved mark on your products</li>
+            <li><Icon name="i-check" /> Access to local, regional and AfCFTA markets</li>
+          </ul>
+        </>
+      ) : (
+        <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 8 }}>
+          {FLOW_LABEL[scheme.flow]} · {scheme.duration} · valid {scheme.validity}. Have these ready. You can
+          also upload them after you apply.
+        </p>
+      )}
+      <div className="cf-sec">Documents</div>
+      <ul className="cf-bul">
+        {docs.map((d) => (
+          <li key={d.key} className={d.required ? "" : "opt"}>
+            <Icon name={d.required ? "i-check" : "i-file"} />
+            <span>
+              {d.label}
+              {d.required ? "" : " (optional)"}
+              {d.hint ? ` · ${d.hint}` : ""}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="cf-nav">
+        <Link className="cf-btn cf-btn--pri" to={`/certification/apply?scheme=${scheme.id}`}>
+          <Icon name="i-send" /> {ingelo ? "Check eligibility & apply" : "Start application"}
+        </Link>
+        {!ingelo ? (
+          <Link className="cf-btn cf-btn--ghost" to={`/certification/quote?scheme=${scheme.id}`}>
+            Request a quote
+          </Link>
+        ) : null}
+      </div>
+    </SideDrawer>
+  );
 }

@@ -8,6 +8,8 @@ import { StandardDetailPage } from "./pages/StandardDetailPage";
 import { CertificationPage } from "./pages/CertificationPage";
 import { CertificationApplyPage } from "./pages/CertificationApplyPage";
 import { CertificationTrackPage } from "./pages/CertificationTrackPage";
+import { CertificationQuotePage } from "./pages/CertificationQuotePage";
+import { CertificationStatusPage } from "./pages/CertificationStatusPage";
 import { TrainingPage } from "./pages/TrainingPage";
 import { TrainingDetailPage } from "./pages/TrainingDetailPage";
 import { ExportPage } from "./pages/ExportPage";
@@ -16,6 +18,7 @@ import { VerifyPage } from "./pages/VerifyPage";
 import { ComplaintsPage } from "./pages/ComplaintsPage";
 import { AiTechPage } from "./pages/AiTechPage";
 import {
+  AccountApplicationsPage,
   AccountCertificatesPage,
   AccountLayout,
   AccountOrdersPage,
@@ -63,14 +66,10 @@ export const router = createBrowserRouter(
             { path: "estore/checkout", element: <CheckoutPage /> },
             { path: "estore/orders/:id", element: <OrderStatusPage /> },
             { path: "certification", element: <CertificationPage /> },
-            {
-              path: "certification/apply",
-              element: (
-                <RequireAuth>
-                  <CertificationApplyPage />
-                </RequireAuth>
-              ),
-            },
+            // Open to guests: answers autosave; sign-in is asked for at submit.
+            { path: "certification/apply", element: <CertificationApplyPage /> },
+            { path: "certification/quote", element: <CertificationQuotePage /> },
+            { path: "certification/status", element: <CertificationStatusPage /> },
             {
               path: "certification/:id",
               element: (
@@ -103,6 +102,7 @@ export const router = createBrowserRouter(
               ),
               children: [
                 { index: true, element: <AccountOverviewPage /> },
+                { path: "applications", element: <AccountApplicationsPage /> },
                 { path: "orders", element: <AccountOrdersPage /> },
                 { path: "certificates", element: <AccountCertificatesPage /> },
                 { path: "training", element: <AccountTrainingPage /> },

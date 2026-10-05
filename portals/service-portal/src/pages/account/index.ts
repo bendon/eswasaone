@@ -5,3 +5,4 @@ export { AccountCertificatesPage } from "./AccountCertificatesPage";
 export { AccountTrainingPage } from "./AccountTrainingPage";
 export { AccountTeamPage } from "./AccountTeamPage";
 export { AccountSettingsPage } from "./AccountSettingsPage";
+export { AccountApplicationsPage } from "./AccountApplicationsPage";

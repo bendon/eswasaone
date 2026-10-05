@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { verifyToken, type VerificationResult } from "../api/misc";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { safeText } from "../lib/safe";
@@ -49,6 +49,10 @@ export function VerifyPage() {
           {busy ? "Checking…" : "Verify"}
         </button>
       </form>
+      <p className="page-note">
+        Looking for suspended, withdrawn or reduced-scope certifications? See the{" "}
+        <Link to="/certification/status">public status register</Link>.
+      </p>
       {result ? (
         <div className={`verify-result${result.valid ? " ok" : ""}`}>
           <b>{result.valid ? "Valid" : "Not found"}</b>

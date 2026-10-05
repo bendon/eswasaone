@@ -168,7 +168,10 @@ vi.mock("../../api/orders", () => ({
   ]),
 }));
 
-vi.mock("../../api/certification", () => ({
+vi.mock("../../api/certification", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../api/certification")>()),
+  listApplications: vi.fn().mockResolvedValue([]),
+  listQuotes: vi.fn().mockResolvedValue([]),
   listCertificates: vi.fn().mockResolvedValue([
     {
       id: "c1",

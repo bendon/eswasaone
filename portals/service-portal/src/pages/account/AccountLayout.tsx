@@ -6,6 +6,7 @@ import { AccountProvider, useAccount, type EntityKind } from "./AccountContext";
 
 const TABS: { to: string; label: string; icon: IconName; end?: boolean; businessOnly?: boolean }[] = [
   { to: "/account", label: "Overview", icon: "i-home", end: true },
+  { to: "/account/applications", label: "Applications", icon: "i-steps" },
   { to: "/account/orders", label: "Orders", icon: "i-book" },
   { to: "/account/certificates", label: "Certificates", icon: "i-badge" },
   { to: "/account/training", label: "Training", icon: "i-cap" },

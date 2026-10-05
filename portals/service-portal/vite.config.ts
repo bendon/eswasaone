@@ -101,6 +101,12 @@ export default defineConfig({
     proxy: {
       "/api": { target: apiTarget, changeOrigin: true, secure: true, cookieDomainRewrite: "" },
       "/ws": { target: apiTarget.replace(/^http/, "ws"), ws: true, changeOrigin: true },
+      // Mirror nginx: staff SPAs live on the same origin so the post-login
+      // redirect lands on the real Institution / Field app (and shares the cookie).
+      // Without these, /institution/ fell through to this SPA's catch-all → "/" →
+      // staff redirect → /institution/ … an endless reload loop.
+      "/institution": { target: "http://127.0.0.1:3016", ws: true },
+      "/field": { target: "http://127.0.0.1:3017", ws: true },
     },
   },
   preview: {

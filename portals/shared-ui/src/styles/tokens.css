@@ -80,10 +80,11 @@
   --nav-h: 68px;
   --gutter: 32px;
 
-  /* Typography */
-  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
-  /* Display headings (service portal, EGov layout) */
-  --font-display: "Catamaran", "Plus Jakarta Sans", system-ui, sans-serif;
-  /* Identifiers: SZNS / ISO codes, refs, order IDs — never the display sans */
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* Typography — eswasa.co.sz faces, self-hosted in fonts.css.
+     Arial is the legacy site's rendered face, so it is the fallback. */
+  --font-sans: "Hind", "Hind Fallback", Arial, Helvetica, sans-serif;
+  /* Display headings (h1–h6, service portal, EGov layout) */
+  --font-display: "Lexend Deca", "Lexend Deca Fallback", Arial, Helvetica, sans-serif;
+  /* Identifiers: SZNS / ISO codes, refs, order IDs — system mono, no download */
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }

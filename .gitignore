@@ -36,3 +36,4 @@ engine/.mariadb_root_pass
 *.tsbuildinfo
 .coverage
 htmlcov/
+.local/

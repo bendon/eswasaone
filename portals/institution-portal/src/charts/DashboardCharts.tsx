@@ -11,6 +11,7 @@ import {
   Filler,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import { fontSans } from "@eswasaone/shared-ui/system";
 import { EmptyState } from "../components/PageStates";
 
 ChartJS.register(
@@ -25,7 +26,7 @@ ChartJS.register(
   Filler,
 );
 
-ChartJS.defaults.font.family = "Plus Jakarta Sans";
+ChartJS.defaults.font.family = fontSans;
 ChartJS.defaults.font.size = 11;
 ChartJS.defaults.color = "#98A2B3";
 

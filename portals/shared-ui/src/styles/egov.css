@@ -280,13 +280,14 @@ body{overflow-x:clip}
   border-bottom:3px solid transparent;transition:border-color .2s, background .2s;
 }
 .eg-trust__item:hover{border-color:var(--gold);background:#fff;box-shadow:0 12px 30px -16px rgba(27,29,92,.3)}
-.eg-trust__ic{
+.eg-trust__item .eg-trust__ic{
   width:60px;height:60px;border-radius:50%;margin-bottom:8px;
-  background:var(--navy);color:var(--gold);display:grid;place-items:center;
+  background:var(--navy);color:#fff;display:grid;place-items:center;
+  box-shadow:0 8px 18px -8px rgba(27,29,92,.55);
 }
-.eg-trust__ic svg{width:26px;height:26px;stroke:currentColor;stroke-width:1.8}
+.eg-trust__ic svg{width:26px;height:26px;stroke:currentColor;stroke-width:2}
 .eg-trust__item b{font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--navy-deep)}
-.eg-trust__item span{font-size:13px;color:var(--slate);line-height:1.5}
+.eg-trust__item > span:not(.eg-trust__ic){font-size:13px;color:var(--slate);line-height:1.5}
 
 /* ---------- Updates — news cards ---------- */
 .updates__grid{gap:28px}

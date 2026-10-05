@@ -16,8 +16,7 @@
   --field-tabs-h: 64px;
   --field-safe-b: env(safe-area-inset-bottom, 0px);
   --field-safe-t: env(safe-area-inset-top, 0px);
-  --font: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font: var(--font-sans);
 }
 
 *,

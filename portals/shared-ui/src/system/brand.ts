@@ -32,9 +32,11 @@ export const brand = {
 } as const;
 
 /** Type stacks — keep in sync with tokens.css */
-export const fontSans = '"Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+export const fontSans = '"Hind", "Hind Fallback", Arial, Helvetica, sans-serif';
+export const fontDisplay =
+  '"Lexend Deca", "Lexend Deca Fallback", Arial, Helvetica, sans-serif';
 export const fontMono =
-  '"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+  'ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
 
 export type BrandColor = keyof typeof brand;
 

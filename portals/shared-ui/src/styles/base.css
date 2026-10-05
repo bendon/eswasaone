@@ -2,6 +2,7 @@
    Import once per portal via service.css or institution.css. */
 
 @import "./tokens.css";
+@import "./fonts.css";
 
 *,
 *::before,
@@ -27,6 +28,14 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
 }
 
 #root {

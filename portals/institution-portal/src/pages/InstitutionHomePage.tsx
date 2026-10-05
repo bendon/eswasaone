@@ -13,6 +13,7 @@ import {
   type IconName,
 } from "@eswasaone/shared-ui";
 import { Bar } from "react-chartjs-2";
+import { fontSans } from "@eswasaone/shared-ui/system";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -38,7 +39,7 @@ import type {
 } from "../api/types";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
-ChartJS.defaults.font.family = "Plus Jakarta Sans";
+ChartJS.defaults.font.family = fontSans;
 ChartJS.defaults.font.size = 11;
 ChartJS.defaults.color = "#8A9AB1";
 

@@ -225,7 +225,6 @@
 .dock__id{position:relative;z-index:1;line-height:1.2;min-width:0}
 .dock__id b{font-size:16px;font-weight:800;display:block;letter-spacing:-.01em;color:#fff}
 .dock__id span{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(255,255,255,.72);font-weight:500;margin-top:3px}
-.dock__id .dot{width:7px;height:7px;border-radius:50%;background:#4ADE80;box-shadow:0 0 0 3px rgba(74,222,128,.25);flex:0 0 auto}
 .dock__close{
   position:relative;z-index:1;margin-left:auto;flex:0 0 auto;width:36px;height:36px;border-radius:10px;
   background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:#fff;cursor:pointer;
@@ -323,6 +322,11 @@ button.dock__feed-item:hover .dock__feed-go{background:var(--tone);border-color:
 .dock__form button:active:not(:disabled){transform:scale(.95)}
 .dock__form button:disabled{background:var(--line);color:var(--muted-2);cursor:not-allowed}
 .dock__form button svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.2}
+.dock__thread{display:flex;flex-direction:column;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line-2)}
+.dock__msg{max-width:85%;padding:9px 13px;font-size:13px;line-height:1.45;border-radius:14px;margin:0;overflow-wrap:anywhere}
+.dock__msg.is-user{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:4px}
+.dock__msg.is-esi{align-self:flex-start;background:#ECEEFC;color:var(--ink);border-bottom-left-radius:4px}
+.dock__msg.is-pending{color:var(--muted);font-style:italic}
 .dock__note{margin-top:8px;font-size:11px;color:var(--muted-2);text-align:center}
 
 @media (prefers-reduced-motion:reduce){

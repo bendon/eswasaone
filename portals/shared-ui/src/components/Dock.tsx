@@ -95,6 +95,16 @@ const TONE_ICON: Record<NonNullable<DockContextItem["tone"]>, IconName> = {
   alert: "i-warn",
 };
 
+type DockMessage = {
+  id: number;
+  from: "user" | "esi";
+  text: string;
+  pending?: boolean;
+};
+
+/** Below this width the panel covers most of the screen, so lock page scroll. */
+const COMPACT_QUERY = "(max-width: 640px)";
+
 /** Cycles through `items` every `ms` while `active`; returns the current index. */
 function useRotation(count: number, active: boolean, ms = 3800) {
   const [i, setI] = useState(0);
@@ -118,7 +128,11 @@ export function Dock({
 }: DockProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
+  // Lives in the layout, so the thread survives route changes the asks trigger.
+  const [thread, setThread] = useState<DockMessage[]>([]);
+  const nextId = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (expandSignal > 0) setOpen(true);
@@ -131,26 +145,43 @@ export function Dock({
 
   useEffect(() => {
     if (!open) return;
-    setBodyScrollLocked(true);
+    const compact = window.matchMedia?.(COMPACT_QUERY).matches ?? false;
+    if (compact) setBodyScrollLocked(true);
     // Focus the composer once the panel has animated in.
     const id = window.setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 180);
     return () => {
       window.clearTimeout(id);
-      setBodyScrollLocked(false);
+      if (compact) setBodyScrollLocked(false);
     };
   }, [open]);
 
-  function submit(goal?: string) {
+  useEffect(() => {
+    if (open && thread.length) endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, [open, thread]);
+
+  async function submit(goal?: string) {
     const g = (goal ?? value).trim();
     if (!g || busy) return;
-    setValue(g);
-    void onAsk(g);
-    setOpen(false);
+    setValue("");
+    const userId = nextId.current++;
+    const replyId = nextId.current++;
+    setThread((t) => [
+      ...t,
+      { id: userId, from: "user", text: g },
+      { id: replyId, from: "esi", text: "Working on it…", pending: true },
+    ]);
+    let reply = `Done — I’ve opened the results for “${g}”. Ask a follow-up any time.`;
+    try {
+      await onAsk(g);
+    } catch {
+      reply = "Sorry, I couldn’t reach the guide service. Please try again shortly.";
+    }
+    setThread((t) => t.map((m) => (m.id === replyId ? { ...m, text: reply, pending: false } : m)));
   }
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    submit();
+    void submit();
   }
 
   const showDock = visible || open;
@@ -186,7 +217,7 @@ export function Dock({
       </button>
 
       {open ? (
-        <div className="dock__panel" role="dialog" aria-label="Ask Esi" aria-modal="true">
+        <div className="dock__panel" role="dialog" aria-label="Ask Esi" aria-modal="false">
           <div className="dock__head">
             <span className="av" aria-hidden="true">
               <Icon name="i-spark" />
@@ -194,7 +225,7 @@ export function Dock({
             <div className="dock__id">
               <b>Esi</b>
               <span>
-                <i className="dot" aria-hidden="true" /> EswasaOne assistant · online
+                EswasaOne assistant · online
               </span>
             </div>
             <button
@@ -218,7 +249,7 @@ export function Dock({
                 <span className="dock__feed-lbl">Try asking</span>
                 <div className="dock__chips-row">
                   {chips.map((c) => (
-                    <button key={c} type="button" disabled={busy} onClick={() => submit(c)}>
+                    <button key={c} type="button" disabled={busy} onClick={() => void submit(c)}>
                       {c}
                     </button>
                   ))}
@@ -254,7 +285,7 @@ export function Dock({
                       type="button"
                       className={`${className} is-action`}
                       disabled={busy}
-                      onClick={() => submit(item.ask)}
+                      onClick={() => void submit(item.ask)}
                     >
                       {body}
                     </button>
@@ -267,6 +298,20 @@ export function Dock({
                 );
               })}
             </div>
+
+            {thread.length ? (
+              <div className="dock__thread" role="log" aria-live="polite" aria-label="Conversation">
+                {thread.map((m) => (
+                  <p
+                    key={m.id}
+                    className={`dock__msg is-${m.from}${m.pending ? " is-pending" : ""}`}
+                  >
+                    {m.text}
+                  </p>
+                ))}
+                <div ref={endRef} />
+              </div>
+            ) : null}
           </div>
 
           <form className="dock__form" onSubmit={onSubmit} role="search">
@@ -284,7 +329,7 @@ export function Dock({
                 placeholder="Describe your goal…"
               />
               <button type="submit" disabled={busy || !value.trim()} aria-label="Ask Esi">
-                <Icon name="i-send" />
+                <Icon name="i-plane" />
               </button>
             </div>
             <p className="dock__note">Esi gives guidance — confirm important details with ESWASA.</p>

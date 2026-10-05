@@ -55,6 +55,7 @@ export type IconName =
   | "i-monitor"
   | "i-more"
   | "i-pin"
+  | "i-plane"
   | "i-refresh"
   | "i-scroll"
   | "i-search"
@@ -235,6 +236,12 @@ const PATHS_BASE = {
     <>
       <rect x="3" y="5" width="18" height="14" rx="2" />
       <path d="M4 7l8 5 8-5" />
+    </>
+  ),
+  "i-plane": (
+    <>
+      <path d="M22 2L11 13" />
+      <path d="M22 2l-7 20-4-9-9-4 20-7z" />
     </>
   ),
   "i-map": (

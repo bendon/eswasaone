@@ -20,7 +20,7 @@ from seed.config import (
 log = logging.getLogger("seed.masters")
 
 ERA_A_NARRATIVE = (
-    f"{A10_MARKER}: Era A ({ERA_A_START}–{ERA_A_END}) — Standards & Quality Act "
+    f"{A10_MARKER}: Era A ({ERA_A_START}–{ERA_A_END}): Standards & Quality Act "
     f"assent narrative only. No certification/metrology DocType volumes before "
     f"{OPERATIONAL_EPOCH_DATE} (OPERATIONAL_EPOCH={OPERATIONAL_EPOCH})."
 )

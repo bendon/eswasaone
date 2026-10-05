@@ -171,7 +171,7 @@ class MoMoAdapter:
                 stubbed=True,
                 amount=req.amount,
                 currency=currency,
-                detail="MOMO_* credentials empty — stubbed request-to-pay",
+                detail="MOMO_* credentials empty; stubbed request-to-pay",
             )
 
         token = await self._access_token()
@@ -232,7 +232,7 @@ class MoMoAdapter:
                 external_id="",
                 status=MoMoPaymentStatus.STUBBED,
                 stubbed=True,
-                detail="MOMO_* credentials empty — stubbed status check",
+                detail="MOMO_* credentials empty; stubbed status check",
             )
 
         token = await self._access_token()

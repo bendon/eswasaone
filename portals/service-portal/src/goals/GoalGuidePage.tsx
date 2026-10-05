@@ -66,7 +66,7 @@ export function AdHocGuidePage() {
         if (cancelled) return;
         setGuide(res);
         if (fromFallback) {
-          setNote("Preview path — live guide reconnecting. Popular goals always work.");
+          setNote("Preview path. Live guide reconnecting. Popular goals always work.");
         }
       } catch {
         if (!cancelled) setNote("Could not build a guide. Try a Popular goal from the library.");

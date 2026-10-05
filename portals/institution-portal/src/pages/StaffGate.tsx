@@ -84,7 +84,7 @@ export function StaffGate({ onStaffSession, deniedMessage }: Props) {
       }
 
       if (!challengeId) {
-        resetToPassword("Sign-in expired — enter your password again.");
+        resetToPassword("Sign-in expired. Enter your password again.");
         return;
       }
 
@@ -95,7 +95,7 @@ export function StaffGate({ onStaffSession, deniedMessage }: Props) {
         challenge_id: challengeId,
       });
       if (isLoginChallenge(session)) {
-        resetToPassword("Sign-in expired — enter your password again.");
+        resetToPassword("Sign-in expired. Enter your password again.");
         return;
       }
       await finishStaffSession(session.user);

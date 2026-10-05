@@ -12,12 +12,12 @@ from seed.config import A10_MARKER, ANCHORS, KPI_TARGETS
 log = logging.getLogger("seed.modules.governance")
 
 _APPROVALS = [
-    ("APR-001", "CERT-0042 — advance to Audit Scheduled", "certification", True),
+    ("APR-001", "CERT-0042: advance to Audit Scheduled", "certification", True),
     ("APR-002", f"Invoice credit note {ANCHORS['invoice']}", "finance", False),
     ("APR-003", "Board resolution BR-2026-01 for sign-off", "governance", False),
-    ("APR-004", "Purchase order PO-4412 — metrology standards", "finance", True),
-    ("APR-005", "Standard ballot SZNS draft — TC vote close", "standards", False),
-    ("APR-006", "Surveillance visit schedule — Swazi Textiles", "certification", False),
+    ("APR-004", "Purchase order PO-4412: metrology standards", "finance", True),
+    ("APR-005", "Standard ballot SZNS draft: TC vote close", "standards", False),
+    ("APR-006", "Surveillance visit schedule: Swazi Textiles", "certification", False),
     ("APR-007", "TBT impact assessment G/TBT/N/EU/891", "tbt", True),
 ]
 

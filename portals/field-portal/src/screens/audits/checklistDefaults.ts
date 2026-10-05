@@ -37,7 +37,7 @@ export const DEFAULT_CHECKLIST: ChecklistItem[] = [
 export const DEFAULT_FINDINGS: NonConformity[] = [
   {
     id: "nc-seed-1",
-    clause: "Clause 7.2 — Competence",
+    clause: "Clause 7.2: Competence",
     severity: "major",
     note: "Training records for 2 lab operators not maintained; no evidence of competence evaluation.",
     evidenceSlots: 2,

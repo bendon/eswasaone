@@ -50,7 +50,7 @@ class MediaStore:
             import boto3  # type: ignore[import-untyped]
         except ImportError as exc:  # pragma: no cover
             raise RuntimeError(
-                "boto3 is required for S3 media — pip install boto3 or use local MEDIA_LOCAL_PATH"
+                "boto3 is required for S3 media; pip install boto3 or use local MEDIA_LOCAL_PATH"
             ) from exc
         kwargs: dict[str, Any] = {
             "aws_access_key_id": self.settings.s3_access_key,

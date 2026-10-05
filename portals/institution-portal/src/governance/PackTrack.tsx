@@ -23,7 +23,7 @@ export function PackTrack({ sections, onSelect }: Props) {
             type="button"
             role="listitem"
             className={`seg ${seg}`}
-            title={`${s.title} — ${meta.label}`}
+            title={`${s.title}: ${meta.label}`}
             onClick={() => onSelect?.(s)}
           >
             <b>{s.title}</b>

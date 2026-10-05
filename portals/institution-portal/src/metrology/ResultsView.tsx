@@ -184,7 +184,7 @@ export function ResultsView() {
           variant: "gold",
           onClick: () => {
             // TODO: wire real — GET /metrology/results/{id}/report
-            setFlash(`Report download — TODO (${openResult.id})`);
+            setFlash(`Report download: TODO (${openResult.id})`);
           },
         },
         {

@@ -13,7 +13,7 @@ export function DemoBadge({ className = "" }: { className?: string }) {
   return (
     <span
       className={`demo-badge ${className}`.trim()}
-      title="Fixture / sample data — write actions are disabled"
+      title="Fixture / sample data: write actions are disabled"
       role="status"
     >
       Demo data

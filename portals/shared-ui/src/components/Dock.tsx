@@ -170,7 +170,7 @@ export function Dock({
       { id: userId, from: "user", text: g },
       { id: replyId, from: "esi", text: "Working on it…", pending: true },
     ]);
-    let reply = `Done — I’ve opened the results for “${g}”. Ask a follow-up any time.`;
+    let reply = `Done. I’ve opened the results for “${g}”. Ask a follow-up any time.`;
     try {
       await onAsk(g);
     } catch {
@@ -189,7 +189,7 @@ export function Dock({
   const chips = suggestions ?? (signedIn ? [] : GUEST_SUGGESTIONS);
   const contextLabel = signedIn ? "For you" : "I can help you";
   const firstName = userName?.split(/\s+/)[0];
-  const title = signedIn ? `Hi${firstName ? ` ${firstName}` : ""} — what’s next?` : "Hi, I’m Esi.";
+  const title = signedIn ? `Hi${firstName ? ` ${firstName}` : ""}, what’s next?` : "Hi, I’m Esi.";
   const sub = signedIn
     ? "Pick up where you left off, or ask me anything."
     : "Tell me what you’re working on and I’ll map the standards, steps and costs.";
@@ -332,7 +332,7 @@ export function Dock({
                 <Icon name="i-plane" />
               </button>
             </div>
-            <p className="dock__note">Esi gives guidance — confirm important details with ESWASA.</p>
+            <p className="dock__note">Esi gives guidance. Confirm important details with ESWASA.</p>
           </form>
         </div>
       ) : null}

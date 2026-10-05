@@ -147,7 +147,7 @@ export function CertificationPage() {
           <div className="cert-head">
             <div>
               <h2>Certification pipeline</h2>
-              <p>Where every application sits — the next step is the only button.</p>
+              <p>Where every application sits. The next step is the only button.</p>
             </div>
             <div className="r">
               <div className="viewtog">

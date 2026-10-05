@@ -478,7 +478,7 @@ def mount_governance_routes(router: APIRouter) -> None:
         # TODO: wire real — insert Board Meeting + create Board Pack Draft + notify owners
         raise HTTPException(
             status_code=501,
-            detail="Board Meeting DocType not yet wired — TODO: wire real",
+            detail="Board Meeting DocType not yet wired (TODO: wire real)",
         )
 
     @router.get(
@@ -565,7 +565,7 @@ def mount_governance_routes(router: APIRouter) -> None:
         # TODO: wire real — apply workflow transition via Frappe
         raise HTTPException(
             status_code=501,
-            detail="Meeting act not yet wired — TODO: wire real",
+            detail="Meeting act not yet wired (TODO: wire real)",
         )
 
     @router.get(
@@ -678,7 +678,7 @@ def mount_governance_routes(router: APIRouter) -> None:
         # TODO: wire real — update Pack Section child rows
         raise HTTPException(
             status_code=501,
-            detail="Pack sections patch not yet wired — TODO: wire real",
+            detail="Pack sections patch not yet wired (TODO: wire real)",
         )
 
     @router.post(
@@ -713,7 +713,7 @@ def mount_governance_routes(router: APIRouter) -> None:
             except FrappeError:
                 raise HTTPException(
                     status_code=501,
-                    detail="Pack assemble not yet wired — TODO: wire real",
+                    detail="Pack assemble not yet wired (TODO: wire real)",
                 ) from None
             if isinstance(raw, dict):
                 return GovernancePackAssembleResult(
@@ -769,7 +769,7 @@ def mount_governance_routes(router: APIRouter) -> None:
             # TODO: wire real — set Issued + meeting → Pack issued
             raise HTTPException(
                 status_code=501,
-                detail="Pack issue not yet wired — TODO: wire real",
+                detail="Pack issue not yet wired (TODO: wire real)",
             )
         except HTTPException:
             raise

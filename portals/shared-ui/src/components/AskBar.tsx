@@ -30,7 +30,7 @@ export function AskBar({
   chips = [],
   label = "ESWASAONE SERVICE PORTAL",
   title = "What can we help you with today?",
-  subtitle = "Tell us your goal — we'll map the standards, steps, and what it costs.",
+  subtitle = "Tell us your goal and we'll map the standards, steps, and what it costs.",
   footer,
 }: AskBarProps) {
   const [local, setLocal] = useState("");

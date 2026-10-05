@@ -175,7 +175,7 @@ export function BallotsView() {
         label: "Cast vote",
         icon: "i-check" as IconName,
         variant: "gold",
-        onClick: () => toast(`Voting on ${selected.id} — TODO`),
+        onClick: () => toast(`Voting on ${selected.id}: TODO`),
       });
     }
     actions.push({

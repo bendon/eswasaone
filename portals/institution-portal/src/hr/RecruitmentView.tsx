@@ -271,7 +271,7 @@ export function RecruitmentView() {
           </div>
 
           <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>
-            Applicant pipeline{focusJobTitle ? ` — ${focusJobTitle}` : ""}
+            Applicant pipeline{focusJobTitle ? `: ${focusJobTitle}` : ""}
           </h3>
           <div className="hr-board">
             {PIPELINE_STAGES.map((stage, si) => {

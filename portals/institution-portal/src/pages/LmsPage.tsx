@@ -75,7 +75,7 @@ export function LmsPage() {
                     <div>
                       <p>
                         {e.course}
-                        {e.member ? ` — ${e.member}` : ""}
+                        {e.member ? ` · ${e.member}` : ""}
                       </p>
                       <span>
                         {e.id} · {e.status}

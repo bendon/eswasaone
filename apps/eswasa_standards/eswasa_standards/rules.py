@@ -97,7 +97,7 @@ def publish_feed(
     _comment(
         reference_doctype,
         reference_name,
-        f"[feed:{event}] {subject}" + (f" — {detail}" if detail else ""),
+        f"[feed:{event}] {subject}" + (f": {detail}" if detail else ""),
     )
 
 
@@ -283,7 +283,7 @@ def rs1_public_review_opened(doc, method: str | None = None) -> None:
         recipients,
         subject=f"Public Review open: {doc.name}",
         message=(
-            f"Work Item {doc.name} — {doc.title}\n\n"
+            f"Work Item {doc.name}: {doc.title}\n\n"
             f"Public review is open until {closes} ({PUBLIC_REVIEW_DAYS} days).\n"
             f"Submit comments via the Service Portal / Public Comment.\n"
         ),
@@ -419,7 +419,7 @@ def rs2_review_closing_sweep() -> dict[str, int]:
                 recipients,
                 subject=f"Public Review closing soon: {row.name}",
                 message=(
-                    f"Work Item {row.name} — {row.title}\n\n"
+                    f"Work Item {row.name}: {row.title}\n\n"
                     f"Public review closes on {closes}. Please submit remaining comments.\n"
                 ),
             )
@@ -636,7 +636,7 @@ def _ensure_website_item(code: str, title: str) -> str | None:
         _comment(
             "Standard",
             code,
-            "[R-S3] Website Item DocType missing — skipped (TODO: wire real)",
+            "[R-S3] Website Item DocType missing; skipped (TODO: wire real)",
         )
         return None
     try:
@@ -719,7 +719,7 @@ def rs3_publish_standard(
     gazette = _ensure_gazette_notice(
         standard=std_name,
         work_item=work_item,
-        title=f"Gazette notice — {title}",
+        title=f"Gazette notice: {title}",
     )
     frappe.db.set_value(
         "Standard", std_name, "gazette_notice", gazette, update_modified=False
@@ -758,7 +758,7 @@ def rs3_publish_standard(
         recipients,
         subject=f"PUBLISHED: {std_name}",
         message=(
-            f"Standard {std_name} — {title}\n\n"
+            f"Standard {std_name}: {title}\n\n"
             f"Has been PUBLISHED / gazetted ({gazette}).\n"
             f"Catalogue buy URL: {_buy_url(std_name)}\n"
             f"E-store product: {product or 'pending'}\n"

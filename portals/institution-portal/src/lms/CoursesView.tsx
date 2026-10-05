@@ -193,7 +193,7 @@ export function CoursesView() {
         <>
           <ModuleHeader
             title="Courses"
-            subtitle="Training catalogue — publish, draft, and review courses."
+            subtitle="Training catalogue: publish, draft, and review courses."
             summary={summary}
             extra={
               <button type="button" className="btn gold" onClick={newCourse}>

@@ -52,7 +52,7 @@ export function BoardPage() {
     setBusy(true);
     try {
       // TODO: wire real — POST /governance/meetings
-      setFlash(`Meeting scheduled — TODO (${values.title})`);
+      setFlash(`Meeting scheduled: TODO (${values.title})`);
       setMeetingOpen(false);
     } finally {
       setBusy(false);
@@ -71,7 +71,7 @@ export function BoardPage() {
     setBusy(true);
     try {
       // TODO: wire real — POST /governance/resolutions
-      setFlash(`Resolution recorded — TODO`);
+      setFlash(`Resolution recorded: TODO`);
       setResolutionOpen(false);
     } finally {
       setBusy(false);

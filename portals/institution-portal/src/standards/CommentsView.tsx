@@ -159,13 +159,13 @@ export function CommentsView() {
         label: "Reply",
         icon: "i-send" as IconName,
         variant: "gold",
-        onClick: () => toast(`Reply to ${selected.author ?? "anonymous"} — TODO`),
+        onClick: () => toast(`Reply to ${selected.author ?? "anonymous"}: TODO`),
       },
       {
         label: "Mark resolved",
         icon: "i-check" as IconName,
         variant: "ghost",
-        onClick: () => toast(`Marking comment ${selected.id} resolved — TODO`),
+        onClick: () => toast(`Marking comment ${selected.id} resolved: TODO`),
       },
     ];
   }, [selected, toast]);
@@ -184,7 +184,7 @@ export function CommentsView() {
         <>
           <ModuleHeader
             title="Public Comments"
-            subtitle="Public review comments on draft standards — newest first."
+            subtitle="Public review comments on draft standards, newest first."
             summary={summary}
           />
 

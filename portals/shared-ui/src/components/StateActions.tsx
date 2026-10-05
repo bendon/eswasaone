@@ -58,7 +58,7 @@ export function StateActions({
           disabled={busy || demo}
           title={
             demo
-              ? "Disabled in demo mode — fixture records cannot be committed"
+              ? "Disabled in demo mode: fixture records cannot be committed"
               : a.rule_id
                 ? `${a.label} (${a.rule_id})`
                 : a.label

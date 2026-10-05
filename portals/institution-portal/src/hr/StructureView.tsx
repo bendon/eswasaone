@@ -437,7 +437,7 @@ function DesignationsPanel({
                   {grades.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.code}
-                      {g.name ? ` — ${g.name}` : ""}
+                      {g.name ? `: ${g.name}` : ""}
                     </option>
                   ))}
                 </select>

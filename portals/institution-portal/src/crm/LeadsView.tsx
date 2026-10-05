@@ -111,7 +111,7 @@ export function LeadsView() {
 
   function newLead() {
     // TODO: wire real — POST /crm/leads with confirm dialog once create form is built
-    setFlash("New lead form — coming soon");
+    setFlash("New lead form coming soon");
   }
 
   const drawerSections: DrawerSection[] = useMemo(() => {

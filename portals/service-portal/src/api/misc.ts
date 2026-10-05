@@ -69,7 +69,7 @@ export async function verifyToken(token: string): Promise<VerificationResult> {
     return {
       valid,
       token,
-      subject: valid ? "Demo organisation — Product Mark" : null,
+      subject: valid ? "Demo organisation: Product Mark" : null,
     };
   }
 }

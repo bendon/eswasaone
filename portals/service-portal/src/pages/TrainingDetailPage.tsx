@@ -26,7 +26,7 @@ export function TrainingDetailPage() {
       return;
     }
     await enrolCourse(id);
-    setNote("Enrolled — open LMS from My account → Training.");
+    setNote("Enrolled. Open LMS from My account → Training.");
   }
 
   if (!course) {

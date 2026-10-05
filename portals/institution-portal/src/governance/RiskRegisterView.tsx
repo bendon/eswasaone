@@ -160,7 +160,7 @@ export function RiskRegisterView() {
                 confirmLabel: "Post update",
               });
               // TODO: wire real — POST risk update when contract lands
-              if (ok) setFlash(`Risk update — TODO (${openRisk.id})`);
+              if (ok) setFlash(`Risk update: TODO (${openRisk.id})`);
             })();
           },
         },
@@ -168,7 +168,7 @@ export function RiskRegisterView() {
           label: "Add to pack",
           icon: "i-layers",
           variant: "ghost",
-          onClick: () => setFlash(`Add to pack — TODO (${openRisk.id})`),
+          onClick: () => setFlash(`Add to pack: TODO (${openRisk.id})`),
         },
         {
           label: "Close",
@@ -187,7 +187,7 @@ export function RiskRegisterView() {
     });
     // TODO: wire real — POST /governance/risks when create lands
     if (!ok) return;
-    setFlash("Risk logged — TODO");
+    setFlash("Risk logged: TODO");
     setFormOpen(false);
   }
 

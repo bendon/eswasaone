@@ -609,7 +609,7 @@ export function InstitutionHomePage() {
             type="text"
             value={ask}
             onChange={(e) => setAsk(e.target.value)}
-            placeholder='Ask EswasaOne — “audits overdue this week”, “APP-2026-00042”, “revenue YTD”…'
+            placeholder='Ask EswasaOne, e.g. “audits overdue this week”, “APP-2026-00042”, “revenue YTD”…'
             autoComplete="off"
             disabled={busy}
           />

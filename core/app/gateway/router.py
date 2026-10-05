@@ -177,7 +177,7 @@ def _raise_from_frappe(exc: FrappeError) -> None:
     if exc.status_code == 401:
         raise AuthRequired(
             reason="frappe_session",
-            detail="Frappe session expired — sign in again",
+            detail="Frappe session expired. Sign in again",
         ) from exc
     text = str(exc)
     # Strip Frappe HTML / traceback noise from permission errors
@@ -237,7 +237,7 @@ async def get_institution_home(
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> InstitutionHome:
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable — Institution home requires live seed")
+        raise HTTPException(status_code=503, detail="Frappe unavailable: Institution home requires live seed")
     try:
         raw = await auth.frappe(frappe).method("eswasa_governance.api.institution_home")
         return InstitutionHome.model_validate(raw)
@@ -811,7 +811,7 @@ async def list_approvals(
     limit: int = 20,
 ) -> ApprovalsResponse:
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable — approvals require live Workflow Action queue")
+        raise HTTPException(status_code=503, detail="Frappe unavailable: approvals require live Workflow Action queue")
     try:
         raw = await auth.frappe(frappe).method(
             "eswasa_governance.api.list_approvals",
@@ -2444,8 +2444,8 @@ async def create_hr_grade_band(
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=(
-                    f"DocType {_EMPLOYEE_GRADE_DOCTYPE} is not installed — "
-                    "enable HRMS Employee Grade before creating grade bands"
+                    f"DocType {_EMPLOYEE_GRADE_DOCTYPE} is not installed. "
+                    "Enable HRMS Employee Grade before creating grade bands"
                 ),
             ) from exc
         if "ValidationError" in text or "mandatory" in text.lower():
@@ -3128,7 +3128,7 @@ async def _aggregate_hr_summary(session: FrappeClient) -> HrSummary:
             HrActivityItem(
                 id=str(row.get("name") or ""),
                 kind="leave",
-                title=f"Leave pending — {row.get('employee_name') or row.get('employee') or ''}",
+                title=f"Leave pending: {row.get('employee_name') or row.get('employee') or ''}",
                 at=str(row.get("modified")) if row.get("modified") else None,
             )
         )
@@ -3138,7 +3138,7 @@ async def _aggregate_hr_summary(session: FrappeClient) -> HrSummary:
                 HrActivityItem(
                     id=str(row.get("name") or ""),
                     kind="hire",
-                    title=f"New hire — {row.get('employee_name') or row.get('name')}",
+                    title=f"New hire: {row.get('employee_name') or row.get('name')}",
                     at=str(row.get("date_of_joining")),
                 )
             )
@@ -4255,7 +4255,7 @@ async def get_hr_payroll_status(
         if not rows:
             return HrPayrollStatus(
                 status="none",
-                message="No payroll entry yet — HR can create one when payroll is due",
+                message="No payroll entry yet. HR can create one when payroll is due",
             )
         row = rows[0]
         st = str(row.get("status") or "")
@@ -4621,7 +4621,7 @@ async def analytics_ask(
     if not body.question or not body.question.strip():
         raise HTTPException(status_code=400, detail="question is required")
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable — analytics requires live data")
+        raise HTTPException(status_code=503, detail="Frappe unavailable: analytics requires live data")
     try:
         raw = await analytics_bridge.ask_analytics(auth.frappe(frappe), body.question.strip())
         return AnalyticsAskResponse.model_validate(raw)
@@ -4639,7 +4639,7 @@ async def list_analytics_reports(
 ) -> dict[str, list[AnalyticsReportSummary]]:
     """Catalogue of Core-backed reports. Requires live Frappe (no mock KPIs)."""
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable — analytics requires live data")
+        raise HTTPException(status_code=503, detail="Frappe unavailable: analytics requires live data")
     # Health gate only — catalogue ids map to live GET /analytics/{metric}.
     items = [AnalyticsReportSummary.model_validate(r) for r in analytics_bridge.list_report_summaries()]
     return {"items": items}
@@ -4652,7 +4652,7 @@ async def get_analytics_metric(
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> dict[str, Any]:
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable — analytics requires live data")
+        raise HTTPException(status_code=503, detail="Frappe unavailable: analytics requires live data")
     try:
         return await analytics_bridge.fetch_metric(auth.frappe(frappe), metric)
     except FrappeError as exc:

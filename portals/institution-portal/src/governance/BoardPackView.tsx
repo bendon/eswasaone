@@ -112,12 +112,12 @@ export function BoardPackView() {
     });
     if (!ok) return;
     // TODO: wire real — no remind endpoint on contract yet
-    setFlash(`Reminder sent — TODO (${section.owner})`);
+    setFlash(`Reminder sent: TODO (${section.owner})`);
   }
 
   async function assembleDraft() {
     if (!packId) {
-      setFlash("No pack id — schedule a meeting first");
+      setFlash("No pack id. Schedule a meeting first");
       return;
     }
     const ok = await confirmAction({
@@ -167,7 +167,7 @@ export function BoardPackView() {
         setFlash(
           err instanceof Error
             ? err.message
-            : "Cannot issue — included sections are not all Ready",
+            : "Cannot issue: included sections are not all Ready",
         );
       } else {
         setFlash(err instanceof Error ? err.message : "Issue failed");
@@ -206,7 +206,7 @@ export function BoardPackView() {
             <div className="panel__h">
               <div>
                 <h3>
-                  {meetingTitle} — pack v{version} ({packStatus.toLowerCase()})
+                  {meetingTitle}: pack v{version} ({packStatus.toLowerCase()})
                 </h3>
                 <p>Sections pull live figures from each module. Reorder before issue.</p>
               </div>
@@ -309,7 +309,7 @@ export function BoardPackView() {
                 </div>
                 <div className="kv">
                   <b>Classification</b>
-                  <span>Confidential — Board only</span>
+                  <span>Confidential, Board only</span>
                 </div>
                 <div className="note" style={{ marginTop: 10 }}>
                   {canIssue

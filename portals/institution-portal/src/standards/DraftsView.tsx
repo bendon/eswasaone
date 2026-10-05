@@ -161,7 +161,7 @@ export function DraftsView() {
         label: "Open editor",
         icon: "i-open" as IconName,
         variant: "gold",
-        onClick: () => toast(`Opening draft ${selected.id} — TODO`),
+        onClick: () => toast(`Opening draft ${selected.id}: TODO`),
       },
       {
         label: "Copy ref",
@@ -189,7 +189,7 @@ export function DraftsView() {
         <>
           <ModuleHeader
             title="Drafts"
-            subtitle="Standards under development — track stages from draft to final approval."
+            subtitle="Standards under development. Track stages from draft to final approval."
             summary={summary}
           />
 

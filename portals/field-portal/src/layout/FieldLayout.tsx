@@ -101,7 +101,7 @@ export function FieldLayout() {
         <div className="field-header__actions">
           <span
             className={`field-sync${online ? "" : " field-sync--off"}`}
-            title={online ? "Online" : "Offline — using device cache"}
+            title={online ? "Online" : "Offline, using device cache"}
             aria-label={online ? "Online" : "Offline"}
           >
             <Icon name="i-refresh" />

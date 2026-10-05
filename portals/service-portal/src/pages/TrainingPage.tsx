@@ -221,7 +221,7 @@ export function TrainingPage() {
 
   function courseCta(c: Course) {
     if (c.waitlist) {
-      showToast("Added to waitlist — we'll email you when a seat opens");
+      showToast("Added to waitlist. We'll email you when a seat opens");
       return;
     }
     navigate(`/training/${c.id}`);
@@ -290,7 +290,7 @@ export function TrainingPage() {
           <h1>Learn the standard. Then pass the audit.</h1>
           <p>
             ESWASA training is built around the standards you&apos;re actually being audited
-            against — HACCP, ISO 9001, ISO 22000, ISO 45001 and the SZNS labelling rules. Every
+            against: HACCP, ISO 9001, ISO 22000, ISO 45001 and the SZNS labelling rules. Every
             course ends with a digital certificate that employers and auditors recognise.
           </p>
           <div className="page-hero__actions">
@@ -394,7 +394,7 @@ export function TrainingPage() {
               type="search"
               value={draftQ}
               onChange={(e) => setDraftQ(e.target.value)}
-              placeholder='Search by course, code, or topic — e.g. “HACCP”, “ISO 9001”, “auditor”'
+              placeholder='Search by course, code, or topic, e.g. “HACCP”, “ISO 9001”, “auditor”'
               aria-label="Search courses"
             />
           </label>
@@ -589,7 +589,7 @@ export function TrainingPage() {
               </p>
               <button
                 type="button"
-                onClick={() => showToast("Loaded more courses — TODO: wire real LMS")}
+                onClick={() => showToast("Loaded more courses (TODO: wire real LMS)")}
               >
                 Load more courses
               </button>

@@ -455,7 +455,7 @@ def institution_home() -> dict[str, Any]:
                     {
                         "id": row.name,
                         "type": "application",
-                        "title": f"{row.name} — {row.workflow_state or 'Updated'}",
+                        "title": f"{row.name}: {row.workflow_state or 'Updated'}",
                         "severity": "info",
                         "created_at": str(row.modified or now),
                         "href": f"/institution/certification/{row.name}",

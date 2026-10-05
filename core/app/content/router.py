@@ -38,7 +38,7 @@ class UpdateItem(BaseModel):
 _SEED_UPDATES: list[UpdateItem] = [
     UpdateItem(
         id="szns-ai-003-review",
-        title="SZNS AI 003 — Training data quality and provenance",
+        title="SZNS AI 003: Training data quality and provenance",
         summary=(
             "The third AI standard is open for public comment until 26 October 2026. "
             "It covers dataset provenance, labelling, consent, and bias documentation."
@@ -65,7 +65,7 @@ _SEED_UPDATES: list[UpdateItem] = [
     ),
     UpdateItem(
         id="szns-1043-published",
-        title="SZNS 1043:2026 — Processed fruit and vegetable products",
+        title="SZNS 1043:2026 Processed fruit and vegetable products",
         summary=(
             "Updated specification for locally processed fruit and vegetable products, "
             "harmonised with the SADC regional standard. Available now in the e-store."

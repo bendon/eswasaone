@@ -110,7 +110,7 @@ export function LeaveView() {
         body: JSON.stringify({ decision, confirm: true }),
       });
       await dialogs.alert({
-        message: `${decision === "approve" ? "Approved" : "Rejected"} — ${employee}`,
+        message: `${decision === "approve" ? "Approved" : "Rejected"}: ${employee}`,
         kind: "success",
       });
       reload();
@@ -292,7 +292,7 @@ export function LeaveView() {
               <div className="hr-box__b">
                 {balanceRows.length === 0 ? (
                   <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
-                    No allocations visible yet — ensure Leave Allocation records exist and your role can read them.
+                    No allocations visible yet. Ensure Leave Allocation records exist and your role can read them.
                   </p>
                 ) : (
                   <div className="hr-tl">

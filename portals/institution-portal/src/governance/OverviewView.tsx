@@ -310,8 +310,8 @@ export function OverviewView() {
                     <b style={{ color: "var(--ink)" }}>
                       {STUB_NEXT_MEETING_UI.confirmed} of {STUB_NEXT_MEETING_UI.total_members}{" "}
                       confirmed
-                    </b>{" "}
-                    — quorum of {STUB_NEXT_MEETING_UI.quorum} met. {STUB_NEXT_MEETING_UI.awaiting}{" "}
+                    </b>
+                    , quorum of {STUB_NEXT_MEETING_UI.quorum} met. {STUB_NEXT_MEETING_UI.awaiting}{" "}
                     awaiting reply, {STUB_NEXT_MEETING_UI.apologies} apology.
                   </span>
                 </>
@@ -321,7 +321,7 @@ export function OverviewView() {
                     {att.confirmed} of {att.total} confirmed
                   </b>
                   {att.awaiting || att.apologies
-                    ? ` — ${att.awaiting} awaiting, ${att.apologies} apologies.`
+                    ? `, ${att.awaiting} awaiting, ${att.apologies} apologies.`
                     : null}
                 </span>
               ) : (

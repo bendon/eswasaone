@@ -283,7 +283,7 @@ export function InstitutionLayout() {
       onRequireFullLogin={() => {
         void logout().catch(() => undefined);
         setUser(null);
-        setGateError("Sign-in window expired — password and OTP required again");
+        setGateError("Sign-in window expired. Password and OTP required again");
       }}
     >
       <AppShell className={navOpen ? "app--nav-open" : undefined}>

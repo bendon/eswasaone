@@ -267,7 +267,7 @@ function CompanyFields({
               value={abbr}
               onChange={(e) => setAbbr(e.target.value)}
               style={inputStyle}
-              placeholder="ESW (optional — auto from name)"
+              placeholder="ESW (optional, auto from name)"
             />
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

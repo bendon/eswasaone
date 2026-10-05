@@ -177,7 +177,7 @@ def _ensure_application(scheme: str, auditor: str) -> str:
             "assigned_auditor": auditor,
             "assessment_notes": (
                 f"{DEMO_APP_KEY}: seeded demo application with overdue Stage-1 audit. "
-                "Absorbable by A10 DemoSeed — uses APP- series, not CERT-2025-0041."
+                "Absorbable by A10 DemoSeed; uses APP- series, not CERT-2025-0041."
             ),
         }
     )

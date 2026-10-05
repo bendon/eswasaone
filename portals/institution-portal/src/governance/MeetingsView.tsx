@@ -179,7 +179,7 @@ export function MeetingsView() {
     const action = act.action as GovernanceMeetingAct["action"];
     if (!MEETING_ACTS.has(action)) {
       // TODO: wire real — non-enum allowed_actions (e.g. issue_pack) once Core expands Act schema
-      setFlash(`${act.label} — action “${act.action}” not in Act schema yet`);
+      setFlash(`${act.label}: action “${act.action}” not in Act schema yet`);
       return;
     }
 
@@ -189,7 +189,7 @@ export function MeetingsView() {
         `/governance/meetings/${encodeURIComponent(m.id)}/act`,
         { action, confirm: true } satisfies GovernanceMeetingAct,
       );
-      setFlash(`${act.label} — done`);
+      setFlash(`${act.label}: done`);
       void reload();
     } catch (err) {
       if (err instanceof AuthError && err.authRequired) openAuth(err.reason);
@@ -272,7 +272,7 @@ export function MeetingsView() {
         hybrid: false,
         confirm: true,
       });
-      setFlash(`Meeting scheduled — ${values.title}`);
+      setFlash(`Meeting scheduled: ${values.title}`);
       setFormOpen(false);
       void reload();
     } catch (err) {

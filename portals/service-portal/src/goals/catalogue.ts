@@ -53,7 +53,7 @@ export const GOALS: GoalCard[] = [
   {
     slug: "export-honey-eu",
     title: "Export honey to the EU",
-    summary: "Natural honey (HS 0409) — composition standards, testing and EU market rules.",
+    summary: "Natural honey (HS 0409): composition standards, testing and EU market rules.",
     categories: ["export", "food"],
     tags: "export honey eu bee",
     typeLabel: "Export",
@@ -112,7 +112,7 @@ export const GOALS: GoalCard[] = [
   {
     slug: "iso-9001",
     title: "Get ISO 9001 certified",
-    summary: "Quality Management System certification — scope, implement, audit, certify.",
+    summary: "Quality Management System certification: scope, implement, audit, certify.",
     categories: ["cert"],
     tags: "iso 9001 quality management certified",
     typeLabel: "Certify",
@@ -170,7 +170,7 @@ export const GOALS: GoalCard[] = [
   {
     slug: "sell-bottled-water",
     title: "Sell bottled water locally",
-    summary: "Packaged drinking water (SZNS 042) — standard, testing, product certification mark.",
+    summary: "Packaged drinking water (SZNS 042): standard, testing, product certification mark.",
     categories: ["mark", "food"],
     tags: "sell bottled water local product mark szns 042",
     typeLabel: "Product mark",
@@ -259,7 +259,7 @@ export const GOALS: GoalCard[] = [
   {
     slug: "internal-auditor",
     title: "Become an internal auditor",
-    summary: "Certified internal-auditor path — course, assessment and digital certificate.",
+    summary: "Certified internal-auditor path: course, assessment and digital certificate.",
     categories: ["training"],
     tags: "become certified internal auditor training iso 9001",
     typeLabel: "Training",

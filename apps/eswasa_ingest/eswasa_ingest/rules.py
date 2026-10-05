@@ -93,7 +93,7 @@ def publish_feed(
     _comment(
         reference_doctype,
         reference_name,
-        f"[feed:{event}] {subject}" + (f" — {detail}" if detail else ""),
+        f"[feed:{event}] {subject}" + (f": {detail}" if detail else ""),
     )
 
 
@@ -181,7 +181,7 @@ def _ensure_curation_task(doc) -> str | None:
                 "status": "Open",
                 "assignee": assignee,
                 "notes": (
-                    "R-T3: auto-queued — document is not authoritative until Approved. "
+                    "R-T3: auto-queued. Document is not authoritative until Approved. "
                     "Blocks public surfacing in applicability / guides."
                 ),
             }
@@ -271,7 +271,7 @@ def rt3_on_status_change(doc, method: str | None = None) -> None:
         subject=f"Authoritative: {doc.get('title') or doc.name}",
         reference_doctype=doc.doctype,
         reference_name=doc.name,
-        detail="Approved — public surfacing allowed",
+        detail="Approved; public surfacing allowed",
         status="APPROVED",
     )
 

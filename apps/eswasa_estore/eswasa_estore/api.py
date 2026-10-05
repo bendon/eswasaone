@@ -318,7 +318,7 @@ def download(token: str | None = None) -> dict[str, Any]:
         "expires_at": tok.expires_at.isoformat() if tok.expires_at else None,
         "asset_url": asset_hint,
         "message": (
-            "Licensed standard — paraphrase-and-cite only in free answers; "
+            "Licensed standard: paraphrase-and-cite only in free answers; "
             "full text via this watermarked download entitlement."
             if rights == "licensed"
             else "Open/public asset metadata."
@@ -346,7 +346,7 @@ def retry_payment(order_id: str | None = None) -> dict[str, Any]:
 
     notify_email(
         [order.user_email] if order.user_email else [],
-        f"EswasaOne payment retry — {order.order_id}",
+        f"EswasaOne payment retry: {order.order_id}",
         f"<p>Retry payment for <b>{order.order_id}</b>.</p><p>New MoMo ref: {new_ref}</p>"
         f"<p><a href=\"{retry_url}\">{retry_url}</a></p>",
     )

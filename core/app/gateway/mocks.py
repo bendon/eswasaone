@@ -229,7 +229,7 @@ def mock_standards(q: str | None = None, sector: str | None = None) -> list[Stan
         ),
         StandardSummary(
             code="SZNS ISO 9001",
-            title="Quality management systems — Requirements",
+            title="Quality management systems: Requirements",
             sector="Management",
             status="Published",
             buy_url="/estore/SZNS-ISO-9001",
@@ -248,7 +248,7 @@ def mock_verify(token: str) -> VerificationResult:
     return VerificationResult(
         valid=valid,
         token=token,
-        subject="Acme Foods (Pty) Ltd — Product Mark" if valid else None,
+        subject="Acme Foods (Pty) Ltd: Product Mark" if valid else None,
         issued_at=_now() if valid else None,
         expires_at="2027-09-19T00:00:00+00:00" if valid else None,
         details={"scheme": "Product Certification", "mock": True} if valid else {"mock": True},
@@ -284,7 +284,7 @@ def mock_approvals(limit: int = 20) -> ApprovalsResponse:
             id="Certification Application::CERT-0042",
             doctype="Certification Application",
             name="CERT-0042",
-            title="CERT-0042 — advance to Audit Scheduled",
+            title="CERT-0042: advance to Audit Scheduled",
             module="certification",
             status="Pending",
             due_at="2026-09-22T12:00:00+00:00",
@@ -305,7 +305,7 @@ def mock_tbt_notifications(
         TbtNotificationSummary(
             id="G/TBT/N/EU/891",
             symbol="G/TBT/N/EU/891",
-            title="High impact on textiles — EU chemical restrictions",
+            title="High impact on textiles: EU chemical restrictions",
             impact="high",
             unread=True,
             published_at="2026-09-20T08:00:00+00:00",
@@ -321,7 +321,7 @@ def mock_tbt_notifications(
         TbtNotificationSummary(
             id="G/TBT/N/US/2104",
             symbol="G/TBT/N/US/2104",
-            title="Electrical safety plugs — alignment with IEC",
+            title="Electrical safety plugs: alignment with IEC",
             impact="high",
             unread=True,
             published_at="2026-09-18T10:00:00+00:00",
@@ -329,7 +329,7 @@ def mock_tbt_notifications(
         TbtNotificationSummary(
             id="G/TBT/N/KE/88",
             symbol="G/TBT/N/KE/88",
-            title="Metrology — weighing instruments revision",
+            title="Metrology: weighing instruments revision",
             impact="low",
             unread=True,
             published_at="2026-09-17T09:15:00+00:00",

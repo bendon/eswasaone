@@ -105,7 +105,7 @@ export function DealsView() {
 
   function newDeal() {
     // TODO: wire real — POST /crm/deals with confirm dialog once create form is built
-    setFlash("New deal form — coming soon");
+    setFlash("New deal form coming soon");
   }
 
   const drawerSections: DrawerSection[] = useMemo(() => {

@@ -28,7 +28,7 @@ export function ComplaintsPage() {
       <h1 className="page-h">Complaints &amp; enquiries</h1>
       <p className="page-lead">Anonymous reports are allowed. Add contact details if you want a reply.</p>
       {ref ? (
-        <p className="page-note">Received — reference {ref}. Typical response 24–48 hours.</p>
+        <p className="page-note">Received. Reference {ref}. Typical response 24–48 hours.</p>
       ) : null}
       <form className="form" onSubmit={onSubmit}>
         <label>

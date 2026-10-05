@@ -71,7 +71,7 @@ export function AccountTeamPage() {
         <div className="teambar__copy">
           <b>Invite a colleague</b>
           <span>
-            They join this business as a Citizen — not Institution staff. Access covers
+            They join this business as a Citizen, not Institution staff. Access covers
             applications, orders and certificates for this organisation.
           </span>
         </div>

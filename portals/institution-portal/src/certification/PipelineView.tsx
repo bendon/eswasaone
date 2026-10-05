@@ -173,7 +173,7 @@ export function PipelineView() {
         <>
           <ModuleHeader
             title="Certification pipeline"
-            subtitle="Where every application sits — the next step is the only button."
+            subtitle="Where every application sits. The next step is the only button."
             extra={
               <div className="r">
                 <div className="viewtog">

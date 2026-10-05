@@ -211,7 +211,7 @@ export function JobsView() {
           variant: "gold",
           onClick: () => {
             // TODO: wire real — POST /metrology/jobs/{job}/certificate
-            setFlash(`Certificate generation — TODO (job ${openJob.id})`);
+            setFlash(`Certificate generation: TODO (job ${openJob.id})`);
           },
         },
         {
@@ -224,12 +224,12 @@ export function JobsView() {
 
   function newJob() {
     // TODO: wire real — open a New Job composer / navigate to job form.
-    setFlash("New job composer — TODO");
+    setFlash("New job composer: TODO");
   }
 
   function generateCertificate(job: MetrologyJobSummary) {
     // TODO: wire real — POST /metrology/jobs/{job}/certificate
-    setFlash(`Certificate generation — TODO (job ${job.id})`);
+    setFlash(`Certificate generation: TODO (job ${job.id})`);
   }
 
   return (
@@ -246,7 +246,7 @@ export function JobsView() {
         <>
           <ModuleHeader
             title="Jobs"
-            subtitle="Calibration and test jobs — track due dates and generate certificates."
+            subtitle="Calibration and test jobs: track due dates and generate certificates."
             summary={summary}
             extra={
               <button type="button" className="btn gold" onClick={newJob}>

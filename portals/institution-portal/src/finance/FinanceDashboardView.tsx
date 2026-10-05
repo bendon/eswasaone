@@ -104,7 +104,7 @@ export function FinanceDashboardView() {
             <div className="panel">
               <div className="panel__h">
                 <div>
-                  <h3>Annual Plan KPIs — Traffic Light</h3>
+                  <h3>Annual Plan KPIs: Traffic Light</h3>
                   <p>Actual vs target across the strategic plan.</p>
                 </div>
               </div>

@@ -53,7 +53,7 @@ def ensure_standards_volume(
                     "version": code.split(":")[-1],
                     "ics_code": "03.120",
                     "abstract": (
-                        f"<p>{A10_MARKER}: Catalogue stub — title/sector only. "
+                        f"<p>{A10_MARKER}: Catalogue stub: title/sector only. "
                         "Licensed body text not stored; buy via e-store.</p>"
                     ),
                     "buy_url": "/estore",

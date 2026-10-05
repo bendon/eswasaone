@@ -104,7 +104,7 @@ export const STUB_NEXT_MEETING: GovernanceMeeting = {
   scheduled_at: "2026-10-08T09:00:00",
   venue: "ESWASA Boardroom, Matsapha",
   hybrid: true,
-  online_link: "Hybrid — Teams link issued with pack",
+  online_link: "Hybrid, Teams link issued with pack",
   pack_deadline: "2026-10-01",
   status: "Scheduled",
   attendance: [
@@ -168,7 +168,7 @@ export const STUB_CALENDAR: GovernanceCalendarItem[] = [
   { id: "c2", title: "Q3 Board meeting", date: "2026-10-08", kind: "meeting" },
   { id: "c3", title: "Audit & Risk Committee", date: "2026-10-15", kind: "meeting" },
   { id: "c4", title: "Annual report to Ministry of Commerce", date: "2026-10-31", kind: "statutory" },
-  { id: "c5", title: "Term ends — Mr. Themba Shongwe", date: "2026-11-30", kind: "term" },
+  { id: "c5", title: "Term ends: Mr. Themba Shongwe", date: "2026-11-30", kind: "term" },
 ];
 
 export const STUB_RISKS: GovernanceRisk[] = [
@@ -407,7 +407,7 @@ export const STUB_DECLARATIONS: GovernanceDeclaration[] = [
     member: "m4",
     member_name: "Mr. Mandla Mamba",
     kind: "Meeting",
-    interest: "Item 6 — recuse",
+    interest: "Item 6: recuse",
     action: "Recuse",
     filed_on: "2026-02-01",
   },
@@ -468,7 +468,7 @@ export const STUB_KPIS = [
 /** Overview-only display helpers for next-meeting stub. */
 export const STUB_NEXT_MEETING_UI = {
   pack_due_label: "Issue to members by Thu 1 Oct",
-  online_label: "Hybrid — Teams link issued with pack",
+  online_label: "Hybrid, Teams link issued with pack",
   confirmed: 6,
   quorum: 5,
   total_members: 9,

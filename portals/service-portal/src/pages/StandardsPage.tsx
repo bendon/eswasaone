@@ -76,7 +76,7 @@ const COLLECTIONS: Collection[] = [
   {
     to: "/standards?collection=sme",
     title: "SME certification toolkit",
-    body: "ISO 9001, ISO 22000, and the SZNS Product Mark — everything an MSME needs to prepare for ESWASA certification.",
+    body: "ISO 9001, ISO 22000, and the SZNS Product Mark: everything an MSME needs to prepare for ESWASA certification.",
     count: "6 standards",
     countIcon: "i-layers",
     tag: "Toolkit",
@@ -128,7 +128,7 @@ const COLLECTIONS: Collection[] = [
   {
     to: "/standards?collection=subscribe",
     title: "Annual subscription",
-    body: "Unlimited access to the full SZNS catalogue for your whole team — with automatic notifications when a standard changes.",
+    body: "Unlimited access to the full SZNS catalogue for your whole team, with automatic notifications when a standard changes.",
     count: "From SZL 12,500/yr",
     countIcon: "i-dollar",
     tag: "Subscription",
@@ -195,11 +195,11 @@ const INITIAL_FILTERS: FilterGroup[] = [
     label: "ICS classification",
     open: false,
     options: [
-      { id: "67", label: "67 — Food technology", count: 96 },
-      { id: "03", label: "03 — Services & management", count: 44 },
-      { id: "91", label: "91 — Construction", count: 28 },
-      { id: "35", label: "35 — Information technology", count: 18 },
-      { id: "13", label: "13 — Environment", count: 12 },
+      { id: "67", label: "67 · Food technology", count: 96 },
+      { id: "03", label: "03 · Services & management", count: 44 },
+      { id: "91", label: "91 · Construction", count: 28 },
+      { id: "35", label: "35 · Information technology", count: 18 },
+      { id: "13", label: "13 · Environment", count: 12 },
     ],
   },
 ];
@@ -382,7 +382,7 @@ export function StandardsPage() {
           <h1>Standards &amp; e-Store</h1>
           <p>
             Every current SZNS standard in one place. Search, filter by sector, preview the scope,
-            and buy the licensed full text — delivered as a secured PDF to your inbox.
+            and buy the licensed full text, delivered as a secured PDF to your inbox.
           </p>
           <div className="page-hero__actions">
             <button
@@ -392,7 +392,7 @@ export function StandardsPage() {
                 setDraftQ("");
                 setQ("");
                 setSector("");
-                showToast("Showing free standards — filter Price → Free");
+                showToast("Showing free standards (filter Price → Free)");
               }}
             >
               <Icon name="i-book" /> Browse free standards
@@ -420,7 +420,7 @@ export function StandardsPage() {
               type="search"
               value={draftQ}
               onChange={(e) => setDraftQ(e.target.value)}
-              placeholder='Search by code, title, or keyword — e.g. “honey”, “SZNS 060”, “labelling”'
+              placeholder='Search by code, title, or keyword, e.g. “honey”, “SZNS 060”, “labelling”'
               aria-label="Search standards"
             />
           </label>
@@ -566,7 +566,7 @@ export function StandardsPage() {
                         type="button"
                         className="abtn buy"
                         onClick={() =>
-                          addToCart(`${s.code} — ${s.title}`)
+                          addToCart(`${s.code}: ${s.title}`)
                         }
                       >
                         <Icon name="i-cart" /> Add to cart
@@ -604,7 +604,7 @@ export function StandardsPage() {
         <div className="featured__head">
           <div>
             <h2 id="featuredTitle">Curated collections</h2>
-            <p>Bundled by sector and use case — save when you buy together.</p>
+            <p>Bundled by sector and use case. Save when you buy together.</p>
           </div>
           <button type="button" className="featured__link" onClick={() => showToast("Collections coming soon")}>
             All collections <Icon name="i-cright" />

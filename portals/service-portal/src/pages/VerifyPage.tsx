@@ -35,7 +35,7 @@ export function VerifyPage() {
     <div className="page">
       <Breadcrumbs items={[{ label: "Home", to: "/" }, { label: "Verify" }]} />
       <h1 className="page-h">Verify a certificate or mark</h1>
-      <p className="page-lead">Public register — enter a number or open a QR deep link.</p>
+      <p className="page-lead">Public register. Enter a number or open a QR deep link.</p>
       <form className="form" onSubmit={onSubmit}>
         <label>
           Certificate / mark number

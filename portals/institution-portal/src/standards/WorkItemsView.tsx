@@ -167,7 +167,7 @@ export function WorkItemsView() {
         label: "Open in editor",
         icon: "i-open" as IconName,
         variant: "gold",
-        onClick: () => toast(`Opening work item ${selected.id} — TODO`),
+        onClick: () => toast(`Opening work item ${selected.id}: TODO`),
       },
       {
         label: "Copy reference",

@@ -81,8 +81,8 @@ export function FinanceSettingsView() {
               <strong>{step.label}</strong>
               <div style={{ color: "var(--muted)", fontSize: 13 }}>
                 {step.done ? "Configured" : "Not configured yet"}
-                {step.id === "pastel" ? " — Sage Pastel ledger link (spec §7.4)" : null}
-                {step.id === "payments" ? " — online payments / EFT (spec §7.4)" : null}
+                {step.id === "pastel" ? " (Sage Pastel ledger link, spec §7.4)" : null}
+                {step.id === "payments" ? " (online payments / EFT, spec §7.4)" : null}
               </div>
             </div>
             {step.href ? (

@@ -199,7 +199,7 @@ export function InstrumentsView() {
           variant: "gold",
           onClick: () => {
             // TODO: wire real — POST /metrology/instruments/{id}/calibrate
-            setFlash(`Schedule calibration — TODO (${openInst.id})`);
+            setFlash(`Schedule calibration: TODO (${openInst.id})`);
           },
         },
         {
@@ -212,7 +212,7 @@ export function InstrumentsView() {
 
   function registerInstrument() {
     // TODO: wire real — open a Register Instrument composer.
-    setFlash("Register instrument composer — TODO");
+    setFlash("Register instrument composer: TODO");
   }
 
   return (

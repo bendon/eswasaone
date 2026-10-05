@@ -127,7 +127,7 @@ def publish_feed(
     _comment(
         reference_doctype,
         reference_name,
-        f"[feed:{event}] {subject}" + (f" — {detail}" if detail else ""),
+        f"[feed:{event}] {subject}" + (f": {detail}" if detail else ""),
     )
 
 
@@ -243,7 +243,7 @@ def rc1_application_submitted(doc, method: str | None = None) -> None:
         doctype=doc.doctype,
         name=doc.name,
         role="Certification Manager",
-        description=f"R-C1: Approval queue — {doc.name}",
+        description=f"R-C1: Approval queue for {doc.name}",
     )
 
     email = doc.get("contact_email")
@@ -662,7 +662,7 @@ def _income_account(company: str) -> str | None:
 def _create_sales_invoice(cert) -> str | None:
     """Auto Sales Invoice for cert fee. Returns invoice name or None."""
     if not frappe.db.exists("DocType", "Sales Invoice"):
-        _comment(cert.doctype, cert.name, "[R-C3] Sales Invoice DocType missing — stub skipped")
+        _comment(cert.doctype, cert.name, "[R-C3] Sales Invoice DocType missing; stub skipped")
         return None
     if cert.get("sales_invoice") and frappe.db.exists("Sales Invoice", cert.sales_invoice):
         return cert.sales_invoice
@@ -715,7 +715,7 @@ def _create_sales_invoice(cert) -> str | None:
             "item_code": item_code,
             "qty": 1,
             "rate": fee,
-            "description": f"Certification fee — {cert.certificate_number}",
+            "description": f"Certification fee: {cert.certificate_number}",
         }
         if income:
             item_row["income_account"] = income
@@ -808,7 +808,7 @@ def _create_register_and_token(cert) -> tuple[str | None, str | None, str | None
         _comment(
             cert.doctype,
             cert.name,
-            "[R-C3] DocType Register Entry not installed (eswasa_verification) — stub noted",
+            "[R-C3] DocType Register Entry not installed (eswasa_verification); stub noted",
         )
 
     if register_name and frappe.db.exists("DocType", "Verification Token"):
@@ -1185,7 +1185,7 @@ def rc7_auditor_competence_expiry() -> int:
             doctype="Auditor",
             name=row.auditor,
             role="Certification Manager",
-            description=f"R-C7: Competence expired for {row.auditor} — renew before assignment",
+            description=f"R-C7: Competence expired for {row.auditor}; renew before assignment",
         )
         _notify_email(
             ["hr@eswasa.org.sz"],
@@ -1202,6 +1202,6 @@ def validate_auditor_assignment(doc, method: str | None = None) -> None:
         return
     if not auditor_competence_valid(auditor, doc.get("scheme")):
         frappe.throw(
-            f"Auditor {auditor} cannot be assigned — competence expired or blocked (R-C7).",
+            f"Auditor {auditor} cannot be assigned: competence expired or blocked (R-C7).",
             frappe.ValidationError,
         )

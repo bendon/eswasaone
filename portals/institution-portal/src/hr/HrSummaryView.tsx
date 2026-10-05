@@ -73,7 +73,7 @@ export function HrSummaryView() {
                           .filter(Boolean)
                           .join(" · ") ||
                         org.registered_address ||
-                        "Profile on file — continue structure setup below."
+                        "Profile on file. Continue structure setup below."
                       : "Create the Company profile and structure before onboarding people. Numbers stay at zero until records exist."}
                   </p>
                 </div>
@@ -188,7 +188,7 @@ export function HrSummaryView() {
                   <h3>Departments</h3>
                   <p>
                     {(counts?.departments ?? 0) === 0
-                      ? "No departments yet — add the first unit in Structure"
+                      ? "No departments yet. Add the first unit in Structure"
                       : `${counts?.departments} department${counts?.departments === 1 ? "" : "s"}`}
                   </p>
                 </div>
@@ -412,7 +412,7 @@ export function HrSummaryView() {
                   setup.has_designations ? (
                     <li>
                       <Link to="/hr/directory">Review Directory</Link>
-                      <span>Structure is in place — manage people and leave next.</span>
+                      <span>Structure is in place. Manage people and leave next.</span>
                     </li>
                   ) : null}
                 </ol>

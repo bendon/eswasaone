@@ -133,7 +133,7 @@ export function TbtSubscriptionsView() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      flashMsg("ok", "Subscription created — check your inbox to confirm.");
+      flashMsg("ok", "Subscription created. Check your inbox to confirm.");
       setEmail("");
       setCountries("");
       setSectors("");
@@ -213,7 +213,7 @@ export function TbtSubscriptionsView() {
               label: "Pause",
               icon: "i-lock",
               variant: "gold",
-              onClick: () => flashMsg("ok", `Pausing ${selected.email} — TODO: wire real`),
+              onClick: () => flashMsg("ok", `Pausing ${selected.email} (TODO: wire real)`),
             },
             {
               label: "Close",

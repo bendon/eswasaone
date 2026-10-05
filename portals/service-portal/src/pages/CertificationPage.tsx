@@ -46,13 +46,13 @@ const PROCESS_STEPS = [
   {
     n: "04",
     title: "Stage 2 audit",
-    body: "Full on-site evaluation of your implemented system — processes, records, interviews, and observation of work in practice.",
+    body: "Full on-site evaluation of your implemented system: processes, records, interviews, and observation of work in practice.",
     dur: "2–5 days",
   },
   {
     n: "05",
     title: "Certification decision",
-    body: "The Certification Approval Committee reviews the audit report, and — if compliant — issues a 3-year certificate.",
+    body: "The Certification Approval Committee reviews the audit report and, if compliant, issues a 3-year certificate.",
     dur: "2–4 weeks",
   },
 ] as const;
@@ -75,7 +75,7 @@ const PATHS: PathCard[] = [
   {
     to: "/certification?path=exporter",
     title: "First-time exporter pack",
-    body: "ISO 9001 plus the relevant product standards and export-desk support — the shortest credible path to your first international shipment.",
+    body: "ISO 9001 plus the relevant product standards and export-desk support: the shortest credible path to your first international shipment.",
     count: "4 steps",
     countIcon: "i-layers",
     tag: "Export",
@@ -88,7 +88,7 @@ const PATHS: PathCard[] = [
   {
     to: "/certification?path=food",
     title: "Food processor readiness",
-    body: "HACCP first, then ISO 22000 — with our internal-auditor training bundled so your team can maintain the system after certification.",
+    body: "HACCP first, then ISO 22000, with our internal-auditor training bundled so your team can maintain the system after certification.",
     count: "3 stages",
     countIcon: "i-layers",
     tag: "Food safety",
@@ -101,7 +101,7 @@ const PATHS: PathCard[] = [
   {
     to: "/certification?path=msme",
     title: "MSME starter path",
-    body: "For small businesses new to standards. Starts with the Ingelo scheme — subsidised training, testing and assessment — then SZNS Product Mark.",
+    body: "For small businesses new to standards. Starts with the Ingelo scheme (subsidised training, testing and assessment), then SZNS Product Mark.",
     count: "Subsidised",
     countIcon: "i-badge",
     tag: "MSME",
@@ -140,7 +140,7 @@ const PATHS: PathCard[] = [
   {
     to: "/certification?path=upgrade",
     title: "Upgrade from HACCP",
-    body: "Already HACCP certified? Bridge to ISO 22000 with a reduced-scope audit — your existing HACCP plan counts toward the new system.",
+    body: "Already HACCP certified? Bridge to ISO 22000 with a reduced-scope audit. Your existing HACCP plan counts toward the new system.",
     count: "Reduced scope",
     countIcon: "i-trend",
     tag: "Upgrade",
@@ -427,7 +427,7 @@ export function CertificationPage() {
             </span>
             <div className="action__body">
               <b>Start a new application</b>
-              <span>Pick a scheme and apply — no account required to begin</span>
+              <span>Pick a scheme and apply. No account required to begin</span>
             </div>
             <span className="action__go">
               <Icon name="i-cright" />
@@ -484,8 +484,8 @@ export function CertificationPage() {
           {verifyResult ? (
             <div className={`verify-widget__result${verifyResult.valid ? " ok" : ""}`}>
               {verifyResult.valid
-                ? `Valid — ${safeText(verifyResult.subject || verifyResult.token)}`
-                : `Not found — ${safeText(verifyResult.token)}`}
+                ? `Valid: ${safeText(verifyResult.subject || verifyResult.token)}`
+                : `Not found: ${safeText(verifyResult.token)}`}
             </div>
           ) : null}
         </form>
@@ -608,7 +608,7 @@ export function CertificationPage() {
             </p>
             <button
               type="button"
-              onClick={() => showToast("Loaded more schemes — TODO: wire real catalogue")}
+              onClick={() => showToast("Loaded more schemes (TODO: wire real catalogue)")}
             >
               Load more schemes
             </button>
@@ -677,7 +677,7 @@ export function CertificationPage() {
 
       <HelpBand
         kicker="Not sure where to start?"
-        title="Tell us what you’re making — we’ll tell you what to certify."
+        title="Tell us what you’re making and we’ll tell you what to certify."
         body="The certification desk can match your product or process to the right scheme and book a scoping call before you apply."
         desk={{ label: "the certification desk", email: "info@eswasa.co.sz", subject: "Certification enquiry" }}
         shortcut={{

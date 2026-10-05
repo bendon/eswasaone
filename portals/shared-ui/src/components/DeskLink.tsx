@@ -69,7 +69,7 @@ export function DeskLink({
       title={
         available
           ? `Open ${doctype}${name ? ` / ${name}` : ""} in Frappe Desk`
-          : "Desk is not public on this host — set VITE_DESK_URL for admins"
+          : "Desk is not public on this host. Set VITE_DESK_URL for admins"
       }
       onClick={() => {
         if (openDesk(doctype, name)) return;

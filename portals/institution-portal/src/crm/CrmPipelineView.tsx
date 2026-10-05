@@ -74,7 +74,7 @@ export function CrmPipelineView() {
 
   function newLead() {
     // TODO: wire real — route to /institution/crm/leads?new=1 or open create drawer
-    setFlash("New lead form — coming soon");
+    setFlash("New lead form coming soon");
   }
 
   return (

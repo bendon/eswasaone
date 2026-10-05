@@ -84,7 +84,7 @@ export function StaffGate({ onStaffSession, deniedMessage }: Props) {
       }
 
       if (!challengeId) {
-        resetToPassword("Sign-in expired — enter your password again.");
+        resetToPassword("Sign-in expired. Enter your password again.");
         return;
       }
 
@@ -95,7 +95,7 @@ export function StaffGate({ onStaffSession, deniedMessage }: Props) {
         challenge_id: challengeId,
       });
       if (isLoginChallenge(session)) {
-        resetToPassword("Sign-in expired — enter your password again.");
+        resetToPassword("Sign-in expired. Enter your password again.");
         return;
       }
       await finishStaffSession(session.user);
@@ -137,7 +137,7 @@ export function StaffGate({ onStaffSession, deniedMessage }: Props) {
         <p className="staff-gate__eyebrow">FIELD APP</p>
         <h1 className="staff-gate__title">Staff sign-in</h1>
         <p className="staff-gate__lead">
-          Mobile workspace for ESWASA employees — leave, pay, claims, and audits.
+          Mobile workspace for ESWASA employees: leave, pay, claims, and audits.
         </p>
         {error ? <div className="staff-gate__error">{error}</div> : null}
         {hint && !error ? (

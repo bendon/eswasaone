@@ -57,7 +57,7 @@ export function AuditDetail({
   );
   const { toast, show: showToast } = useFieldToast();
   const syncNote =
-    "Working offline-safe — saved on device, syncs when back online.";
+    "Working offline-safe. Saved on device, syncs when back online.";
 
   useEffect(() => {
     setDraft(loadDraft(audit.id, auditorDisplayName));
@@ -92,11 +92,11 @@ export function AuditDetail({
         id,
         clause: "New non-conformity",
         severity,
-        note: "Captured on device — tap to add clause, note and photo evidence.",
+        note: "Captured on device. Tap to add clause, note and photo evidence.",
         evidenceSlots: 1,
       }),
     );
-    showToast("NC added — saved on device");
+    showToast("NC added and saved on device");
   }
 
   function onSignAuditor() {
@@ -125,7 +125,7 @@ export function AuditDetail({
     const ok = await dialogs.confirm({
       title: "Submit audit?",
       message:
-        "This will queue the audit for Certification. Confirm before commit — writes are audited.",
+        "This will queue the audit for Certification. Confirm before commit; writes are audited.",
       confirmLabel: "Submit audit",
     });
     if (!ok) return;

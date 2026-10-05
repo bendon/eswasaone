@@ -109,7 +109,7 @@ def publish_feed(
 	_comment(
 		reference_doctype,
 		reference_name,
-		f"[feed:{event}] {subject}" + (f" — {detail}" if detail else ""),
+		f"[feed:{event}] {subject}" + (f": {detail}" if detail else ""),
 	)
 
 
@@ -254,7 +254,7 @@ def collect_module_report_sections() -> list[dict[str, str]]:
 		attn = (overdue or 0) > 0
 		sections.append(
 			{
-				"title": f"Certification — {open_apps} open apps"
+				"title": f"Certification: {open_apps} open apps"
 				+ (f", {overdue} overdue audits" if overdue else ""),
 				"status": "outstanding" if attn else "ready",
 			}
@@ -268,7 +268,7 @@ def collect_module_report_sections() -> list[dict[str, str]]:
 	if published is not None:
 		sections.append(
 			{
-				"title": f"Standards — {published} published"
+				"title": f"Standards: {published} published"
 				+ (f", {open_ballots} open ballots" if open_ballots else ""),
 				"status": "outstanding" if (open_ballots or 0) > 0 else "ready",
 			}
@@ -284,7 +284,7 @@ def collect_module_report_sections() -> list[dict[str, str]]:
 	if open_jobs is not None:
 		sections.append(
 			{
-				"title": f"Metrology — {open_jobs} calibration jobs",
+				"title": f"Metrology: {open_jobs} calibration jobs",
 				"status": "ready",
 			}
 		)
@@ -294,7 +294,7 @@ def collect_module_report_sections() -> list[dict[str, str]]:
 	if inv_ytd is not None:
 		sections.append(
 			{
-				"title": f"Finance — {inv_ytd} posted invoices on record",
+				"title": f"Finance: {inv_ytd} posted invoices on record",
 				"status": "ready",
 			}
 		)
@@ -309,7 +309,7 @@ def collect_module_report_sections() -> list[dict[str, str]]:
 	if tbt_open is not None:
 		sections.append(
 			{
-				"title": f"TBT — {tbt_open} notifications",
+				"title": f"TBT: {tbt_open} notifications",
 				"status": "outstanding" if tbt_open > 5 else "ready",
 			}
 		)
@@ -327,12 +327,12 @@ def collect_module_report_sections() -> list[dict[str, str]]:
 	if high_risks:
 		sections.append(
 			{
-				"title": f"Risks — {len(high_risks)} High/Critical open",
+				"title": f"Risks: {len(high_risks)} High/Critical open",
 				"status": "outstanding",
 			}
 		)
 	elif frappe.db.exists("DocType", "Risk Register Entry"):
-		sections.append({"title": "Risks — none High/Critical open", "status": "ready"})
+		sections.append({"title": "Risks: none High/Critical open", "status": "ready"})
 
 	# Resolutions pending adoption
 	pending_res = _safe_get_all(
@@ -344,12 +344,12 @@ def collect_module_report_sections() -> list[dict[str, str]]:
 	if pending_res:
 		sections.append(
 			{
-				"title": f"Resolutions — {len(pending_res)} pending adoption",
+				"title": f"Resolutions: {len(pending_res)} pending adoption",
 				"status": "outstanding",
 			}
 		)
 	elif frappe.db.exists("DocType", "Board Resolution"):
-		sections.append({"title": "Resolutions — none pending", "status": "ready"})
+		sections.append({"title": "Resolutions: none pending", "status": "ready"})
 
 	# Linked resolution rows already on pack are handled by caller
 	return sections
@@ -357,7 +357,7 @@ def collect_module_report_sections() -> list[dict[str, str]]:
 
 def _format_agenda(sections: list[dict[str, str]], meeting_label: str) -> str:
 	lines = [
-		f"<h3>BOARD pack assembly — {frappe.utils.escape_html(meeting_label)}</h3>",
+		f"<h3>BOARD pack assembly: {frappe.utils.escape_html(meeting_label)}</h3>",
 		f"<p><em>Assembled {now_datetime()}</em></p>",
 		"<ul>",
 	]
@@ -425,12 +425,12 @@ def assemble_pack_for_meeting(meeting: str, *, notify: bool = True) -> dict[str,
 				state = (row.workflow_state or "Draft") if row else "Draft"
 				sections.append(
 					{
-						"title": f"Resolution — {(row.title if row else code)}",
+						"title": f"Resolution: {(row.title if row else code)}",
 						"status": "ready" if state == "Adopted" else "outstanding",
 					}
 				)
 			else:
-				sections.append({"title": f"Resolution — {code}", "status": "outstanding"})
+				sections.append({"title": f"Resolution: {code}", "status": "outstanding"})
 
 	if not sections:
 		sections = [
@@ -489,7 +489,7 @@ def _notify_secretary_outstanding(pack: Any, outstanding: int, sections: list[di
 	)
 	_notify_email(
 		_emails_for_role(BOARD_SECRETARY_ROLE),
-		subject=f"[BOARD] Outstanding pack sections — {pack.name}",
+		subject=f"[BOARD] Outstanding pack sections: {pack.name}",
 		message=body,
 	)
 	_assign_todo(
@@ -787,7 +787,7 @@ def rg3_high_risk_alert(doc, method: str | None = None) -> None:
 	)
 	_notify_email(
 		recipients,
-		subject=f"[R-G3] High risk — {doc.risk_id or doc.name}",
+		subject=f"[R-G3] High risk: {doc.risk_id or doc.name}",
 		message=(
 			f"Risk {doc.risk_id or doc.name}: {doc.title}\n"
 			f"Likelihood={doc.likelihood} Impact={doc.impact}\n"

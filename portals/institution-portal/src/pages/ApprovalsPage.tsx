@@ -39,8 +39,8 @@ function itemKey(item: InboxItem): string {
 
 function missingActTarget(item: InboxItem): string | null {
   if (!item.live) return null;
-  if (!item.doctype?.trim()) return "Missing doctype — cannot act on this item.";
-  if (!item.name?.trim()) return "Missing document name — cannot act on this item.";
+  if (!item.doctype?.trim()) return "Missing doctype. Cannot act on this item.";
+  if (!item.name?.trim()) return "Missing document name. Cannot act on this item.";
   return null;
 }
 
@@ -380,7 +380,7 @@ export function ApprovalsPage() {
     const description = (
       <p style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ink)", margin: 0 }}>
         {item.title}
-        {item.live ? " (live queue item — actions commit to the workflow)." : " (sample item — actions stay local)."}
+        {item.live ? " (live queue item; actions commit to the workflow)." : " (sample item; actions stay local)."}
       </p>
     );
 
@@ -445,7 +445,7 @@ export function ApprovalsPage() {
         <div className="inbox">
           <ModuleHeader
             title="Your inbox"
-            subtitle="Everything waiting on you — sorted by SLA, scoped to your roles."
+            subtitle="Everything waiting on you, sorted by SLA and scoped to your roles."
             summary={summaryTiles}
           />
 
@@ -509,7 +509,7 @@ export function ApprovalsPage() {
 
           <div className="data-list">
             {!visible.length ? (
-              <div className="inbox-empty">Nothing here — you&apos;re all caught up.</div>
+              <div className="inbox-empty">Nothing here. You&apos;re all caught up.</div>
             ) : (
               visible.map((item) => {
                 const key = itemKey(item);

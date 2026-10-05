@@ -23,7 +23,7 @@ export function HomeScreen() {
       {fromCache || refreshing ? (
         <p className="hm-cache-note" role="status">
           {fromCache
-            ? "Showing last saved on this device — reconnect to sync."
+            ? "Showing last saved on this device. Reconnect to sync."
             : "Updating…"}
         </p>
       ) : null}

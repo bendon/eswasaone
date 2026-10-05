@@ -76,7 +76,7 @@ const LAB_TESTS: LabTest[] = [
   {
     id: "cyber",
     title: "Cybersecurity & data protection audit",
-    body: "An independent review of how your system stores, moves and protects data — with findings ranked by risk.",
+    body: "An independent review of how your system stores, moves and protects data, with findings ranked by risk.",
     tag: "Digital infrastructure",
     turnaround: "2–4 weeks",
     icon: "i-shield",
@@ -102,7 +102,7 @@ const SAMPLE_REPORT = [
 const LAB_STEPS = [
   { icon: "i-clipboard", title: "Scope", body: "Tell us what the system does and which standard or market it has to satisfy." },
   { icon: "i-send", title: "Submit", body: "Share model access, documentation and test data through a secure channel." },
-  { icon: "i-flask", title: "Test", body: "Our lab runs the agreed test plan independently — you get progress updates." },
+  { icon: "i-flask", title: "Test", body: "Our lab runs the agreed test plan independently, and you get progress updates." },
   { icon: "i-award", title: "Report", body: "A signed test report you can hand to regulators, buyers and auditors." },
 ] as const satisfies readonly { icon: IconName; title: string; body: string }[];
 
@@ -135,7 +135,7 @@ export function AiTechPage() {
             Eswatini sets its own standards for <em>artificial intelligence.</em>
           </h1>
           <p>
-            One programme makes the rules — the other checks them. ESWASA develops national AI
+            One programme makes the rules, and the other checks them. ESWASA develops national AI
             standards and runs an independent lab to test AI systems, software and digital
             infrastructure.
           </p>
@@ -191,7 +191,7 @@ export function AiTechPage() {
         <article className="aiduo__card">
           <span className="aiduo__kicker">01 · Makes the rules</span>
           <h2>AI &amp; Technology Standards</h2>
-          <p>National standards for AI systems, algorithms, data and digital trust — written with industry, government and the public.</p>
+          <p>National standards for AI systems, algorithms, data and digital trust, written with industry, government and the public.</p>
           <button type="button" className="aiduo__link" onClick={() => scrollTo(standardsRef.current)}>
             See what&rsquo;s in development <Icon name="i-cright" />
           </button>
@@ -202,7 +202,7 @@ export function AiTechPage() {
         <article className="aiduo__card aiduo__card--lab">
           <span className="aiduo__kicker">02 · Checks them</span>
           <h2>AI &amp; Technology Testing Lab</h2>
-          <p>Independent conformity assessment for AI models, software and digital systems — against SZNS and international standards.</p>
+          <p>Independent conformity assessment for AI models, software and digital systems against SZNS and international standards.</p>
           <button type="button" className="aiduo__link" onClick={() => scrollTo(labRef.current)}>
             Explore lab services <Icon name="i-cright" />
           </button>

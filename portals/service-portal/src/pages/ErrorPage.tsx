@@ -14,7 +14,7 @@ function describe(error: unknown) {
       title: missing ? "We couldn’t find that page" : "This page didn’t load",
       body: missing
         ? "The link may be out of date, or the page may have moved. Try one of the routes below."
-        : "The service returned an error while loading this page. It’s usually temporary — try again in a moment.",
+        : "The service returned an error while loading this page. It’s usually temporary, so try again in a moment.",
       detail: `${error.status} ${error.statusText}`.trim(),
       stack: undefined as string | undefined,
     };
@@ -23,7 +23,7 @@ function describe(error: unknown) {
   return {
     code: "Error",
     title: "Something went wrong on this page",
-    body: "Part of this page ran into a problem and couldn’t be shown. Your account and any saved work are safe — reloading usually fixes it.",
+    body: "Part of this page ran into a problem and couldn’t be shown. Your account and any saved work are safe, and reloading usually fixes it.",
     detail: `${err.name}: ${err.message}`,
     stack: err.stack,
   };

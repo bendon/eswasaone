@@ -39,7 +39,7 @@ export function GoalsPage() {
           <span className="page-hero__label">GOALS</span>
           <h1>What do you want to do?</h1>
           <p>
-            Pick a goal and we&rsquo;ll build the exact steps — which standards apply, what to
+            Pick a goal and we&rsquo;ll build the exact steps: which standards apply, what to
             prepare, and what it costs. Every guide is free; you only sign in to act.
           </p>
           <div className="goals-search">
@@ -49,7 +49,7 @@ export function GoalsPage() {
                 type="search"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search goals — e.g. honey, ISO 9001, bottled water…"
+                placeholder="Search goals, e.g. honey, ISO 9001, bottled water…"
                 aria-label="Search goals"
               />
             </div>

@@ -24,8 +24,8 @@ BENCH = REPO_ROOT / "engine" / "frappe-bench"
 WELCOME_NAME = "EswasaOne Welcome"
 RESET_NAME = "EswasaOne Password Reset"
 
-WELCOME_SUBJECT = "Welcome to EswasaOne — set your password"
-RESET_SUBJECT = "EswasaOne — reset your password"
+WELCOME_SUBJECT = "Welcome to EswasaOne: set your password"
+RESET_SUBJECT = "EswasaOne: reset your password"
 
 # Set Password / Login chrome (get_app_logo + Website Settings.favicon)
 APP_LOGO = "/assets/eswasa_certification/images/eswasa-lockup.png"

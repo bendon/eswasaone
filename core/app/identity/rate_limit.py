@@ -31,7 +31,7 @@ def check_auth_rate_limit(request: Request) -> None:
             _HITS[key] = bucket
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many auth attempts — try again shortly",
+                detail="Too many auth attempts. Try again shortly",
             )
         bucket.append(now)
         _HITS[key] = bucket

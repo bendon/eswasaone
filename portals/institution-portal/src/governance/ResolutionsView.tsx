@@ -179,7 +179,7 @@ export function ResolutionsView() {
                 danger: act.danger,
               });
               // TODO: wire real — resolution act endpoint when contract adds it
-              if (ok) setFlash(`${act.label} — TODO (${openRes.id})`);
+              if (ok) setFlash(`${act.label}: TODO (${openRes.id})`);
             })();
           },
         })),
@@ -200,7 +200,7 @@ export function ResolutionsView() {
     });
     // TODO: wire real — POST /governance/resolutions when create lands
     if (!ok) return;
-    setFlash("Resolution recorded — TODO");
+    setFlash("Resolution recorded: TODO");
     setFormOpen(false);
   }
 
@@ -213,7 +213,7 @@ export function ResolutionsView() {
     });
     // TODO: wire real — PATCH resolution action when contract lands
     if (!ok) return;
-    setFlash(`Progress update — TODO (${a.id})`);
+    setFlash(`Progress update: TODO (${a.id})`);
   }
 
   const loading = resolutions.loading && actionsRes.loading;
@@ -262,7 +262,7 @@ export function ResolutionsView() {
                 title="No actions"
                 detail={
                   completedCount > 0 && (!actionFilter || actionFilter === "Open")
-                    ? `${completedCount} completed — switch the filter to Completed to review them.`
+                    ? `${completedCount} completed. Switch the filter to Completed to review them.`
                     : "Actions appear once resolutions raise them."
                 }
               />

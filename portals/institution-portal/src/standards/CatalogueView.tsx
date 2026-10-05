@@ -189,7 +189,7 @@ export function CatalogueView() {
         <>
           <ModuleHeader
             title="Standards Catalogue"
-            subtitle="Published ESWASA standards — search, filter by domain, and link to the e-store."
+            subtitle="Published ESWASA standards. Search, filter by domain, and link to the e-store."
             summary={summary}
           />
 

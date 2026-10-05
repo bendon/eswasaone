@@ -80,7 +80,7 @@ export function MembersView() {
     });
     // TODO: wire real — POST /governance/declarations when create lands
     if (!ok) return;
-    setFlash(`Declaration filed for ${member.full_name} — TODO`);
+    setFlash(`Declaration filed for ${member.full_name}: TODO`);
   }
 
   const loading = members.loading && bodies.loading && declarations.loading;
@@ -206,7 +206,7 @@ export function MembersView() {
                       <td>
                         {d.action ? (
                           <span className="st bad">
-                            {d.action} — {d.interest}
+                            {d.action}: {d.interest}
                           </span>
                         ) : (
                           d.interest

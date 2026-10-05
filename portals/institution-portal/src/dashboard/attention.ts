@@ -58,7 +58,7 @@ export function auditToPriority(it: AuditSummary): PriorityItem {
     tint: "#FDECEC",
     tone: "#9F1239",
     ref: it.application_id || it.id,
-    title: `Audit overdue — ${it.scheme || "Certification"}`,
+    title: `Audit overdue: ${it.scheme || "Certification"}`,
     meta: [
       it.scheme || "Certification audit",
       it.auditor ? `Auditor: ${it.auditor}` : "Auditor unassigned",

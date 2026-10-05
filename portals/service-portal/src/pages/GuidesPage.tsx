@@ -92,7 +92,7 @@ export function GuidesPage({ onNavigate }: Props) {
         setGuide(res);
       } catch (err) {
         console.error(err);
-        setResumeNote("Guide service unavailable — try again shortly.");
+        setResumeNote("Guide service unavailable. Try again shortly.");
       } finally {
         setBusy(false);
       }
@@ -175,7 +175,7 @@ export function GuidesPage({ onNavigate }: Props) {
           <section className="ask-wrap">
             <h2>What are you trying to do?</h2>
             <p>
-              Describe your goal in plain language. We’ll build the exact steps — which standards
+              Describe your goal in plain language. We’ll build the exact steps: which standards
               apply, what to prepare, and what it costs.
             </p>
             <div className="ask-main">

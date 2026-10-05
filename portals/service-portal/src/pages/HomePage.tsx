@@ -40,15 +40,15 @@ const SERVICES: {
 }[] = [
   {
     title: "Standards & E-Store",
-    body: "Buy the SZNS standards your sector needs — delivered as a secured PDF.",
+    body: "Buy the SZNS standards your sector needs, delivered as a secured PDF.",
     to: "/standards",
     pill: "312 standards",
     icon: "i-book",
     img: "/img/standards.webp",
     items: [
-      { label: "SZNS 060 — Honey specification", meta: "SZL 280" },
-      { label: "SZNS 042 — Bottled drinking water", meta: "SZL 240" },
-      { label: "SZNS 001 — Product labelling", meta: "SZL 180" },
+      { label: "SZNS 060: Honey specification", meta: "SZL 280" },
+      { label: "SZNS 042: Bottled drinking water", meta: "SZL 240" },
+      { label: "SZNS 001: Product labelling", meta: "SZL 180" },
     ],
   },
   {
@@ -59,9 +59,9 @@ const SERVICES: {
     icon: "i-badge",
     img: "/img/certified.webp",
     items: [
-      { label: "ISO 9001 — Quality management", meta: "6–12 wk" },
-      { label: "ISO 22000 — Food safety", meta: "8–14 wk" },
-      { label: "SZNS Product Mark — local goods", meta: "4–8 wk" },
+      { label: "ISO 9001: Quality management", meta: "6–12 wk" },
+      { label: "ISO 22000: Food safety", meta: "8–14 wk" },
+      { label: "SZNS Product Mark for local goods", meta: "4–8 wk" },
     ],
   },
   {
@@ -85,8 +85,8 @@ const SERVICES: {
     icon: "i-cap",
     img: "/img/training.webp",
     items: [
-      { label: "HACCP — Food safety", meta: "3 days" },
-      { label: "ISO 9001 — Internal auditor", meta: "5 days" },
+      { label: "HACCP: Food safety", meta: "3 days" },
+      { label: "ISO 9001: Internal auditor", meta: "5 days" },
       { label: "Good manufacturing practice", meta: "2 days" },
     ],
   },
@@ -99,7 +99,7 @@ const SERVICES: {
     img: "/img/crafts.webp",
     items: [
       { label: "Product → standard mapping", meta: "2 min" },
-      { label: "Free — no account needed", meta: "Instant" },
+      { label: "Free, no account needed", meta: "Instant" },
       { label: "Save results to your profile", meta: "Optional" },
     ],
   },
@@ -133,20 +133,20 @@ const AI_CARDS: {
 }[] = [
   {
     title: "AI & Technology Standards",
-    body: "National standards for AI systems, algorithms, data, and digital trust — aligned with ISO/IEC JTC 1/SC 42 and the EU AI Act. Drafted with industry, academia and civil society, and open for public comment.",
+    body: "National standards for AI systems, algorithms, data, and digital trust, aligned with ISO/IEC JTC 1/SC 42 and the EU AI Act. Drafted with industry, academia and civil society, and open for public comment.",
     href: "/ai-tech/standards",
     eyebrow: "Standards Development",
     icon: "i-scroll",
     items: [
-      { label: "SZNS AI 001 — AI governance & risk", meta: "Draft" },
-      { label: "SZNS AI 002 — Algorithmic transparency", meta: "Draft" },
-      { label: "SZNS AI 003 — Training data quality", meta: "Review" },
+      { label: "SZNS AI 001: AI governance & risk", meta: "Draft" },
+      { label: "SZNS AI 002: Algorithmic transparency", meta: "Draft" },
+      { label: "SZNS AI 003: Training data quality", meta: "Review" },
     ],
     goLabel: "Explore standards",
   },
   {
     title: "AI & Technology Testing Lab",
-    body: "Independent testing for AI models, software, and digital systems against national and international standards. Fairness audits, robustness testing, software conformity, and structured assurance reports — accredited to ISO/IEC 17025.",
+    body: "Independent testing for AI models, software, and digital systems against national and international standards. Fairness audits, robustness testing, software conformity, and structured assurance reports, accredited to ISO/IEC 17025.",
     href: "/ai-tech/lab",
     eyebrow: "Conformity Assessment",
     icon: "i-flask",
@@ -212,7 +212,7 @@ export function HomePage() {
             </h1>
             <p className="eg-hero__sub">
               Buy a standard, certify a product, test an AI model, or clear an
-              export. Pick a common goal below, or ask Esi anything — she&apos;ll
+              export. Pick a common goal below, or ask Esi anything and she&apos;ll
               map the steps and the cost.
             </p>
             <div className="eg-hero__actions">
@@ -315,7 +315,7 @@ export function HomePage() {
               <p>
                 Eswatini now sets its own standards for artificial intelligence, and
                 runs an independent lab to test AI systems, software and digital
-                infrastructure. One makes the rules — the other checks them.
+                infrastructure. One makes the rules and the other checks them.
               </p>
               <Link to="/ai-tech" className="eg-btn eg-btn--navy">
                 Full programme <Icon name="i-cright" />
@@ -410,7 +410,7 @@ export function HomePage() {
             <div>
               <h2 id="trustTitle">Why work with ESWASA</h2>
               <p>
-                Eswatini&apos;s national standards body — recognised regionally and
+                Eswatini&apos;s national standards body, recognised regionally and
                 internationally
               </p>
             </div>
@@ -471,9 +471,9 @@ export function HomePage() {
         <div className="eg-sec__in eg-cta__in">
           <div className="eg-cta__copy">
             <span>NOT SURE WHERE TO START?</span>
-            <h2>Tell us what you&apos;re working on — we&apos;ll map the path.</h2>
+            <h2>Tell us what you&apos;re working on and we&apos;ll map the path.</h2>
             <p>
-              Esi knows the full ESWASA catalogue — every standard, scheme and course.
+              Esi knows the full ESWASA catalogue: every standard, scheme and course.
               Describe your product, export destination, or AI system and she&apos;ll
               point you to the right service, or connect you with the desk that can
               help.

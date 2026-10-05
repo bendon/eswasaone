@@ -50,7 +50,7 @@ const FALLBACK: Course[] = [
   {
     id: "haccp-implementation",
     code: "TRN-FS-101",
-    title: "HACCP — Awareness and implementation",
+    title: "HACCP: Awareness and implementation",
     summary:
       "Build a working HACCP plan for your facility. Covers hazard analysis, critical control point identification, monitoring, corrective actions, verification, and record-keeping. Aligned to SZNS SANS 10330:2007.",
     chip: "Food safety",
@@ -71,9 +71,9 @@ const FALLBACK: Course[] = [
   {
     id: "iso9001-internal-auditor",
     code: "TRN-QM-201",
-    title: "ISO 9001:2015 — Internal auditor",
+    title: "ISO 9001:2015 Internal auditor",
     summary:
-      "Plan, conduct, report and follow up internal audits against ISO 9001:2015. Includes audit programme design, evidence gathering, writing findings, and closing out non-conformities — aligned to ISO 19011:2018.",
+      "Plan, conduct, report and follow up internal audits against ISO 9001:2015. Includes audit programme design, evidence gathering, writing findings, and closing out non-conformities, aligned to ISO 19011:2018.",
     chip: "Quality management",
     accent: "#313391",
     tint: "#ECEEFC",
@@ -92,7 +92,7 @@ const FALLBACK: Course[] = [
   {
     id: "food-labelling",
     code: "TRN-FS-110",
-    title: "Food labelling workshop — SZNS 001",
+    title: "Food labelling workshop (SZNS 001)",
     summary:
       "Apply the SZNS 001 labelling rules to pre-packaged foods sold in Eswatini. Covers mandatory information, allergen declarations, nutrition panels, date marking, and the language requirements for imported products.",
     chip: "Food safety",
@@ -116,9 +116,9 @@ const FALLBACK: Course[] = [
   {
     id: "iso45001-lead-auditor",
     code: "TRN-OH-401",
-    title: "ISO 45001:2018 — Lead auditor",
+    title: "ISO 45001:2018 Lead auditor",
     summary:
-      "The full lead-auditor pathway for occupational health and safety. Audit planning, team leadership, opening and closing meetings, evidence gathering and reporting — with a written examination on the final day.",
+      "The full lead-auditor pathway for occupational health and safety. Audit planning, team leadership, opening and closing meetings, evidence gathering and reporting, with a written examination on the final day.",
     chip: "Environment & OHS",
     accent: "#7C3AED",
     tint: "#F0E9FB",
@@ -137,7 +137,7 @@ const FALLBACK: Course[] = [
   {
     id: "iso22000-implementation",
     code: "TRN-FS-301",
-    title: "ISO 22000:2018 — Understanding & implementation",
+    title: "ISO 22000:2018 Understanding & implementation",
     summary:
       "For food businesses preparing for ISO 22000 certification. Covers the standard's structure, prerequisite programmes, operational PRPs, HACCP integration, and the documentation you'll need at Stage 1.",
     chip: "Food safety",
@@ -181,7 +181,7 @@ const FALLBACK: Course[] = [
     code: "TRN-FS-050",
     title: "Basic food safety for food handlers",
     summary:
-      "The entry course for anyone preparing, packaging or selling food — from street vendors to small-scale processors. Personal hygiene, safe storage, cross-contamination, temperature control and cleaning. Funded for Ingelo participants.",
+      "The entry course for anyone preparing, packaging or selling food, from street vendors to small-scale processors. Personal hygiene, safe storage, cross-contamination, temperature control and cleaning. Funded for Ingelo participants.",
     chip: "MSME · Ingelo",
     accent: "#16A34A",
     tint: "#DCFCE7",
@@ -204,7 +204,7 @@ const FALLBACK: Course[] = [
 export const UPCOMING: UpcomingSession[] = [
   {
     date: "8 OCT 2026",
-    title: "Food labelling workshop — SZNS 001",
+    title: "Food labelling workshop (SZNS 001)",
     place: "Online, live",
     placeIcon: "i-monitor",
     price: "SZL 850",
@@ -224,7 +224,7 @@ export const UPCOMING: UpcomingSession[] = [
   },
   {
     date: "14 OCT 2026",
-    title: "HACCP — Awareness and implementation",
+    title: "HACCP: Awareness and implementation",
     place: "Mbabane",
     placeIcon: "i-pin",
     price: "SZL 2,400",
@@ -234,7 +234,7 @@ export const UPCOMING: UpcomingSession[] = [
   },
   {
     date: "21 OCT 2026",
-    title: "ISO 9001:2015 — Internal auditor",
+    title: "ISO 9001:2015 Internal auditor",
     place: "Online, live",
     placeIcon: "i-monitor",
     price: "SZL 3,200",
@@ -258,7 +258,7 @@ export const LEARNING_PATHS: LearningPath[] = [
   {
     id: "qms-lead-auditor",
     title: "QMS lead auditor",
-    body: "The professional pathway to leading ISO 9001 audits — for consultants, quality managers, and anyone moving into third-party audit work.",
+    body: "The professional pathway to leading ISO 9001 audits. For consultants, quality managers, and anyone moving into third-party audit work.",
     steps: ["ISO 9001 foundation", "Internal auditor", "Lead auditor"],
     meta: "3 courses · ~12 days",
     tint: "#ECEEFC",
@@ -268,7 +268,7 @@ export const LEARNING_PATHS: LearningPath[] = [
   {
     id: "export-ready",
     title: "Export readiness",
-    body: "For first-time exporters — the labelling, packaging, traceability and documentation skills your EU or SACU importer will require.",
+    body: "For first-time exporters: the labelling, packaging, traceability and documentation skills your EU or SACU importer will require.",
     steps: ["Food labelling", "HACCP", "Traceability", "Export documentation"],
     meta: "4 courses · ~8 days",
     tint: "#FEF6DC",
@@ -278,7 +278,7 @@ export const LEARNING_PATHS: LearningPath[] = [
   {
     id: "ohs-specialist",
     title: "OHS specialist",
-    body: "ISO 45001 implementation and auditing — for safety officers, HR leads, and industrial operations managers in mining and construction.",
+    body: "ISO 45001 implementation and auditing for safety officers, HR leads, and industrial operations managers in mining and construction.",
     steps: ["ISO 45001 foundation", "Internal auditor", "Lead auditor"],
     meta: "3 courses · ~11 days",
     tint: "#F0E9FB",
@@ -298,7 +298,7 @@ export const LEARNING_PATHS: LearningPath[] = [
   {
     id: "custom",
     title: "In-house programme",
-    body: "Not on the calendar? We deliver any of our courses on-site for your team — minimum five participants, content tailored to your sector.",
+    body: "Not on the calendar? We deliver any of our courses on-site for your team: minimum five participants, content tailored to your sector.",
     steps: ["Custom scope", "On-site", "From 5 staff"],
     meta: "Enquiry",
     tint: "#E4F4F1",

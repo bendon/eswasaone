@@ -38,7 +38,7 @@ export function StandardsPage() {
                   <span className="act__d" style={{ background: "var(--navy)" }} />
                   <div>
                     <p>
-                      {s.code} — {s.title}
+                      {s.code}: {s.title}
                     </p>
                     <span>
                       {[s.sector, s.status].filter(Boolean).join(" · ") || "—"}

@@ -61,7 +61,7 @@ export function ConfirmActionButton({
         disabled={locked}
         title={
           demoLocked
-            ? "Disabled in demo mode — fixture records cannot be committed"
+            ? "Disabled in demo mode: fixture records cannot be committed"
             : options.ruleId
               ? `${options.title} (${options.ruleId})`
               : options.title

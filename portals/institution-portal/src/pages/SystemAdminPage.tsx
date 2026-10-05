@@ -557,7 +557,7 @@ export function SystemAdminPage() {
     <RequireStaff reason="Staff sign-in required for system administration">
       <PageHeader
         title="System Administration"
-        subtitle="Update the platform, configure settings, and manage users. These actions change the live system — handle with care."
+        subtitle="Update the platform, configure settings, and manage users. These actions change the live system, so handle with care."
       />
 
       <div className="admin-tabs" role="tablist" aria-label="System administration">
@@ -719,7 +719,7 @@ export function SystemAdminPage() {
               <div className="role-mgmt">
                 <div className="kv" style={{ width: "100%" }}>
                   <b>Current</b>
-                  <span>{userDetail?.user.role_profile_name || "— none —"}</span>
+                  <span>{userDetail?.user.role_profile_name || "None"}</span>
                 </div>
                 <p style={{ color: "var(--muted-2)", fontSize: 12.5, margin: "0 0 8px", width: "100%" }}>
                   Apply an Institution (or Board/TC) job pack. Citizen / Business packs belong on the
@@ -1285,7 +1285,7 @@ function SettingsTab({
           <span className="admin-ic">
             <Icon name="i-sliders" />
           </span>
-          <b>General — System Settings</b>
+          <b>General: System Settings</b>
           <span style={{ marginLeft: "auto" }}>
             <button
               type="button"
@@ -1351,7 +1351,7 @@ function SettingsTab({
           <span className="admin-ic">
             <Icon name="i-mail" />
           </span>
-          <b>Email — SMTP / Email Account</b>
+          <b>Email: SMTP / Email Account</b>
           <span style={{ marginLeft: "auto" }}>
             {em ? (
               <StatusPill status={em.outgoing_ok ? "ok" : "warn"} label={em.outgoing_ok ? "outgoing OK" : "not OK"} />

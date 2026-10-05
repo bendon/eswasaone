@@ -33,7 +33,7 @@ export const SCHEMES: Scheme[] = [
   {
     id: "iso9001",
     code: "ISO 9001:2015",
-    title: "Quality management systems — Certification",
+    title: "Quality management systems certification",
     body: "Prove your organisation consistently delivers products and services that meet customer and regulatory requirements. Stage 1 documentation review, Stage 2 on-site audit, and a three-year certificate with annual surveillance.",
     chip: "Management system",
     accent: "#313391",
@@ -49,7 +49,7 @@ export const SCHEMES: Scheme[] = [
   {
     id: "iso22000",
     code: "ISO 22000:2018",
-    title: "Food safety management systems — Certification",
+    title: "Food safety management systems certification",
     body: "End-to-end food safety management from primary production through to retail. Required by most EU food importers and by major retailers in the SACU region. Prerequisite programmes and HACCP plans are audited as part of Stage 2.",
     chip: "Management system",
     accent: "#15803D",
@@ -65,8 +65,8 @@ export const SCHEMES: Scheme[] = [
   {
     id: "haccp",
     code: "SZNS SANS 10330",
-    title: "HACCP — Hazard analysis and critical control points",
-    body: "The faster, leaner path to food safety certification. Ideal for processors and caterers beginning their compliance journey — and a natural stepping-stone to full ISO 22000 later.",
+    title: "HACCP: Hazard analysis and critical control points",
+    body: "The faster, leaner path to food safety certification. Ideal for processors and caterers beginning their compliance journey, and a natural stepping-stone to full ISO 22000 later.",
     chip: "Food safety",
     accent: "#15803D",
     tint: "#E3F4E9",
@@ -81,7 +81,7 @@ export const SCHEMES: Scheme[] = [
   {
     id: "product",
     code: "SZNS Product Mark",
-    title: "SZNS Product Mark — Conformity mark for local goods",
+    title: "SZNS Product Mark: conformity mark for local goods",
     body: "The mark that tells buyers your product meets the Eswatini national standard. Required for many locally manufactured foods, bottled water, and construction materials sold through formal retail.",
     chip: "Product",
     accent: "#B8860B",
@@ -97,7 +97,7 @@ export const SCHEMES: Scheme[] = [
   {
     id: "ingelo",
     code: "Ingelo Certification",
-    title: "Ingelo Certification Scheme — MSME quality approval",
+    title: "Ingelo Certification Scheme: MSME quality approval",
     body: "A government-backed scheme helping local small businesses meet quality, health and safety standards. Funding covers training, testing, and the certification assessment itself. Open to Eswatini-registered MSMEs with fewer than 50 staff.",
     chip: "MSME · Ingelo",
     accent: "#16A34A",
@@ -116,7 +116,7 @@ export const SCHEMES: Scheme[] = [
   {
     id: "iso14001",
     code: "ISO 14001:2015",
-    title: "Environmental management systems — Certification",
+    title: "Environmental management systems certification",
     body: "Demonstrate control over your environmental impact and compliance obligations. Increasingly requested by mining, agro-processing, and construction buyers in the SADC region.",
     chip: "Management system",
     accent: "#0E7C7B",
@@ -132,7 +132,7 @@ export const SCHEMES: Scheme[] = [
   {
     id: "iso45001",
     code: "ISO 45001:2018",
-    title: "Occupational health & safety — Certification",
+    title: "Occupational health & safety certification",
     body: "The international benchmark for workplace safety. Required for many mining, construction and industrial contracts, and increasingly for public tenders.",
     chip: "Management system",
     accent: "#7C3AED",

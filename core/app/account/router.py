@@ -754,7 +754,7 @@ async def get_account_overview(
                     tint="#FEF6DC",
                     border_tint="#F1E2A5",
                     icon="i-clock",
-                    title=f"Application {app.get('name')} — {app.get('status')}",
+                    title=f"Application {app.get('name')}: {app.get('status')}",
                     body=f"{app.get('scheme') or 'Scheme'} · {app.get('applicant_name') or ''}",
                     cta="Track application",
                     href=f"/certification/{app.get('name')}",
@@ -942,7 +942,7 @@ async def invite_team_member(
                     "Sign in (or complete the welcome email if this is a new account) "
                     "and switch to the business workspace to collaborate on applications, "
                     "orders and certificates.\n\n"
-                    "— EswasaOne\n"
+                    "EswasaOne\n"
                 ),
             )
         )

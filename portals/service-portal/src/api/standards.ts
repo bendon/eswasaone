@@ -14,7 +14,7 @@ export type StandardSummary = {
 const FALLBACK: StandardSummary[] = [
   {
     code: "SZNS 060",
-    title: "Honey — Specification",
+    title: "Honey: Specification",
     sector: "Food",
     status: "Current",
     year: 2021,
@@ -25,7 +25,7 @@ const FALLBACK: StandardSummary[] = [
   },
   {
     code: "SZNS ISO 9001",
-    title: "Quality management systems — Requirements",
+    title: "Quality management systems: Requirements",
     sector: "Management",
     status: "Current",
     year: 2015,
@@ -53,12 +53,12 @@ const FALLBACK: StandardSummary[] = [
     year: 2018,
     price: "SZL 180",
     abstract:
-      "Requirements for the labelling of pre-packaged goods — including mandatory information, allergen declaration, and language requirements for products sold in Eswatini.",
+      "Requirements for the labelling of pre-packaged goods, including mandatory information, allergen declaration, and language requirements for products sold in Eswatini.",
     buy_url: "/estore/SZNS-001",
   },
   {
     code: "SZNS ISO 22000",
-    title: "Food safety management systems — Requirements",
+    title: "Food safety management systems: Requirements",
     sector: "Management",
     status: "Current",
     year: 2018,
@@ -69,7 +69,7 @@ const FALLBACK: StandardSummary[] = [
   },
   {
     code: "SZNS 187",
-    title: "Bottled drinking water — Specification",
+    title: "Bottled drinking water: Specification",
     sector: "Environment",
     status: "Current",
     year: 2020,

@@ -77,14 +77,14 @@ ROLE_PROFILES: tuple[dict[str, Any], ...] = (
     _profile(
         "Citizen",
         audience="public",
-        summary="Individual public passport — Service Portal only",
+        summary="Individual public passport (Service Portal only)",
         roles=("Citizen",),
         portal_modules=("service",),
     ),
     _profile(
         "Business",
         audience="public",
-        summary="Organisation account owner — Citizen + Customer entity",
+        summary="Organisation account owner: Citizen + Customer entity",
         roles=("Citizen", "Customer"),
         portal_modules=("service",),
     ),
@@ -119,7 +119,7 @@ ROLE_PROFILES: tuple[dict[str, Any], ...] = (
     _profile(
         "Institution Staff",
         audience="institution",
-        summary="Base staff passport — dashboard, approvals, LMS, HR self-service",
+        summary="Base staff passport: dashboard, approvals, LMS, HR self-service",
         roles=_BASE_STAFF,
         portal_modules=("dashboard", "approvals", "lms", "hr", "reports"),
     ),
@@ -133,7 +133,7 @@ ROLE_PROFILES: tuple[dict[str, Any], ...] = (
     _profile(
         "Certification Manager",
         audience="institution",
-        summary="Certification leadership — manager DocPerms + workflow",
+        summary="Certification leadership: manager DocPerms + workflow",
         roles=(*_BASE_STAFF, "Certification Manager", "Certification Officer"),
         portal_modules=("dashboard", "approvals", "certification", "lms", "hr", "reports"),
     ),
@@ -189,7 +189,7 @@ ROLE_PROFILES: tuple[dict[str, Any], ...] = (
     _profile(
         "ICT / System Administration",
         audience="institution",
-        summary="Platform administration — tightly controlled",
+        summary="Platform administration, tightly controlled",
         roles=(*_BASE_STAFF, "System Manager"),
         portal_modules=("dashboard", "approvals", "admin", "reports", "lms", "hr"),
     ),

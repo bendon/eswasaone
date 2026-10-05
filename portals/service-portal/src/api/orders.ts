@@ -4,7 +4,7 @@ import type { OrderSummary } from "@eswasaone/shared-ui";
 const FALLBACK_PERSONAL: OrderSummary[] = [
   {
     id: "#8851",
-    title: "SZNS 060 — Honey specification",
+    title: "SZNS 060: Honey specification",
     subtitle: "Licensed PDF · ICS 67.180",
     date: "2026-04-04",
     amount: "SZL 280",
@@ -14,7 +14,7 @@ const FALLBACK_PERSONAL: OrderSummary[] = [
   },
   {
     id: "#8842",
-    title: "SZNS ISO 9001 — Quality management systems",
+    title: "SZNS ISO 9001: Quality management systems",
     subtitle: "Licensed PDF · ICS 03.120",
     date: "2025-03-02",
     amount: "SZL 420",
@@ -27,7 +27,7 @@ const FALLBACK_PERSONAL: OrderSummary[] = [
 const FALLBACK_BUSINESS: OrderSummary[] = [
   {
     id: "#8858",
-    title: "SZNS 045 — Honey — Specification",
+    title: "SZNS 045: Honey specification",
     subtitle: "Licensed PDF · ICS 67.180",
     date: "2026-09-12",
     amount: "SZL 280",
@@ -37,7 +37,7 @@ const FALLBACK_BUSINESS: OrderSummary[] = [
   },
   {
     id: "#8852",
-    title: "Bulk order — 5 standards (food safety)",
+    title: "Bulk order: 5 standards (food safety)",
     subtitle: "PDF bundle · SZNS 001, 042, 060, 187, ISO 22000",
     date: "2026-09-02",
     amount: "SZL 1,840",
@@ -47,7 +47,7 @@ const FALLBACK_BUSINESS: OrderSummary[] = [
   },
   {
     id: "#8846",
-    title: "SZNS ISO 22000 — Food safety management systems",
+    title: "SZNS ISO 22000: Food safety management systems",
     subtitle: "Licensed PDF · ICS 03.120",
     date: "2026-08-18",
     amount: "SZL 460",
@@ -57,7 +57,7 @@ const FALLBACK_BUSINESS: OrderSummary[] = [
   },
   {
     id: "#8839",
-    title: "SZNS 187 — Bottled drinking water",
+    title: "SZNS 187: Bottled drinking water",
     subtitle: "Licensed PDF · ICS 13.060",
     date: "2026-07-02",
     amount: "SZL 240",
@@ -67,7 +67,7 @@ const FALLBACK_BUSINESS: OrderSummary[] = [
   },
   {
     id: "#8821",
-    title: "Training · HACCP — 3 delegates",
+    title: "Training · HACCP, 3 delegates",
     subtitle: "Group enrolment · 3 staff",
     date: "2026-06-14",
     amount: "SZL 7,200",
@@ -77,7 +77,7 @@ const FALLBACK_BUSINESS: OrderSummary[] = [
   },
   {
     id: "#8798",
-    title: "SZNS ISO 45001 — Occupational health & safety",
+    title: "SZNS ISO 45001: Occupational health & safety",
     subtitle: "Licensed PDF · ICS 13.100",
     date: "2026-04-22",
     amount: "SZL 500",
@@ -97,7 +97,7 @@ const FALLBACK_BUSINESS: OrderSummary[] = [
   },
   {
     id: "#8761",
-    title: "SZNS 060 — Honey specification",
+    title: "SZNS 060: Honey specification",
     subtitle: "Licensed PDF · superseded by #8858",
     date: "2025-02-02",
     amount: "SZL 280",

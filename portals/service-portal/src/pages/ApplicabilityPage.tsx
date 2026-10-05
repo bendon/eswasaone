@@ -24,7 +24,7 @@ export function ApplicabilityPage() {
     <div className="page">
       <Breadcrumbs items={[{ label: "Home", to: "/" }, { label: "Applicability checker" }]} />
       <h1 className="page-h">Applicability checker</h1>
-      <p className="page-lead">Free tool — which standards and notifications may apply.</p>
+      <p className="page-lead">Free tool to check which standards and notifications may apply.</p>
       <form className="form" onSubmit={onSubmit}>
         <label>
           Product or goal
@@ -44,7 +44,7 @@ export function ApplicabilityPage() {
           <ol>
             {(result.steps || []).map((s) => (
               <li key={s.order}>
-                <b>{safeText(s.title)}</b> — {safeText(s.detail)}
+                <b>{safeText(s.title)}</b>: {safeText(s.detail)}
               </li>
             ))}
           </ol>

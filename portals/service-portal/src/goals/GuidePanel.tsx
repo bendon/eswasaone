@@ -218,7 +218,7 @@ export function GuidePanel({
           <div className="sec-head">
             <div>
               <h2 id="relatedTitle">Related goals</h2>
-              <p>Continue exploring — or browse the full library</p>
+              <p>Continue exploring, or browse the full library</p>
             </div>
             <Link to="/goals" className="linkish">
               All goals

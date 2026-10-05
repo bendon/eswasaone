@@ -66,7 +66,7 @@ export function FinanceReportsView() {
 
   function exportPdf() {
     // TODO: wire real — POST /reports/finance/export to render a PDF pack.
-    setFlash("PDF export — TODO");
+    setFlash("PDF export: TODO");
   }
 
   const loading = revenue.loading || budget.loading;
@@ -247,7 +247,7 @@ export function FinanceReportsView() {
           {/* Mini trend chart from /finance/kpis months — if available. */}
           {kpis.error ? (
             <p className="tagpill" style={{ display: "inline-block" }}>
-              Trend chart unavailable — {kpis.error}
+              Trend chart unavailable: {kpis.error}
             </p>
           ) : kpis.loading ? (
             <LoadingState label="Loading trend chart…" />

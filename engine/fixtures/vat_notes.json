@@ -3,5 +3,5 @@
   "title": "Eswatini VAT Notes",
   "public": 1,
   "notify_on_login": 0,
-  "content": "<p><b>Eswatini VAT (SZL)</b></p><ul><li>Standard VAT rate: <b>15%</b> (Value Added Tax Act).</li><li>Currency: Lilangeni (SZL), symbol E.</li><li>Zero-rated / exempt supplies follow Eswatini Revenue Service (ERS) guidance — confirm before invoicing.</li><li>Certification, metrology calibration, training, and standards sales may have distinct tax treatments; Finance reviews before posting.</li></ul><p>This note is a desk stub for Atlas Engine (WS1). Replace with live ERS references via Finance.</p>"
+  "content": "<p><b>Eswatini VAT (SZL)</b></p><ul><li>Standard VAT rate: <b>15%</b> (Value Added Tax Act).</li><li>Currency: Lilangeni (SZL), symbol E.</li><li>Zero-rated / exempt supplies follow Eswatini Revenue Service (ERS) guidance; confirm before invoicing.</li><li>Certification, metrology calibration, training, and standards sales may have distinct tax treatments; Finance reviews before posting.</li></ul><p>This note is a desk stub for Atlas Engine (WS1). Replace with live ERS references via Finance.</p>"
 }

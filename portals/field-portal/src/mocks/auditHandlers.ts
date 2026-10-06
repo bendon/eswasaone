@@ -89,6 +89,18 @@ export const MOCK_FIELD_AUDITS: FieldAuditRow[] = [
     location: "Nhlangano",
     time_label: "11:00",
   },
+  {
+    id: "AUD-2026-0021",
+    application_id: "CERT-2026-00021",
+    auditor: "Demo Field Officer",
+    scheme: "Product — ESWASA Mark (SZNS SANS 542)",
+    due_date: todayOffset(1),
+    status: "scheduled",
+    company: "Swazi Tiles",
+    location: "Matsapha",
+    time_label: "08:30",
+    stage: "Initial factory assessment",
+  },
 ];
 
 /** MSW handlers for GET/POST /certification/audits (+ overdue). Merge into handlers.ts. */

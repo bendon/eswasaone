@@ -5,8 +5,8 @@ import { useAuth } from "../../auth/AuthProvider";
 import { readSnapshot, writeSnapshot } from "../../lib/localSnapshot";
 import { AuditDetail } from "./AuditDetail";
 import { AuditList } from "./AuditList";
-import { fetchAudits } from "./api";
-import { loadDraft } from "./draftStore";
+import { fetchAudits, submitAudit } from "./api";
+import { listQueuedDrafts, loadDraft, saveDraft } from "./draftStore";
 import { filterBySegment, filterForCurrentUser } from "./segments";
 import type { AuditSegment, FieldAuditRow } from "./types";
 
@@ -47,13 +47,16 @@ export function AuditsScreen() {
       const res = await fetchAudits(50);
       const raw = (res.items ?? []) as FieldAuditRow[];
       writeSnapshot(cachePath, res);
-      // TODO: wire real — list endpoint has no auditor=me; filter client-side for now.
-      const scoped = filterForCurrentUser(
-        raw,
-        user?.username,
-        user?.full_name,
-      );
+      // /field/me/audits is already scoped; the list fallback is filtered client-side.
+      const scoped = res.scoped
+        ? raw
+        : filterForCurrentUser(raw, user?.username, user?.full_name);
       setItems(scoped);
+
+      // Back online — push any audits that were submitted offline.
+      for (const queued of listQueuedDrafts()) {
+        if (await submitAudit(queued)) saveDraft({ ...queued, syncState: "synced" });
+      }
 
       const submitted = new Set<string>();
       for (const a of scoped) {

@@ -1,5 +1,12 @@
-import type { AuditDraft, ChecklistItem, NonConformity, SignOffState } from "./types";
-import { DEFAULT_CHECKLIST, DEFAULT_FINDINGS } from "./checklistDefaults";
+import type {
+  AuditDraft,
+  ChecklistItem,
+  FieldAuditRow,
+  NonConformity,
+  SampleRecord,
+  SignOffState,
+} from "./types";
+import { auditKindOf, checklistFor, DEFAULT_CHECKLIST, DEFAULT_FINDINGS } from "./checklistDefaults";
 
 const PREFIX = "eswasaone.field.audit-draft.";
 
@@ -10,11 +17,15 @@ function key(auditId: string): string {
 export function emptyDraft(
   auditId: string,
   auditorName = "",
+  audit?: FieldAuditRow,
 ): AuditDraft {
+  const kind = audit ? auditKindOf(audit) : undefined;
   return {
     auditId,
-    checklist: DEFAULT_CHECKLIST.map((c) => ({ ...c })),
+    kind,
+    checklist: audit ? checklistFor(audit, kind) : DEFAULT_CHECKLIST.map((c) => ({ ...c })),
     findings: DEFAULT_FINDINGS.map((f) => ({ ...f })),
+    samples: [],
     signOff: {
       auditorSigned: Boolean(auditorName),
       auditorName,
@@ -25,18 +36,34 @@ export function emptyDraft(
   };
 }
 
-export function loadDraft(auditId: string, auditorName = ""): AuditDraft {
+export function loadDraft(auditId: string, auditorName = "", audit?: FieldAuditRow): AuditDraft {
   try {
     const raw = localStorage.getItem(key(auditId));
-    if (!raw) return emptyDraft(auditId, auditorName);
+    if (!raw) return emptyDraft(auditId, auditorName, audit);
     const parsed = JSON.parse(raw) as AuditDraft;
     if (!parsed?.auditId || !Array.isArray(parsed.checklist)) {
-      return emptyDraft(auditId, auditorName);
+      return emptyDraft(auditId, auditorName, audit);
     }
     return parsed;
   } catch {
-    return emptyDraft(auditId, auditorName);
+    return emptyDraft(auditId, auditorName, audit);
   }
+}
+
+/** Drafts submitted while offline (or refused by the server) that still need to sync. */
+export function listQueuedDrafts(): AuditDraft[] {
+  const out: AuditDraft[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k?.startsWith(PREFIX)) continue;
+      const d = JSON.parse(localStorage.getItem(k) || "null") as AuditDraft | null;
+      if (d?.locallySubmitted && d.syncState !== "synced") out.push(d);
+    }
+  } catch {
+    /* storage unavailable */
+  }
+  return out;
 }
 
 export function saveDraft(draft: AuditDraft): void {
@@ -76,4 +103,27 @@ export function patchSignOff(
   patch: Partial<SignOffState>,
 ): AuditDraft {
   return { ...draft, signOff: { ...draft.signOff, ...patch } };
+}
+
+export function updateFinding(
+  draft: AuditDraft,
+  id: string,
+  patch: Partial<NonConformity>,
+): AuditDraft {
+  return {
+    ...draft,
+    findings: draft.findings.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+  };
+}
+
+export function removeFinding(draft: AuditDraft, id: string): AuditDraft {
+  return { ...draft, findings: draft.findings.filter((f) => f.id !== id) };
+}
+
+export function addSample(draft: AuditDraft, sample: SampleRecord): AuditDraft {
+  return { ...draft, samples: [...(draft.samples || []), sample] };
+}
+
+export function removeSample(draft: AuditDraft, id: string): AuditDraft {
+  return { ...draft, samples: (draft.samples || []).filter((s) => s.id !== id) };
 }

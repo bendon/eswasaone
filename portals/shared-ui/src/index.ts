@@ -86,6 +86,14 @@ export { FileDownload, type FileDownloadProps } from "./components/FileDownload"
 
 export { apiBase, wsBase, apiFetch, askAgent } from "./api/client";
 export {
+  uploadMedia,
+  validateUpload,
+  UPLOAD_LIMITS,
+  type MediaObject,
+  type UploadResult,
+} from "./api/upload";
+export { newIdempotencyKey } from "./api/idempotency";
+export {
   ApiError,
   extractDetail,
   humanizeApiDetail,

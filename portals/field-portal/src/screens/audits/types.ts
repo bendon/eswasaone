@@ -17,13 +17,34 @@ export type ChecklistItem = {
 
 export type NcSeverity = "major" | "minor" | "obs";
 
+export type EvidencePhoto = { key: string; name: string; url: string };
+
 export type NonConformity = {
   id: string;
   clause: string;
   severity: NcSeverity;
+  /** Statement of non-conformity. */
   note: string;
+  /** Objective evidence observed. */
+  evidence?: string;
+  /** Legacy placeholder count (kept for drafts saved before photo upload). */
   evidenceSlots: number;
+  photos?: EvidencePhoto[];
 };
+
+/** Product audits — samples drawn and sealed on site for accredited lab testing. */
+export type SampleRecord = {
+  id: string;
+  product: string;
+  batch: string;
+  qty: string;
+  sealNo: string;
+  lab: string;
+  drawnAt: string;
+};
+
+/** Which checklist template applies. */
+export type AuditKind = "stage1" | "stage2" | "surveillance" | "product";
 
 export type SignOffState = {
   auditorSigned: boolean;
@@ -39,8 +60,15 @@ export type AuditDraft = {
   findings: NonConformity[];
   signOff: SignOffState;
   updatedAt: string;
-  /** True after local submit confirmation (queued until PATCH exists). */
+  /** True after submit confirmation — either synced or queued for sync. */
   locallySubmitted?: boolean;
+  /** Sync state of a submitted draft: queued (offline / server refused) or synced. */
+  syncState?: "queued" | "synced";
+  /** Stable Idempotency-Key minted at first submit so retries never double-submit. */
+  submitKey?: string;
+  /** Checklist template used — lets a draft survive scheme metadata changes. */
+  kind?: AuditKind;
+  samples?: SampleRecord[];
 };
 
 /**

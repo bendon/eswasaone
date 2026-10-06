@@ -22,6 +22,7 @@ import type {
 } from "../api/types";
 import { PackTrack } from "./PackTrack";
 import { govPost } from "./api";
+import { useBodies } from "./useBodies";
 
 type StatusFilter =
   | ""
@@ -103,26 +104,21 @@ function actionIcon(action: string): IconName {
   return "i-check";
 }
 
-const MEETING_FIELDS: FormDrawerField[] = [
-  { name: "title", label: "Title", required: true },
-  {
-    name: "body",
-    label: "Body",
-    type: "select",
-    options: [
-      { value: "Full Board", label: "Full Board" },
-      { value: "Audit & Risk Committee", label: "Audit & Risk Committee" },
-      { value: "Technical Committee", label: "Technical Committee" },
-    ],
-  },
-  { name: "date", label: "Date", type: "date", required: true },
-  { name: "venue", label: "Venue", placeholder: "ESWASA Boardroom" },
-];
+function meetingFields(bodies: { value: string; label: string }[]): FormDrawerField[] {
+  return [
+    { name: "title", label: "Title", required: true },
+    { name: "body", label: "Body", type: "select", options: bodies },
+    { name: "date", label: "Date", type: "date", required: true },
+    { name: "venue", label: "Venue", placeholder: "ESWASA Boardroom" },
+  ];
+}
 
 /** Meetings — workflow statuses + allowed_actions[] → POST .../act. */
 export function MeetingsView() {
   const { openAuth, user, sessionKey } = useInstitution();
   const { confirmAction, host } = useConfirmAction();
+  const { options: bodyOptions } = useBodies();
+  const MEETING_FIELDS = useMemo(() => meetingFields(bodyOptions), [bodyOptions]);
   const { data, loading, refreshing, error, authRequired, reload } =
     useApiResource<GovernanceMeetingsResponse>("/governance/meetings", {
       enabled: Boolean(user),

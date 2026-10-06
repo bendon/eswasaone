@@ -8,21 +8,22 @@ import {
   me,
   logout,
   askAgent,
-  SiteFooter,
   IdleLockGate,
   Dock,
+  Toast,
+  TopBarSearch,
   DialogProvider,
   onEscape,
   type SessionUser,
-  type SiteFooterHealth,
 } from "@eswasaone/shared-ui";
 import { InstitutionSidebar } from "./InstitutionSidebar";
 import { AccessDeniedPanel } from "../components/AccessDeniedPanel";
 import { titleForPath, type InstitutionRouteId, INSTITUTION_NAV, routeFromAsk } from "../nav";
 import { canAccessRoute, hasStaffRole, primaryStaffLabel } from "../staff";
 import { listPendingAccessRequests } from "../hr/accessRequests";
-import { probeCoreHealth } from "../lib/coreHealth";
 import { StaffGate } from "../pages/StaffGate";
+
+const SIDE_COLLAPSED_KEY = "eswasaone.institution.sideCollapsed";
 
 export type InstitutionOutletContext = {
   user: SessionUser;
@@ -63,10 +64,29 @@ export function InstitutionLayout() {
   const [gateError, setGateError] = useState<string | null>(null);
   const [badges, setBadges] = useState<BadgePayload>({});
   const [askBusy, setAskBusy] = useState(false);
+  const [topAskBusy, setTopAskBusy] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
 
   const closeNav = useCallback(() => setNavOpen(false), []);
   const toggleNav = useCallback(() => setNavOpen((v) => !v), []);
+  const [sideCollapsed, setSideCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDE_COLLAPSED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleSideCollapsed = useCallback(() => {
+    setSideCollapsed((v) => {
+      try {
+        localStorage.setItem(SIDE_COLLAPSED_KEY, v ? "0" : "1");
+      } catch {
+        /* storage unavailable — keep in-memory state */
+      }
+      return !v;
+    });
+  }, []);
 
   const refreshUser = useCallback(() => {
     let settled = false;
@@ -189,27 +209,6 @@ export function InstitutionLayout() {
 
   const sessionKey = user?.username ?? "guest";
 
-  // Footer health chip — Core liveness via /api (nginx does not proxy root /health).
-  const [footerHealth, setFooterHealth] = useState<SiteFooterHealth | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    void probeCoreHealth()
-      .then((state) => {
-        if (cancelled) return;
-        setFooterHealth(
-          state === "up"
-            ? { tone: "up", text: "Core API reachable" }
-            : { tone: "down", text: "Core API degraded" },
-        );
-      })
-      .catch(() => {
-        if (!cancelled) setFooterHealth({ tone: "down", text: "Core API unreachable" });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionKey]);
-
   const routeId = routeIdFromPath(loc.pathname);
   const allowedHere = user ? canAccessRoute(user.roles, routeId) : false;
 
@@ -227,6 +226,35 @@ export function InstitutionLayout() {
       })
       .catch(console.error);
   }, []);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), 3200);
+  }, []);
+
+  // Top-bar search — same agent + routing as the dock, but surfaces the answer.
+  const onTopAsk = useCallback(
+    async (message: string) => {
+      setTopAskBusy(true);
+      try {
+        const res = await askAgent({ message, context: { portal: "institution" } });
+        showToast(res.answer.slice(0, 160) || "Done.");
+        const dest = routeFromAsk(message, res.tools_used);
+        if (dest && dest !== "/") navigate(dest);
+      } catch (err) {
+        if (err instanceof AuthError && err.authRequired) {
+          void logout().catch(() => undefined);
+          setUser(null);
+          setGateError(err.reason || err.message);
+        } else {
+          showToast("Assistant unavailable right now.");
+        }
+      } finally {
+        setTopAskBusy(false);
+      }
+    },
+    [navigate, showToast],
+  );
 
   const onDockAsk = useCallback(
     async (message: string) => {
@@ -297,7 +325,13 @@ export function InstitutionLayout() {
         setGateError("Sign-in window expired. Password and OTP required again");
       }}
     >
-      <AppShell className={navOpen ? "app--nav-open" : undefined}>
+      <AppShell
+        className={
+          [navOpen ? "app--nav-open" : "", sideCollapsed ? "app--side-collapsed" : ""]
+            .filter(Boolean)
+            .join(" ") || undefined
+        }
+      >
         <button
           type="button"
           className="side-scrim"
@@ -309,17 +343,17 @@ export function InstitutionLayout() {
           items={visibleNav}
           lockedIds={lockedNav}
           badges={badges}
-          roleBanner={roleBanner}
           signedIn
           open={navOpen}
           onClose={closeNav}
-          onCollapse={closeNav}
+          collapsed={sideCollapsed}
+          onToggleCollapse={toggleSideCollapsed}
           onSignOut={signOut}
         />
         <div className="main">
           <TopBar
             title={titleForPath(loc.pathname)}
-            pill={allowedHere ? "STAFF ACCESS" : "ACCESS DENIED"}
+            center={<TopBarSearch onAsk={onTopAsk} busy={topAskBusy} />}
             userName={user.full_name || user.username}
             userRole={roleBanner.title}
             userEmail={user.email || user.username}
@@ -338,9 +372,9 @@ export function InstitutionLayout() {
           />
           <div className="content">
             {body}
-            <SiteFooter health={footerHealth} />
           </div>
         </div>
+        <Toast message={toast} />
       </AppShell>
       <Dock
         visible

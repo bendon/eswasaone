@@ -23,6 +23,7 @@ export type { IconName, IconProps } from "./icons/Icon";
 export { AppShell } from "./components/AppShell";
 export { Sidebar, type NavItem } from "./components/Sidebar";
 export { TopBar, type TopBarMenuItem } from "./components/TopBar";
+export { TopBarSearch } from "./components/TopBarSearch";
 export { AskBox } from "./components/AskBox";
 export { HeroAsk } from "./components/HeroAsk";
 export { AskBar } from "./components/AskBar";

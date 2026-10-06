@@ -13,8 +13,8 @@ export default {
         navy: "var(--navy)",
       },
       fontFamily: {
-        sans: ["Hind", "Hind Fallback", "Arial", "Helvetica", "sans-serif"],
-        display: ["Lexend Deca", "Lexend Deca Fallback", "Arial", "Helvetica", "sans-serif"],
+        sans: ["Arial", "Helvetica", "sans-serif"],
+        display: ["Arial", "Helvetica", "sans-serif"],
         mono: ["ui-monospace", "SF Mono", "Menlo", "Consolas", "Liberation Mono", "monospace"],
       },
       width: {

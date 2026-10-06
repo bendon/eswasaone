@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  askAgent,
   apiFetch,
   AuthError,
   Icon,
@@ -24,12 +23,7 @@ import {
   Legend,
 } from "chart.js";
 import { useInstitution } from "../layout/InstitutionLayout";
-import { pathForRouteId, routeFromAsk } from "../nav";
-import {
-  MODULE_TILES,
-  type PriorityItem,
-  type SysStatus,
-} from "../dashboard/fixtures";
+import { type PriorityItem } from "../dashboard/fixtures";
 import { buildLiveAttentionQueue } from "../dashboard/attention";
 import { probeCoreHealth } from "../lib/coreHealth";
 import type {
@@ -44,9 +38,8 @@ ChartJS.defaults.font.family = fontSans;
 ChartJS.defaults.font.size = 11;
 ChartJS.defaults.color = "#8A9AB1";
 
-type RangeId = "Day" | "Week" | "Month" | "Quarter";
-
-const RANGES: RangeId[] = ["Day", "Week", "Month", "Quarter"];
+/** Attention rows shown on the overview — the rest live behind "View all". */
+const ATTENTION_PREVIEW = 4;
 
 type DashKpi = {
   key: string;
@@ -71,6 +64,7 @@ function formatOpsDate(d: Date): string {
     weekday: "long",
     day: "numeric",
     month: "long",
+    year: "numeric",
   });
 }
 
@@ -113,11 +107,14 @@ export function InstitutionHomePage() {
   const [tbt, setTbt] = useState<TbtNotificationsResponse | null>(null);
   const [overdueAudits, setOverdueAudits] = useState<AuditSummary[]>([]);
   const [coreHealth, setCoreHealth] = useState<"up" | "down" | "unknown">("unknown");
-  const [range, setRange] = useState<RangeId>("Month");
-  const [ask, setAsk] = useState("");
-  const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [now] = useState(() => new Date());
+  const [now, setNow] = useState(() => new Date());
+
+  // Keep the greeting clock current.
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // Attention queue detail drawer
   const [selected, setSelected] = useState<PriorityItem | null>(null);
@@ -166,38 +163,7 @@ export function InstitutionHomePage() {
     window.setTimeout(() => setToast(null), 2400);
   }, []);
 
-  const handleAsk = useCallback(
-    async (message: string) => {
-      const q = message.trim();
-      if (!q) return;
-      setBusy(true);
-      try {
-        const res = await askAgent({ message: q, context: { portal: "institution" } });
-        showToast(res.answer.slice(0, 120) || "Done.");
-        const dest = routeFromAsk(q, res.tools_used);
-        if (dest && dest !== "/") navigate(dest);
-      } catch (err) {
-        if (err instanceof AuthError && err.authRequired) {
-          openAuth(err.reason || err.message);
-          showToast("Sign in to continue with that action.");
-        } else {
-          showToast("Assistant unavailable right now.");
-        }
-      } finally {
-        setBusy(false);
-        setAsk("");
-      }
-    },
-    [navigate, openAuth, showToast],
-  );
-
-  function onOpsSubmit(e: FormEvent) {
-    e.preventDefault();
-    void handleAsk(ask);
-  }
-
   const name = firstName(user.full_name, user.username);
-  const pendingCount = approvals?.pending_count ?? 0;
 
   const priority: PriorityItem[] = useMemo(() => {
     const items = buildLiveAttentionQueue({
@@ -216,7 +182,6 @@ export function InstitutionHomePage() {
     const pastSlaApi = byKey.past_sla ?? byKey.overdue;
     const auditsApi = byKey.audits_week ?? byKey.audits;
     const revenue = byKey.revenue;
-    const standards = byKey.standards_ytd ?? byKey.standards;
 
     // Client-side fallbacks from data already loaded for the attention queue.
     const pastSlaFallback =
@@ -303,27 +268,10 @@ export function InstitutionHomePage() {
         tint: "#DCFCE7",
         tone: "#166534",
       },
-      dash(standards?.value != null ? String(standards.value) : undefined, "published", "Year to date", {
-        key: "standards",
-        label: "Standards YTD",
-        icon: "i-file",
-        tint: "#F0E9FB",
-        tone: "#7C3AED",
-      }),
     ];
   }, [home, finance, approvals, overdueAudits]);
 
-  const systemStatus: SysStatus[] = useMemo(() => {
-    const coreRow: SysStatus = {
-      label: "Core API",
-      state: coreHealth === "up" ? "up" : coreHealth === "down" ? "down" : "warn",
-      value:
-        coreHealth === "up" ? "Reachable" : coreHealth === "down" ? "Unreachable" : "Checking…",
-    };
-    return [coreRow];
-  }, [coreHealth]);
-
-  const systemFoot =
+  const coreLabel =
     coreHealth === "up"
       ? "Core API reachable"
       : coreHealth === "down"
@@ -360,7 +308,7 @@ export function InstitutionHomePage() {
     }
     setActing(true);
     try {
-      if (selected.kind === "audit_reschedule" || selected.kind === "audit_overdue") && selected.name) {
+      if ((selected.kind === "audit_reschedule" || selected.kind === "audit_overdue") && selected.name) {
         await apiFetch(`/certification/audits/${encodeURIComponent(selected.name)}`, {
           method: "PATCH",
           headers: { "Idempotency-Key": `${selected.name}-reschedule-${Date.now()}` },
@@ -622,119 +570,91 @@ export function InstitutionHomePage() {
     return "var(--amber)";
   }
 
+  const attentionPreview = priority.slice(0, ATTENTION_PREVIEW);
+  const attentionMore = attentionN - attentionPreview.length;
+
   return (
     <div className="dash">
-      <section className="ops" aria-label="Operations bar">
-        <div className="ops__copy">
-          <b>
-            {formatOpsDate(now)} · {formatOpsTime(now)}
-          </b>
-          <span>
-            {greetingFor(now.getHours())}, {name}.{" "}
-            {attentionN > 0
-              ? `${attentionN} item${attentionN === 1 ? "" : "s"} need your attention today.`
-              : "Nothing needs your attention right now."}
-          </span>
+      <section className="hero2" aria-label="Overview">
+        <div className="hero2__head">
+          <div>
+            <h2 className="hero2__greet">
+              {greetingFor(now.getHours())}, {name}
+            </h2>
+            <p className="hero2__date">
+              {formatOpsDate(now)} · <time>{formatOpsTime(now)}</time>
+            </p>
+          </div>
+          <div className="hero2__meta">
+            <span className={`hero2__attn${attentionN > 0 ? " is-alert" : ""}`}>
+              <Icon name={attentionN > 0 ? "i-bell" : "i-check-c"} />
+              {attentionN > 0
+                ? `${attentionN} item${attentionN === 1 ? "" : "s"} need${attentionN === 1 ? "s" : ""} your attention`
+                : "Nothing needs your attention"}
+            </span>
+            <span className="hero2__health" role="status">
+              <span className={`status__dot ${coreHealth === "unknown" ? "warn" : coreHealth}`} />
+              {coreLabel}
+            </span>
+          </div>
         </div>
 
-        <form className="ops__search" role="search" onSubmit={onOpsSubmit}>
-          <Icon name="i-search" />
-          <label className="sr-only" htmlFor="opsInput">
-            Ask EswasaOne
-          </label>
-          <input
-            id="opsInput"
-            type="text"
-            value={ask}
-            onChange={(e) => setAsk(e.target.value)}
-            placeholder='Ask EswasaOne, e.g. “audits overdue this week”, “APP-2026-00042”, “revenue YTD”…'
-            autoComplete="off"
-            disabled={busy}
-          />
-          <button type="submit" aria-label="Ask" disabled={busy}>
-            <Icon name="i-spark" /> Ask
-          </button>
-        </form>
-
-        <div className="ops__range" role="group" aria-label="Time range">
-          {RANGES.map((r) => (
-            <button
-              key={r}
-              type="button"
-              className={range === r ? "on" : undefined}
-              onClick={() => setRange(r)}
-            >
-              {r}
-            </button>
-          ))}
+        <div className="hero2__stats" aria-label="Key indicators">
+          {kpis.map((k) => {
+            const alert = k.key === "sla" && k.value !== "—" && Number(k.value) > 0;
+            return (
+              <div key={k.key} className={`hero2__stat${alert ? " is-alert" : ""}`}>
+                <div className="hero2__stat-label">
+                  <span
+                    className="hero2__stat-ic"
+                    style={{ ["--ic-tint" as string]: k.tint, ["--ic-tone" as string]: k.tone }}
+                  >
+                    <Icon name={k.icon} />
+                  </span>
+                  {k.label}
+                </div>
+                <div className="hero2__stat-val">
+                  {k.key === "revenue" && k.value !== "—" ? <small>SZL</small> : null}
+                  {k.value}
+                  {k.unit ? <small>{k.unit}</small> : null}
+                </div>
+                <div className="hero2__stat-meta">
+                  {k.delta ? (
+                    <span className={`kpi__delta ${k.delta.dir}`}>
+                      <Icon name={k.delta.dir === "down" ? "i-trend-down" : "i-trend"} />
+                      {k.delta.text}
+                    </span>
+                  ) : null}
+                  <span>{k.meta}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      <section className="kpis" aria-label="Key indicators">
-        {kpis.map((k) => (
-          <article key={k.key} className="kpi">
-            <div className="kpi__head">
-              <span className="kpi__ic" style={{ ["--ic-tint" as string]: k.tint, ["--ic-tone" as string]: k.tone }}>
-                <Icon name={k.icon} />
-              </span>
-              <span className="kpi__label">{k.label}</span>
-            </div>
-            <div className="kpi__val">
-              {k.key === "revenue" ? <small>SZL</small> : null}
-              {k.value}
-              {k.unit ? <small>{k.unit}</small> : null}
-            </div>
-            <div className="kpi__meta">
-              {k.delta ? (
-                <span className={`kpi__delta ${k.delta.dir}`}>
-                  <Icon name={k.delta.dir === "down" ? "i-trend-down" : "i-trend"} />
-                  {k.delta.text}
-                </span>
-              ) : null}
-              <span>{k.meta}</span>
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <div className="row r-3-2">
+      <div className="row r-3">
         <section className="panel" aria-labelledby="pqTitle">
           <div className="panel__h">
             <div>
               <h3 id="pqTitle">Needs your attention</h3>
-              <p>Items assigned to you or your team that require a decision</p>
+              <p>Decisions waiting on you or your team</p>
             </div>
             <div className="r">
-              <Link
-                to="/approvals"
-                style={{
-                  fontSize: "12.5px",
-                  fontWeight: 700,
-                  color: "var(--navy)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                View all <Icon name="i-cright" />
+              <Link to="/approvals">
+                {attentionMore > 0 ? `+${attentionMore} more` : "View all"} <Icon name="i-cright" />
               </Link>
             </div>
           </div>
-          <div className="pq">
-            {priority.length === 0 ? (
-              <div className="pq__item sev-navy" style={{ cursor: "default" }}>
-                <span className="pq__ic" style={{ ["--ic-tint" as string]: "#ECEEFC", ["--ic-tone" as string]: "#313391" }}>
-                  <Icon name="i-check-c" />
-                </span>
-                <div className="pq__body">
-                  <div className="pq__title">Inbox clear</div>
-                  <div className="pq__meta">
-                    <span className="tag">No pending approvals, overdue audits, or unread TBT alerts</span>
-                  </div>
-                </div>
+          <div className="pq pq--compact">
+            {attentionPreview.length === 0 ? (
+              <div className="dash-empty">
+                <Icon name="i-check-c" />
+                <b>Inbox clear</b>
+                <span>No pending approvals, overdue audits or unread TBT alerts.</span>
               </div>
             ) : (
-              priority.map((item) => (
+              attentionPreview.map((item) => (
                 <div
                   key={item.id}
                   className={`pq__item sev-${item.sev}`}
@@ -760,97 +680,29 @@ export function InstitutionHomePage() {
                       {item.title}
                     </div>
                     <div className="pq__meta">
-                      {item.meta.map((m) => (
+                      <span className={`sla ${item.sla.kind}`}>
+                        <span className="d" />
+                        {item.sla.label}
+                      </span>
+                      {item.meta.slice(0, 1).map((m) => (
                         <span key={m} className="tag">
                           {m}
                         </span>
                       ))}
                     </div>
                   </div>
-                  <div className="pq__act">
-                    <span className={`sla ${item.sla.kind}`}>
-                      <span className="d" />
-                      {item.sla.label}
-                    </span>
-                    <button
-                      type="button"
-                      className={`pq__btn ${item.action.variant}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openItem(item);
-                      }}
-                    >
-                      <Icon name={item.action.icon} /> {item.action.label}
-                    </button>
-                  </div>
+                  <Icon name="i-cright" className="pq__go" />
                 </div>
               ))
             )}
           </div>
         </section>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-          <section className="panel" aria-labelledby="sysTitle">
-            <div className="panel__h">
-              <div>
-                <h3 id="sysTitle">System status</h3>
-                <p>Live Core health probe</p>
-              </div>
-            </div>
-            <div className="status" style={{ padding: "8px 20px 4px" }}>
-              {systemStatus.map((s) => (
-                <div key={s.label} className="status__row">
-                  <span className={`status__dot ${s.state}`} />
-                  <span className="status__lbl">{s.label}</span>
-                  <span className="status__val">{s.value}</span>
-                </div>
-              ))}
-            </div>
-            <div className="status__foot">
-              <Icon name="i-clock" />
-              {systemFoot}
-            </div>
-          </section>
-
-          <section className="panel" aria-labelledby="actTitle">
-            <div className="panel__h">
-              <div>
-                <h3 id="actTitle">Recent activity</h3>
-                <p>Across your team in the last 24 hours</p>
-              </div>
-            </div>
-            <ul className="feed">
-              {feed.length === 0 ? (
-                <li>
-                  <span className="feed__d" style={{ background: "var(--muted-2)" }} />
-                  <div className="feed__body">
-                    <b>No recent feed items</b>
-                    <span>Activity will appear as records move through modules.</span>
-                  </div>
-                </li>
-              ) : (
-                feed.slice(0, 5).map((item) => (
-                  <li key={item.id}>
-                    <span className="feed__d" style={{ background: feedDot(item.severity) }} />
-                    <div className="feed__body">
-                      <b>{item.title}</b>
-                      {item.body ? <span>{item.body}</span> : null}
-                      <time>{relativeClock(item.created_at)}</time>
-                    </div>
-                  </li>
-                ))
-              )}
-            </ul>
-          </section>
-        </div>
-      </div>
-
-      <div className="row r-3-2">
         <section className="panel" aria-labelledby="revTitle">
           <div className="panel__h">
             <div>
               <h3 id="revTitle">Revenue vs budget</h3>
-              <p>Monthly, SZL thousands · {range}</p>
+              <p>Monthly, SZL thousands</p>
             </div>
             <div className="r">
               <div className="chart-legend">
@@ -876,7 +728,7 @@ export function InstitutionHomePage() {
                         label: "Budget",
                         data: chartMonths!.budget_thousands,
                         backgroundColor: "#D3DDE9",
-                        borderRadius: 3,
+                        borderRadius: 4,
                         barPercentage: 0.7,
                         categoryPercentage: 0.7,
                       },
@@ -884,7 +736,7 @@ export function InstitutionHomePage() {
                         label: "Actual",
                         data: chartMonths!.actual_thousands,
                         backgroundColor: "#313391",
-                        borderRadius: 3,
+                        borderRadius: 4,
                         barPercentage: 0.7,
                         categoryPercentage: 0.7,
                       },
@@ -894,18 +746,21 @@ export function InstitutionHomePage() {
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                      x: { grid: { display: false } },
+                      x: { grid: { display: false }, border: { display: false } },
                       y: {
                         grid: { color: "#EFF3F8" },
+                        border: { display: false },
                         ticks: { callback: (v) => String(v) },
                       },
                     },
                   }}
                 />
               ) : (
-                <p style={{ color: "var(--muted)", fontSize: 13 }}>
-                  Revenue series appears when Core returns finance KPIs.
-                </p>
+                <div className="dash-empty">
+                  <Icon name="i-chart" />
+                  <b>No revenue series yet</b>
+                  <span>Appears when Core returns finance KPIs.</span>
+                </div>
               )}
             </div>
           </div>
@@ -914,21 +769,11 @@ export function InstitutionHomePage() {
         <section className="panel" aria-labelledby="tlTitle">
           <div className="panel__h">
             <div>
-              <h3 id="tlTitle">Annual plan KPIs</h3>
-              <p>Traffic light vs target</p>
+              <h3 id="tlTitle">Annual plan</h3>
+              <p>Actual vs target</p>
             </div>
             <div className="r">
-              <Link
-                to="/finance"
-                style={{
-                  fontSize: "12.5px",
-                  fontWeight: 700,
-                  color: "var(--navy)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
+              <Link to="/finance">
                 Finance <Icon name="i-cright" />
               </Link>
             </div>
@@ -936,75 +781,65 @@ export function InstitutionHomePage() {
           <div className="panel__body">
             <div className="tl">
               {planRows.length === 0 ? (
-                <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
-                  No annual-plan targets from Finance yet.
-                </p>
+                <div className="dash-empty">
+                  <Icon name="i-gauge" />
+                  <b>No targets yet</b>
+                  <span>Annual-plan targets appear once Finance publishes them.</span>
+                </div>
               ) : (
                 planRows.map((row) => {
-                const color = planColor(row.status);
-                return (
-                  <div key={row.key} className="tl__row">
-                    <div className="tl__top">
-                      <span className="lbl">
-                        {row.label}
-                        <small>Target {row.target}</small>
-                      </span>
-                      <span className="v">
-                        {row.actual} <span className="s" style={{ background: color }} />
-                      </span>
+                  const color = planColor(row.status);
+                  return (
+                    <div key={row.key} className="tl__row">
+                      <div className="tl__top">
+                        <span className="lbl">
+                          {row.label}
+                          <small>Target {row.target}</small>
+                        </span>
+                        <span className="v">
+                          {row.actual} <span className="s" style={{ background: color }} />
+                        </span>
+                      </div>
+                      <div className="tl__bar">
+                        <div
+                          className="tl__fill"
+                          style={{ width: planWidth(row.status), background: color }}
+                        />
+                      </div>
                     </div>
-                    <div className="tl__bar">
-                      <div
-                        className="tl__fill"
-                        style={{ width: planWidth(row.status), background: color }}
-                      />
-                    </div>
-                  </div>
-                );
-              })
+                  );
+                })
               )}
             </div>
           </div>
         </section>
       </div>
 
-      <div className="sec-head">
-        <div>
-          <h2>Modules</h2>
-          <p>Everything the Authority runs, one click away</p>
+      <section className="panel" aria-labelledby="actTitle">
+        <div className="panel__h">
+          <div>
+            <h3 id="actTitle">Recent activity</h3>
+            <p>Across your team in the last 24 hours</p>
+          </div>
         </div>
-        <div className="r">
-          <Link to="/reports">
-            Open reports <Icon name="i-cright" />
-          </Link>
-        </div>
-      </div>
-
-      <section className="mods" aria-label="Portal modules">
-        {MODULE_TILES.map((m) => {
-          const to = pathForRouteId(m.id) ?? "/";
-          const badge =
-            m.id === "approvals" && pendingCount
-              ? String(pendingCount)
-              : m.id === "tbt" && tbt?.new_count
-                ? String(tbt.new_count)
-                : m.badge;
-          const alert = m.id === "approvals" && pendingCount > 0;
-          return (
-            <Link key={m.id} to={to} className="mod">
-              <span className="mod__ic">
-                <Icon name={m.icon} />
-              </span>
-              <div className="mod__body">
-                <b>{m.title}</b>
-                <span>{m.foot}</span>
-              </div>
-              {badge ? (
-                <span className={`mod__badge${alert ? " alert" : ""}`}>{badge}</span>
-              ) : null}
-            </Link>
-          );
-        })}
+        {feed.length === 0 ? (
+          <div className="dash-empty">
+            <Icon name="i-clock" />
+            <b>No recent activity</b>
+            <span>Activity appears as records move through modules.</span>
+          </div>
+        ) : (
+          <ul className="activity">
+            {feed.slice(0, 6).map((item) => (
+              <li key={item.id}>
+                <span className="activity__dot" style={{ background: feedDot(item.severity) }} />
+                <b className="activity__title">{item.title}</b>
+                <span className="activity__body">{item.body ?? ""}</span>
+                <time className="activity__time">{relativeClock(item.created_at)}</time>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <RecordDrawer

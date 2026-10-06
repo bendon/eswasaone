@@ -3,11 +3,21 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 
-// Env lives in the repo-root .env (shared with Core); API_PROXY_TARGET points /api and /ws at a Core.
+// Env lives in the repo-root .env (shared with Core), overridden by this portal's .env / .env.local.
 const envDir = path.resolve(__dirname, "../..");
-const apiTarget =
-  loadEnv(process.env.NODE_ENV ?? "development", envDir, "").API_PROXY_TARGET?.replace(/\/$/, "") ||
-  "http://127.0.0.1:8015";
+const env = {
+  ...loadEnv("development", envDir, ""),
+  ...loadEnv("development", __dirname, ""),
+};
+const port = Number(env.SERVICE_PORTAL_PORT) || 3015;
+const publicHost = env.PUBLIC_HOST || "eswasaone.aiceafrica.com";
+// /api + /ws proxy target (e.g. https://eswasaone.aiceafrica.com); default local Core.
+// CORE_PROXY_TARGET is canonical; API_PROXY_TARGET is accepted for older .env files.
+const apiTarget = (
+  env.CORE_PROXY_TARGET ||
+  env.API_PROXY_TARGET ||
+  `http://127.0.0.1:${env.CORE_PORT || 8015}`
+).replace(/\/$/, "");
 
 export default defineConfig({
   envDir,
@@ -95,9 +105,9 @@ export default defineConfig({
   appType: "spa",
   server: {
     host: "127.0.0.1",
-    port: 3015,
+    port,
     strictPort: true,
-    allowedHosts: ["eswasaone.aiceafrica.com", ".aiceafrica.com"],
+    allowedHosts: [publicHost, ".aiceafrica.com"],
     // Serve shared-ui assets (fonts) and contracts from outside this portal's root.
     fs: { allow: [path.resolve(__dirname, ".."), path.resolve(__dirname, "../../contracts")] },
     proxy: {
@@ -113,7 +123,7 @@ export default defineConfig({
   },
   preview: {
     host: "127.0.0.1",
-    port: 3015,
+    port,
     strictPort: true,
   },
   test: {

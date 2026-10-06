@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   apiFetch,
+  ApiError,
   AuthError,
   Icon,
   ModuleHeader,
@@ -255,7 +256,9 @@ export function ApprovalsPage() {
       reload();
     } catch (err) {
       if (err instanceof AuthError && err.authRequired) openAuth(err.reason);
-      else showToast(err instanceof Error ? err.message : "Action failed");
+      else if (!(err instanceof ApiError && err.notified)) {
+        showToast(err instanceof Error ? err.message : "Action failed");
+      }
     } finally {
       setBusyKey(null);
     }
@@ -315,7 +318,9 @@ export function ApprovalsPage() {
           openAuth(err.reason);
           break;
         }
-        showToast(err instanceof Error ? err.message : "Action failed");
+        if (!(err instanceof ApiError && err.notified)) {
+          showToast(err instanceof Error ? err.message : "Action failed");
+        }
         break;
       } finally {
         setBusyKey(null);
@@ -428,10 +433,12 @@ export function ApprovalsPage() {
         { label: "Close", variant: "ghost", onClick: () => setDrawerItem(null) },
       ];
     }
+    // do-family: primary completes the next workflow step (maps to approve|Submit…).
+    // Do not offer Request info / return — many do states have no return transition
+    // (e.g. Board Pack Draft → Submit for Review only).
     return [
       { label: primaryActionLabel(item), icon: "i-check", variant: "pri", onClick: () => void runAndClose("Done"), disabled },
-      { label: "Reassign", variant: "ghost", onClick: () => void runAndClose("Reassigned"), disabled: busy },
-      { label: "Request info", variant: "ghost", onClick: () => void runAndClose("Returned"), disabled: busy },
+      { label: "Close", variant: "ghost", onClick: () => setDrawerItem(null) },
     ];
   }
 
@@ -556,24 +563,14 @@ export function ApprovalsPage() {
                         <Icon name="i-check" /> Acknowledge
                       </button>
                     ) : (
-                      <>
-                        <button
-                          type="button"
-                          className="inbox-btn pri"
-                          disabled={busy || Boolean(missing)}
-                          onClick={() => void actItem(item, "Done")}
-                        >
-                          <Icon name="i-check" /> {primaryActionLabel(item)}
-                        </button>
-                        <button
-                          type="button"
-                          className="inbox-btn ghost"
-                          disabled={busy}
-                          onClick={() => void actItem(item, "Reassigned")}
-                        >
-                          Reassign
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        className="inbox-btn pri"
+                        disabled={busy || Boolean(missing)}
+                        onClick={() => void actItem(item, "Done")}
+                      >
+                        <Icon name="i-check" /> {primaryActionLabel(item)}
+                      </button>
                     )}
                   </>
                 );

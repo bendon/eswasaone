@@ -49,6 +49,7 @@ export {
   ConfirmModal,
   MessageAlert,
   PromptModal,
+  globalAlert,
   type DialogsApi,
   type ConfirmOptions,
   type AlertOptions,
@@ -83,6 +84,13 @@ export {
 export { FileDownload, type FileDownloadProps } from "./components/FileDownload";
 
 export { apiBase, wsBase, apiFetch, askAgent } from "./api/client";
+export {
+  ApiError,
+  extractDetail,
+  humanizeApiDetail,
+  showApiError,
+  apiErrorFromResponse,
+} from "./api/errors";
 export { useFeed } from "./api/useFeed";
 export { useLiveFeed, type UseLiveFeedOptions } from "./api/useLiveFeed";
 export { useUpdates, type UpdateItem } from "./api/useUpdates";

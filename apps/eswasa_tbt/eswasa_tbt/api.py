@@ -17,7 +17,7 @@ from frappe.utils import cint, get_datetime
 
 from eswasa_tbt.rules import csv_list, impact_for
 
-SMOKE_METHODS = ["list_notifications", "list_subscriptions"]
+SMOKE_METHODS = ["list_notifications", "list_subscriptions", "act_notification"]
 
 # States not yet pushed to subscribers → treat as "new" / unread for badge.
 _UNREAD_STATES = {"", "Ingested", "Tagged"}
@@ -148,3 +148,28 @@ def list_subscriptions() -> dict[str, Any]:
         for r in rows
     ]
     return {"items": items}
+
+
+@frappe.whitelist()
+def act_notification(
+    name: str | None = None,
+    action: str | None = None,
+    expected_state: str | None = None,
+    idempotency_key: str | None = None,
+    reason: str | None = None,
+    comment: str | None = None,
+    confirm: bool | int | str = False,
+) -> dict[str, Any]:
+    """Workflow act for TBT Notification (map §5)."""
+    from eswasa_certification.workflow_act import act as shared_act
+
+    return shared_act(
+        doctype="TBT Notification",
+        name=name,
+        action=action,
+        expected_state=expected_state,
+        idempotency_key=idempotency_key,
+        reason=reason,
+        comment=comment,
+        confirm=confirm,
+    )

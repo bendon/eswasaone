@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from app.audit import audit_log
 from app.frappe_client import FrappeClient, FrappeError, get_frappe_client
+from app.frappe_errors import raise_from_frappe
 from app.identity.deps import AuthContext, require_auth_csrf
 
 logger = logging.getLogger("eswasaone.core.wave1")
@@ -109,7 +110,7 @@ async def patch_certification_audit(
         )
         return raw if isinstance(raw, dict) else {"id": audit_id, "ok": True}
     except FrappeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)[:240]) from exc
+        raise_from_frappe(exc)
 
 
 @router.post("/certification/certificates/{cert_id}/revoke")
@@ -135,7 +136,7 @@ async def revoke_certificate(
         )
         return raw if isinstance(raw, dict) else {"id": cert_id, "status": "revoked"}
     except FrappeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)[:240]) from exc
+        raise_from_frappe(exc)
 
 
 @router.post("/certification/certificates/{cert_id}/renew")
@@ -161,7 +162,7 @@ async def renew_certificate(
         )
         return raw if isinstance(raw, dict) else {"id": cert_id, "status": "renewed"}
     except FrappeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)[:240]) from exc
+        raise_from_frappe(exc)
 
 
 @router.get("/certification/certificates/{cert_id}/pdf")
@@ -179,7 +180,7 @@ async def certificate_pdf(
         )
         return raw if isinstance(raw, dict) else {"id": cert_id, "download_url": None}
     except FrappeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)[:240]) from exc
+        raise_from_frappe(exc)
 
 
 # --- Standards ballot vote --------------------------------------------------
@@ -216,7 +217,7 @@ async def vote_ballot(
         )
         return raw if isinstance(raw, dict) else {"id": ballot_id, "vote": body.vote}
     except FrappeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)[:240]) from exc
+        raise_from_frappe(exc)
 
 
 # --- Approvals escalate -----------------------------------------------------
@@ -291,7 +292,7 @@ async def field_my_audits(
             return {"items": raw}
         return {"items": []}
     except FrappeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)[:240]) from exc
+        raise_from_frappe(exc)
 
 
 @router.get("/field/me/summary")
@@ -355,7 +356,7 @@ async def estore_order_status(
         )
         return raw if isinstance(raw, dict) else {"order_id": order_id, "status": "unknown"}
     except FrappeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)[:240]) from exc
+        raise_from_frappe(exc)
 
 
 @router.get("/estore/licences/{licence_id}/download")
@@ -373,7 +374,7 @@ async def estore_licence_download(
         )
         return raw if isinstance(raw, dict) else {"licence_id": licence_id, "download_url": None}
     except FrappeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)[:240]) from exc
+        raise_from_frappe(exc)
 
 
 # --- HR access-requests + expense claims list -------------------------------
@@ -456,7 +457,7 @@ async def tbt_triage(
         )
         return raw if isinstance(raw, dict) else {"id": alert_id, "action": triage_action}
     except FrappeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)[:240]) from exc
+        raise_from_frappe(exc)
 
 
 # --- Ingest curation --------------------------------------------------------
@@ -502,4 +503,4 @@ async def ingest_curate(
         )
         return raw if isinstance(raw, dict) else {"id": item_id, "action": curate_action}
     except FrappeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)[:240]) from exc
+        raise_from_frappe(exc)

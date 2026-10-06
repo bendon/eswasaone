@@ -1,0 +1,270 @@
+{
+ "doctype": "Certification Application",
+ "module": "certification",
+ "display": {
+  "customer": {
+   "Application": "Submitted",
+   "Assessment": "In review",
+   "Audit Scheduled": "Audit scheduled",
+   "Audit": "Audit in progress",
+   "NC Resolution": "Action needed",
+   "Certified": "Certified",
+   "Surveillance": "Surveillance",
+   "Renewal": "Renewal",
+   "Withdraw": "Withdrawn"
+  },
+  "staff": {}
+ },
+ "approvals_family": "do",
+ "board_rollup": "certification.summary",
+ "states": [
+  {
+   "name": "Application",
+   "sla": "1d claim",
+   "owner_role": "Certification Officer",
+   "owner": null
+  },
+  {
+   "name": "Assessment",
+   "sla": "3d",
+   "owner_role": "Certification Officer",
+   "owner": null
+  },
+  {
+   "name": "Audit Scheduled",
+   "sla": "5d",
+   "owner_role": "Certification Officer",
+   "owner": null
+  },
+  {
+   "name": "Audit",
+   "sla": null,
+   "owner_role": "Certification Auditor",
+   "owner": null
+  },
+  {
+   "name": "NC Resolution",
+   "sla": "30d",
+   "owner_role": "Certification Officer",
+   "owner": null
+  },
+  {
+   "name": "Certified",
+   "sla": null,
+   "owner_role": "Certification Manager",
+   "owner": null
+  },
+  {
+   "name": "Surveillance",
+   "sla": null,
+   "owner_role": "Certification Officer",
+   "owner": null
+  },
+  {
+   "name": "Renewal",
+   "sla": null,
+   "owner_role": "Certification Officer",
+   "owner": null
+  },
+  {
+   "name": "Withdraw",
+   "sla": null,
+   "owner_role": "Certification Manager",
+   "owner": null
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Submit for Assessment",
+   "from": "Application",
+   "to": "Assessment",
+   "actor": "Certification Officer",
+   "rules": [
+    "R-C1"
+   ],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Schedule Audit",
+   "from": "Assessment",
+   "to": "Audit Scheduled",
+   "actor": "Certification Officer",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Start Audit",
+   "from": "Audit Scheduled",
+   "to": "Audit",
+   "actor": "Certification Auditor",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Raise NC",
+   "from": "Audit",
+   "to": "NC Resolution",
+   "actor": "Certification Auditor",
+   "rules": [
+    "R-C2"
+   ],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Certify",
+   "from": "Audit",
+   "to": "Certified",
+   "actor": "Certification Manager",
+   "rules": [
+    "R-C3"
+   ],
+   "approvals_family": "approve",
+   "surface": null
+  },
+  {
+   "action": "Clear NC",
+   "from": "NC Resolution",
+   "to": "Certified",
+   "actor": "Certification Officer",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Certify",
+   "from": "NC Resolution",
+   "to": "Certified",
+   "actor": "Certification Manager",
+   "rules": [
+    "R-C3"
+   ],
+   "approvals_family": "approve",
+   "surface": null
+  },
+  {
+   "action": "Start Surveillance",
+   "from": "Certified",
+   "to": "Surveillance",
+   "actor": "Certification Officer",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Start Renewal",
+   "from": "Surveillance",
+   "to": "Renewal",
+   "actor": "Certification Officer",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Start Renewal",
+   "from": "Certified",
+   "to": "Renewal",
+   "actor": "Certification Officer",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Reassess",
+   "from": "Renewal",
+   "to": "Assessment",
+   "actor": "Certification Officer",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Schedule Audit",
+   "from": "Renewal",
+   "to": "Audit Scheduled",
+   "actor": "Certification Officer",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Withdraw",
+   "from": "Application",
+   "to": "Withdraw",
+   "actor": "Certification Manager",
+   "rules": [],
+   "approvals_family": "approve",
+   "surface": null
+  },
+  {
+   "action": "Withdraw",
+   "from": "Assessment",
+   "to": "Withdraw",
+   "actor": "Certification Manager",
+   "rules": [],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Withdraw",
+   "from": "Audit Scheduled",
+   "to": "Withdraw",
+   "actor": "Certification Manager",
+   "rules": [],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Withdraw",
+   "from": "Audit",
+   "to": "Withdraw",
+   "actor": "Certification Manager",
+   "rules": [],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Withdraw",
+   "from": "NC Resolution",
+   "to": "Withdraw",
+   "actor": "Certification Manager",
+   "rules": [],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Withdraw",
+   "from": "Certified",
+   "to": "Withdraw",
+   "actor": "Certification Manager",
+   "rules": [],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Withdraw",
+   "from": "Surveillance",
+   "to": "Withdraw",
+   "actor": "Certification Manager",
+   "rules": [],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Withdraw",
+   "from": "Renewal",
+   "to": "Withdraw",
+   "actor": "Certification Manager",
+   "rules": [],
+   "approvals_family": null,
+   "surface": null
+  }
+ ],
+ "guards": [
+  "expected_state",
+  "idempotency_key"
+ ]
+}

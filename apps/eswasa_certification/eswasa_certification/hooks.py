@@ -85,7 +85,7 @@ fixtures = [
     },
     {
         "dt": "Workflow",
-        "filters": [["name", "=", "Certification Application Flow"]],
+        "filters": [["name", "in", ["Certification Application Flow", "Field Visit Flow"]]],
     },
     {
         "dt": "Print Format",

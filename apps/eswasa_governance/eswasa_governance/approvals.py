@@ -172,9 +172,15 @@ def _sla_breached(due_at: Any, created: Any = None) -> bool:
 			pass
 	if created:
 		try:
-			created_dt = get_datetime(created)
-			age_days = (now_datetime() - created_dt).days
-			return age_days > _DEFAULT_SLA_DAYS
+			# L9 — prefer working-day age when Holiday List is available.
+			try:
+				from eswasa_governance.sla import working_days_between
+
+				age = working_days_between(created, today)
+			except Exception:
+				created_dt = get_datetime(created)
+				age = (now_datetime() - created_dt).days
+			return age > _DEFAULT_SLA_DAYS
 		except Exception:
 			pass
 	return False
@@ -379,21 +385,22 @@ def _collect_todos(limit: int, exclude: set[str]) -> list[dict[str, Any]]:
 
 
 def list_approval_items(limit: int = 20) -> dict[str, Any]:
-	"""Aggregate pending Workflow Actions + referenced ToDos for the session user."""
+	"""Pending queue for the session user — **ToDos only** (map §4 / §5).
+
+	Workflow Action remains the engine record (linked from ToDo description / ref).
+	"""
 	if frappe.session.user in (None, "Guest"):
 		frappe.throw(_("Authentication required"), frappe.PermissionError)
 
 	cap = cint(limit) or 20
 	cap = max(1, min(cap, 100))
 
-	# Fetch a wider window so pending_count reflects the full visible queue.
 	fetch_cap = max(cap, 100)
-	wa_items = _collect_workflow_actions(fetch_cap)
-	seen = {i["id"] for i in wa_items}
-	todo_items = _collect_todos(max(0, fetch_cap - len(wa_items)), seen)
-
-	items = wa_items + todo_items
-	# Stable ordering: SLA breaches first, then due_at, then title
+	# Map §5: Approvals and R-A2 read ToDos only (no WA duplicate rows).
+	items = _collect_todos(fetch_cap, set())
+	# Enrich family from registry display maps when available.
+	for item in items:
+		item["family"] = _family_for_doctype(item.get("doctype") or "")
 	items.sort(
 		key=lambda i: (
 			0 if i.get("sla_breached") else 1,
@@ -402,6 +409,49 @@ def list_approval_items(limit: int = 20) -> dict[str, Any]:
 		)
 	)
 	return {"items": items[:cap], "pending_count": len(items)}
+
+
+def _family_for_doctype(doctype: str) -> str:
+	"""approve | do | alert — from registry generated display maps when present."""
+	try:
+		from pathlib import Path
+		import json
+
+		root = Path(__file__).resolve().parents[3]  # /srv/projects/eswasaone
+		maps = root / "eswasa_core" / "generated" / "display_maps"
+		if not maps.is_dir():
+			return "do"
+		for path in maps.glob("*.json"):
+			data = json.loads(path.read_text(encoding="utf-8"))
+			if data.get("doctype") == doctype:
+				return data.get("approvals_family") or "do"
+	except Exception:
+		pass
+	# Sensible defaults
+	if doctype in ("Board Resolution", "Certificate", "Leave Application"):
+		return "approve"
+	if doctype in ("TBT Notification", "Risk Register Entry", "Instrument"):
+		return "alert"
+	return "do"
+
+
+@frappe.whitelist()
+def claim_todo(todo_name: str | None = None, confirm: bool | int | str = False) -> dict[str, Any]:
+	"""Claim a role-pool ToDo (map §5.3). Starts the SLA clock on the claimant."""
+	if not cint(confirm):
+		frappe.throw(_("confirm=true required"), frappe.ValidationError)
+	if not todo_name:
+		frappe.throw(_("todo_name is required"), frappe.ValidationError)
+	user = frappe.session.user
+	if user in (None, "Guest"):
+		frappe.throw(_("Authentication required"), frappe.PermissionError)
+	todo = frappe.get_doc("ToDo", todo_name)
+	if todo.status != "Open":
+		frappe.throw(_("ToDo is not open"), frappe.ValidationError)
+	todo.allocated_to = user
+	todo.save(ignore_permissions=False)
+	frappe.db.commit()
+	return {"id": todo.name, "allocated_to": user, "status": todo.status}
 
 
 def _normalize_action_label(label: str) -> str:
@@ -467,6 +517,32 @@ def _close_related_todos(doctype: str, name: str, comment: str | None = None) ->
 			todo.save(ignore_permissions=False)
 		except Exception:
 			frappe.log_error(title="approvals.close_todo", message=frappe.get_traceback())
+
+
+def _publish_approval_feed(
+	*,
+	doctype: str,
+	name: str,
+	action: str,
+	workflow_action: str | None,
+	status: str | None,
+	message: str,
+) -> None:
+	"""Record Approvals /act on the Institution feed (Notification Log + realtime)."""
+	try:
+		from eswasa_governance.rules import publish_feed
+
+		label = workflow_action or action
+		publish_feed(
+			event="APPROVAL",
+			subject=f"{doctype} {name}: {label}",
+			reference_doctype=doctype,
+			reference_name=name,
+			detail=message,
+			status=status or action,
+		)
+	except Exception:
+		frappe.log_error(title="approvals.publish_feed", message=frappe.get_traceback())
 
 
 def _add_workflow_comment(doctype: str, name: str, comment: str) -> None:
@@ -554,25 +630,6 @@ def act_on_approval_item(
 	if not frappe.db.exists(doctype, name):
 		frappe.throw(_("{0} {1} not found").format(doctype, name), frappe.DoesNotExistError)
 
-	if not frappe.has_permission(doctype, "write", doc=name):
-		frappe.throw(
-			_("Not permitted to update {0} {1}").format(doctype, name),
-			frappe.PermissionError,
-		)
-
-	if not get_workflow_name(doctype):
-		frappe.throw(
-			_("No active workflow for {0}").format(doctype),
-			frappe.ValidationError,
-		)
-
-	doc = frappe.get_doc(doctype, name)
-	transitions = get_transitions(doc)
-
-	# R-RA1: if the workflow is in a terminal state (no transitions) but there
-	# are open ToDos linked to this document, treat approve/done/acknowledge as
-	# "close the ToDo" rather than a workflow transition.  This handles task-type
-	# approval queue items (e.g. "File gazette notice" after a resolution is Adopted).
 	open_todos = frappe.get_all(
 		"ToDo",
 		filters={
@@ -583,12 +640,55 @@ def act_on_approval_item(
 		fields=["name", "allocated_to"],
 	)
 
+	def _finish(result: dict[str, Any]) -> dict[str, Any]:
+		_publish_approval_feed(
+			doctype=result["doctype"],
+			name=result["name"],
+			action=result["action"],
+			workflow_action=result.get("workflow_action"),
+			status=result.get("status"),
+			message=str(result.get("message") or ""),
+		)
+		frappe.db.commit()
+		return result
+
+	# Alert / task Docs without a Workflow (e.g. Risk Register Entry R-G3):
+	# Acknowledge → close related ToDos. Do not require a workflow.
+	if not get_workflow_name(doctype):
+		if not open_todos:
+			frappe.throw(
+				_("No active workflow for {0}").format(doctype),
+				frappe.ValidationError,
+			)
+		_close_related_todos(doctype, name, comment)
+		return _finish(
+			{
+				"ok": True,
+				"doctype": doctype,
+				"name": name,
+				"action": action,
+				"workflow_action": None,
+				"status": None,
+				"message": _("Acknowledged {0} {1} ({2} task(s) closed)").format(
+					doctype, name, len(open_todos)
+				),
+			}
+		)
+
+	if not frappe.has_permission(doctype, "write", doc=name):
+		frappe.throw(
+			_("Not permitted to update {0} {1}").format(doctype, name),
+			frappe.PermissionError,
+		)
+
+	doc = frappe.get_doc(doctype, name)
+	transitions = get_transitions(doc)
+
+	# R-RA1: terminal workflow + open ToDos → close ToDos (task-family ack).
 	if not transitions and open_todos:
-		# No workflow action possible — just close the related ToDos.
-		if action in ("approve", "return"):
-			_close_related_todos(doctype, name, comment)
-			frappe.db.commit()
-			return {
+		_close_related_todos(doctype, name, comment)
+		return _finish(
+			{
 				"ok": True,
 				"doctype": doctype,
 				"name": name,
@@ -599,20 +699,7 @@ def act_on_approval_item(
 					len(open_todos), doctype, name
 				),
 			}
-		# reject on a terminal-state task → also just close
-		_close_related_todos(doctype, name, comment)
-		frappe.db.commit()
-		return {
-			"ok": True,
-			"doctype": doctype,
-			"name": name,
-			"action": action,
-			"workflow_action": None,
-			"status": getattr(doc, "workflow_state", None),
-			"message": _("Closed {0} task(s) on {1} {2}").format(
-				len(open_todos), doctype, name
-			),
-		}
+		)
 
 	if not transitions:
 		frappe.throw(
@@ -638,19 +725,18 @@ def act_on_approval_item(
 
 	_close_related_todos(doctype, name, comment)
 
-	# Mark matching open Workflow Actions completed if still open (apply_workflow usually does this).
-	frappe.db.commit()
 	doc.reload()
-	state = None
-	if hasattr(doc, "workflow_state"):
-		state = doc.workflow_state
-
-	return {
-		"ok": True,
-		"doctype": doctype,
-		"name": name,
-		"action": action,
-		"workflow_action": wf_action,
-		"status": state,
-		"message": _("Applied {0} ({1}) on {2} {3}").format(action, wf_action, doctype, name),
-	}
+	state = getattr(doc, "workflow_state", None) if hasattr(doc, "workflow_state") else None
+	return _finish(
+		{
+			"ok": True,
+			"doctype": doctype,
+			"name": name,
+			"action": action,
+			"workflow_action": wf_action,
+			"status": state,
+			"message": _("Applied {0} ({1}) on {2} {3}").format(
+				action, wf_action, doctype, name
+			),
+		}
+	)

@@ -1,0 +1,144 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:visit_code",
+ "creation": "2026-10-06 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "visit_code",
+  "title",
+  "parent_doctype",
+  "parent_name",
+  "scheme",
+  "planned_date",
+  "lead_auditor",
+  "customer",
+  "site_address",
+  "workflow_state",
+  "transition_seq",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "visit_code",
+   "fieldtype": "Data",
+   "label": "Visit Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "parent_doctype",
+   "fieldtype": "Link",
+   "options": "DocType",
+   "label": "Parent DocType"
+  },
+  {
+   "fieldname": "parent_name",
+   "fieldtype": "Dynamic Link",
+   "options": "parent_doctype",
+   "label": "Parent Name"
+  },
+  {
+   "fieldname": "scheme",
+   "fieldtype": "Data",
+   "label": "Scheme"
+  },
+  {
+   "fieldname": "planned_date",
+   "fieldtype": "Date",
+   "label": "Planned Date",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "lead_auditor",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Lead Auditor"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Data",
+   "label": "Customer"
+  },
+  {
+   "fieldname": "site_address",
+   "fieldtype": "Small Text",
+   "label": "Site Address"
+  },
+  {
+   "fieldname": "workflow_state",
+   "fieldtype": "Data",
+   "label": "Workflow State",
+   "hidden": 1,
+   "no_copy": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "transition_seq",
+   "fieldtype": "Int",
+   "label": "Transition Seq",
+   "default": "0",
+   "hidden": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-10-06 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Certification",
+ "name": "Field Visit",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "Certification Officer",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "Certification Auditor",
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "title",
+ "track_changes": 1
+}

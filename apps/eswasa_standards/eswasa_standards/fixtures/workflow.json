@@ -52,35 +52,35 @@
     "action": "Start Drafting",
     "next_state": "Working Draft",
     "allowed": "Eswasa Standards Officer",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    },
    {
     "state": "Working Draft",
     "action": "Submit to Committee",
     "next_state": "Committee Draft",
     "allowed": "Eswasa Standards Officer",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    },
    {
     "state": "Committee Draft",
     "action": "Open Public Review",
     "next_state": "Public Review",
     "allowed": "Eswasa Standards Manager",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    },
    {
     "state": "Public Review",
     "action": "Open Ballot",
     "next_state": "Ballot",
     "allowed": "Eswasa Standards Manager",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    },
    {
     "state": "Ballot",
     "action": "Publish / Gazette",
     "next_state": "Published/Gazetted",
     "allowed": "Eswasa Standards Manager",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    }
   ]
  }

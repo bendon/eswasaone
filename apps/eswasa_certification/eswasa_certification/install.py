@@ -31,6 +31,12 @@ def after_install() -> None:
         ensure_website_branding()
     except Exception:
         frappe.log_error(title="eswasa_certification website branding bootstrap failed")
+    try:
+        from eswasa_certification.workflow_act import boot_workflow_guards
+
+        boot_workflow_guards()
+    except Exception:
+        frappe.log_error(title="eswasa_certification workflow guards bootstrap failed")
     ensure_demo_data()
 
 
@@ -52,3 +58,9 @@ def after_migrate() -> None:
         ensure_demo_data()
     except Exception:
         frappe.log_error(title="eswasa_certification after_migrate seed failed")
+    try:
+        from eswasa_certification.workflow_act import boot_workflow_guards
+
+        boot_workflow_guards()
+    except Exception:
+        frappe.log_error(title="eswasa_certification workflow guards migrate failed")

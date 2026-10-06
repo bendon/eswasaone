@@ -1,0 +1,40 @@
+# Board Pack — PORT of live Board Pack Flow (same fixtures dir as Board Resolution).
+
+doctype: Board Pack
+module: governance
+workflow_name: Board Pack Flow
+submit_gate: null
+emit: true
+phase: port
+fixture_style: minimal
+fixture_app: apps/eswasa_governance/eswasa_governance/fixtures
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: governance.pack
+guards: [expected_state, idempotency_key]
+notes: Shares Draft/Review/Adopted states with Board Resolution in workflow_state.json.
+
+display:
+  staff: {}
+  customer: {}
+
+states:
+  - {name: Draft, allow_edit: Eswasa Board Secretary, owner_role: Eswasa Board Secretary}
+  - {name: Review, allow_edit: Eswasa Board Secretary, owner_role: Eswasa Board Secretary}
+  - {name: Adopted, allow_edit: Eswasa Board Secretary, owner_role: Eswasa Board Secretary}
+
+transitions:
+  - action: Submit for Review
+    from: Draft
+    to: Review
+    actor: Eswasa Board Secretary
+    allow_self_approval: 0
+    rules: [R-G1]
+    approvals_family: do
+
+  - action: Adopt
+    from: Review
+    to: Adopted
+    actor: Eswasa Board Member
+    allow_self_approval: 0
+    approvals_family: approve

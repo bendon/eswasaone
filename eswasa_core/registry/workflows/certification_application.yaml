@@ -1,0 +1,190 @@
+# Certification Application — PORT of live Desk fixtures (map §6 step 2).
+# Phase: port — state names match deployed workflow.json (Application, Assessment, …).
+# Promotion to map names (Submitted, Document Review, …) is a later deliberate PR.
+# allow_self_approval_default: 0 (map §5 / Staff allocation — four-eyes).
+
+doctype: Certification Application
+module: certification
+workflow_name: Certification Application Flow
+submit_gate: null
+emit: true
+phase: port
+fixture_style: full
+fixture_app: apps/eswasa_certification/eswasa_certification/fixtures
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: certification.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  Zero-behaviour-change port. Display aliases below preview the map customer labels;
+  Desk canonical names stay as state.name until promotion.
+
+display:
+  customer:
+    Application: Submitted
+    Assessment: In review
+    Audit Scheduled: Audit scheduled
+    Audit: Audit in progress
+    NC Resolution: Action needed
+    Certified: Certified
+    Surveillance: Surveillance
+    Renewal: Renewal
+    Withdraw: Withdrawn
+  staff: {}
+
+states:
+  - {name: Application, sla: 1d claim, owner_role: Certification Officer, allow_edit: Certification Officer, style: ""}
+  - {name: Assessment, sla: 3d, owner_role: Certification Officer, allow_edit: Certification Officer, style: Info}
+  - {name: Audit Scheduled, sla: 5d, owner_role: Certification Officer, allow_edit: Certification Officer, style: Info}
+  - {name: Audit, sla: null, owner_role: Certification Auditor, allow_edit: Certification Auditor, style: Warning}
+  - {name: NC Resolution, sla: 30d, owner_role: Certification Officer, allow_edit: Certification Officer, style: Danger}
+  - {name: Certified, sla: null, owner_role: Certification Manager, allow_edit: Certification Manager, style: Success, icon: ok-sign}
+  - {name: Surveillance, sla: null, owner_role: Certification Officer, allow_edit: Certification Officer, style: Info}
+  - {name: Renewal, sla: null, owner_role: Certification Officer, allow_edit: Certification Officer, style: Warning}
+  - {name: Withdraw, sla: null, owner_role: Certification Manager, allow_edit: Certification Manager, style: Danger, icon: remove}
+
+transitions:
+  - action: Submit for Assessment
+    from: Application
+    to: Assessment
+    actor: Certification Officer
+    allow_self_approval: 0
+    rules: [R-C1]
+    approvals_family: do
+
+  - action: Schedule Audit
+    from: Assessment
+    to: Audit Scheduled
+    actor: Certification Officer
+    allow_self_approval: 0
+    approvals_family: do
+
+  - action: Start Audit
+    from: Audit Scheduled
+    to: Audit
+    actor: Certification Auditor
+    allow_self_approval: 0
+    approvals_family: do
+
+  - action: Raise NC
+    from: Audit
+    to: NC Resolution
+    actor: Certification Auditor
+    allow_self_approval: 0
+    rules: [R-C2]
+    approvals_family: do
+
+  - action: Certify
+    from: Audit
+    to: Certified
+    actor: Certification Manager
+    allow_self_approval: 0
+    rules: [R-C3]
+    approvals_family: approve
+
+  - action: Clear NC
+    from: NC Resolution
+    to: Certified
+    actor: Certification Officer
+    allow_self_approval: 0
+    approvals_family: do
+
+  - action: Certify
+    from: NC Resolution
+    to: Certified
+    actor: Certification Manager
+    allow_self_approval: 0
+    rules: [R-C3]
+    approvals_family: approve
+
+  - action: Start Surveillance
+    from: Certified
+    to: Surveillance
+    actor: Certification Officer
+    allow_self_approval: 0
+    approvals_family: do
+
+  - action: Start Renewal
+    from: Surveillance
+    to: Renewal
+    actor: Certification Officer
+    allow_self_approval: 0
+    approvals_family: do
+
+  - action: Start Renewal
+    from: Certified
+    to: Renewal
+    actor: Certification Officer
+    allow_self_approval: 0
+    approvals_family: do
+
+  - action: Reassess
+    from: Renewal
+    to: Assessment
+    actor: Certification Officer
+    allow_self_approval: 0
+    approvals_family: do
+
+  - action: Schedule Audit
+    from: Renewal
+    to: Audit Scheduled
+    actor: Certification Officer
+    allow_self_approval: 0
+    approvals_family: do
+
+  - action: Withdraw
+    from: Application
+    to: Withdraw
+    actor: Certification Manager
+    allow_self_approval: 0
+    reason: required
+    approvals_family: approve
+
+  - action: Withdraw
+    from: Assessment
+    to: Withdraw
+    actor: Certification Manager
+    allow_self_approval: 0
+    reason: required
+
+  - action: Withdraw
+    from: Audit Scheduled
+    to: Withdraw
+    actor: Certification Manager
+    allow_self_approval: 0
+    reason: required
+
+  - action: Withdraw
+    from: Audit
+    to: Withdraw
+    actor: Certification Manager
+    allow_self_approval: 0
+    reason: required
+
+  - action: Withdraw
+    from: NC Resolution
+    to: Withdraw
+    actor: Certification Manager
+    allow_self_approval: 0
+    reason: required
+
+  - action: Withdraw
+    from: Certified
+    to: Withdraw
+    actor: Certification Manager
+    allow_self_approval: 0
+    reason: required
+
+  - action: Withdraw
+    from: Surveillance
+    to: Withdraw
+    actor: Certification Manager
+    allow_self_approval: 0
+    reason: required
+
+  - action: Withdraw
+    from: Renewal
+    to: Withdraw
+    actor: Certification Manager
+    allow_self_approval: 0
+    reason: required

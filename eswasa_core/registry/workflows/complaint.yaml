@@ -1,0 +1,61 @@
+# Complaint / Case — declare until Service complaint DocType lands.
+
+doctype: Complaint
+module: service
+workflow_name: Complaint Flow
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: service.summary
+guards: [expected_state, idempotency_key]
+notes: Customer complaint → triage → resolve. Approvals family do/alert.
+
+display:
+  customer:
+    Open: Received
+    In Progress: Being handled
+    Resolved: Closed
+  staff: {}
+
+states:
+  - {name: Open, owner_role: Certification Officer, allow_edit: Certification Officer}
+  - {name: Triaged, owner_role: Certification Officer, allow_edit: Certification Officer}
+  - {name: In Progress, owner_role: Certification Officer, allow_edit: Certification Officer}
+  - {name: Awaiting Customer, owner_role: Portal Customer, allow_edit: Portal Customer}
+  - {name: Resolved, owner_role: Certification Officer, allow_edit: Certification Officer, style: Success}
+  - {name: Closed, owner_role: System Manager, allow_edit: System Manager}
+
+transitions:
+  - action: Triage
+    from: Open
+    to: Triaged
+    actor: Certification Officer
+    approvals_family: do
+  - action: Start work
+    from: Triaged
+    to: In Progress
+    actor: Certification Officer
+    approvals_family: do
+  - action: Request info
+    from: In Progress
+    to: Awaiting Customer
+    actor: Certification Officer
+    reason: required
+    approvals_family: do
+  - action: Customer reply
+    from: Awaiting Customer
+    to: In Progress
+    actor: Portal Customer
+    approvals_family: do
+  - action: Resolve
+    from: In Progress
+    to: Resolved
+    actor: Certification Officer
+    approvals_family: do
+  - action: Close
+    from: Resolved
+    to: Closed
+    actor: System Manager
+    approvals_family: do

@@ -44,7 +44,9 @@ async def client():
 @pytest.fixture
 async def auth_headers(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
     monkeypatch.setenv("CORE_ALLOW_MOCK_AUTH", "true")
-    body = await login_full_session(client, username="demo", password="demo")
+    body = await login_full_session(
+        client, username="mock.staff", password="not-a-real-password"
+    )
     return {"Authorization": f"Bearer {body['access_token']}"}
 
 

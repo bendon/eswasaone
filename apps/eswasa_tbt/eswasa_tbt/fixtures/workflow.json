@@ -34,14 +34,14 @@
     "action": "Tag",
     "next_state": "Tagged",
     "allowed": "Eswasa TBT Analyst",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    },
    {
     "state": "Tagged",
     "action": "Notify Subscribers",
     "next_state": "Notified",
     "allowed": "Eswasa TBT Officer",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    }
   ]
  }

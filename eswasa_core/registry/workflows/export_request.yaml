@@ -1,0 +1,50 @@
+# Export Request — declare (trade facilitation).
+
+doctype: Export Request
+module: export
+workflow_name: Export Request Flow
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: export.summary
+guards: [expected_state, idempotency_key]
+notes: Certificate of conformity / export pack. Gate artefacts submit separately.
+
+display:
+  customer:
+    Draft: Draft
+    Under Review: In review
+    Issued: Issued
+  staff: {}
+
+states:
+  - {name: Draft, owner_role: Portal Customer, allow_edit: Portal Customer}
+  - {name: Submitted, owner_role: Certification Officer, allow_edit: Certification Officer}
+  - {name: Under Review, owner_role: Certification Officer, allow_edit: Certification Officer}
+  - {name: Issued, owner_role: Certification Manager, allow_edit: Certification Manager, style: Success}
+  - {name: Rejected, owner_role: Certification Manager, allow_edit: Certification Manager, style: Danger}
+
+transitions:
+  - action: Submit
+    from: Draft
+    to: Submitted
+    actor: Portal Customer
+    approvals_family: do
+  - action: Start review
+    from: Submitted
+    to: Under Review
+    actor: Certification Officer
+    approvals_family: do
+  - action: Issue
+    from: Under Review
+    to: Issued
+    actor: Certification Manager
+    approvals_family: approve
+  - action: Reject
+    from: Under Review
+    to: Rejected
+    actor: Certification Manager
+    reason: required
+    approvals_family: approve

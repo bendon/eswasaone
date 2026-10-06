@@ -90,6 +90,43 @@ def normalize_action(action: str | None) -> str:
     return " ".join(str(action).strip().lower().replace("-", "_").split())
 
 
+# Slug / label → Workflow Action Master label (Desk apply_workflow).
+_ACTION_LABELS: dict[str, str] = {
+    "submit_for_assessment": "Submit for Assessment",
+    "submit for assessment": "Submit for Assessment",
+    "schedule_audit": "Schedule Audit",
+    "schedule audit": "Schedule Audit",
+    "start_audit": "Start Audit",
+    "start audit": "Start Audit",
+    "raise_nc": "Raise NC",
+    "raise nc": "Raise NC",
+    "clear_nc": "Clear NC",
+    "clear nc": "Clear NC",
+    "certify": "Certify",
+    "start_surveillance": "Start Surveillance",
+    "start surveillance": "Start Surveillance",
+    "start_renewal": "Start Renewal",
+    "start renewal": "Start Renewal",
+    "reassess": "Reassess",
+    "withdraw": "Withdraw",
+}
+
+
+def workflow_action_label(action: str | None) -> str:
+    """Return Workflow Action Master name for apply_workflow."""
+    if not action:
+        return ""
+    raw = str(action).strip()
+    key = normalize_action(raw)
+    if key in _ACTION_LABELS:
+        return _ACTION_LABELS[key]
+    # Already a label?
+    for label in _ACTION_LABELS.values():
+        if label.lower() == raw.lower():
+            return label
+    return raw
+
+
 def display_status(workflow_state: str | None) -> str | None:
     """Map canonical workflow_state → portal-facing status label."""
     if not workflow_state:

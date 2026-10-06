@@ -1,0 +1,82 @@
+# Sample (chain of custody) — uses Metrology Sample DocType.
+
+doctype: Sample
+module: field
+workflow_name: Sample Custody Flow
+submit_gate: null
+emit: true
+phase: map
+fixture_style: minimal
+fixture_app: apps/eswasa_metrology/eswasa_metrology/fixtures
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: field.summary
+guards: [expected_state, idempotency_key, four_eyes_lab]
+notes: >
+  CoC: Collect → In Transit → Received → Testing → Conforming/Non-conforming.
+  Approver ≠ analyst. R-V4 on non-conforming market sample.
+
+display:
+  customer: {}
+  staff: {}
+
+states:
+  - {name: Collected, owner_role: Certification Auditor, allow_edit: Certification Auditor}
+  - {name: In Transit, owner_role: Certification Auditor, allow_edit: Certification Auditor}
+  - {name: Received, owner_role: Eswasa Metrology Officer, allow_edit: Eswasa Metrology Officer}
+  - {name: Testing, owner_role: Eswasa Metrology Officer, allow_edit: Eswasa Metrology Officer}
+  - {name: Conforming, owner_role: Eswasa Metrology Manager, allow_edit: Eswasa Metrology Manager, style: Success}
+  - {name: Non-conforming, owner_role: Eswasa Metrology Manager, allow_edit: Eswasa Metrology Manager, style: Danger}
+  - {name: Retained, owner_role: Eswasa Metrology Officer, allow_edit: Eswasa Metrology Officer}
+  - {name: Disposed, owner_role: Eswasa Metrology Officer, allow_edit: Eswasa Metrology Officer}
+
+transitions:
+  - action: Hand over
+    from: Collected
+    to: In Transit
+    actor: Certification Auditor
+    approvals_family: do
+
+  - action: Receive
+    from: In Transit
+    to: Received
+    actor: Eswasa Metrology Officer
+    approvals_family: do
+
+  - action: Start testing
+    from: Received
+    to: Testing
+    actor: Eswasa Metrology Manager
+    approvals_family: do
+
+  - action: Approve conforming
+    from: Testing
+    to: Conforming
+    actor: Eswasa Metrology Manager
+    rules: [R-V4]
+    approvals_family: approve
+
+  - action: Approve non-conforming
+    from: Testing
+    to: Non-conforming
+    actor: Eswasa Metrology Manager
+    rules: [R-V4]
+    approvals_family: approve
+
+  - action: Retain
+    from: Conforming
+    to: Retained
+    actor: Eswasa Metrology Officer
+    approvals_family: do
+
+  - action: Retain
+    from: Non-conforming
+    to: Retained
+    actor: Eswasa Metrology Officer
+    approvals_family: do
+
+  - action: Dispose
+    from: Retained
+    to: Disposed
+    actor: Eswasa Metrology Officer
+    approvals_family: do

@@ -1,0 +1,56 @@
+{
+ "doctype": "Board Pack",
+ "module": "governance",
+ "display": {
+  "customer": {},
+  "staff": {}
+ },
+ "approvals_family": "do",
+ "board_rollup": "governance.pack",
+ "states": [
+  {
+   "name": "Draft",
+   "sla": null,
+   "owner_role": "Eswasa Board Secretary",
+   "owner": null
+  },
+  {
+   "name": "Review",
+   "sla": null,
+   "owner_role": "Eswasa Board Secretary",
+   "owner": null
+  },
+  {
+   "name": "Adopted",
+   "sla": null,
+   "owner_role": "Eswasa Board Secretary",
+   "owner": null
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Submit for Review",
+   "from": "Draft",
+   "to": "Review",
+   "actor": "Eswasa Board Secretary",
+   "rules": [
+    "R-G1"
+   ],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Adopt",
+   "from": "Review",
+   "to": "Adopted",
+   "actor": "Eswasa Board Member",
+   "rules": [],
+   "approvals_family": "approve",
+   "surface": null
+  }
+ ],
+ "guards": [
+  "expected_state",
+  "idempotency_key"
+ ]
+}

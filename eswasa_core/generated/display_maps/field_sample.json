@@ -1,0 +1,143 @@
+{
+ "doctype": "Sample",
+ "module": "field",
+ "display": {
+  "customer": {},
+  "staff": {}
+ },
+ "approvals_family": "do",
+ "board_rollup": "field.summary",
+ "states": [
+  {
+   "name": "Collected",
+   "sla": null,
+   "owner_role": "Certification Auditor",
+   "owner": null
+  },
+  {
+   "name": "In Transit",
+   "sla": null,
+   "owner_role": "Certification Auditor",
+   "owner": null
+  },
+  {
+   "name": "Received",
+   "sla": null,
+   "owner_role": "Eswasa Metrology Officer",
+   "owner": null
+  },
+  {
+   "name": "Testing",
+   "sla": null,
+   "owner_role": "Eswasa Metrology Officer",
+   "owner": null
+  },
+  {
+   "name": "Conforming",
+   "sla": null,
+   "owner_role": "Eswasa Metrology Manager",
+   "owner": null
+  },
+  {
+   "name": "Non-conforming",
+   "sla": null,
+   "owner_role": "Eswasa Metrology Manager",
+   "owner": null
+  },
+  {
+   "name": "Retained",
+   "sla": null,
+   "owner_role": "Eswasa Metrology Officer",
+   "owner": null
+  },
+  {
+   "name": "Disposed",
+   "sla": null,
+   "owner_role": "Eswasa Metrology Officer",
+   "owner": null
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Hand over",
+   "from": "Collected",
+   "to": "In Transit",
+   "actor": "Certification Auditor",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Receive",
+   "from": "In Transit",
+   "to": "Received",
+   "actor": "Eswasa Metrology Officer",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Start testing",
+   "from": "Received",
+   "to": "Testing",
+   "actor": "Eswasa Metrology Manager",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Approve conforming",
+   "from": "Testing",
+   "to": "Conforming",
+   "actor": "Eswasa Metrology Manager",
+   "rules": [
+    "R-V4"
+   ],
+   "approvals_family": "approve",
+   "surface": null
+  },
+  {
+   "action": "Approve non-conforming",
+   "from": "Testing",
+   "to": "Non-conforming",
+   "actor": "Eswasa Metrology Manager",
+   "rules": [
+    "R-V4"
+   ],
+   "approvals_family": "approve",
+   "surface": null
+  },
+  {
+   "action": "Retain",
+   "from": "Conforming",
+   "to": "Retained",
+   "actor": "Eswasa Metrology Officer",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Retain",
+   "from": "Non-conforming",
+   "to": "Retained",
+   "actor": "Eswasa Metrology Officer",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Dispose",
+   "from": "Retained",
+   "to": "Disposed",
+   "actor": "Eswasa Metrology Officer",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  }
+ ],
+ "guards": [
+  "expected_state",
+  "idempotency_key",
+  "four_eyes_lab"
+ ]
+}

@@ -102,7 +102,7 @@
   "transitions": [
    {
     "action": "Submit for Assessment",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Officer",
     "next_state": "Assessment",
     "parent": "Certification Application Flow",
@@ -112,7 +112,7 @@
    },
    {
     "action": "Schedule Audit",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Officer",
     "next_state": "Audit Scheduled",
     "parent": "Certification Application Flow",
@@ -122,7 +122,7 @@
    },
    {
     "action": "Start Audit",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Auditor",
     "next_state": "Audit",
     "parent": "Certification Application Flow",
@@ -132,7 +132,7 @@
    },
    {
     "action": "Raise NC",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Auditor",
     "next_state": "NC Resolution",
     "parent": "Certification Application Flow",
@@ -142,7 +142,7 @@
    },
    {
     "action": "Certify",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Manager",
     "next_state": "Certified",
     "parent": "Certification Application Flow",
@@ -152,7 +152,7 @@
    },
    {
     "action": "Clear NC",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Officer",
     "next_state": "Certified",
     "parent": "Certification Application Flow",
@@ -162,7 +162,7 @@
    },
    {
     "action": "Certify",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Manager",
     "next_state": "Certified",
     "parent": "Certification Application Flow",
@@ -172,7 +172,7 @@
    },
    {
     "action": "Start Surveillance",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Officer",
     "next_state": "Surveillance",
     "parent": "Certification Application Flow",
@@ -182,7 +182,7 @@
    },
    {
     "action": "Start Renewal",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Officer",
     "next_state": "Renewal",
     "parent": "Certification Application Flow",
@@ -192,7 +192,7 @@
    },
    {
     "action": "Start Renewal",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Officer",
     "next_state": "Renewal",
     "parent": "Certification Application Flow",
@@ -202,7 +202,7 @@
    },
    {
     "action": "Reassess",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Officer",
     "next_state": "Assessment",
     "parent": "Certification Application Flow",
@@ -212,7 +212,7 @@
    },
    {
     "action": "Schedule Audit",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Officer",
     "next_state": "Audit Scheduled",
     "parent": "Certification Application Flow",
@@ -222,7 +222,7 @@
    },
    {
     "action": "Withdraw",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Manager",
     "next_state": "Withdraw",
     "parent": "Certification Application Flow",
@@ -232,7 +232,7 @@
    },
    {
     "action": "Withdraw",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Manager",
     "next_state": "Withdraw",
     "parent": "Certification Application Flow",
@@ -242,7 +242,7 @@
    },
    {
     "action": "Withdraw",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Manager",
     "next_state": "Withdraw",
     "parent": "Certification Application Flow",
@@ -252,7 +252,7 @@
    },
    {
     "action": "Withdraw",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Manager",
     "next_state": "Withdraw",
     "parent": "Certification Application Flow",
@@ -262,7 +262,7 @@
    },
    {
     "action": "Withdraw",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Manager",
     "next_state": "Withdraw",
     "parent": "Certification Application Flow",
@@ -272,7 +272,7 @@
    },
    {
     "action": "Withdraw",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Manager",
     "next_state": "Withdraw",
     "parent": "Certification Application Flow",
@@ -282,7 +282,7 @@
    },
    {
     "action": "Withdraw",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Manager",
     "next_state": "Withdraw",
     "parent": "Certification Application Flow",
@@ -292,7 +292,7 @@
    },
    {
     "action": "Withdraw",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Certification Manager",
     "next_state": "Withdraw",
     "parent": "Certification Application Flow",
@@ -303,5 +303,182 @@
   ],
   "workflow_name": "Certification Application Flow",
   "workflow_state_field": "workflow_state"
+ },
+ {
+  "doctype": "Workflow",
+  "name": "Field Visit Flow",
+  "workflow_name": "Field Visit Flow",
+  "document_type": "Field Visit",
+  "is_active": 1,
+  "override_status": 0,
+  "send_email_alert": 0,
+  "workflow_state_field": "workflow_state",
+  "states": [
+   {
+    "state": "Planned",
+    "doc_status": "0",
+    "allow_edit": "Scheme Manager",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Assigned",
+    "doc_status": "0",
+    "allow_edit": "Scheme Manager",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Confirmed",
+    "doc_status": "0",
+    "allow_edit": "Certification Auditor",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Rescheduled",
+    "doc_status": "0",
+    "allow_edit": "Scheme Manager",
+    "is_optional_state": 0
+   },
+   {
+    "state": "In Progress",
+    "doc_status": "0",
+    "allow_edit": "Certification Auditor",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Submitted",
+    "doc_status": "0",
+    "allow_edit": "Scheme Manager",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Submitted (conflict)",
+    "doc_status": "0",
+    "allow_edit": "Scheme Manager",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Aborted",
+    "doc_status": "0",
+    "allow_edit": "Scheme Manager",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Returned",
+    "doc_status": "0",
+    "allow_edit": "Certification Auditor",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Reviewed",
+    "doc_status": "0",
+    "allow_edit": "Scheme Manager",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Closed",
+    "doc_status": "0",
+    "allow_edit": "System Manager",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Overdue",
+    "doc_status": "0",
+    "allow_edit": "Scheme Manager",
+    "is_optional_state": 0
+   }
+  ],
+  "transitions": [
+   {
+    "state": "Planned",
+    "action": "Assign team",
+    "next_state": "Assigned",
+    "allowed": "Scheme Manager",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Assigned",
+    "action": "Accept assignment",
+    "next_state": "Confirmed",
+    "allowed": "Certification Auditor",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Confirmed",
+    "action": "Reschedule",
+    "next_state": "Rescheduled",
+    "allowed": "Scheme Manager",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Rescheduled",
+    "action": "Re-confirm",
+    "next_state": "Confirmed",
+    "allowed": "Scheme Manager",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Confirmed",
+    "action": "Check in",
+    "next_state": "In Progress",
+    "allowed": "Certification Auditor",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "In Progress",
+    "action": "Submit report",
+    "next_state": "Submitted",
+    "allowed": "Certification Auditor",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "In Progress",
+    "action": "Abort",
+    "next_state": "Aborted",
+    "allowed": "Certification Auditor",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Confirmed",
+    "action": "Mark overdue",
+    "next_state": "Overdue",
+    "allowed": "System Manager",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Submitted",
+    "action": "Return report",
+    "next_state": "Returned",
+    "allowed": "Scheme Manager",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Submitted",
+    "action": "Approve report",
+    "next_state": "Reviewed",
+    "allowed": "Scheme Manager",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Submitted (conflict)",
+    "action": "Resolve conflict",
+    "next_state": "Reviewed",
+    "allowed": "Scheme Manager",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Returned",
+    "action": "Resubmit",
+    "next_state": "Submitted",
+    "allowed": "Certification Auditor",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Reviewed",
+    "action": "Close",
+    "next_state": "Closed",
+    "allowed": "System Manager",
+    "allow_self_approval": 0
+   }
+  ]
  }
 ]

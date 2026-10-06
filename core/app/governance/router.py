@@ -790,14 +790,20 @@ def mount_governance_routes(router: APIRouter) -> None:
     ) -> BoardPackSummary:
         """Deprecated — prefer GET /governance/packs/{meeting}."""
         if auth.mock or not await frappe.health():
-            return BoardPackSummary.model_validate(empty_pack_summary_sections())
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Frappe unavailable",
+            )
         try:
             raw = await auth.frappe(frappe).method(
                 "eswasa_governance.api.get_board_pack_summary",
             )
             return BoardPackSummary.model_validate(raw)
-        except (FrappeError, ValidationError):
-            return BoardPackSummary.model_validate(empty_pack_summary_sections())
+        except (FrappeError, ValidationError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=str(exc),
+            ) from exc
 
     @router.post(
         "/governance/pack/{meeting}",

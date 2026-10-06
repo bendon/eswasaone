@@ -1,0 +1,108 @@
+{
+ "doctype": "Work Item",
+ "module": "standards",
+ "display": {
+  "customer": {
+   "Public Review": "Open for comment",
+   "Published/Gazetted": "Published"
+  },
+  "staff": {}
+ },
+ "approvals_family": "do",
+ "board_rollup": "standards.summary",
+ "states": [
+  {
+   "name": "New Work Item",
+   "sla": null,
+   "owner_role": "Eswasa Standards Officer",
+   "owner": null
+  },
+  {
+   "name": "Working Draft",
+   "sla": null,
+   "owner_role": "Eswasa Standards Officer",
+   "owner": null
+  },
+  {
+   "name": "Committee Draft",
+   "sla": null,
+   "owner_role": "Eswasa Standards Officer",
+   "owner": null
+  },
+  {
+   "name": "Public Review",
+   "sla": "60d",
+   "owner_role": "Eswasa Standards Officer",
+   "owner": null
+  },
+  {
+   "name": "Ballot",
+   "sla": "30d",
+   "owner_role": "Eswasa Standards Officer",
+   "owner": null
+  },
+  {
+   "name": "Published/Gazetted",
+   "sla": null,
+   "owner_role": "Eswasa Standards Officer",
+   "owner": null
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Start Drafting",
+   "from": "New Work Item",
+   "to": "Working Draft",
+   "actor": "Eswasa Standards Officer",
+   "rules": [
+    "R-S1"
+   ],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Submit to Committee",
+   "from": "Working Draft",
+   "to": "Committee Draft",
+   "actor": "Eswasa Standards Officer",
+   "rules": [],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Open Public Review",
+   "from": "Committee Draft",
+   "to": "Public Review",
+   "actor": "Eswasa Standards Manager",
+   "rules": [
+    "R-S2"
+   ],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Open Ballot",
+   "from": "Public Review",
+   "to": "Ballot",
+   "actor": "Eswasa Standards Manager",
+   "rules": [],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Publish / Gazette",
+   "from": "Ballot",
+   "to": "Published/Gazetted",
+   "actor": "Eswasa Standards Manager",
+   "rules": [
+    "R-S3"
+   ],
+   "approvals_family": "approve",
+   "surface": null
+  }
+ ],
+ "guards": [
+  "expected_state",
+  "idempotency_key"
+ ]
+}

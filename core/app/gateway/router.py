@@ -174,58 +174,9 @@ def _as_standards(raw: Any) -> list[StandardSummary]:
 
 def _raise_from_frappe(exc: FrappeError) -> None:
     """Map Frappe failures to Core status codes the portal can display cleanly."""
-    if exc.status_code == 401:
-        raise AuthRequired(
-            reason="frappe_session",
-            detail="Frappe session expired. Sign in again",
-        ) from exc
-    text = str(exc)
-    # Strip Frappe HTML / traceback noise from permission errors
-    if "PermissionError" in text or "Insufficient Permission" in text:
-        import re
+    from app.frappe_errors import raise_from_frappe
 
-        plain = re.sub(r"<[^>]+>", "", text)
-        m = re.search(r"Insufficient Permission for\s+(.+?)(?:\"|,|\n|$)", plain)
-        doc = (m.group(1).strip() if m else "this record").rstrip(".")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                f"You don't have permission to access {doc}. "
-                "Ask HR or a System Manager to grant the right role, then sign out and sign in again."
-            ),
-        ) from exc
-    # Prefer a short detail over raw JSON exception payloads
-    if "\"exception\"" in text or "Traceback" in text:
-        import re
-
-        plain = re.sub(r"<[^>]+>", " ", text)
-        m = re.search(
-            r"(LinkValidationError|ValidationError|MandatoryError|DuplicateEntryError|"
-            r"PermissionError|DoesNotExistError)[:\s]+([^\"\\]+)",
-            plain,
-        )
-        if m:
-            raise HTTPException(
-                status_code=502,
-                detail=f"{m.group(1)}: {m.group(2).strip()[:180]}",
-            ) from exc
-        # Surface Frappe _server_messages / exc_type when present
-        m2 = re.search(r"\"exc_type\"\s*:\s*\"([^\"]+)\"", plain)
-        m3 = re.search(r"\"exception\"\s*:\s*\"([^\"]{8,200})\"", plain)
-        if m2 and m3:
-            raise HTTPException(
-                status_code=502,
-                detail=f"{m2.group(1)}: {m3.group(1)[:180]}",
-            ) from exc
-        raise HTTPException(
-            status_code=502,
-            detail=(
-                "Could not complete this HR request. "
-                "If Organisation profile is missing, create it under System Administration → Company. "
-                "Otherwise check role permissions and try again."
-            ),
-        ) from exc
-    raise HTTPException(status_code=502, detail=text[:240]) from exc
+    raise_from_frappe(exc)
 
 
 # --- Home -------------------------------------------------------------------
@@ -368,36 +319,47 @@ async def get_certification_application(
 
 
 @router.post(
-    "/certification/applications/{id}/advance",
+    "/certification/applications/{id}/act",
     response_model=CertificationApplication,
     tags=["certification"],
 )
-async def advance_certification_application(
+async def act_certification_application(
     id: str,
     body: AdvanceCertificationBody,
     auth: Annotated[AuthContext, Depends(require_auth_csrf)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> CertificationApplication:
+    """Preferred workflow transition (map §5). Guards enforced in Frappe."""
     if not body.confirm:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="confirm=true required before commit",
         )
     audit_log(
-        action="certification.advance",
+        action="certification.act",
         actor=auth.user.username,
         resource=id,
-        detail={"action": body.action, "comment": body.comment},
+        detail={
+            "action": body.action,
+            "expected_state": body.expected_state,
+            "idempotency_key": body.idempotency_key,
+            "reason": body.reason,
+            "comment": body.comment,
+        },
         confirmed=True,
     )
     if auth.mock or not await frappe.health():
         raise HTTPException(status_code=503, detail="Frappe unavailable")
     try:
         raw = await auth.frappe(frappe).method(
-            "eswasa_certification.api.advance_state",
+            "eswasa_certification.workflow_act.act",
             json={
+                "doctype": "Certification Application",
                 "name": id,
                 "action": body.action,
+                "expected_state": body.expected_state,
+                "idempotency_key": body.idempotency_key,
+                "reason": body.reason,
                 "comment": body.comment,
                 "confirm": True,
             },
@@ -408,6 +370,174 @@ async def advance_certification_application(
         raise  # pragma: no cover
 
 
+@router.post(
+    "/certification/applications/{id}/advance",
+    response_model=CertificationApplication,
+    tags=["certification"],
+    deprecated=True,
+)
+async def advance_certification_application(
+    id: str,
+    body: AdvanceCertificationBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> CertificationApplication:
+    """Compatibility alias — same pipeline as /act."""
+    return await act_certification_application(id, body, auth, frappe)
+
+
+async def _workflow_act(
+    *,
+    method: str,
+    resource: str,
+    audit_action: str,
+    body: AdvanceCertificationBody,
+    auth: AuthContext,
+    frappe: FrappeClient,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Shared Core→Frappe /act bridge (map §5)."""
+    if not body.confirm:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="confirm=true required before commit",
+        )
+    audit_log(
+        action=audit_action,
+        actor=auth.user.username,
+        resource=resource,
+        detail={
+            "action": body.action,
+            "expected_state": body.expected_state,
+            "idempotency_key": body.idempotency_key,
+            "reason": body.reason,
+            "comment": body.comment,
+        },
+        confirmed=True,
+    )
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    payload: dict[str, Any] = {
+        "name": resource,
+        "action": body.action,
+        "expected_state": body.expected_state,
+        "idempotency_key": body.idempotency_key,
+        "reason": body.reason,
+        "comment": body.comment,
+        "confirm": True,
+    }
+    if extra:
+        payload.update(extra)
+    try:
+        return await auth.frappe(frappe).method(method, json=payload)
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
+
+
+@router.post("/standards/work-items/{id}/act", tags=["standards"])
+async def act_work_item(
+    id: str,
+    body: AdvanceCertificationBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    return await _workflow_act(
+        method="eswasa_standards.api.act_work_item",
+        resource=id,
+        audit_action="standards.act",
+        body=body,
+        auth=auth,
+        frappe=frappe,
+    )
+
+
+@router.post("/metrology/jobs/{id}/act", tags=["metrology"])
+async def act_calibration_job(
+    id: str,
+    body: AdvanceCertificationBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    return await _workflow_act(
+        method="eswasa_metrology.api.act_calibration_job",
+        resource=id,
+        audit_action="metrology.act",
+        body=body,
+        auth=auth,
+        frappe=frappe,
+    )
+
+
+@router.post("/tbt/notifications/{id}/act", tags=["tbt"])
+async def act_tbt_notification(
+    id: str,
+    body: AdvanceCertificationBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    return await _workflow_act(
+        method="eswasa_tbt.api.act_notification",
+        resource=id,
+        audit_action="tbt.act",
+        body=body,
+        auth=auth,
+        frappe=frappe,
+    )
+
+
+@router.post("/governance/resolutions/{id}/act", tags=["governance"])
+async def act_board_resolution(
+    id: str,
+    body: AdvanceCertificationBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    return await _workflow_act(
+        method="eswasa_governance.api.act_resolution",
+        resource=id,
+        audit_action="governance.resolution.act",
+        body=body,
+        auth=auth,
+        frappe=frappe,
+    )
+
+
+@router.post("/governance/packs/{id}/act", tags=["governance"])
+async def act_board_pack_route(
+    id: str,
+    body: AdvanceCertificationBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    return await _workflow_act(
+        method="eswasa_governance.api.act_board_pack",
+        resource=id,
+        audit_action="governance.pack.act",
+        body=body,
+        auth=auth,
+        frappe=frappe,
+    )
+
+
+@router.post("/field/visits/{id}/act", tags=["field"])
+async def act_field_visit(
+    id: str,
+    body: AdvanceCertificationBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    return await _workflow_act(
+        method="eswasa_certification.workflow_act.act",
+        resource=id,
+        audit_action="field.visit.act",
+        body=body,
+        auth=auth,
+        frappe=frappe,
+        extra={"doctype": "Field Visit"},
+    )
+
+
 @router.get("/certification/audits/overdue", tags=["certification"])
 async def list_overdue_audits(
     auth: Annotated[AuthContext, Depends(require_auth)],
@@ -416,16 +546,15 @@ async def list_overdue_audits(
     scheme: str | None = None,
 ) -> dict[str, list[AuditSummary]]:
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
+        return {"items": mocks.mock_overdue_audits(auditor, scheme)}
     try:
         raw = await auth.frappe(frappe).method(
             "eswasa_certification.api.list_overdue",
             params={"auditor": auditor, "scheme": scheme},
         )
         return {"items": _as_audits(raw)}
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+    except FrappeError:
+        return {"items": mocks.mock_overdue_audits(auditor, scheme)}
 
 
 # --- Standards (WS3) --------------------------------------------------------

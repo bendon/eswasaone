@@ -61,5 +61,77 @@
   "name": "Withdraw",
   "style": "Danger",
   "workflow_state_name": "Withdraw"
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Planned",
+  "workflow_state_name": "Planned",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Assigned",
+  "workflow_state_name": "Assigned",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Confirmed",
+  "workflow_state_name": "Confirmed",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Rescheduled",
+  "workflow_state_name": "Rescheduled",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "In Progress",
+  "workflow_state_name": "In Progress",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Submitted",
+  "workflow_state_name": "Submitted",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Submitted (conflict)",
+  "workflow_state_name": "Submitted (conflict)",
+  "style": "Danger"
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Aborted",
+  "workflow_state_name": "Aborted",
+  "style": "Danger"
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Returned",
+  "workflow_state_name": "Returned",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Reviewed",
+  "workflow_state_name": "Reviewed",
+  "style": "Success"
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Closed",
+  "workflow_state_name": "Closed",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Overdue",
+  "workflow_state_name": "Overdue",
+  "style": "Danger"
  }
 ]

@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BrandLogo,
   Dock,
@@ -117,6 +117,11 @@ export function ServiceLayout() {
   const isHome = loc.pathname === "/";
   const routeKey = loc.pathname.split("/")[1] || "home";
   const mainRef = useRef<HTMLElement>(null);
+
+  // SPA navigation keeps the previous page's scroll offset; start new pages at the top.
+  useEffect(() => {
+    if (!loc.hash) window.scrollTo(0, 0);
+  }, [loc.pathname, loc.hash]);
 
   const openDock = useCallback(() => {
     setExpandSignal((n) => n + 1);

@@ -1,0 +1,64 @@
+# Work Item — PORT of live Standards Development workflow.
+
+doctype: Work Item
+module: standards
+workflow_name: Standards Development
+submit_gate: null
+emit: true
+phase: port
+fixture_style: minimal
+fixture_app: apps/eswasa_standards/eswasa_standards/fixtures
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: standards.summary
+guards: [expected_state, idempotency_key]
+notes: Port of fixtures/workflow.json. Map promotion (Proposed → Published) later.
+
+display:
+  customer:
+    Public Review: Open for comment
+    Published/Gazetted: Published
+  staff: {}
+
+states:
+  - {name: New Work Item, allow_edit: Eswasa Standards Officer, owner_role: Eswasa Standards Officer}
+  - {name: Working Draft, allow_edit: Eswasa Standards Officer, owner_role: Eswasa Standards Officer}
+  - {name: Committee Draft, allow_edit: Eswasa Standards Officer, owner_role: Eswasa Standards Officer}
+  - {name: Public Review, allow_edit: Eswasa Standards Officer, owner_role: Eswasa Standards Officer, sla: 60d}
+  - {name: Ballot, allow_edit: Eswasa Standards Officer, owner_role: Eswasa Standards Officer, sla: 30d}
+  - {name: Published/Gazetted, allow_edit: Eswasa Standards Officer, owner_role: Eswasa Standards Officer}
+
+transitions:
+  - action: Start Drafting
+    from: New Work Item
+    to: Working Draft
+    actor: Eswasa Standards Officer
+    allow_self_approval: 0
+    rules: [R-S1]
+
+  - action: Submit to Committee
+    from: Working Draft
+    to: Committee Draft
+    actor: Eswasa Standards Officer
+    allow_self_approval: 0
+
+  - action: Open Public Review
+    from: Committee Draft
+    to: Public Review
+    actor: Eswasa Standards Manager
+    allow_self_approval: 0
+    rules: [R-S2]
+
+  - action: Open Ballot
+    from: Public Review
+    to: Ballot
+    actor: Eswasa Standards Manager
+    allow_self_approval: 0
+
+  - action: Publish / Gazette
+    from: Ballot
+    to: Published/Gazetted
+    actor: Eswasa Standards Manager
+    allow_self_approval: 0
+    rules: [R-S3]
+    approvals_family: approve

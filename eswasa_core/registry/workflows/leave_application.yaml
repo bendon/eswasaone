@@ -1,0 +1,47 @@
+# Leave Application — declare ERPNext HRMS (do not emit; use ERPNext workflow).
+
+doctype: Leave Application
+module: hr
+workflow_name: Leave Application
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: hr.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  ERPNext/HRMS owns this DocType. Registry declares states for display/Approvals
+  family only — never overwrite ERPNext fixtures (emit: false).
+
+display:
+  customer: {}
+  staff:
+    Open: Pending
+    Approved: Approved
+    Rejected: Rejected
+
+states:
+  - {name: Open, owner_role: Leave Approver, allow_edit: Employee}
+  - {name: Approved, owner_role: Leave Approver, allow_edit: Leave Approver, style: Success}
+  - {name: Rejected, owner_role: Leave Approver, allow_edit: Leave Approver, style: Danger}
+  - {name: Cancelled, owner_role: Employee, allow_edit: Employee}
+
+transitions:
+  - action: Approve
+    from: Open
+    to: Approved
+    actor: Leave Approver
+    approvals_family: approve
+  - action: Reject
+    from: Open
+    to: Rejected
+    actor: Leave Approver
+    reason: required
+    approvals_family: approve
+  - action: Cancel
+    from: Open
+    to: Cancelled
+    actor: Employee
+    reason: required
+    approvals_family: do

@@ -1,6 +1,6 @@
 # EswasaOne — Ground Rules for ALL Agents
 
-1. **Contract first.** `contracts/openapi.yaml` is the single source of truth. If you need a new endpoint, add it there *first*, regenerate `types.ts`, then implement. Never invent an endpoint shape locally.
+1. **Contract first.** `contracts/openapi.yaml` is the source of truth for **HTTP contracts**. If you need a new endpoint, add it there *first*, regenerate `types.ts`, then implement. Never invent an endpoint shape locally. Workflows follow the Workflow source of truth below.
 
 2. **Own your folder.** Edit only your assigned top-level folder / app. Touch shared files (`openapi.yaml`, `.env.example`, `apps.txt`, nginx drafts) **only via the Orchestrator (WS0/WS7)**.
 
@@ -21,3 +21,10 @@
 9. **No Docker.** This host runs services natively. Use shared MariaDB, Redis, Qdrant, and system Node/Python. Bind app listeners to `127.0.0.1` on the allocated port block (see `docs/PORTS.md`). Nginx terminates TLS for `eswasaone.aiceafrica.com`.
 
 10. **Mock UIs.** Visual portal ports wait for HTML mocks in `docs/mocks/`. Until then, scaffold shells + tokens + MSW only.
+
+## Workflow source of truth
+
+- `docs/EswasaOne_WORKFLOW_MAP.md` governs workflows; §5 is the automation law.
+- Registry YAML (`eswasa_core/registry/workflows/`) wins for states, transitions, roles, SLA, families.
+- OpenAPI wins for HTTP contracts. Never PATCH `workflow_state`; always `/act` → `apply_workflow`.
+- Guards live in Frappe, not Core. Default SLAs/mandates use the provisional baseline in `docs/EswasaOne_ESWASA_CONFIRMATION_PACK.md` until a later signed pack replaces it.

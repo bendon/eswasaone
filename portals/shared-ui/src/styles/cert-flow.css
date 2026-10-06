@@ -6,7 +6,8 @@
 
 .cf-wrap{display:grid;grid-template-columns:260px minmax(0,1fr);gap:28px;align-items:start;margin-top:22px}
 .cf-wrap--single{grid-template-columns:minmax(0,1fr);max-width:880px}
-@media (max-width:960px){.cf-wrap{grid-template-columns:1fr}}
+@media (max-width:960px){.cf-wrap{grid-template-columns:minmax(0,1fr)}}
+.cf-wrap>*{min-width:0}
 
 /* Head */
 .cf-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px}

@@ -21,11 +21,18 @@ import frappe
 from frappe import _
 from frappe.utils import cint, formatdate, getdate, nowdate
 
-from eswasa_governance.approvals import act_on_approval_item, list_approval_items
+from eswasa_governance.approvals import (
+    act_on_approval_item,
+    claim_todo as claim_todo_fn,
+    list_approval_items,
+)
 
 SMOKE_METHODS = [
     "list_approvals",
     "act_on_approval",
+    "claim_todo",
+    "act_resolution",
+    "act_board_pack",
     "get_board_pack_summary",
     "board_pack_summary",
     "list_resolutions",
@@ -141,11 +148,21 @@ def _resolution_sections(resolutions_csv: str | None) -> list[dict[str, str]]:
 
 @frappe.whitelist()
 def list_approvals(limit: int = 20) -> dict[str, Any]:
-    """Staff approval queue from open Workflow Actions + referenced ToDos.
+    """Staff approval queue from open ToDos only (map §4 / §5).
 
     OpenAPI ``ApprovalItem`` shape; ``id`` is ``{doctype}::{name}`` (no APR-*).
+    Workflow Action remains the engine record — not listed as a queue row.
     """
     return list_approval_items(limit=limit)
+
+
+@frappe.whitelist()
+def claim_todo(
+    todo_name: str | None = None,
+    confirm: bool | int | str = False,
+) -> dict[str, Any]:
+    """Claim a role-pool ToDo (map §5.3). Starts the SLA clock on the claimant."""
+    return claim_todo_fn(todo_name=todo_name, confirm=confirm)
 
 
 @frappe.whitelist()
@@ -165,6 +182,56 @@ def act_on_approval(
         doctype=doctype or "",
         name=name or "",
         action=action or "",
+        comment=comment,
+        confirm=confirm,
+    )
+
+
+@frappe.whitelist()
+def act_resolution(
+    name: str | None = None,
+    action: str | None = None,
+    expected_state: str | None = None,
+    idempotency_key: str | None = None,
+    reason: str | None = None,
+    comment: str | None = None,
+    confirm: bool | int | str = False,
+) -> dict[str, Any]:
+    """Workflow act for Board Resolution (map §5)."""
+    from eswasa_certification.workflow_act import act as shared_act
+
+    return shared_act(
+        doctype="Board Resolution",
+        name=name,
+        action=action,
+        expected_state=expected_state,
+        idempotency_key=idempotency_key,
+        reason=reason,
+        comment=comment,
+        confirm=confirm,
+    )
+
+
+@frappe.whitelist()
+def act_board_pack(
+    name: str | None = None,
+    action: str | None = None,
+    expected_state: str | None = None,
+    idempotency_key: str | None = None,
+    reason: str | None = None,
+    comment: str | None = None,
+    confirm: bool | int | str = False,
+) -> dict[str, Any]:
+    """Workflow act for Board Pack (map §5)."""
+    from eswasa_certification.workflow_act import act as shared_act
+
+    return shared_act(
+        doctype="Board Pack",
+        name=name,
+        action=action,
+        expected_state=expected_state,
+        idempotency_key=idempotency_key,
+        reason=reason,
         comment=comment,
         confirm=confirm,
     )
@@ -367,15 +434,221 @@ def _safe_count(doctype: str, filters: dict[str, Any] | None = None) -> int:
         return 0
 
 
+_FEED_HREF: dict[str, str] = {
+    "Certification Application": "/institution/certification/{name}",
+    "Certificate": "/institution/certification",
+    "Certification Audit": "/institution/certification",
+    "Audit": "/institution/certification",
+    "Board Pack": "/institution/board",
+    "Board Resolution": "/institution/board",
+    "Risk Register Entry": "/institution/board",
+    "TBT Notification": "/institution/tbt",
+    "Standard": "/institution/standards",
+    "Calibration Job": "/institution/metrology",
+    "Instrument": "/institution/metrology",
+    "Leave Application": "/institution/hr",
+}
+
+
+def _feed_href(doctype: str, name: str) -> str | None:
+    tmpl = _FEED_HREF.get(doctype)
+    if not tmpl:
+        return None
+    return tmpl.format(name=name)
+
+
+def _feed_severity(subject: str) -> str:
+    s = (subject or "").lower()
+    if any(tok in s for tok in ("critical", "breach", "blocked")):
+        return "critical"
+    if any(tok in s for tok in ("high", "overdue", "warn", "reject")):
+        return "warn"
+    if any(
+        tok in s
+        for tok in (
+            "approved",
+            "certified",
+            "adopted",
+            "published",
+            "acknowledged",
+            "success",
+        )
+    ):
+        return "success"
+    return "info"
+
+
+def _institution_feed(limit: int = 8) -> list[dict[str, Any]]:
+    """Recent activity for Institution home — Notification Log (publish_feed) + doc mods."""
+    from frappe.utils import add_to_date, now_datetime
+
+    now = now_datetime()
+    since = add_to_date(now, hours=-24)
+    items: list[dict[str, Any]] = []
+    seen_docs: set[tuple[str, str]] = set()
+    seen_titles: set[tuple[str, str, str]] = set()
+
+    try:
+        if frappe.db.exists("DocType", "Notification Log"):
+            rows = frappe.get_all(
+                "Notification Log",
+                filters={"creation": [">=", since]},
+                fields=[
+                    "name",
+                    "subject",
+                    "document_type",
+                    "document_name",
+                    "creation",
+                    "email_content",
+                ],
+                order_by="creation desc",
+                limit_page_length=max(limit * 5, 40),
+            )
+            for row in rows:
+                subject = (row.subject or "").strip()
+                if not subject or subject.startswith("[wa]"):
+                    continue
+                dt = row.document_type or ""
+                dn = row.document_name or ""
+                tkey = (dt, dn, subject)
+                if tkey in seen_titles:
+                    continue
+                seen_titles.add(tkey)
+                if dt and dn:
+                    seen_docs.add((dt, dn))
+                body = (row.email_content or "").strip()
+                items.append(
+                    {
+                        "id": row.name,
+                        "type": (dt or "activity").lower().replace(" ", "_"),
+                        "title": subject,
+                        "body": body[:180] if body and body != subject else None,
+                        "severity": _feed_severity(subject),
+                        "created_at": str(row.creation or now),
+                        "href": _feed_href(dt, dn),
+                    }
+                )
+    except Exception:  # noqa: BLE001
+        frappe.log_error(title="institution_home.feed_nlog")
+
+    # Merge recently modified workflow docs so Approvals /act shows even without a prior
+    # Notification Log row (sorted with NLog by created_at below).
+    supplements: list[tuple[str, list[str], str]] = [
+        ("Board Pack", ["name", "workflow_state", "modified"], "workflow_state"),
+        ("Board Resolution", ["name", "workflow_state", "modified"], "workflow_state"),
+        ("Certification Application", ["name", "workflow_state", "modified"], "workflow_state"),
+        ("Risk Register Entry", ["name", "status", "title", "modified"], "status"),
+        ("TBT Notification", ["name", "impact", "modified"], "impact"),
+        ("Standard", ["name", "workflow_state", "modified"], "workflow_state"),
+    ]
+    try:
+        for doctype, fields, state_field in supplements:
+            if not frappe.db.exists("DocType", doctype):
+                continue
+            for row in frappe.get_all(
+                doctype,
+                fields=fields,
+                filters={"modified": [">=", since]},
+                order_by="modified desc",
+                limit_page_length=8,
+            ):
+                if (doctype, row.name) in seen_docs:
+                    continue
+                state = getattr(row, state_field, None) or "Updated"
+                title = f"{row.name} — {state}"
+                if doctype == "Risk Register Entry" and getattr(row, "title", None):
+                    title = f"{row.name} — {row.title} ({state})"
+                tkey = (doctype, row.name, title)
+                if tkey in seen_titles:
+                    continue
+                seen_titles.add(tkey)
+                seen_docs.add((doctype, row.name))
+                items.append(
+                    {
+                        "id": f"{doctype}::{row.name}::{row.modified}",
+                        "type": doctype.lower().replace(" ", "_"),
+                        "title": title,
+                        "severity": _feed_severity(str(state)),
+                        "created_at": str(row.modified or now),
+                        "href": _feed_href(doctype, row.name),
+                    }
+                )
+    except Exception:  # noqa: BLE001
+        frappe.log_error(title="institution_home.feed_docs")
+
+    items.sort(key=lambda i: i.get("created_at") or "", reverse=True)
+    return items[:limit]
+
+
 @frappe.whitelist()
 def institution_home() -> dict[str, Any]:
     """Institution portal KPIs, module tiles, and a short feed from live docs."""
-    from frappe.utils import now_datetime
+    from frappe.utils import add_days, getdate, nowdate
 
-    open_apps = _safe_count("Certification Application")
-    overdue_audits = _safe_count("Certification Audit", {"status": "Overdue"})
+    open_apps = _safe_count(
+        "Certification Application",
+        {"workflow_state": ["not in", ["Certified", "Withdrawn", "Rejected", "Cancelled"]]},
+    )
+    if open_apps == 0:
+        open_apps = _safe_count("Certification Application")
+
+    overdue_audits = _safe_count("Audit", {"status": "Overdue"})
     if overdue_audits == 0:
-        overdue_audits = _safe_count("Audit", {"status": "Overdue"})
+        # Due date in the past, still open
+        try:
+            if frappe.db.exists("DocType", "Audit"):
+                overdue_audits = int(
+                    frappe.db.count(
+                        "Audit",
+                        {
+                            "due_date": ["<", nowdate()],
+                            "status": ["in", ["Planned", "In Progress", "Overdue"]],
+                        },
+                    )
+                    or 0
+                )
+        except Exception:  # noqa: BLE001
+            overdue_audits = 0
+
+    # Past SLA — open ToDos past their due date (Approvals queue signal).
+    past_sla = 0
+    try:
+        past_sla = int(
+            frappe.db.count(
+                "ToDo",
+                {
+                    "status": "Open",
+                    "date": ["<", nowdate()],
+                    "reference_type": ["is", "set"],
+                },
+            )
+            or 0
+        )
+    except Exception:  # noqa: BLE001
+        past_sla = 0
+
+    # Audits scheduled this calendar week (Mon–Sun).
+    audits_week = 0
+    try:
+        today = getdate(nowdate())
+        week_start = add_days(today, -today.weekday())
+        week_end = add_days(week_start, 6)
+        if frappe.db.exists("DocType", "Audit"):
+            names: set[str] = set()
+            for field in ("planned_date", "due_date"):
+                for row in frappe.get_all(
+                    "Audit",
+                    filters={
+                        field: ["between", [str(week_start), str(week_end)]],
+                        "status": ["not in", ["Cancelled", "Completed"]],
+                    },
+                    fields=["name"],
+                    limit_page_length=200,
+                ):
+                    names.add(row.name)
+            audits_week = len(names)
+    except Exception:  # noqa: BLE001
+        audits_week = 0
 
     standards = _safe_count("Standard", {"workflow_state": "Published"})
     if standards == 0:
@@ -387,6 +660,18 @@ def institution_home() -> dict[str, Any]:
             "label": "Open applications",
             "value": open_apps,
             "status": "ok" if open_apps < 50 else "warn",
+        },
+        {
+            "key": "past_sla",
+            "label": "Past SLA",
+            "value": past_sla,
+            "status": "critical" if past_sla else "ok",
+        },
+        {
+            "key": "audits_week",
+            "label": "Audits this week",
+            "value": audits_week,
+            "status": "warn" if audits_week == 0 and overdue_audits else "ok",
         },
         {
             "key": "overdue_audits",
@@ -441,30 +726,7 @@ def institution_home() -> dict[str, Any]:
         },
     ]
 
-    feed: list[dict[str, Any]] = []
-    now = now_datetime().isoformat()
-    try:
-        if frappe.db.exists("DocType", "Certification Application"):
-            for row in frappe.get_all(
-                "Certification Application",
-                fields=["name", "applicant_name", "workflow_state", "modified"],
-                order_by="modified desc",
-                limit_page_length=5,
-            ):
-                feed.append(
-                    {
-                        "id": row.name,
-                        "type": "application",
-                        "title": f"{row.name}: {row.workflow_state or 'Updated'}",
-                        "severity": "info",
-                        "created_at": str(row.modified or now),
-                        "href": f"/institution/certification/{row.name}",
-                    }
-                )
-    except Exception:  # noqa: BLE001
-        pass
-
-    return {"kpis": kpis, "modules": modules, "feed": feed}
+    return {"kpis": kpis, "modules": modules, "feed": _institution_feed(8)}
 
 
 @frappe.whitelist()
@@ -515,7 +777,7 @@ def service_home() -> dict[str, Any]:
                 "href": "/verify",
             },
         ],
-        "recent_activity": [],
+        "recent_activity": _institution_feed(5),
         "alerts": [
             {
                 "id": "welcome",

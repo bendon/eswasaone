@@ -1,0 +1,123 @@
+# Field Visit — map §3.12 / §5.7. DocType lives in eswasa_certification.
+
+doctype: Field Visit
+module: field
+workflow_name: Field Visit Flow
+submit_gate: null
+emit: true
+phase: map
+fixture_style: minimal
+fixture_app: apps/eswasa_certification/eswasa_certification/fixtures
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: field.summary
+guards: [expected_state, idempotency_key, competence, impartiality, rotation]
+notes: >
+  Shared primitive. Parent waits; visit close advances parent via sys-cron.
+  Team members each need competence checks (map §5.7).
+
+display:
+  customer:
+    Confirmed: Visit confirmed
+    In Progress: Visit in progress
+  staff: {}
+
+states:
+  - {name: Planned, sla: "assign by planned−10d", owner_role: Scheme Manager, allow_edit: Scheme Manager}
+  - {name: Assigned, sla: 2d, owner_role: Scheme Manager, allow_edit: Scheme Manager}
+  - {name: Confirmed, sla: "check-in by date+1", owner_role: Certification Auditor, allow_edit: Certification Auditor}
+  - {name: Rescheduled, sla: 3d, owner_role: Scheme Manager, allow_edit: Scheme Manager}
+  - {name: In Progress, sla: "submit within 2d of end", owner_role: Certification Auditor, allow_edit: Certification Auditor}
+  - {name: Submitted, sla: 3d, owner_role: Scheme Manager, allow_edit: Scheme Manager}
+  - {name: Submitted (conflict), sla: 1d, owner_role: Scheme Manager, allow_edit: Scheme Manager, style: Danger}
+  - {name: Aborted, sla: 2d, owner_role: Scheme Manager, allow_edit: Scheme Manager, style: Danger}
+  - {name: Returned, sla: 2d, owner_role: Certification Auditor, allow_edit: Certification Auditor}
+  - {name: Reviewed, sla: null, owner_role: Scheme Manager, allow_edit: Scheme Manager, style: Success}
+  - {name: Closed, sla: null, owner_role: System Manager, allow_edit: System Manager}
+  - {name: Overdue, sla: null, owner_role: Scheme Manager, allow_edit: Scheme Manager, style: Danger}
+
+transitions:
+  - action: Assign team
+    from: Planned
+    to: Assigned
+    actor: Scheme Manager
+    rules: [R-V1]
+    approvals_family: do
+
+  - action: Accept assignment
+    from: Assigned
+    to: Confirmed
+    actor: Certification Auditor
+    approvals_family: do
+
+  - action: Reschedule
+    from: Confirmed
+    to: Rescheduled
+    actor: Scheme Manager
+    reason: required
+    approvals_family: do
+
+  - action: Re-confirm
+    from: Rescheduled
+    to: Confirmed
+    actor: Scheme Manager
+    approvals_family: do
+
+  - action: Check in
+    from: Confirmed
+    to: In Progress
+    actor: Certification Auditor
+    approvals_family: do
+
+  - action: Submit report
+    from: In Progress
+    to: Submitted
+    actor: Certification Auditor
+    approvals_family: do
+
+  - action: Abort
+    from: In Progress
+    to: Aborted
+    actor: Certification Auditor
+    reason: required
+    rules: [R-V3]
+    approvals_family: alert
+
+  - action: Mark overdue
+    from: Confirmed
+    to: Overdue
+    actor: System Manager
+    rules: [R-V2]
+    approvals_family: alert
+
+  - action: Return report
+    from: Submitted
+    to: Returned
+    actor: Scheme Manager
+    reason: required
+    approvals_family: do
+
+  - action: Approve report
+    from: Submitted
+    to: Reviewed
+    actor: Scheme Manager
+    approvals_family: do
+
+  - action: Resolve conflict
+    from: Submitted (conflict)
+    to: Reviewed
+    actor: Scheme Manager
+    reason: required
+    approvals_family: alert
+
+  - action: Resubmit
+    from: Returned
+    to: Submitted
+    actor: Certification Auditor
+    approvals_family: do
+
+  - action: Close
+    from: Reviewed
+    to: Closed
+    actor: System Manager
+    approvals_family: do

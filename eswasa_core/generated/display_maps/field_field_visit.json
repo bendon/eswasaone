@@ -1,0 +1,219 @@
+{
+ "doctype": "Field Visit",
+ "module": "field",
+ "display": {
+  "customer": {
+   "Confirmed": "Visit confirmed",
+   "In Progress": "Visit in progress"
+  },
+  "staff": {}
+ },
+ "approvals_family": "do",
+ "board_rollup": "field.summary",
+ "states": [
+  {
+   "name": "Planned",
+   "sla": "assign by planned−10d",
+   "owner_role": "Scheme Manager",
+   "owner": null
+  },
+  {
+   "name": "Assigned",
+   "sla": "2d",
+   "owner_role": "Scheme Manager",
+   "owner": null
+  },
+  {
+   "name": "Confirmed",
+   "sla": "check-in by date+1",
+   "owner_role": "Certification Auditor",
+   "owner": null
+  },
+  {
+   "name": "Rescheduled",
+   "sla": "3d",
+   "owner_role": "Scheme Manager",
+   "owner": null
+  },
+  {
+   "name": "In Progress",
+   "sla": "submit within 2d of end",
+   "owner_role": "Certification Auditor",
+   "owner": null
+  },
+  {
+   "name": "Submitted",
+   "sla": "3d",
+   "owner_role": "Scheme Manager",
+   "owner": null
+  },
+  {
+   "name": "Submitted (conflict)",
+   "sla": "1d",
+   "owner_role": "Scheme Manager",
+   "owner": null
+  },
+  {
+   "name": "Aborted",
+   "sla": "2d",
+   "owner_role": "Scheme Manager",
+   "owner": null
+  },
+  {
+   "name": "Returned",
+   "sla": "2d",
+   "owner_role": "Certification Auditor",
+   "owner": null
+  },
+  {
+   "name": "Reviewed",
+   "sla": null,
+   "owner_role": "Scheme Manager",
+   "owner": null
+  },
+  {
+   "name": "Closed",
+   "sla": null,
+   "owner_role": "System Manager",
+   "owner": null
+  },
+  {
+   "name": "Overdue",
+   "sla": null,
+   "owner_role": "Scheme Manager",
+   "owner": null
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Assign team",
+   "from": "Planned",
+   "to": "Assigned",
+   "actor": "Scheme Manager",
+   "rules": [
+    "R-V1"
+   ],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Accept assignment",
+   "from": "Assigned",
+   "to": "Confirmed",
+   "actor": "Certification Auditor",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Reschedule",
+   "from": "Confirmed",
+   "to": "Rescheduled",
+   "actor": "Scheme Manager",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Re-confirm",
+   "from": "Rescheduled",
+   "to": "Confirmed",
+   "actor": "Scheme Manager",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Check in",
+   "from": "Confirmed",
+   "to": "In Progress",
+   "actor": "Certification Auditor",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Submit report",
+   "from": "In Progress",
+   "to": "Submitted",
+   "actor": "Certification Auditor",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Abort",
+   "from": "In Progress",
+   "to": "Aborted",
+   "actor": "Certification Auditor",
+   "rules": [
+    "R-V3"
+   ],
+   "approvals_family": "alert",
+   "surface": null
+  },
+  {
+   "action": "Mark overdue",
+   "from": "Confirmed",
+   "to": "Overdue",
+   "actor": "System Manager",
+   "rules": [
+    "R-V2"
+   ],
+   "approvals_family": "alert",
+   "surface": null
+  },
+  {
+   "action": "Return report",
+   "from": "Submitted",
+   "to": "Returned",
+   "actor": "Scheme Manager",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Approve report",
+   "from": "Submitted",
+   "to": "Reviewed",
+   "actor": "Scheme Manager",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Resolve conflict",
+   "from": "Submitted (conflict)",
+   "to": "Reviewed",
+   "actor": "Scheme Manager",
+   "rules": [],
+   "approvals_family": "alert",
+   "surface": null
+  },
+  {
+   "action": "Resubmit",
+   "from": "Returned",
+   "to": "Submitted",
+   "actor": "Certification Auditor",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Close",
+   "from": "Reviewed",
+   "to": "Closed",
+   "actor": "System Manager",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  }
+ ],
+ "guards": [
+  "expected_state",
+  "idempotency_key",
+  "competence",
+  "impartiality",
+  "rotation"
+ ]
+}

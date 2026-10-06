@@ -2,6 +2,7 @@
 
 import type { components } from "../types";
 import { apiBase } from "../api/base";
+import { apiErrorFromResponse } from "../api/errors";
 
 export type Session = components["schemas"]["Session"];
 export type SessionUser = components["schemas"]["SessionUser"];
@@ -203,9 +204,8 @@ export async function sessionFetch<T>(path: string, init?: SessionFetchInit): Pr
       if (!quiet) classifyAndEmitAuthError(err);
       throw err;
     }
-    throw new Error(
-      typeof body.detail === "string" ? body.detail : `API ${res.status}: ${path}`,
-    );
+    // 4xx/5xx → ApiError + global MessageAlert (unless quiet probe)
+    throw apiErrorFromResponse(res.status, data, path, { notify: !quiet });
   }
 
   return data as T;

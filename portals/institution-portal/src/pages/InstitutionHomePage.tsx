@@ -213,10 +213,27 @@ export function InstitutionHomePage() {
     const fromApi = home?.kpis ?? [];
     const byKey = Object.fromEntries(fromApi.map((k) => [k.key, k]));
     const openApps = byKey.open_apps ?? byKey.pending ?? byKey.certified;
-    const pastSla = byKey.past_sla ?? byKey.overdue;
-    const audits = byKey.audits_week ?? byKey.audits;
+    const pastSlaApi = byKey.past_sla ?? byKey.overdue;
+    const auditsApi = byKey.audits_week ?? byKey.audits;
     const revenue = byKey.revenue;
     const standards = byKey.standards_ytd ?? byKey.standards;
+
+    // Client-side fallbacks from data already loaded for the attention queue.
+    const pastSlaFallback =
+      approvals?.items != null
+        ? String(approvals.items.filter((i) => i.sla_breached).length)
+        : undefined;
+    const auditsFallback =
+      overdueAudits.length > 0
+        ? String(overdueAudits.length)
+        : byKey.overdue_audits?.value != null
+          ? String(byKey.overdue_audits.value)
+          : undefined;
+
+    const pastSlaVal =
+      pastSlaApi?.value != null ? String(pastSlaApi.value) : pastSlaFallback;
+    const auditsVal =
+      auditsApi?.value != null ? String(auditsApi.value) : auditsFallback;
 
     const revVal =
       finance != null
@@ -245,20 +262,25 @@ export function InstitutionHomePage() {
         tint: "#ECEEFC",
         tone: "#313391",
       }),
-      dash(pastSla?.value != null ? String(pastSla.value) : undefined, "overdue", "Past SLA", {
+      dash(pastSlaVal, "overdue", "Open ToDos past due", {
         key: "sla",
         label: "Past SLA",
         icon: "i-warn",
         tint: "#FDECEC",
         tone: "#9F1239",
       }),
-      dash(audits?.value != null ? String(audits.value) : undefined, "scheduled", "This week", {
-        key: "audits",
-        label: "Audits this week",
-        icon: "i-cal",
-        tint: "#FEF6DC",
-        tone: "#B8860B",
-      }),
+      dash(
+        auditsVal,
+        auditsApi?.value != null ? "scheduled" : "overdue",
+        auditsApi?.value != null ? "This week" : "Overdue (fallback)",
+        {
+          key: "audits",
+          label: "Audits this week",
+          icon: "i-cal",
+          tint: "#FEF6DC",
+          tone: "#B8860B",
+        },
+      ),
       {
         key: "revenue",
         label: "Revenue YTD",
@@ -289,7 +311,7 @@ export function InstitutionHomePage() {
         tone: "#7C3AED",
       }),
     ];
-  }, [home, finance]);
+  }, [home, finance, approvals, overdueAudits]);
 
   const systemStatus: SysStatus[] = useMemo(() => {
     const coreRow: SysStatus = {
@@ -337,18 +359,39 @@ export function InstitutionHomePage() {
       return;
     }
     setActing(true);
-    // TODO: wire real — PATCH /certification/audits/{id} when contract lands
-    showToast(`Opening audit to reschedule for ${draftDue}`);
-    setActing(false);
-    const href = selected.href;
-    closeDrawer();
-    dismissItem(selected.id);
-    if (href) {
-      navigate(
-        href.includes("?")
-          ? `${href}&date=${encodeURIComponent(draftDue)}`
-          : `${href}?date=${encodeURIComponent(draftDue)}`,
-      );
+    try {
+      if (selected.kind === "audit_reschedule" || selected.kind === "audit_overdue") && selected.name) {
+        await apiFetch(`/certification/audits/${encodeURIComponent(selected.name)}`, {
+          method: "PATCH",
+          headers: { "Idempotency-Key": `${selected.name}-reschedule-${Date.now()}` },
+          body: JSON.stringify({
+            action: "reschedule",
+            confirm: true,
+            payload: { due_date: draftDue },
+          }),
+        });
+        showToast(`Rescheduled ${selected.name} to ${draftDue}`);
+        dismissItem(selected.id);
+        closeDrawer();
+        return;
+      }
+      // Fallback navigate into audits desk for non-live stubs.
+      showToast(`Opening audit to reschedule for ${draftDue}`);
+      const href = selected.href;
+      closeDrawer();
+      dismissItem(selected.id);
+      if (href) {
+        navigate(
+          href.includes("?")
+            ? `${href}&date=${encodeURIComponent(draftDue)}`
+            : `${href}?date=${encodeURIComponent(draftDue)}`,
+        );
+      }
+    } catch (err) {
+      if (err instanceof AuthError && err.authRequired) openAuth(err.reason);
+      else showToast(err instanceof Error ? err.message : "Reschedule failed");
+    } finally {
+      setActing(false);
     }
   }
 

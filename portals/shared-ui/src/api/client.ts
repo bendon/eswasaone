@@ -1,33 +1,21 @@
 /** Core API client — all portal traffic goes through VITE_API_BASE. No direct Frappe. */
 
-const DEFAULT_API = "http://127.0.0.1:8015/api";
-const DEFAULT_WS = "ws://127.0.0.1:8015/ws";
+import type { components } from "../types";
+import { sessionFetch, type SessionFetchInit } from "../auth/session";
+import { apiBase, wsBase } from "./base";
 
-export function apiBase(): string {
-  return (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "") || DEFAULT_API;
+export { apiBase, wsBase };
+
+type AgentAskRequest = components["schemas"]["AgentAskRequest"];
+type AgentAskResponse = components["schemas"]["AgentAskResponse"];
+
+/**
+ * Authenticated JSON fetch (cookies + bearer). Surfaces 4xx/5xx via the global
+ * MessageAlert modal (DialogHost). Prefer this over raw fetch.
+ */
+export async function apiFetch<T>(path: string, init?: SessionFetchInit): Promise<T> {
+  return sessionFetch<T>(path, init);
 }
-
-export function wsBase(): string {
-  return (import.meta.env.VITE_WS_BASE as string | undefined)?.replace(/\/$/, "") || DEFAULT_WS;
-}
-
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${apiBase()}${path.startsWith("/") ? path : `/${path}`}`;
-  const res = await fetch(url, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`API ${res.status}: ${path}`);
-  }
-  return res.json() as Promise<T>;
-}
-
-import type { AgentAskRequest, AgentAskResponse } from "../index";
 
 export async function askAgent(body: AgentAskRequest): Promise<AgentAskResponse> {
   // TODO: wire real — Core /agent/ask (MSW until Core is live)

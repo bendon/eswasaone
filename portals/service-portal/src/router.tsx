@@ -32,18 +32,12 @@ import { OfflinePage } from "./pages/OfflinePage";
 import { ErrorPage } from "./pages/ErrorPage";
 import { GoalsPage } from "./goals/GoalsPage";
 import { AdHocGuidePage, GoalGuidePage } from "./goals/GoalGuidePage";
-import { ToastProvider } from "./ui/Toast";
-import { CartToastProvider } from "./ui/CartToast";
 import { CheckoutPage, OrderStatusPage } from "./estore";
 
 function Root() {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <CartToastProvider>
-          <ServiceLayout />
-        </CartToastProvider>
-      </ToastProvider>
+      <ServiceLayout />
     </AuthProvider>
   );
 }

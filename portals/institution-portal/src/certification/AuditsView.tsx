@@ -450,7 +450,10 @@ export function AuditsView() {
                 void act(
                   selected,
                   "assign",
-                  { auditor: staff.username, auditor_name: staff.full_name },
+                  {
+                    auditor: staff.email || staff.username,
+                    auditor_name: staff.full_name,
+                  },
                   `${staff.full_name || staff.username} assigned to ${selected.id}`,
                 );
             }}

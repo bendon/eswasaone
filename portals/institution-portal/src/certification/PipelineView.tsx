@@ -490,11 +490,13 @@ export function PipelineView() {
               setPickFor(null);
               if (!appId) return;
               const audit = (audits.data?.items ?? []).find((a) => a.application_id === appId);
-              const name = staff.full_name || staff.username;
+              // Prefer email/username — Auditor master links by User/email, not display name.
+              const key = staff.email || staff.username;
+              const label = staff.full_name || key;
               try {
-                await assignAuditor(appId, name, audit?.id);
+                await assignAuditor(appId, key, audit?.id);
                 setExtrasTick((n) => n + 1);
-                await dialogs.alert({ message: `${name} assigned to ${appId}`, kind: "success" });
+                await dialogs.alert({ message: `${label} assigned to ${appId}`, kind: "success" });
               } catch (err) {
                 await dialogs.alert({ message: err instanceof Error ? err.message : "Assignment failed", kind: "error" });
               }

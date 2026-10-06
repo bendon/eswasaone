@@ -390,6 +390,74 @@ nav.crumb strong{color:var(--ink);font-weight:700}
   margin-left:auto;
 }
 
+/* Nested filter options (e.g. standards under Management systems) */
+.fopt__row{display:flex;align-items:center;gap:2px}
+.fopt__row .fcheck{flex:1;min-width:0}
+.fcheck input:indeterminate{background:var(--navy);border-color:var(--navy)}
+.fcheck input:indeterminate::after{
+  content:"";position:absolute;left:3px;right:3px;top:50%;height:2px;
+  margin-top:-1px;border-radius:2px;background:#fff;
+}
+.fopt__toggle{
+  width:28px;height:28px;flex:0 0 auto;
+  display:grid;place-items:center;
+  background:none;border:0;border-radius:7px;
+  color:var(--muted-2);cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.fopt__toggle:hover{background:var(--bg);color:var(--ink)}
+.fopt__toggle svg{width:14px;height:14px;stroke:currentColor;transform:rotate(-90deg);transition:transform .2s}
+.fopt__toggle[aria-expanded="true"] svg{transform:none}
+.fsub{
+  margin:2px 0 6px 18px;padding-left:8px;
+  border-left:1.5px solid var(--line-2);
+  display:flex;flex-direction:column;
+  animation:fsub-in .2s ease;
+}
+.fsub .fcheck{font-size:12.5px;padding:6px 10px}
+@keyframes fsub-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* Sort dropdown (custom listbox) */
+.sortmenu{position:relative;display:flex;align-items:center;gap:8px}
+.sortmenu__label{
+  font-size:12px;font-weight:700;color:var(--muted-2);
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.sortmenu__btn{
+  display:flex;align-items:center;gap:10px;
+  height:38px;min-width:170px;padding:0 12px;
+  border:1px solid var(--line);border-radius:10px;
+  background:#fff;color:var(--ink);
+  font:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;
+  transition:border-color .15s, box-shadow .15s;
+}
+.sortmenu__btn span{flex:1;text-align:left;white-space:nowrap}
+.sortmenu__btn svg{width:14px;height:14px;stroke:var(--muted);transition:transform .2s}
+.sortmenu__btn:hover{border-color:#C7D2E0}
+.sortmenu__btn:focus-visible,.sortmenu.is-open .sortmenu__btn{
+  outline:none;border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-l);
+}
+.sortmenu.is-open .sortmenu__btn svg{transform:rotate(180deg)}
+.sortmenu__list{
+  position:absolute;right:0;top:calc(100% + 6px);z-index:30;
+  min-width:100%;padding:6px;margin:0;list-style:none;
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--sh-md);
+  animation:sortmenu-in .14s ease;
+}
+.sortmenu__opt{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 10px;border-radius:8px;
+  font-size:13px;font-weight:500;color:var(--ink);
+  cursor:pointer;white-space:nowrap;
+}
+.sortmenu__opt span{flex:1}
+.sortmenu__opt.is-active{background:var(--bg)}
+.sortmenu__opt[aria-selected="true"]{color:var(--navy);font-weight:700}
+.sortmenu__opt svg{width:14px;height:14px;stroke:var(--navy);stroke-width:2.4}
+@keyframes sortmenu-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
 .toolbar{
   display:flex;flex-wrap:wrap;align-items:center;gap:12px;
   padding:14px 18px;
@@ -728,6 +796,8 @@ nav.crumb strong{color:var(--ink);font-weight:700}
   .toolbar{padding:12px 14px;gap:10px}
   .toolbar__sort label{display:none}
   .toolbar__sort select{height:36px;font-size:12.5px}
+  .sortmenu__label{display:none}
+  .sortmenu__btn{height:36px;min-width:0;font-size:12.5px}
   .toolbar__mobile-filter{height:36px}
 
   .std{padding:18px 18px 16px 20px;gap:12px}

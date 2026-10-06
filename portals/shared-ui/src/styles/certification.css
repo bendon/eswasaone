@@ -86,7 +86,7 @@
 }
 .cert::before{
   content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
-  background:var(--accent,var(--navy));
+  background:var(--navy);
   opacity:.7;transition:opacity .18s;
 }
 .cert:hover{border-color:#D3DDE9;box-shadow:var(--sh-md)}
@@ -269,10 +269,6 @@
   display:inline-flex;align-items:center;gap:8px;
   font-size:10.5px;letter-spacing:.17em;font-weight:800;
   color:var(--muted-2);
-}
-.verify-widget__copy span::before{
-  content:"";width:6px;height:6px;border-radius:50%;
-  background:var(--green);box-shadow:0 0 0 4px rgba(22,163,74,.18);
 }
 .verify-widget__copy h2{
   font-size:24px;font-weight:800;letter-spacing:-.025em;

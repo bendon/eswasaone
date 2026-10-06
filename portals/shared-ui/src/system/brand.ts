@@ -32,9 +32,8 @@ export const brand = {
 } as const;
 
 /** Type stacks — keep in sync with tokens.css */
-export const fontSans = '"Hind", "Hind Fallback", Arial, Helvetica, sans-serif';
-export const fontDisplay =
-  '"Lexend Deca", "Lexend Deca Fallback", Arial, Helvetica, sans-serif';
+export const fontSans = "Arial, Helvetica, sans-serif";
+export const fontDisplay = "Arial, Helvetica, sans-serif";
 export const fontMono =
   'ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
 

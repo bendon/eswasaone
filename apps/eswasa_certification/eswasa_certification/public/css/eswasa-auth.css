@@ -5,42 +5,6 @@
 
    Design tokens mirror portals/shared-ui/src/styles/tokens.css. */
 
-/* Self-hosted eswasa.co.sz faces (SIL OFL 1.1, see ../fonts/OFL-*.txt).
-   Same files and fallbacks as portals/shared-ui/src/styles/fonts.css. */
-@font-face {
-  font-family: "Hind"; font-style: normal; font-weight: 400; font-display: swap;
-  src: url("../fonts/hind-latin-400-normal.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Hind"; font-style: normal; font-weight: 500; font-display: swap;
-  src: url("../fonts/hind-latin-500-normal.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Hind"; font-style: normal; font-weight: 600; font-display: swap;
-  src: url("../fonts/hind-latin-600-normal.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Hind"; font-style: normal; font-weight: 700; font-display: swap;
-  src: url("../fonts/hind-latin-700-normal.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Lexend Deca"; font-style: normal; font-weight: 700; font-display: swap;
-  src: url("../fonts/lexend-deca-latin-700-normal.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Hind Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica");
-  size-adjust: 97.44%; ascent-override: 108.28%; descent-override: 56.04%; line-gap-override: 0%;
-}
-@font-face {
-  font-family: "Lexend Deca Fallback"; src: local("Arial Bold"), local("Arial-BoldMT"), local("Arial");
-  size-adjust: 108.35%; ascent-override: 92.29%; descent-override: 23.07%; line-gap-override: 0%;
-}
-
 :root {
   --bg: #f4f7fa;
   --card: #ffffff;
@@ -71,8 +35,8 @@
   --sh-sm: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
   --sh-md: 0 6px 16px -4px rgba(16, 24, 40, 0.1), 0 2px 6px -2px rgba(16, 24, 40, 0.05);
   --sh-lg: 0 20px 44px -20px rgba(16, 24, 40, 0.24);
-  --font-sans: "Hind", "Hind Fallback", Arial, Helvetica, sans-serif;
-  --font-display: "Lexend Deca", "Lexend Deca Fallback", Arial, Helvetica, sans-serif;
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-display: Arial, Helvetica, sans-serif;
 }
 
 /* Reset Frappe's page chrome on these routes */

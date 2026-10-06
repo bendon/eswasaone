@@ -2,7 +2,6 @@
    Import once per portal via service.css or institution.css. */
 
 @import "./tokens.css";
-@import "./fonts.css";
 
 *,
 *::before,

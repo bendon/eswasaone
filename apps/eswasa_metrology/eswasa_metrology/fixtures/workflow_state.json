@@ -28,5 +28,47 @@
   "name": "Reviewed",
   "workflow_state_name": "Reviewed",
   "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Collected",
+  "workflow_state_name": "Collected",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "In Transit",
+  "workflow_state_name": "In Transit",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Testing",
+  "workflow_state_name": "Testing",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Conforming",
+  "workflow_state_name": "Conforming",
+  "style": "Success"
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Non-conforming",
+  "workflow_state_name": "Non-conforming",
+  "style": "Danger"
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Retained",
+  "workflow_state_name": "Retained",
+  "style": ""
+ },
+ {
+  "doctype": "Workflow State",
+  "name": "Disposed",
+  "workflow_state_name": "Disposed",
+  "style": ""
  }
 ]

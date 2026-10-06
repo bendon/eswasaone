@@ -48,5 +48,70 @@
   "doctype": "Workflow Action Master",
   "name": "Reassess",
   "workflow_action_name": "Reassess"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Assign team",
+  "workflow_action_name": "Assign team"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Accept assignment",
+  "workflow_action_name": "Accept assignment"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Reschedule",
+  "workflow_action_name": "Reschedule"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Re-confirm",
+  "workflow_action_name": "Re-confirm"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Check in",
+  "workflow_action_name": "Check in"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Submit report",
+  "workflow_action_name": "Submit report"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Abort",
+  "workflow_action_name": "Abort"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Mark overdue",
+  "workflow_action_name": "Mark overdue"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Return report",
+  "workflow_action_name": "Return report"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Approve report",
+  "workflow_action_name": "Approve report"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Resolve conflict",
+  "workflow_action_name": "Resolve conflict"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Resubmit",
+  "workflow_action_name": "Resubmit"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Close",
+  "workflow_action_name": "Close"
  }
 ]

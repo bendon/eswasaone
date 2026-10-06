@@ -70,9 +70,18 @@ class CreateCertificationApplication(BaseModel):
 
 
 class AdvanceCertificationBody(BaseModel):
-    action: str | None = None
+    """Workflow act body — used by /act and deprecated /advance."""
+
+    action: str
     confirm: bool
+    expected_state: str | None = None
+    idempotency_key: str | None = None
+    reason: str | None = None
     comment: str | None = None
+    payload: dict | None = None
+
+
+WorkflowActBody = AdvanceCertificationBody
 
 
 class AuditSummary(BaseModel):

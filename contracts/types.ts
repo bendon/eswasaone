@@ -54,6 +54,164 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/certification/applications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCertificationApplication"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/certification/applications/{id}/act": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Workflow act (map §5) — guarded apply_workflow
+         * @description Preferred transition API. Core passes values through; Frappe enforces expected_state, reason, idempotency (L4), and ToDo allocation (L1–L2). `/advance` remains as a compatibility alias.
+         */
+        post: operations["actCertificationApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/standards/work-items/{id}/act": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Workflow act for Work Item (map §5) */
+        post: operations["actWorkItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/metrology/jobs/{id}/act": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Workflow act for Calibration Job (map §5) */
+        post: operations["actCalibrationJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tbt/notifications/{id}/act": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Workflow act for TBT Notification (map §5) */
+        post: operations["actTbtNotification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/governance/resolutions/{id}/act": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Workflow act for Board Resolution (map §5) */
+        post: operations["actBoardResolution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/governance/packs/{id}/act": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Workflow act for Board Pack (map §5) */
+        post: operations["actBoardPack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/field/visits/{id}/act": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Workflow act for Field Visit (map §5.7) */
+        post: operations["actFieldVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/certification/applications/{id}/advance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compatibility alias for /act
+         * @deprecated
+         */
+        post: operations["advanceCertificationApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/certification/audits/overdue": {
         parameters: {
             query?: never;
@@ -102,117 +260,16 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/estore/orders": {
+    "/verify/{token}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Orders placed by the authenticated user (optionally filtered by entity) */
-        get: operations["listEstoreOrders"];
+        /** Public certificate / mark verification */
+        get: operations["verifyToken"];
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/account/entities": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Workspaces accessible to the authenticated user (personal + businesses) */
-        get: operations["listAccountEntities"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/account/overview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Unified overview — stats, alerts, activity feed, and summary cards */
-        get: operations["getAccountOverview"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/account/team": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Team members for a business entity */
-        get: operations["listAccountTeam"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/account/team/invite": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["inviteTeamMember"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/account/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update profile details for the active entity */
-        put: operations["updateAccountMe"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/account/notifications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Notification preferences for the authenticated user */
-        get: operations["getAccountNotifications"];
-        put: operations["updateAccountNotifications"];
         post?: never;
         delete?: never;
         options?: never;
@@ -252,23 +309,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/guide": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Anonymous guided flow — composes applicability (graph) + ordered steps + RAG grounding + tool-registry actions. Does not reimplement graph traversal. */
-        post: operations["buildGuide"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -278,110 +318,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Password verifies credentials and returns 202 otp_required challenge; completing with OTP issues the session cookie (OTP trust window 6h). */
         post: operations["login"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/register": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create Frappe user with Citizen role only, then return 202 otp_required. Completing with POST /auth/login (otp + challenge_id) issues the session. Password alone never issues a session — same trust model as login. */
-        post: operations["register"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Resend login OTP (after password challenge); code TTL ~10 minutes */
-        post: operations["requestOtp"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/unlock": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Idle soft-lock unlock — username/password only while OTP trust window (6h) is still valid. */
-        post: operations["unlockSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/touch": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Heartbeat — reset idle timer (30m) */
-        post: operations["touchSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/invite-staff": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Admin creates Institution staff user; Frappe sends welcome email */
-        post: operations["inviteStaff"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Clear Core session cookie and revoke Redis entry */
-        post: operations["logout"];
         delete?: never;
         options?: never;
         head?: never;
@@ -395,27 +332,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Current user, or 401 when guest (no session) */
         get: operations["me"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/password/reset": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Email a password-reset link via Frappe. Anti-enumeration: always 200 with the same body whether or not the account exists. Reset link points at the Frappe-hosted reset page where the new password is set. */
-        post: operations["requestPasswordReset"];
         delete?: never;
         options?: never;
         head?: never;
@@ -439,24 +358,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/org/staff": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List institution staff users with roles for assignment pickers */
-        get: operations["listOrgStaff"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/org/reassign": {
+    "/certification/audits/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -465,49 +367,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reassign a ToDo or workflow action to another staff member */
-        post: operations["reassignTask"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/approvals": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Staff approval queue from Workflow Action / ToDo */
-        get: operations["listApprovals"];
-        put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Schedule, assign, complete, or submit Field outcome */
+        patch: operations["patchCertificationAudit"];
         trace?: never;
     };
-    "/tbt/alerts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** WTO/TBT alerts for Institution rail */
-        get: operations["listTbtAlerts"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/tbt/subscribe": {
+    "/certification/certificates/{id}/revoke": {
         parameters: {
             query?: never;
             header?: never;
@@ -516,472 +384,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Subscribe to TBT alerts by sector/HS/jurisdiction */
-        post: operations["subscribeTbt"];
+        post: operations["revokeCertificate"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/finance/kpis": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Revenue vs budget + annual plan traffic lights */
-        get: operations["getFinanceKpis"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/finance/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Finance department configuration checklist (Company, CoA, Pastel stub) */
-        get: operations["getFinanceSettings"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/finance/invoices": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Sales invoices across revenue lines */
-        get: operations["listFinanceInvoices"];
-        put?: never;
-        /** Create sales invoice (confirm-before-commit) */
-        post: operations["createFinanceInvoice"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/finance/revenue": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Revenue series by service line */
-        get: operations["getFinanceRevenue"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/finance/budget": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Budget vs actual by cost centre */
-        get: operations["getFinanceBudget"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * HR KPI snapshot (headcount, leave, appraisals, openings)
-         * @description Phase 1–2 overview KPIs. Prefer this or GET /hr/overview (identical payload). Optional out_today and activity enrich the summary without Desk config writes.
-         */
-        get: operations["getHrSummary"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/overview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Alias of GET /hr/summary (richer name for portal home)
-         * @description Same schema as HrSummary; clients may use either path.
-         */
-        get: operations["getHrOverview"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/organisation/overview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Structure-first HR home (org profile, setup, departments, designations)
-         * @description Aggregate for the org-first Overview mock. Soft-empty when DocTypes are missing or unreadable. Computed setup progress is never stored. People KPIs remain on GET /hr/overview.
-         */
-        get: operations["getHrOrganisationOverview"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/organisation": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Organisation / Company profile (singleton) */
-        get: operations["getHrOrganisation"];
-        put?: never;
-        /** Create Company when none exists (confirm-before-commit) */
-        post: operations["createHrOrganisation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update organisation profile (confirm-before-commit) */
-        patch: operations["patchHrOrganisation"];
-        trace?: never;
-    };
-    "/hr/departments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List departments */
-        get: operations["listHrDepartments"];
-        put?: never;
-        /** Create department (confirm-before-commit) */
-        post: operations["createHrDepartment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/designations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List designations */
-        get: operations["listHrDesignations"];
-        put?: never;
-        /** Create designation (confirm-before-commit) */
-        post: operations["createHrDesignation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/grade-bands": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List employee grade bands */
-        get: operations["listHrGradeBands"];
-        put?: never;
-        /** Create grade band (confirm-before-commit) */
-        post: operations["createHrGradeBand"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/locations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List locations (Frappe Branch) */
-        get: operations["listHrLocations"];
-        put?: never;
-        /** Create location (confirm-before-commit) */
-        post: operations["createHrLocation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/cost-centres": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List cost centres */
-        get: operations["listHrCostCentres"];
-        put?: never;
-        /** Create cost centre (confirm-before-commit) */
-        post: operations["createHrCostCentre"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/orgchart": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Organisation chart (flat nodes with reports_to) */
-        get: operations["getHrOrgChart"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/employees": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Employee directory */
-        get: operations["listHrEmployees"];
-        put?: never;
-        /**
-         * Create Employee (confirm-before-commit); optional portal invite
-         * @description Creates an HRMS Employee. When invite is true, also creates a Frappe User and sends welcome mail (same outcome as POST /auth/invite-staff). Prefer invite-staff when only a User is needed without an Employee record. Do not duplicate as /hr/invite.
-         */
-        post: operations["createHrEmployee"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/leave": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Leave applications */
-        get: operations["listHrLeave"];
-        put?: never;
-        /** Submit leave application (confirm-before-commit) */
-        post: operations["createHrLeave"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/leave/balances": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Leave balances for the current (or named) employee */
-        get: operations["listHrLeaveBalances"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/holidays": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Upcoming holidays (Holiday List) */
-        get: operations["listHrHolidays"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/attendance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Attendance / out-today snapshot
-         * @description Who is out today (leave, travel, etc.). Prefer this over a separate /hr/out-today path; clients may filter by date.
-         */
-        get: operations["listHrAttendance"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/out-today": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Alias — staff out today (items list)
-         * @description Thin companion to GET /hr/attendance; returns items array of HrOutTodayItem.
-         */
-        get: operations["listHrOutToday"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/appraisals": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Appraisal cycle status */
-        get: operations["listHrAppraisals"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/appraisals/cycle": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Current appraisal cycle (scaffold)
-         * @description Scaffold for later phases — returns cycle metadata when wired.
-         */
-        get: operations["getHrAppraisalCycle"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/jobs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Job openings (scaffold) */
-        get: operations["listHrJobs"];
-        put?: never;
-        /** Create job opening (scaffold; confirm-before-commit) */
-        post: operations["createHrJob"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/applicants": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Job applicants (scaffold) */
-        get: operations["listHrApplicants"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/interviews": {
+    "/certification/certificates/{id}/renew": {
         parameters: {
             query?: never;
             header?: never;
@@ -990,23 +400,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Schedule interview (scaffold; confirm-before-commit) */
-        post: operations["createHrInterview"];
+        post: operations["renewCertificate"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/hr/slips": {
+    "/certification/certificates/{id}/pdf": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Salary slips (scaffold) */
-        get: operations["listHrSlips"];
+        get: operations["getCertificatePdf"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1015,41 +423,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/hr/payroll/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Payroll run status (scaffold) */
-        get: operations["getHrPayrollStatus"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/onboarding": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Onboarding checklist items (scaffold) */
-        get: operations["listHrOnboarding"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/hr/expenses": {
+    "/standards/ballots/{id}/vote": {
         parameters: {
             query?: never;
             header?: never;
@@ -1058,15 +432,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Submit expense claim (scaffold; confirm-before-commit) */
-        post: operations["createHrExpense"];
+        post: operations["voteBallot"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/hr/grievance": {
+    "/approvals/{doctype}/{name}/escalate": {
         parameters: {
             query?: never;
             header?: never;
@@ -1075,72 +448,22 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** File grievance (scaffold; confirm-before-commit) */
-        post: operations["createHrGrievance"];
+        /** Operator R-A2 escalate for SLA-breached queue item */
+        post: operations["escalateApproval"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/metrology/jobs": {
+    "/field/me/audits": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Calibration / LIMS jobs list */
-        get: operations["listMetrologyJobs"];
-        put?: never;
-        post: operations["createMetrologyJob"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/metrology/instruments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listMetrologyInstruments"];
-        put?: never;
-        post: operations["createMetrologyInstrument"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/metrology/results": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listMetrologyResults"];
-        put?: never;
-        post: operations["createMetrologyResult"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/crm/pipeline": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Commercial pipeline */
-        get: operations["getCrmPipeline"];
+        get: operations["listFieldMyAudits"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1149,46 +472,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/crm/leads": {
+    "/field/me/summary": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["listCrmLeads"];
-        put?: never;
-        post: operations["createCrmLead"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/crm/deals": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listCrmDeals"];
-        put?: never;
-        post: operations["createCrmDeal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/training/courses": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listTrainingCourses"];
+        get: operations["getFieldMySummary"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1197,23 +488,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/training/enrolments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listTrainingEnrolments"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/training/enrol": {
+    "/estore/cart": {
         parameters: {
             query?: never;
             header?: never;
@@ -1222,30 +497,78 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["enrolTraining"];
+        post: operations["upsertEstoreCart"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/marketing/campaigns": {
+    "/estore/orders/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["listMarketingCampaigns"];
+        get: operations["getEstoreOrder"];
         put?: never;
-        post: operations["createMarketingCampaign"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/events/sla/sweep": {
+    "/estore/licences/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["downloadEstoreLicence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/access-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listAccessRequests"];
+        put?: never;
+        post: operations["createAccessRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/expense-claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listExpenseClaims"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tbt/alerts/{id}/{action}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1254,15 +577,30 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** R-A2 SLA sweep — escalate overdue approvals (cron-callable) */
-        post: operations["runSlaSweep"];
+        post: operations["triageTbtAlert"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/analytics/ask": {
+    "/ingest/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listIngestQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ingest/items/{id}/{action}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1271,540 +609,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** NL → Frappe/Insights query (Core bridge; Insights optional) */
-        post: operations["analyticsAsk"];
+        post: operations["curateIngestItem"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
-    };
-    "/analytics/reports": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listAnalyticsReports"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/certification/audits": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listCertificationAudits"];
-        put?: never;
-        post: operations["createCertificationAudit"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/certification/certificates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listCertificationCertificates"];
-        put?: never;
-        post: operations["createCertificationCertificate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/standards/workitems": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listStandardsWorkitems"];
-        put?: never;
-        post: operations["createStandardsWorkitem"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/standards/drafts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listStandardsDrafts"];
-        put?: never;
-        post: operations["createStandardsDraft"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/standards/comments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listStandardsComments"];
-        put?: never;
-        post: operations["createStandardsComment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/standards/ballots": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listStandardsBallots"];
-        put?: never;
-        post: operations["createStandardsBallot"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/standards/publish": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Gazette + catalogue + e-store publish */
-        post: operations["publishStandard"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/overview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * System Manager overview — versions, health, apps, seats
-         * @description System Manager / Administrator only. Surfaces Frappe/ERPNext versions, service health, installed apps, active users, and last backup.
-         */
-        get: operations["getAdminOverview"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/updates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Installed apps vs available updates */
-        get: operations["listAdminUpdates"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/updates/run": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Run bench update (confirm-before-commit, locked)
-         * @description Privileged allowlisted bench update. Audit-logged, System Manager only, blocked while another admin holds the update lock.
-         */
-        post: operations["runAdminUpdate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/actions/clear-cache": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Clear Frappe site cache */
-        post: operations["adminClearCache"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/actions/backup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Trigger site backup (optional files) */
-        post: operations["adminBackupNow"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/actions/restart": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Restart bench web / workers / scheduler */
-        post: operations["adminRestartServices"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/actions/maintenance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Enable or disable site maintenance mode */
-        post: operations["adminMaintenanceMode"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/settings/system": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** System Settings (timezone, formats, session) */
-        get: operations["getAdminSystemSettings"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update System Settings (confirm-before-commit) */
-        patch: operations["patchAdminSystemSettings"];
-        trace?: never;
-    };
-    "/admin/settings/email": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Default Email Account / SMTP status */
-        get: operations["getAdminEmailSettings"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/settings/email/test": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Send a test email via default Email Account */
-        post: operations["adminTestEmail"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Desk users and enablement */
-        get: operations["listAdminUsers"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/role-profiles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Canonical job packages (Citizen/Business thin; Institution directorates) */
-        get: operations["listAdminRoleProfiles"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/roles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Curated EswasaOne roles for assignment (not full ERPNext dump) */
-        get: operations["listAdminRoles"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/media/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Object-store backend (S3 or local) */
-        get: operations["getMediaStatus"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/media/upload": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Upload a document/media object to S3 (or local media root) */
-        post: operations["uploadMedia"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/scheduler": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Scheduler heartbeat + scheduled job types */
-        get: operations["getAdminScheduler"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/jobs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Background job / RQ snapshot */
-        get: operations["getAdminJobs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/jobs/retry-failed": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Retry failed RQ jobs (confirm-before-commit) */
-        post: operations["retryAdminFailedJobs"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/backups": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Recent site backups */
-        get: operations["listAdminBackups"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/logs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Error Log / Activity Log entries */
-        get: operations["listAdminLogs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/integrations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Integration health cards (MoMo, LLM, Qdrant, SMTP, SSO, TBT) */
-        get: operations["getAdminIntegrations"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/access/policy": {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        get: operations["getAdminAccessPolicy"];
-        put: operations["putAdminAccessPolicy"];
-        post?: never; delete?: never; options?: never; head?: never; patch?: never; trace?: never;
-    };
-    "/admin/access/networks": {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        get: operations["listAdminAccessNetworks"];
-        post: operations["createAdminAccessNetwork"];
-        put?: never; delete?: never; options?: never; head?: never; patch?: never; trace?: never;
-    };
-    "/admin/access/devices": {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        get: operations["listAdminAccessDevices"];
-        post: operations["createAdminAccessDevice"];
-        put?: never; delete?: never; options?: never; head?: never; patch?: never; trace?: never;
-    };
-    "/admin/access/events": {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        get: operations["listAdminAccessEvents"];
-        put?: never; post?: never; delete?: never; options?: never; head?: never; patch?: never; trace?: never;
-    };
-    "/admin/access/evaluate": {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        post: operations["evaluateAdminAccess"];
-        get?: never; put?: never; delete?: never; options?: never; head?: never; patch?: never; trace?: never;
-    };
-    "/auth/institution-access": {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        /** Edge gate for /institution (nginx auth_request later). 200 allow / 403 deny. */
-        get: operations["getInstitutionAccessGate"];
-        put?: never; post?: never; delete?: never; options?: never; head?: never; patch?: never; trace?: never;
     };
     "/governance/overview": {
         parameters: {
@@ -2081,10 +891,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        PackSectionStatus: "awaiting" | "ready" | "overdue";
-        PackSectionSource: "live_module" | "upload" | "secretariat";
-        RiskBand: "critical" | "high" | "medium" | "low";
-        RiskTrend: "improving" | "stable" | "worsening";
         InstitutionHome: {
             kpis: components["schemas"]["Kpi"][];
             modules: components["schemas"]["ModuleTile"][];
@@ -2127,93 +933,6 @@ export interface components {
             /** Format: date-time */
             created_at: string;
             href?: string;
-        };
-        OrderSummary: {
-            id: string;
-            title: string;
-            subtitle?: string;
-            /** Format: date */
-            date: string;
-            amount: string;
-            /** @enum {string} */
-            status: "done" | "review" | "pending" | "failed";
-            status_label?: string;
-            /** @enum {string} */
-            entity?: "personal" | "business";
-        };
-        AccountEntity: {
-            /** @enum {string} */
-            id: "personal" | "business";
-            name: string;
-            short_name?: string;
-            /** @enum {string} */
-            kind: "personal" | "business";
-            role: string;
-            initials?: string;
-            member_since?: string;
-            verified?: boolean;
-        };
-        AccountStats: {
-            items: {
-                label: string;
-                value: number;
-                accent?: boolean;
-            }[];
-        };
-        AccountAlert: {
-            id: string;
-            /** @enum {string} */
-            tone: "info" | "pending" | "alert" | "tip";
-            tint?: string;
-            border_tint?: string;
-            icon?: string;
-            title: string;
-            body: string;
-            cta?: string;
-            href?: string;
-        };
-        AccountActivityItem: {
-            id: string;
-            tint?: string;
-            tone?: string;
-            icon?: string;
-            title: string;
-            subtitle?: string;
-            time?: string;
-            href?: string;
-        };
-        AccountSummaryCard: {
-            id: string;
-            tint: string;
-            tone: string;
-            icon: string;
-            title: string;
-            subtitle: string;
-        };
-        AccountOverview: {
-            stats: components["schemas"]["AccountStats"];
-            alerts: components["schemas"]["AccountAlert"][];
-            feed: components["schemas"]["AccountActivityItem"][];
-            summary: components["schemas"]["AccountSummaryCard"][];
-        };
-        TeamMember: {
-            id: string;
-            initials?: string;
-            name: string;
-            email: string;
-            /** @enum {string} */
-            role: "owner" | "admin" | "member" | "viewer";
-            role_label: string;
-            when?: string;
-            /** @enum {string} */
-            avatar_variant?: "default" | "alt" | "teal";
-        };
-        NotificationPrefs: {
-            application_updates: boolean;
-            order_confirmations: boolean;
-            certificate_expiry: boolean;
-            training_announcements: boolean;
-            two_factor: boolean;
         };
         CertificationApplication: {
             id: string;
@@ -2311,41 +1030,10 @@ export interface components {
             buy_links?: components["schemas"]["BuyLink"][];
         };
         Session: {
-            /** @description Optional during dual-path; omit when cookie-only */
-            access_token?: string;
+            access_token: string;
             /** @default bearer */
             token_type: string;
             user: components["schemas"]["SessionUser"];
-            otp_verified_until?: number;
-            /** @default false */
-            locked: boolean;
-        };
-        LoginChallenge: {
-            /** @enum {string} */
-            status: "otp_required";
-            challenge_id: string;
-            message?: string;
-            stubbed?: boolean;
-            email_hint?: string;
-        };
-        UnlockRequest: {
-            /** Format: email */
-            email?: string;
-            username?: string;
-            /** Format: password */
-            password: string;
-        };
-        InviteStaffRequest: {
-            /** Format: email */
-            email: string;
-            full_name: string;
-            roles: string[];
-            org?: string;
-        };
-        InviteStaffResponse: {
-            ok: boolean;
-            email: string;
-            message?: string;
         };
         SessionUser: {
             username: string;
@@ -2353,952 +1041,68 @@ export interface components {
             email?: string;
             roles: string[];
         };
-        LoginRequest: {
-            /** Format: email */
-            email?: string;
-            username?: string;
-            /** Format: password */
-            password?: string;
-            otp?: string;
-            challenge_id?: string;
-        }
-        RegisterRequest: {
-            /** Format: email */
-            email: string;
-            name: string;
-            org?: string;
-            /** Format: password */
-            password?: string;
-        };
-        PasswordResetRequest: {
-            /** Format: email */
-            email: string;
-        };
-        PasswordResetResponse: {
-            /** @constant */
-            ok: true;
-            message?: string;
-            stubbed?: boolean;
-        };
-        AuthRequiredError: {
-            /** @constant */
-            auth_required: true;
-            reason?: string;
-            detail?: string;
-        };
-        GuideRequest: {
-            goal: string;
-            locale?: string;
-        };
-        GuideResponse: {
-            title: string;
-            summary: string;
-            meta: components["schemas"]["GuideMeta"];
-            steps: components["schemas"]["GuideStep"][];
-        };
-        GuideMeta: {
-            standards: number;
-            est_fee: string;
-            est_timeline: string;
-            steps: number;
-        };
-        GuideStep: {
-            title: string;
-            detail: string;
-            citations: components["schemas"]["GuideCitation"][];
-            action?: components["schemas"]["GuideAction"] | null;
-        };
-        GuideCitation: {
+        AllowedAction: {
+            action: string;
             label: string;
-            url: string;
-            /** @enum {string} */
-            rights: "open" | "public" | "licensed";
-        };
-        GuideAction: {
-            /** @enum {string} */
-            type: "buy" | "apply" | "book" | "open";
-            label: string;
-            target: string;
-            auth_required: boolean;
-            reason?: string;
-        };
-        ApprovalItem: {
-            /** @description Stable queue id (often doctype::name) */
-            id: string;
-            doctype: string;
-            /** @description Frappe document name */
-            name: string;
-            title: string;
-            module: string;
-            status: string;
-            /** Format: date-time */
-            due_at?: string | null;
-            sla_breached: boolean;
-        };
-        TbtNotificationSummary: {
-            id: string;
-            symbol: string;
-            title: string;
-            /** @enum {string} */
-            impact: "high" | "medium" | "low";
-            unread: boolean;
-            /** Format: date-time */
-            published_at?: string | null;
-        };
-        FinanceDashboard: {
-            revenue_ytd_szl: number;
-            budget_ytd_szl: number;
-            variance_pct: number;
-            months: {
-                labels: string[];
-                budget_thousands: number[];
-                actual_thousands: number[];
-            };
-            plan: components["schemas"]["PlanTrafficLight"][];
-        };
-        PlanTrafficLight: {
-            key: string;
-            label: string;
-            actual: string;
-            target: string;
-            /** @enum {string} */
-            status: "green" | "amber" | "red";
-        };
-        HrSummary: {
-            headcount: number;
-            appraisal_completion_pct: number;
-            /** @description Legacy alias; same intent as leave_pending */
-            open_leave: number;
-            /** @description New hires in the current quarter */
-            new_hires_q: number;
-            on_leave_today: number;
-            /** @description Leave applications awaiting action */
-            leave_pending: number;
-            open_positions: number;
-            out_today?: components["schemas"]["HrOutTodayItem"][];
-            activity?: components["schemas"]["HrActivityItem"][];
-        };
-        HrOutTodayItem: {
-            id?: string | null;
-            employee: string;
-            employee_name?: string | null;
-            reason?: string | null;
-            leave_type?: string | null;
-            /** Format: date */
-            from_date?: string | null;
-            /** Format: date */
-            to_date?: string | null;
-            status?: string | null;
-        };
-        HrActivityItem: {
-            id: string;
-            title: string;
-            /** Format: date-time */
-            at?: string | null;
-            kind?: string | null;
-            href?: string | null;
-        };
-        HrOrganisation: {
-            /** @description Frappe Company name */
-            id: string;
-            legal_name: string;
-            registration_number?: string | null;
-            founded_year?: number | null;
-            sector?: string | null;
-            registered_address?: string | null;
-            primary_location_id?: string | null;
-            primary_location?: components["schemas"]["HrLocationRef"] | null;
-        };
-        HrOrganisationPatch: {
-            legal_name?: string;
-            registration_number?: string | null;
-            founded_year?: number | null;
-            sector?: string | null;
-            registered_address?: string | null;
-            primary_location_id?: string | null;
-            confirm: boolean;
-        };
-        HrOrganisationCreate: {
-            /** @description Legal / trading name — becomes Frappe Company */
-            legal_name: string;
-            /** @description Short abbr (auto from name when omitted) */
-            abbr?: string | null;
-            default_currency?: string;
-            country?: string;
-            registration_number?: string | null;
-            founded_year?: number | null;
-            sector?: string | null;
-            registered_address?: string | null;
-            confirm: boolean;
-        };
-        FinanceSetupStep: {
-            id: string;
-            label: string;
-            done: boolean;
-            href?: string | null;
-        };
-        FinanceSettings: {
-            company_id?: string | null;
-            company_name?: string | null;
-            default_currency?: string | null;
-            country?: string | null;
-            has_chart_of_accounts?: boolean;
-            has_cost_centres?: boolean;
-            has_fiscal_year?: boolean;
-            /** @description Sage Pastel ledger link — not wired yet */
-            pastel_status?: "not_configured" | "stubbed";
-            payment_gateway_status?: "not_configured" | "stubbed";
-            steps?: components["schemas"]["FinanceSetupStep"][];
-        };
-        HrLocationRef: {
-            id: string;
-            code?: string | null;
-            name: string;
-        };
-        HrDepartmentRef: {
-            id: string;
-            code?: string | null;
-            name: string;
-        };
-        HrGradeBandRef: {
-            id: string;
-            code: string;
-            name?: string | null;
-            level?: number | null;
-        };
-        HrCostCentreRef: {
-            id: string;
-            code: string;
-            name: string;
-        };
-        HrEmployeeRef: {
-            id: string;
-            name: string;
-            initials?: string | null;
-        };
-        HrDepartment: {
-            id: string;
-            code?: string | null;
-            name: string;
-            parent_department_id?: string | null;
-            head?: components["schemas"]["HrEmployeeRef"] | null;
-            cost_centre?: components["schemas"]["HrCostCentreRef"] | null;
-            /**
-             * @default active
-             * @enum {string}
-             */
-            status: "active" | "archived";
-            /** @default 0 */
-            designation_count: number;
-            /** @default 0 */
-            filled_count: number;
-            /** @default 0 */
-            total_positions: number;
-        };
-        HrDepartmentCreate: {
-            name: string;
-            code?: string;
-            parent_department_id?: string;
-            cost_centre_id?: string;
-            confirm: boolean;
-        };
-        HrDepartmentPatch: {
-            name?: string;
-            code?: string | null;
-            parent_department_id?: string | null;
-            cost_centre_id?: string | null;
-            /** @enum {string} */
-            status?: "active" | "archived";
-            confirm: boolean;
-        };
-        HrDesignation: {
-            id: string;
-            code?: string | null;
-            title: string;
-            description?: string | null;
-            department?: components["schemas"]["HrDepartmentRef"] | null;
-            grade_band?: components["schemas"]["HrGradeBandRef"] | null;
-            /** @default 0 */
-            filled: number;
-            /** @description Approved headcount if configured; else null */
-            total?: number | null;
-        };
-        HrDesignationCreate: {
-            title: string;
-            code?: string;
-            description?: string;
-            department_id?: string;
-            grade_band_id?: string;
-            approved_headcount?: number;
-            confirm: boolean;
-        };
-        HrDesignationPatch: {
-            title?: string;
-            code?: string | null;
-            description?: string | null;
-            department_id?: string | null;
-            grade_band_id?: string | null;
-            approved_headcount?: number | null;
-            confirm: boolean;
-        };
-        HrGradeBand: {
-            id: string;
-            code: string;
-            name?: string | null;
-            level?: number | null;
-            min_salary?: number | null;
-            max_salary?: number | null;
-            /** @default SZL */
-            currency: string | null;
-        };
-        HrGradeBandCreate: {
-            code: string;
-            name?: string;
-            level?: number;
-            min_salary?: number;
-            max_salary?: number;
-            /** @default SZL */
-            currency: string;
-            confirm: boolean;
-        };
-        HrGradeBandPatch: {
-            code?: string;
-            name?: string | null;
-            level?: number | null;
-            min_salary?: number | null;
-            max_salary?: number | null;
-            currency?: string | null;
-            confirm: boolean;
-        };
-        HrLocation: {
-            id: string;
-            code?: string | null;
-            name: string;
-            address?: string | null;
-            /** @enum {string|null} */
-            type?: "hq" | "lab" | "satellite" | null;
-            /**
-             * @default active
-             * @enum {string}
-             */
-            status: "active" | "closed";
-            /** @default 0 */
-            employee_count: number;
-        };
-        HrLocationCreate: {
-            name: string;
-            code?: string;
-            address?: string;
-            /** @enum {string} */
-            type?: "hq" | "lab" | "satellite";
-            confirm: boolean;
-        };
-        HrLocationPatch: {
-            name?: string;
-            code?: string | null;
-            address?: string | null;
-            /** @enum {string|null} */
-            type?: "hq" | "lab" | "satellite" | null;
-            /** @enum {string} */
-            status?: "active" | "closed";
-            confirm: boolean;
-        };
-        HrCostCentre: {
-            id: string;
-            code?: string | null;
-            name: string;
-            description?: string | null;
-            finance_account_code?: string | null;
-            /**
-             * @default active
-             * @enum {string}
-             */
-            status: "active" | "draft" | "archived";
-            /** @default 0 */
-            employee_count: number;
-        };
-        HrCostCentreCreate: {
-            name: string;
-            code?: string;
-            description?: string;
-            finance_account_code?: string;
-            /**
-             * @default active
-             * @enum {string}
-             */
-            status: "active" | "draft" | "archived";
-            confirm: boolean;
-        };
-        HrCostCentrePatch: {
-            name?: string;
-            code?: string | null;
-            description?: string | null;
-            finance_account_code?: string | null;
-            /** @enum {string} */
-            status?: "active" | "draft" | "archived";
-            confirm: boolean;
-        };
-        HrSetupProgress: {
-            has_profile: boolean;
-            has_departments: boolean;
-            has_designations: boolean;
-            has_locations: boolean;
-            has_grades: boolean;
-            has_cost_centres: boolean;
-            has_employees: boolean;
-            completion_pct: number;
-            steps_completed: number;
-            steps_total: number;
-        };
-        HrOrganisationCounts: {
-            departments: number;
-            designations: number;
-            filled_positions: number;
-            vacant_positions: number;
-            locations: number;
-            cost_centres: number;
-            employees: number;
-        };
-        HrPayrollReadiness: {
-            ready: boolean;
-            label: string;
-            reason?: string | null;
-        };
-        HrOrganisationOverview: {
-            organisation?: components["schemas"]["HrOrganisation"] | null;
-            setup: components["schemas"]["HrSetupProgress"];
-            counts: components["schemas"]["HrOrganisationCounts"];
-            departments: components["schemas"]["HrDepartment"][];
-            designations_preview: components["schemas"]["HrDesignation"][];
-            designations_total: number;
-            locations: components["schemas"]["HrLocation"][];
-            cost_centres: components["schemas"]["HrCostCentre"][];
-            payroll: components["schemas"]["HrPayrollReadiness"];
-        };
-        HrOrgChartNode: {
-            id: string;
-            employee_name: string;
-            designation?: string | null;
-            department?: string | null;
-            /** @description Parent employee id */
-            reports_to?: string | null;
-            initials?: string | null;
-        };
-        BoardPackSummary: {
-            due_label: string;
-            outstanding_sections: number;
-            sections: {
-                title: string;
-                status: string;
-            }[];
-        };
-        MetrologyJobSummary: {
-            id: string;
-            instrument: string;
-            customer?: string | null;
-            status: string;
-            /** Format: date */
-            due_date?: string | null;
-        };
-        CrmPipeline: {
-            stages: {
-                name: string;
-                count: number;
-            }[];
-            companies: number;
-        };
-        FinanceInvoiceSummary: {
-            id: string;
-            customer: string;
-            status: string;
-            grand_total: number;
-            /** Format: date */
-            due_date?: string | null;
-            overdue?: boolean;
-        };
-        HrEmployeeSummary: {
-            id: string;
-            employee_name: string;
-            department?: string | null;
-            designation?: string | null;
-            status?: string | null;
-            /** Format: date */
-            date_of_joining?: string | null;
-            /** Format: email */
-            email?: string | null;
-            initials?: string | null;
-            reports_to?: string | null;
-            user_id?: string | null;
-            /** @description Desk deep-link for companion-app navigation (read-only) */
-            desk_path?: string | null;
-        };
-        HrEmployeeCreate: {
-            employee_name: string;
-            first_name?: string;
-            last_name?: string;
-            department?: string;
-            designation?: string;
-            /** Format: date */
-            date_of_joining?: string;
-            /** Format: email */
-            company_email?: string;
-            /**
-             * Format: email
-             * @description Portal login email when invite is true (fallback company_email)
-             */
-            email?: string;
-            gender?: string;
-            /** Format: date */
-            date_of_birth?: string;
-            company?: string;
-            reports_to?: string;
-            /**
-             * @description When true, also create a User and send welcome email (same outcome as POST /auth/invite-staff). Keep invite-staff for User-only invites without an Employee record.
-             * @default false
-             */
-            invite: boolean;
-            /** @description Roles applied when invite is true */
-            roles?: string[];
-            profile_name?: string;
-            confirm: boolean;
-        };
-        HrEmployeePatch: {
-            employee_name?: string;
-            department?: string | null;
-            designation?: string | null;
-            status?: string | null;
-            /** Format: email */
-            email?: string | null;
-            reports_to?: string | null;
-            confirm: boolean;
-        };
-        HrLeaveSummary: {
-            id: string;
-            employee: string;
-            leave_type: string;
-            /** Format: date */
-            from_date?: string | null;
-            /** Format: date */
-            to_date?: string | null;
-            status: string;
-        };
-        HrLeaveAct: {
-            /** @enum {string} */
-            decision: "approve" | "reject";
-            confirm: boolean;
-            reason?: string;
-        };
-        HrLeaveBalance: {
-            leave_type: string;
-            allocated: number;
-            used: number;
-            balance: number;
-            employee?: string | null;
-        };
-        HrHoliday: {
-            id?: string | null;
-            /**
-             * Format: date
-             * @description Holiday date (maps from Frappe holiday_date)
-             */
-            date: string;
-            description?: string | null;
-            holiday_list?: string | null;
-        };
-        HrAttendanceSnapshot: {
-            /** Format: date */
-            date: string;
-            out_today: components["schemas"]["HrOutTodayItem"][];
-            present_count?: number | null;
-            absent_count?: number | null;
-        };
-        HrAppraisalSummary: {
-            id: string;
-            employee: string;
-            cycle?: string | null;
-            status: string;
-        };
-        HrAppraisalCycle: {
-            id: string;
-            title: string;
-            status: string;
-            /** Format: date */
-            start_date?: string | null;
-            /** Format: date */
-            end_date?: string | null;
-            completion_pct?: number | null;
-        };
-        HrJobOpening: {
-            id: string;
-            job_title: string;
-            department?: string | null;
-            designation?: string | null;
-            vacancies?: number | null;
-            status: string;
-        };
-        HrApplicant: {
-            id: string;
-            applicant_name: string;
-            job?: string | null;
-            status: string;
-            stage?: string | null;
-        };
-        HrInterview: {
-            id: string;
-            applicant: string;
-            /** Format: date-time */
-            scheduled_at: string;
-            status: string;
-            interviewers?: string[];
-        };
-        HrPayslip: {
-            id: string;
-            employee: string;
-            period?: string | null;
-            net_pay?: number | null;
-            status: string;
-        };
-        HrPayrollStatus: {
-            status: string;
-            period?: string | null;
-            employees_processed?: number | null;
-            message?: string | null;
-        };
-        HrOnboardingItem: {
-            id: string;
-            title: string;
-            employee?: string | null;
-            status: string;
-            /** Format: date */
-            due_date?: string | null;
-        };
-        HrExpense: {
-            id: string;
-            amount: number;
-            expense_type: string;
-            description?: string | null;
-            status: string;
-        };
-        HrGrievance: {
-            id: string;
-            subject: string;
-            body?: string | null;
-            status: string;
-        };
-        GovernanceMeetingSummary: components["schemas"]["GovernanceMeeting"];
-        GovernanceResolutionSummary: components["schemas"]["GovernanceResolution"];
-        GovernanceRiskSummary: components["schemas"]["GovernanceRisk"];
-        CrmLeadSummary: {
-            id: string;
-            title: string;
-            organization?: string | null;
-            status: string;
-        };
-        CrmDealSummary: {
-            id: string;
-            title: string;
-            amount?: number | null;
-            status: string;
-        };
-        TrainingCourseSummary: {
-            id: string;
-            title: string;
-            published?: boolean;
-        };
-        TrainingEnrolmentSummary: {
-            id: string;
-            course: string;
-            member?: string | null;
-            status: string;
-        };
-        MarketingCampaignSummary: {
-            id: string;
-            title: string;
-            status: string;
-        };
-        AnalyticsAskResponse: {
-            answer: string;
-            citations?: {
-                [key: string]: unknown;
-            }[];
-            figures?: {
-                [key: string]: unknown;
-            }[];
-        };
-        AnalyticsReportSummary: {
-            id: string;
-            title: string;
-            period?: string | null;
-        };
-        AdminServiceStatus: {
-            name: string;
-            meta?: string | null;
-            /** @enum {string} */
-            status: "ok" | "warn" | "err" | "info";
-            detail?: string | null;
-        };
-        AdminAppVersion: {
-            app: string;
-            installed: string;
-            latest?: string | null;
-            /**
-             * @default unknown
-             * @enum {string}
-             */
-            status: "current" | "update" | "unknown";
-            notes?: string | null;
-        };
-        AdminOverview: {
-            site: string;
-            environment?: string | null;
-            frappe_version: string;
-            erpnext_version: string;
-            /**
-             * @default ok
-             * @enum {string}
-             */
-            frappe_status: "ok" | "warn" | "err";
-            /**
-             * @default ok
-             * @enum {string}
-             */
-            erpnext_status: "ok" | "warn" | "err";
-            active_users: number;
-            seat_limit?: number | null;
-            online_now?: number | null;
-            last_backup_ago?: string | null;
-            last_backup_ok?: boolean | null;
-            services: components["schemas"]["AdminServiceStatus"][];
-            apps: components["schemas"]["AdminAppVersion"][];
-            /** @default 0 */
-            updates_available: number;
-        };
-        AdminUpdatesResponse: {
-            channel: string;
-            items: components["schemas"]["AdminAppVersion"][];
-        };
-        AdminUpdateRunBody: {
-            confirm: boolean;
-            /** @default stable */
-            channel: string;
-            /** @default true */
-            backup_before: boolean;
-            /** @default true */
-            migrate: boolean;
-            /** @default true */
-            maintenance: boolean;
+            rule_id?: string | null;
             /** @default false */
-            dry_run: boolean;
+            danger: boolean;
+            consequence?: string | null;
         };
-        AdminCommandResult: {
-            ok: boolean;
-            message?: string | null;
-            lines?: string[];
-            lock_holder?: string | null;
-        };
-        AdminSystemSettings: {
-            time_zone?: string | null;
-            date_format?: string | null;
-            currency?: string | null;
-            number_format?: string | null;
-            session_expiry?: string | null;
-            enable_scheduler?: boolean | null;
-            disable_user_pass_login?: boolean | null;
-            allow_consecutive_login_attempts?: number | null;
-            force_https?: boolean | null;
-        };
-        AdminEmailSettings: {
-            outgoing_ok: boolean;
-            smtp_host?: string | null;
-            smtp_port?: number | null;
-            from_address?: string | null;
-            use_tls?: boolean | null;
-            incoming_set?: boolean | null;
-            account_name?: string | null;
-        };
-        AdminUserSummary: {
-            name: string;
-            full_name: string;
-            email?: string | null;
-            role_profile_name?: string | null;
-            last_active?: string | null;
-            enabled: boolean;
-            user_type?: string | null;
-        };
-        AdminRoleProfile: {
-            name: string;
-            /** @enum {string} */
-            audience: "public" | "institution" | "external";
-            summary: string;
-            roles: string[];
-            portal_modules?: string[];
-        };
-        MediaStatus: {
-            /** @enum {string} */
-            backend: "local" | "s3";
-            bucket?: string | null;
-            ready: boolean;
-        };
-        MediaObject: {
-            key: string;
-            bucket: string;
-            content_type: string;
-            size: number;
-            url: string;
-            /** @enum {string} */
-            backend: "local" | "s3";
-        };
-        AdminScheduledJob: {
-            name: string;
-            method: string;
-            frequency: string;
-            last_run?: string | null;
-            status: string;
-            stopped?: boolean | null;
-        };
-        AdminSchedulerResponse: {
-            enabled: boolean;
-            heartbeat_ago?: string | null;
-            jobs: components["schemas"]["AdminScheduledJob"][];
-        };
-        AdminJobsSnapshot: {
-            running: number;
-            queued: number;
-            completed_24h: number;
-            failed: number;
-        };
-        AdminBackupSummary: {
-            timestamp: string;
-            size?: string | null;
-            backup_type?: string | null;
-            path: string;
-        };
-        AdminBackupPolicy: {
-            frequency?: string | null;
-            include_files?: boolean | null;
-            retention_days?: number | null;
-            offsite?: boolean | null;
-            encrypt?: boolean | null;
-        };
-        AdminLogEntry: {
-            time: string;
-            source: string;
-            message: string;
-            /** @enum {string} */
-            level: "ok" | "warn" | "err" | "info";
-            name?: string | null;
-        };
-        AdminIntegrationStatus: {
-            id: string;
-            title: string;
-            /** @enum {string} */
-            status: "ok" | "warn" | "err" | "info";
-            detail: string;
-            href?: string | null;
-        };
-        AdminAccessPolicy: {
-            /** @default false */
-            enforce_off_lan: boolean;
-            /** @default true */
-            fail_closed: boolean;
-            /** @default / */
-            redirect_path: string;
-            notes?: string | null;
-        };
-        AdminAccessNetwork: {
-            id: string;
-            label: string;
-            cidr: string;
-            /** @default true */
-            enabled: boolean;
-            notes?: string | null;
-        };
-        AdminAccessNetworkCreate: {
+        ConfirmBody: {
             confirm: boolean;
-            label: string;
-            cidr: string;
-            /** @default true */
-            enabled?: boolean;
-            notes?: string | null;
         };
-        AdminAccessDevice: {
-            id: string;
-            label: string;
-            fingerprint: string;
-            owner_username?: string | null;
-            /** @enum {string} */
-            status: "pending" | "approved" | "revoked" | "expired";
-            created_at: string;
-            approved_at?: string | null;
-            approved_by?: string | null;
-            expires_at?: string | null;
-            last_seen_at?: string | null;
-            last_seen_ip?: string | null;
-            notes?: string | null;
-        };
-        AdminAccessDeviceCreate: {
+        /** @description Generic workflow transition (map §1.2 / §5.2) */
+        WorkflowActBody: {
+            /** @description Workflow action slug or Desk label */
+            action: string;
             confirm: boolean;
-            label: string;
-            fingerprint: string;
-            owner_username?: string | null;
-            /** @enum {string} */
-            status?: "pending" | "approved";
-            expires_at?: string | null;
-            notes?: string | null;
-        };
-        AdminAccessDevicePatch: {
-            confirm: boolean;
-            label?: string | null;
-            /** @enum {string} */
-            status?: "pending" | "approved" | "revoked" | "expired" | null;
-            owner_username?: string | null;
-            expires_at?: string | null;
-            notes?: string | null;
-        };
-        AdminAccessEvent: {
-            id: string;
-            time: string;
-            /** @enum {string} */
-            outcome: "allow" | "deny";
-            reason: string;
-            ip?: string | null;
-            username?: string | null;
-            device_id?: string | null;
-            path?: string | null;
-        };
-        AdminAccessEvaluateResult: {
-            allowed: boolean;
-            reason: string;
-            enforce_off_lan: boolean;
-            on_trusted_network: boolean;
-            device_status?: string | null;
-            /** @default / */
-            redirect_path: string;
-        };
-        StaffMember: {
-            username: string;
-            full_name: string;
-            email?: string | null;
-            roles?: string[];
-            department?: string | null;
-            designation?: string | null;
-            avatar_initials?: string;
-            enabled?: boolean;
-        };
-        StaffListResponse: {
-            items: components["schemas"]["StaffMember"][];
-        };
-        ReassignBody: {
-            /** @description Frappe username to assign to */
-            to_user: string;
+            /** @description Must match current workflow_state (optimistic concurrency) */
+            expected_state?: string | null;
+            /** @description Replay returns the original result (L4); TTL 7 days */
+            idempotency_key?: string | null;
+            /** @description Required for reject/return/withdraw/suspend/cancel/override */
+            reason?: string | null;
             comment?: string | null;
+            payload?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        AuditPatchBody: {
+            action: string;
+            confirm: boolean;
+            payload?: {
+                [key: string]: unknown;
+            };
+        };
+        BallotVoteBody: {
+            /** @enum {string} */
+            vote: "approve" | "disapprove" | "abstain";
+            comment?: string;
             confirm: boolean;
         };
-        ReassignResult: {
-            ok: boolean;
-            to_user: string;
-            message?: string;
+        EscalateBody: {
+            confirm: boolean;
+            reason?: string;
         };
+        CartItemBody: {
+            code: string;
+            /** @default 1 */
+            qty: number;
+        };
+        CartBody: {
+            items?: components["schemas"]["CartItemBody"][];
+            confirm?: boolean;
+        };
+        AccessRequestBody: {
+            reason: string;
+            requested_roles?: string[];
+            confirm: boolean;
+        };
+        /** @enum {string} */
+        PackSectionStatus: "awaiting" | "ready" | "overdue";
+        /** @enum {string} */
+        PackSectionSource: "live_module" | "upload" | "secretariat";
         PackSection: {
             id: string;
             title: string;
@@ -3312,6 +1116,7 @@ export interface components {
             /** @default false */
             restricted: boolean;
         };
+        /** @description Segmented pack readiness track for Overview / meeting drawer */
         PackTrack: {
             pack_id?: string | null;
             meeting_id?: string | null;
@@ -3460,6 +1265,15 @@ export interface components {
             file_url?: string | null;
             status?: string | null;
         };
+        /** @description Deprecated thin summary — prefer GovernancePack / PackTrack */
+        BoardPackSummary: {
+            due_label: string;
+            outstanding_sections: number;
+            sections: {
+                title: string;
+                status: string;
+            }[];
+        };
         GovernanceResolution: {
             id: string;
             title: string;
@@ -3489,6 +1303,10 @@ export interface components {
             /** @default false */
             report_in_pack: boolean;
         };
+        /** @enum {string} */
+        RiskBand: "critical" | "high" | "medium" | "low";
+        /** @enum {string} */
+        RiskTrend: "improving" | "stable" | "worsening";
         GovernanceRisk: {
             id: string;
             title: string;
@@ -3548,18 +1366,10 @@ export interface components {
             /** Format: date */
             filed_on: string;
         };
-        AllowedAction: {
-            action: string;
-            label: string;
-            rule_id?: string | null;
-            /** @default false */
-            danger: boolean;
-            consequence?: string | null;
-        };
-        ConfirmBody: {
-            confirm: boolean;
-        };
-};
+        GovernanceMeetingSummary: components["schemas"]["GovernanceMeeting"];
+        GovernanceResolutionSummary: components["schemas"]["GovernanceResolution"];
+        GovernanceRiskSummary: components["schemas"]["GovernanceRisk"];
+    };
     responses: never;
     parameters: {
         IdPath: string;
@@ -3681,6 +1491,176 @@ export interface operations {
             };
         };
     };
+    actCertificationApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowActBody"];
+            };
+        };
+        responses: {
+            /** @description Transition applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificationApplication"];
+                };
+            };
+        };
+    };
+    actWorkItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowActBody"];
+            };
+        };
+        responses: {
+            /** @description Transition applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    actCalibrationJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowActBody"];
+            };
+        };
+        responses: {
+            /** @description Transition applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    actTbtNotification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowActBody"];
+            };
+        };
+        responses: {
+            /** @description Transition applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    actBoardResolution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowActBody"];
+            };
+        };
+        responses: {
+            /** @description Transition applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    actBoardPack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowActBody"];
+            };
+        };
+        responses: {
+            /** @description Transition applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    actFieldVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowActBody"];
+            };
+        };
+        responses: {
+            /** @description Transition applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     advanceCertificationApplication: {
         parameters: {
             query?: never;
@@ -3692,11 +1672,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    action?: string;
-                    confirm: boolean;
-                    comment?: string;
-                };
+                "application/json": components["schemas"]["WorkflowActBody"];
             };
         };
         responses: {
@@ -3793,204 +1769,6 @@ export interface operations {
             };
         };
     };
-    listEstoreOrders: {
-        parameters: {
-            query?: {
-                entity?: "personal" | "business";
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["OrderSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    listAccountEntities: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["AccountEntity"][];
-                        active: string;
-                    };
-                };
-            };
-        };
-    };
-    getAccountOverview: {
-        parameters: {
-            query?: {
-                entity?: "personal" | "business";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AccountOverview"];
-                };
-            };
-        };
-    };
-    listAccountTeam: {
-        parameters: {
-            query?: {
-                entity?: "personal" | "business";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["TeamMember"][];
-                    };
-                };
-            };
-        };
-    };
-    inviteTeamMember: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: email */
-                    email: string;
-                    /** @enum {string} */
-                    role: "admin" | "member" | "viewer";
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Invited */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TeamMember"];
-                };
-            };
-        };
-    };
-    updateAccountMe: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    full_name?: string;
-                    phone?: string;
-                    /** Format: email */
-                    email?: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionUser"];
-                };
-            };
-        };
-    };
-    getAccountNotifications: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationPrefs"];
-                };
-            };
-        };
-    };
-    updateAccountNotifications: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NotificationPrefs"];
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationPrefs"];
-                };
-            };
-        };
-    };
     verifyToken: {
         parameters: {
             query?: never;
@@ -4066,30 +1844,6 @@ export interface operations {
             };
         };
     };
-    buildGuide: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GuideRequest"];
-            };
-        };
-        responses: {
-            /** @description Generated guided flow */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GuideResponse"];
-                };
-            };
-        };
-    };
     login: {
         parameters: {
             query?: never;
@@ -4099,108 +1853,15 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Full session after OTP (Set-Cookie + body) */
-            200: {
-                headers: {
-                    /** @description Core session id (httpOnly, Secure, SameSite=Lax) */
-                    "Set-Cookie"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Session"];
-                };
-            };
-            /** @description Password accepted — OTP required */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoginChallenge"];
-                };
-            };
-        };
-    };
-    register: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegisterRequest"];
-            };
-        };
-        responses: {
-            /** @description Account created — OTP required before session */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoginChallenge"];
-                };
-            };
-            /** @description Account already exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    requestOtp: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
                 "application/json": {
-                    /** Format: email */
-                    email: string;
+                    username: string;
+                    /** Format: password */
+                    password: string;
                 };
             };
         };
         responses: {
-            /** @description OTP dispatched (or stubbed) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        ok: boolean;
-                        message?: string;
-                        stubbed?: boolean;
-                    };
-                };
-            };
-        };
-    };
-    unlockSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UnlockRequest"];
-            };
-        };
-        responses: {
-            /** @description Session unlocked */
+            /** @description Session established */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4208,105 +1869,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Session"];
                 };
-            };
-            /** @description Invalid credentials, no session, or OTP trust expired */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthRequiredError"];
-                };
-            };
-        };
-    };
-    touchSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Activity recorded */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Locked, expired, or unauthenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthRequiredError"];
-                };
-            };
-        };
-    };
-    inviteStaff: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["InviteStaffRequest"];
-            };
-        };
-        responses: {
-            /** @description Invite accepted */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InviteStaffResponse"];
-                };
-            };
-            /** @description Inviter lacks admin/HR role */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Account already exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description SMTP not configured */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    logout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Logged out */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
@@ -4319,57 +1881,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Authenticated user */
+            /** @description Current user */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["SessionUser"];
-                };
-            };
-            /** @description Guest — no session */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthRequiredError"];
-                };
-            };
-        };
-    };
-    requestPasswordReset: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PasswordResetRequest"];
-            };
-        };
-        responses: {
-            /** @description Reset link dispatched (or no-op for unknown user) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PasswordResetResponse"];
-                };
-            };
-            /** @description SMTP not configured — cannot send reset link */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        detail?: string;
-                    };
                 };
             };
         };
@@ -4398,72 +1916,22 @@ export interface operations {
             };
         };
     };
-    listOrgStaff: {
-        parameters: {
-            query?: {
-                /** @description Search query (name, email, or role) */
-                q?: string;
-                /** @description Filter by role (e.g. "System Manager", "Accounts Manager") */
-                role?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StaffListResponse"];
-                };
-            };
-        };
-    };
-    reassignTask: {
+    patchCertificationAudit: {
         parameters: {
             query?: never;
-            header?: never;
-            path?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ReassignBody"];
+                "application/json": components["schemas"]["AuditPatchBody"];
             };
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReassignResult"];
-                };
-            };
-            /** @description Not permitted */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    listApprovals: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -4472,14 +1940,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["ApprovalItem"][];
-                        pending_count: number;
+                        [key: string]: unknown;
                     };
                 };
             };
         };
     };
-    actOnApproval: {
+    revokeCertificate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmBody"];
+            };
+        };
+        responses: {
+            /** @description Revoked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    renewCertificate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmBody"];
+            };
+        };
+        responses: {
+            /** @description Renewed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getCertificatePdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed download URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        download_url?: string | null;
+                    };
+                };
+            };
+        };
+    };
+    voteBallot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BallotVoteBody"];
+            };
+        };
+        responses: {
+            /** @description Vote recorded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    escalateApproval: {
         parameters: {
             query?: never;
             header?: never;
@@ -4491,46 +2054,12 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    /** @enum {string} */
-                    action: "approve" | "reject" | "return";
-                    confirm: boolean;
-                    comment?: string;
-                };
+                "application/json": components["schemas"]["EscalateBody"];
             };
         };
         responses: {
-            /** @description Workflow advanced */
+            /** @description Escalation result */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        ok: boolean;
-                        doctype: string;
-                        name: string;
-                        action: string;
-                        message?: string;
-                    };
-                };
-            };
-            /** @description confirm must be true */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Permission denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Frappe unavailable or method failed */
-            502: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4538,47 +2067,77 @@ export interface operations {
             };
         };
     };
-    reassignApproval: {
+    listFieldMyAudits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Audits assigned to current auditor */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getFieldMySummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Next audit, schedule chips, unread */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    upsertEstoreCart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CartBody"];
+            };
+        };
+        responses: {
+            /** @description Cart snapshot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getEstoreOrder: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                doctype: string;
-                name: string;
+                id: components["parameters"]["IdPath"];
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReassignBody"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Reassigned */
+            /** @description Order status (poll for MoMo) */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReassignResult"];
-                };
-            };
-            /** @description confirm must be true */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Permission denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Frappe unavailable */
-            502: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4586,33 +2145,45 @@ export interface operations {
             };
         };
     };
-    listTbtAlerts: {
+    downloadEstoreLicence: {
         parameters: {
-            query?: {
-                unread_only?: boolean;
-                limit?: number;
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed licence download URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listAccessRequests: {
+        parameters: {
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Access request queue */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["TbtNotificationSummary"][];
-                        new_count: number;
-                    };
-                };
+                content?: never;
             };
         };
     };
-    subscribeTbt: {
+    createAccessRequest: {
         parameters: {
             query?: never;
             header?: never;
@@ -4621,248 +2192,12 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    sector?: string;
-                    hs_code?: string;
-                    jurisdiction?: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Subscription recorded */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        ok: boolean;
-                        id?: string;
-                    };
-                };
-            };
-        };
-    };
-    getFinanceKpis: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FinanceDashboard"];
-                };
-            };
-        };
-    };
-    getFinanceSettings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FinanceSettings"];
-                };
-            };
-        };
-    };
-    listFinanceInvoices: {
-        parameters: {
-            query?: {
-                status?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["FinanceInvoiceSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    createFinanceInvoice: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    customer: string;
-                    items?: {
-                        [key: string]: unknown;
-                    }[];
-                    confirm: boolean;
-                };
+                "application/json": components["schemas"]["AccessRequestBody"];
             };
         };
         responses: {
             /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FinanceInvoiceSummary"];
-                };
-            };
-        };
-    };
-    getFinanceRevenue: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    getFinanceBudget: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    getHrSummary: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrSummary"];
-                };
-            };
-        };
-    };
-    getHrOverview: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrSummary"];
-                };
-            };
-        };
-    };
-    getHrOrganisationOverview: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrOrganisationOverview"];
-                };
-            };
-        };
-    };
-    getHrOrganisation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrOrganisation"];
-                };
-            };
-            /** @description No Company configured */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4870,54 +2205,17 @@ export interface operations {
             };
         };
     };
-    patchHrOrganisation: {
+    listExpenseClaims: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrOrganisationPatch"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Updated */
+            /** @description Expense claims for current user */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrOrganisation"];
-                };
-            };
-        };
-    };
-    createHrOrganisation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrOrganisationCreate"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrOrganisation"];
-                };
-            };
-            /** @description Company already exists */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4925,74 +2223,24 @@ export interface operations {
             };
         };
     };
-    listHrDepartments: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrDepartment"][];
-                    };
-                };
-            };
-        };
-    };
-    createHrDepartment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrDepartmentCreate"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrDepartment"];
-                };
-            };
-        };
-    };
-    deleteHrDepartment: {
+    triageTbtAlert: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                id: components["parameters"]["IdPath"];
+                action: "assess" | "publish" | "dismiss";
             };
             cookie?: never;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmBody"];
             };
-            /** @description Still referenced */
-            409: {
+        };
+        responses: {
+            /** @description Triage result */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5000,152 +2248,17 @@ export interface operations {
             };
         };
     };
-    patchHrDepartment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrDepartmentPatch"];
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrDepartment"];
-                };
-            };
-        };
-    };
-    assignHrDepartmentHead: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    employee_id: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrDepartment"];
-                };
-            };
-        };
-    };
-    clearHrDepartmentHead: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrDepartment"];
-                };
-            };
-        };
-    };
-    listHrDesignations: {
-        parameters: {
-            query?: {
-                department_id?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrDesignation"][];
-                    };
-                };
-            };
-        };
-    };
-    createHrDesignation: {
+    listIngestQueue: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrDesignationCreate"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrDesignation"];
-                };
-            };
-        };
-    };
-    deleteHrDesignation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
         requestBody?: never;
         responses: {
-            /** @description Deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Still referenced by employees */
-            409: {
+            /** @description Curation queue */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5153,320 +2266,24 @@ export interface operations {
             };
         };
     };
-    patchHrDesignation: {
+    curateIngestItem: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                id: components["parameters"]["IdPath"];
+                action: "approve" | "reject" | "flag_rights";
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["HrDesignationPatch"];
+                "application/json": components["schemas"]["ConfirmBody"];
             };
         };
         responses: {
-            /** @description Updated */
+            /** @description Curation result */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrDesignation"];
-                };
-            };
-        };
-    };
-    listHrGradeBands: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrGradeBand"][];
-                    };
-                };
-            };
-        };
-    };
-    createHrGradeBand: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrGradeBandCreate"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrGradeBand"];
-                };
-            };
-        };
-    };
-    patchHrGradeBand: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrGradeBandPatch"];
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrGradeBand"];
-                };
-            };
-        };
-    };
-    listHrLocations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrLocation"][];
-                    };
-                };
-            };
-        };
-    };
-    createHrLocation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrLocationCreate"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrLocation"];
-                };
-            };
-        };
-    };
-    patchHrLocation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrLocationPatch"];
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrLocation"];
-                };
-            };
-        };
-    };
-    listHrCostCentres: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrCostCentre"][];
-                    };
-                };
-            };
-        };
-    };
-    createHrCostCentre: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrCostCentreCreate"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrCostCentre"];
-                };
-            };
-        };
-    };
-    patchHrCostCentre: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrCostCentrePatch"];
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrCostCentre"];
-                };
-            };
-        };
-    };
-    getHrOrgChart: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        nodes: components["schemas"]["HrOrgChartNode"][];
-                    };
-                };
-            };
-        };
-    };
-    listHrEmployees: {
-        parameters: {
-            query?: {
-                limit?: number;
-                status?: string;
-                department?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrEmployeeSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    createHrEmployee: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrEmployeeCreate"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrEmployeeSummary"];
-                };
-            };
-            /** @description Employee or user already exists */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5474,287 +2291,7 @@ export interface operations {
             };
         };
     };
-    getHrEmployee: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrEmployeeSummary"];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    patchHrEmployee: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrEmployeePatch"];
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrEmployeeSummary"];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    listHrLeave: {
-        parameters: {
-            query?: {
-                status?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrLeaveSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    createHrLeave: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    leave_type: string;
-                    /** Format: date */
-                    from_date: string;
-                    /** Format: date */
-                    to_date: string;
-                    reason?: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrLeaveSummary"];
-                };
-            };
-        };
-    };
-    listHrLeaveBalances: {
-        parameters: {
-            query?: {
-                /** @description Employee id; defaults to session user linked Employee */
-                employee?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrLeaveBalance"][];
-                    };
-                };
-            };
-        };
-    };
-    actHrLeave: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HrLeaveAct"];
-            };
-        };
-        responses: {
-            /** @description Acted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrLeaveSummary"];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Leave not in actionable state */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    listHrHolidays: {
-        parameters: {
-            query?: {
-                limit?: number;
-                from_date?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrHoliday"][];
-                    };
-                };
-            };
-        };
-    };
-    listHrAttendance: {
-        parameters: {
-            query?: {
-                /** @description ISO date; defaults to today */
-                date?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrAttendanceSnapshot"];
-                };
-            };
-        };
-    };
-    listHrOutToday: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrOutTodayItem"][];
-                    };
-                };
-            };
-        };
-    };
-    listHrAppraisals: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrAppraisalSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    getHrAppraisalCycle: {
+    getGovernanceOverview: {
         parameters: {
             query?: never;
             header?: never;
@@ -5769,322 +2306,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HrAppraisalCycle"];
-                };
-            };
-        };
-    };
-    submitHrAppraisal: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                    comments?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Submitted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrAppraisalSummary"];
-                };
-            };
-        };
-    };
-    listHrJobs: {
-        parameters: {
-            query?: {
-                limit?: number;
-                status?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrJobOpening"][];
-                    };
-                };
-            };
-        };
-    };
-    createHrJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    job_title: string;
-                    department?: string;
-                    designation?: string;
-                    vacancies?: number;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrJobOpening"];
-                };
-            };
-        };
-    };
-    listHrApplicants: {
-        parameters: {
-            query?: {
-                job?: string;
-                status?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrApplicant"][];
-                    };
-                };
-            };
-        };
-    };
-    advanceHrApplicant: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    stage: string;
-                    confirm: boolean;
-                    note?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Advanced */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrApplicant"];
-                };
-            };
-        };
-    };
-    createHrInterview: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    applicant: string;
-                    /** Format: date-time */
-                    scheduled_at: string;
-                    interviewers?: string[];
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrInterview"];
-                };
-            };
-        };
-    };
-    listHrSlips: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrPayslip"][];
-                    };
-                };
-            };
-        };
-    };
-    getHrPayrollStatus: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrPayrollStatus"];
-                };
-            };
-        };
-    };
-    listHrOnboarding: {
-        parameters: {
-            query?: {
-                employee?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["HrOnboardingItem"][];
-                    };
-                };
-            };
-        };
-    };
-    createHrExpense: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    amount: number;
-                    expense_type: string;
-                    description?: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrExpense"];
-                };
-            };
-        };
-    };
-    createHrGrievance: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    subject: string;
-                    body?: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HrGrievance"];
-                };
-            };
-        };
-    };
-    getBoardPackSummary: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardPackSummary"];
+                    "application/json": components["schemas"]["GovernanceOverview"];
                 };
             };
         };
@@ -6137,1825 +2359,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GovernanceMeeting"];
-                };
-            };
-        };
-    };
-    listGovernanceResolutions: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["GovernanceResolution"][];
-                    };
-                };
-            };
-        };
-    };
-    createGovernanceResolution: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    title: string;
-                    meeting?: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GovernanceResolutionSummary"];
-                };
-            };
-        };
-    };
-    listGovernanceRisks: {
-        parameters: {
-            query?: {
-                /** @description Residual likelihood (1–5) */
-                L?: number;
-                /** @description Residual impact (1–5) */
-                I?: number;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["GovernanceRisk"][];
-                    };
-                };
-            };
-        };
-    };
-    createGovernanceRisk: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    title: string;
-                    /** @enum {string} */
-                    severity: "low" | "medium" | "high";
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GovernanceRiskSummary"];
-                };
-            };
-        };
-    };
-    assembleBoardPack: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                meeting: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConfirmBody"];
-            };
-        };
-        responses: {
-            /** @description Assembled */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardPackSummary"];
-                };
-            };
-        };
-    };
-    listMetrologyJobs: {
-        parameters: {
-            query?: {
-                status?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items?: components["schemas"]["MetrologyJobSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    createMetrologyJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    instrument: string;
-                    customer?: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MetrologyJobSummary"];
-                };
-            };
-        };
-    };
-    listMetrologyInstruments: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            [key: string]: unknown;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    createMetrologyInstrument: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    listMetrologyResults: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            [key: string]: unknown;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    createMetrologyResult: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    job: string;
-                    values?: {
-                        [key: string]: unknown;
-                    };
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    issueMetrologyCertificate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Certificate issued */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    getCrmPipeline: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CrmPipeline"];
-                };
-            };
-        };
-    };
-    listCrmLeads: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["CrmLeadSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    createCrmLead: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    title: string;
-                    organization?: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CrmLeadSummary"];
-                };
-            };
-        };
-    };
-    listCrmDeals: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["CrmDealSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    createCrmDeal: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    title: string;
-                    amount?: number;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CrmDealSummary"];
-                };
-            };
-        };
-    };
-    listTrainingCourses: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["TrainingCourseSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    listTrainingEnrolments: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["TrainingEnrolmentSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    enrolTraining: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    course: string;
-                    batch?: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Enrolled */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TrainingEnrolmentSummary"];
-                };
-            };
-        };
-    };
-    listMarketingCampaigns: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["MarketingCampaignSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    createMarketingCampaign: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    title: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MarketingCampaignSummary"];
-                };
-            };
-        };
-    };
-    runSlaSweep: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @default false */
-                    confirm?: boolean;
-                    /** @default false */
-                    dry_run?: boolean;
-                    /** @default 50 */
-                    limit?: number;
-                };
-            };
-        };
-        responses: {
-            /** @description Sweep report */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        scanned: number;
-                        breached: number;
-                        escalated: number;
-                        dry_run: boolean;
-                        items?: {
-                            [key: string]: unknown;
-                        }[];
-                        errors?: string[];
-                    };
-                };
-            };
-            /** @description confirm required unless dry_run */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Frappe unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    analyticsAsk: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    question: string;
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AnalyticsAskResponse"];
-                };
-            };
-        };
-    };
-    listAnalyticsReports: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["AnalyticsReportSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    getAnalyticsMetric: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                metric: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    listCertificationAudits: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["AuditSummary"][];
-                    };
-                };
-            };
-        };
-    };
-    createCertificationAudit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    application: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuditSummary"];
-                };
-            };
-        };
-    };
-    listCertificationCertificates: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            [key: string]: unknown;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    createCertificationCertificate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    application: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    listStandardsWorkitems: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            [key: string]: unknown;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    createStandardsWorkitem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    title: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    listStandardsDrafts: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            [key: string]: unknown;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    createStandardsDraft: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    work_item: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    listStandardsComments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            [key: string]: unknown;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    createStandardsComment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    draft: string;
-                    body: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    listStandardsBallots: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            [key: string]: unknown;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    createStandardsBallot: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    draft: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    publishStandard: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    standard: string;
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Published */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    getAdminOverview: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminOverview"];
-                };
-            };
-            /** @description Not System Manager */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    listAdminUpdates: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminUpdatesResponse"];
-                };
-            };
-        };
-    };
-    runAdminUpdate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminUpdateRunBody"];
-            };
-        };
-        responses: {
-            /** @description Update finished (or dry-run / locked) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminCommandResult"];
-                };
-            };
-            /** @description Update lock held */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    adminClearCache: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminCommandResult"];
-                };
-            };
-        };
-    };
-    adminBackupNow: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                    /** @default true */
-                    with_files?: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminCommandResult"];
-                };
-            };
-        };
-    };
-    adminRestartServices: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminCommandResult"];
-                };
-            };
-        };
-    };
-    adminMaintenanceMode: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                    enabled: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminCommandResult"];
-                };
-            };
-        };
-    };
-    getAdminSystemSettings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminSystemSettings"];
-                };
-            };
-        };
-    };
-    patchAdminSystemSettings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                    values: components["schemas"]["AdminSystemSettings"];
-                };
-            };
-        };
-        responses: {
-            /** @description Saved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminSystemSettings"];
-                };
-            };
-        };
-    };
-    getAdminEmailSettings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminEmailSettings"];
-                };
-            };
-        };
-    };
-    adminTestEmail: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                    /** Format: email */
-                    to: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Queued / sent */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminCommandResult"];
-                };
-            };
-        };
-    };
-    listAdminUsers: {
-        parameters: {
-            query?: {
-                limit?: number;
-                enabled?: boolean | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["AdminUserSummary"][];
-                        active: number;
-                        disabled: number;
-                    };
-                };
-            };
-        };
-    };
-    patchAdminUser: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                    enabled?: boolean;
-                    role_profile_name?: string | null;
-                };
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminUserSummary"];
-                };
-            };
-        };
-    };
-    listAdminRoleProfiles: {
-        parameters: {
-            query?: {
-                audience?: "public" | "institution" | "external";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["AdminRoleProfile"][];
-                    };
-                };
-            };
-        };
-    };
-    listAdminRoles: {
-        parameters: {
-            query?: {
-                curated?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            name: string;
-                            desk_access?: boolean;
-                            disabled?: boolean;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    getMediaStatus: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MediaStatus"];
-                };
-            };
-        };
-    };
-    uploadMedia: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": {
-                    /** Format: binary */
-                    file: string;
-                    /** @default uploads */
-                    prefix?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Stored */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MediaObject"];
-                };
-            };
-        };
-    };
-    downloadMedia: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                key: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Binary object */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/octet-stream": string;
-                };
-            };
-        };
-    };
-    getAdminScheduler: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminSchedulerResponse"];
-                };
-            };
-        };
-    };
-    runAdminScheduledJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Enqueued */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminCommandResult"];
-                };
-            };
-        };
-    };
-    getAdminJobs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminJobsSnapshot"];
-                };
-            };
-        };
-    };
-    retryAdminFailedJobs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminCommandResult"];
-                };
-            };
-        };
-    };
-    listAdminBackups: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["AdminBackupSummary"][];
-                        policy?: components["schemas"]["AdminBackupPolicy"];
-                    };
-                };
-            };
-        };
-    };
-    listAdminLogs: {
-        parameters: {
-            query?: {
-                kind?: "error" | "activity";
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["AdminLogEntry"][];
-                    };
-                };
-            };
-        };
-    };
-    getAdminIntegrations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["AdminIntegrationStatus"][];
-                    };
-                };
-            };
-        };
-    };
-    getAdminAccessPolicy: {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        requestBody?: never;
-        responses: {
-            200: { headers: { [name: string]: unknown; }; content: { "application/json": components["schemas"]["AdminAccessPolicy"]; }; };
-            403: { headers: { [name: string]: unknown; }; content?: never; };
-        };
-    };
-    putAdminAccessPolicy: {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        requestBody: {
-            content: {
-                "application/json": {
-                    confirm: boolean;
-                    policy: components["schemas"]["AdminAccessPolicy"];
-                };
-            };
-        };
-        responses: {
-            200: { headers: { [name: string]: unknown; }; content: { "application/json": components["schemas"]["AdminAccessPolicy"]; }; };
-        };
-    };
-    listAdminAccessNetworks: {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: { [name: string]: unknown; };
-                content: { "application/json": { items: components["schemas"]["AdminAccessNetwork"][]; }; };
-            };
-        };
-    };
-    createAdminAccessNetwork: {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        requestBody: { content: { "application/json": components["schemas"]["AdminAccessNetworkCreate"]; }; };
-        responses: {
-            201: { headers: { [name: string]: unknown; }; content: { "application/json": components["schemas"]["AdminAccessNetwork"]; }; };
-        };
-    };
-    deleteAdminAccessNetwork: {
-        parameters: {
-            query: { confirm: boolean; };
-            header?: never;
-            path: { network_id: string; };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: { headers: { [name: string]: unknown; }; content: { "application/json": { ok: boolean; }; }; };
-        };
-    };
-    listAdminAccessDevices: {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: { [name: string]: unknown; };
-                content: { "application/json": { items: components["schemas"]["AdminAccessDevice"][]; }; };
-            };
-        };
-    };
-    createAdminAccessDevice: {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        requestBody: { content: { "application/json": components["schemas"]["AdminAccessDeviceCreate"]; }; };
-        responses: {
-            201: { headers: { [name: string]: unknown; }; content: { "application/json": components["schemas"]["AdminAccessDevice"]; }; };
-        };
-    };
-    patchAdminAccessDevice: {
-        parameters: {
-            query?: never; header?: never;
-            path: { device_id: string; };
-            cookie?: never;
-        };
-        requestBody: { content: { "application/json": components["schemas"]["AdminAccessDevicePatch"]; }; };
-        responses: {
-            200: { headers: { [name: string]: unknown; }; content: { "application/json": components["schemas"]["AdminAccessDevice"]; }; };
-        };
-    };
-    listAdminAccessEvents: {
-        parameters: {
-            query?: { limit?: number; };
-            header?: never; path?: never; cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: { [name: string]: unknown; };
-                content: { "application/json": { items: components["schemas"]["AdminAccessEvent"][]; }; };
-            };
-        };
-    };
-    evaluateAdminAccess: {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        requestBody: {
-            content: {
-                "application/json": {
-                    ip?: string | null;
-                    fingerprint?: string | null;
-                    username?: string | null;
-                    path?: string | null;
-                    record?: boolean;
-                };
-            };
-        };
-        responses: {
-            200: { headers: { [name: string]: unknown; }; content: { "application/json": components["schemas"]["AdminAccessEvaluateResult"]; }; };
-        };
-    };
-    getInstitutionAccessGate: {
-        parameters: { query?: never; header?: never; path?: never; cookie?: never; };
-        requestBody?: never;
-        responses: {
-            200: { headers: { [name: string]: unknown; }; content: { "application/json": components["schemas"]["AdminAccessEvaluateResult"]; }; };
-            403: { headers: { [name: string]: unknown; }; content: { "application/json": components["schemas"]["AdminAccessEvaluateResult"]; }; };
-        };
-    };
-    getGovernanceOverview: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GovernanceOverview"];
                 };
             };
         };
@@ -8129,6 +2532,76 @@ export interface operations {
             };
         };
     };
+    getBoardPackSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardPackSummary"];
+                };
+            };
+        };
+    };
+    assembleBoardPack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meeting: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmBody"];
+            };
+        };
+        responses: {
+            /** @description Assembled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardPackSummary"];
+                };
+            };
+        };
+    };
+    listGovernanceResolutions: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["GovernanceResolution"][];
+                    };
+                };
+            };
+        };
+    };
     listResolutionActions: {
         parameters: {
             query?: {
@@ -8149,6 +2622,34 @@ export interface operations {
                 content: {
                     "application/json": {
                         items: components["schemas"]["ResolutionAction"][];
+                    };
+                };
+            };
+        };
+    };
+    listGovernanceRisks: {
+        parameters: {
+            query?: {
+                /** @description Residual likelihood (1–5) */
+                L?: number;
+                /** @description Residual impact (1–5) */
+                I?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["GovernanceRisk"][];
                     };
                 };
             };

@@ -46,28 +46,146 @@
     "action": "Start Work",
     "next_state": "In Progress",
     "allowed": "Eswasa Metrology Officer",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    },
    {
     "state": "In Progress",
     "action": "Submit for Review",
     "next_state": "Reviewed",
     "allowed": "Eswasa Metrology Officer",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    },
    {
     "state": "Reviewed",
     "action": "Issue Certificate",
     "next_state": "Certified",
     "allowed": "Eswasa Metrology Reviewer",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    },
    {
     "state": "Certified",
     "action": "Dispatch",
     "next_state": "Dispatched",
     "allowed": "Eswasa Metrology Manager",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
+   }
+  ]
+ },
+ {
+  "doctype": "Workflow",
+  "name": "Sample Custody Flow",
+  "workflow_name": "Sample Custody Flow",
+  "document_type": "Sample",
+  "is_active": 1,
+  "override_status": 0,
+  "send_email_alert": 0,
+  "workflow_state_field": "workflow_state",
+  "states": [
+   {
+    "state": "Collected",
+    "doc_status": "0",
+    "allow_edit": "Certification Auditor",
+    "is_optional_state": 0
+   },
+   {
+    "state": "In Transit",
+    "doc_status": "0",
+    "allow_edit": "Certification Auditor",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Received",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Metrology Officer",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Testing",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Metrology Officer",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Conforming",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Metrology Manager",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Non-conforming",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Metrology Manager",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Retained",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Metrology Officer",
+    "is_optional_state": 0
+   },
+   {
+    "state": "Disposed",
+    "doc_status": "0",
+    "allow_edit": "Eswasa Metrology Officer",
+    "is_optional_state": 0
+   }
+  ],
+  "transitions": [
+   {
+    "state": "Collected",
+    "action": "Hand over",
+    "next_state": "In Transit",
+    "allowed": "Certification Auditor",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "In Transit",
+    "action": "Receive",
+    "next_state": "Received",
+    "allowed": "Eswasa Metrology Officer",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Received",
+    "action": "Start testing",
+    "next_state": "Testing",
+    "allowed": "Eswasa Metrology Manager",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Testing",
+    "action": "Approve conforming",
+    "next_state": "Conforming",
+    "allowed": "Eswasa Metrology Manager",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Testing",
+    "action": "Approve non-conforming",
+    "next_state": "Non-conforming",
+    "allowed": "Eswasa Metrology Manager",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Conforming",
+    "action": "Retain",
+    "next_state": "Retained",
+    "allowed": "Eswasa Metrology Officer",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Non-conforming",
+    "action": "Retain",
+    "next_state": "Retained",
+    "allowed": "Eswasa Metrology Officer",
+    "allow_self_approval": 0
+   },
+   {
+    "state": "Retained",
+    "action": "Dispose",
+    "next_state": "Disposed",
+    "allowed": "Eswasa Metrology Officer",
+    "allow_self_approval": 0
    }
   ]
  }

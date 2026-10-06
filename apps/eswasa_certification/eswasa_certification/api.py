@@ -8,17 +8,21 @@ Methods:
   - list_applications(status=None, limit=20)
   - get_application(name)
   - create_application(scheme, applicant_name, contact_email=None, confirm=False)
-  - advance_state(name, action, comment=None, confirm=False)
+  - advance_state(...) — alias of workflow_act.act
+  - patch_audit(name, action, payload=None, confirm=False, idempotency_key=None)
+  - workflow_act.act(doctype, name, action, expected_state, idempotency_key, reason, …)
 """
 
 from __future__ import annotations
+
+import json
+from typing import Any
 
 import frappe
 from frappe import _
 from frappe.utils import cint, getdate, nowdate, today
 
 from eswasa_certification.workflow_map import (
-    next_state,
     resolve_workflow_state,
     serialize_application,
     serialize_audit_summary,
@@ -149,6 +153,237 @@ def list_overdue(auditor: str | None = None, scheme: str | None = None) -> dict:
     return {"items": items}
 
 
+def _parse_payload(payload: Any) -> dict[str, Any]:
+    if payload is None:
+        return {}
+    if isinstance(payload, str):
+        text = payload.strip()
+        if not text:
+            return {}
+        try:
+            data = json.loads(text)
+        except Exception:
+            frappe.throw(_("payload must be a JSON object"), frappe.ValidationError)
+        if not isinstance(data, dict):
+            frappe.throw(_("payload must be a JSON object"), frappe.ValidationError)
+        return data
+    if isinstance(payload, dict):
+        return payload
+    frappe.throw(_("payload must be an object"), frappe.ValidationError)
+    return {}
+
+
+def _resolve_auditor(raw: str | None) -> str | None:
+    """Map portal staff pick / Auditor name → Auditor primary key.
+
+    Accepts Auditor code, linked User (email/name), email, display name, or
+    User.full_name / username. Staff pickers list Users; assignment needs an
+    Auditor master linked to that User.
+    """
+    value = (raw or "").strip()
+    if not value:
+        return None
+    if frappe.db.exists("Auditor", value):
+        return value
+    for filters in (
+        {"user": value},
+        {"email": value},
+        {"auditor_name": value},
+        {"auditor_code": value},
+    ):
+        found = frappe.db.get_value("Auditor", filters, "name")
+        if found:
+            return found
+
+    # Staff picker may send User.full_name or username — resolve User first.
+    user_name = None
+    if frappe.db.exists("User", value):
+        user_name = value
+    else:
+        user_name = (
+            frappe.db.get_value("User", {"email": value}, "name")
+            or frappe.db.get_value("User", {"username": value}, "name")
+            or frappe.db.get_value("User", {"full_name": value}, "name")
+        )
+    if user_name:
+        for filters in ({"user": user_name}, {"email": user_name}):
+            found = frappe.db.get_value("Auditor", filters, "name")
+            if found:
+                return found
+        email = frappe.db.get_value("User", user_name, "email")
+        if email:
+            found = frappe.db.get_value("Auditor", {"email": email}, "name")
+            if found:
+                return found
+
+    frappe.throw(
+        _(
+            "No auditor profile for {0}. Create an Auditor master linked to that "
+            "user (or pick someone who already has one)."
+        ).format(value),
+        frappe.ValidationError,
+    )
+    return None
+
+
+def _allowed_audit_actions(status: str | None) -> list[dict[str, Any]]:
+    s = (status or "").lower()
+    if "cancel" in s:
+        return []
+    if "complete" in s or "done" in s or "closed" in s:
+        return [
+            {"action": "assign", "label": "Reassign auditor"},
+        ]
+    return [
+        {"action": "reschedule", "label": "Reschedule"},
+        {"action": "assign", "label": "Assign auditor"},
+        {"action": "complete", "label": "Mark complete"},
+        {"action": "submit_outcome", "label": "Submit outcome"},
+    ]
+
+
+@frappe.whitelist()
+def patch_audit(
+    name: str | None = None,
+    action: str | None = None,
+    payload: Any = None,
+    confirm: bool | int | str = False,
+    idempotency_key: str | None = None,
+) -> dict:
+    """Wave-1 PATCH /certification/audits/{id} — schedule, assign, complete, submit_outcome.
+
+    Actions: schedule | reschedule | assign | complete | submit_outcome
+    """
+    _require_confirm(confirm)
+    name = (name or "").strip()
+    action = (action or "").strip().lower()
+    data = _parse_payload(payload)
+
+    if not name:
+        frappe.throw(_("name is required"), frappe.ValidationError)
+    if action not in ("schedule", "reschedule", "assign", "complete", "submit_outcome"):
+        frappe.throw(
+            _("action must be schedule, reschedule, assign, complete, or submit_outcome"),
+            frappe.ValidationError,
+        )
+    if not frappe.db.exists("Audit", name):
+        frappe.throw(_("Audit {0} not found").format(name), frappe.DoesNotExistError)
+    if not frappe.has_permission("Audit", "write", doc=name):
+        frappe.throw(_("Not permitted to update Audit {0}").format(name), frappe.PermissionError)
+
+    # Soft idempotency: same key + already Completed for complete/submit → return current.
+    cache_key = None
+    if idempotency_key:
+        cache_key = f"eswasa_patch_audit:{name}:{action}:{idempotency_key}"
+        cached = frappe.cache().get_value(cache_key)
+        if cached:
+            return cached
+
+    doc = frappe.get_doc("Audit", name)
+    if cint(doc.docstatus) == 2:
+        frappe.throw(_("Audit {0} is cancelled").format(name), frappe.ValidationError)
+
+    if action in ("schedule", "reschedule"):
+        due = data.get("due_date") or data.get("planned_date") or data.get("date")
+        if not due:
+            frappe.throw(_("due_date is required for {0}").format(action), frappe.ValidationError)
+        due_d = getdate(due)
+        doc.due_date = due_d
+        doc.planned_date = getdate(data["planned_date"]) if data.get("planned_date") else due_d
+        if data.get("audit_type"):
+            doc.audit_type = data["audit_type"]
+        if data.get("auditor"):
+            doc.auditor = _resolve_auditor(str(data["auditor"]))
+        # Future date clears Overdue back to Planned.
+        if due_d >= getdate(nowdate()) and doc.status in ("Overdue", "Planned"):
+            doc.status = "Planned"
+        if cint(doc.docstatus) == 0:
+            doc.save(ignore_permissions=False)
+        else:
+            frappe.throw(
+                _("Cannot reschedule a submitted Audit — amend or create a new visit"),
+                frappe.ValidationError,
+            )
+
+    elif action == "assign":
+        auditor = data.get("auditor") or data.get("auditor_id")
+        if not auditor:
+            frappe.throw(_("auditor is required for assign"), frappe.ValidationError)
+        doc.auditor = _resolve_auditor(str(auditor))
+        if cint(doc.docstatus) == 0:
+            doc.save(ignore_permissions=False)
+        else:
+            frappe.db.set_value("Audit", name, "auditor", doc.auditor)
+            doc.reload()
+
+    elif action in ("complete", "submit_outcome"):
+        if cint(doc.docstatus) == 1 and doc.status == "Completed":
+            result = {
+                **serialize_audit_summary(doc.as_dict()),
+                "ok": True,
+                "action": action,
+                "allowed_actions": _allowed_audit_actions(doc.status),
+                "idempotency_key": idempotency_key,
+            }
+            if cache_key:
+                frappe.cache().set_value(cache_key, result, expires_in_sec=86400)
+            return result
+        if cint(doc.docstatus) == 1:
+            frappe.throw(_("Audit {0} is already submitted").format(name), frappe.ValidationError)
+
+        outcome = (data.get("outcome") or doc.outcome or "").strip()
+        if action == "submit_outcome" and not outcome:
+            frappe.throw(
+                _("outcome is required for submit_outcome (Pass, NC, or Conditional)"),
+                frappe.ValidationError,
+            )
+        if outcome:
+            if outcome not in ("Pass", "NC", "Conditional"):
+                frappe.throw(
+                    _("outcome must be Pass, NC, or Conditional"),
+                    frappe.ValidationError,
+                )
+            doc.outcome = outcome
+        if data.get("findings_summary"):
+            doc.findings_summary = data["findings_summary"]
+        if data.get("audit_type"):
+            doc.audit_type = data["audit_type"]
+        doc.status = "Completed"
+        doc.completed_date = getdate(data["completed_date"]) if data.get("completed_date") else getdate(nowdate())
+        doc.save(ignore_permissions=False)
+        # Submit to fire R-C2 (NC → findings). Fall back to direct rule if hooks fail.
+        try:
+            doc.submit()
+        except Exception:
+            frappe.db.set_value("Audit", doc.name, "docstatus", 1, update_modified=False)
+            doc.docstatus = 1
+            try:
+                from eswasa_certification.rules import rc2_audit_nc
+
+                rc2_audit_nc(doc)
+            except Exception:
+                frappe.log_error(title="eswasa_certification.patch_audit.rc2")
+
+    else:  # pragma: no cover
+        frappe.throw(_("Unsupported action {0}").format(action), frappe.ValidationError)
+
+    frappe.db.commit()
+    doc.reload()
+    _audit_log(action, "Audit", name, json.dumps(data)[:400] if data else "")
+
+    result = {
+        **serialize_audit_summary(doc.as_dict()),
+        "ok": True,
+        "action": action,
+        "status": doc.status,
+        "allowed_actions": _allowed_audit_actions(doc.status),
+        "idempotency_key": idempotency_key,
+    }
+    if cache_key:
+        frappe.cache().set_value(cache_key, result, expires_in_sec=86400)
+    return result
+
+
 @frappe.whitelist()
 def create_application(
     scheme: str | None = None,
@@ -206,79 +441,23 @@ def advance_state(
     action: str | None = None,
     comment: str | None = None,
     confirm: bool | int | str = False,
+    expected_state: str | None = None,
+    idempotency_key: str | None = None,
+    reason: str | None = None,
 ) -> dict:
-    """Advance a Certification Application through the CBMS workflow."""
-    _require_confirm(confirm)
+    """Advance a Certification Application — thin alias of workflow_act.act."""
+    from eswasa_certification.workflow_act import act
 
-    if not name:
-        frappe.throw(_("name is required"), frappe.ValidationError)
-    if not action:
-        frappe.throw(_("action is required"), frappe.ValidationError)
-
-    if not frappe.has_permission("Certification Application", "write"):
-        frappe.throw(
-            _("Not permitted to update Certification Application"),
-            frappe.PermissionError,
-        )
-
-    if not frappe.db.exists("Certification Application", name):
-        frappe.throw(_("Application {0} not found").format(name), frappe.DoesNotExistError)
-
-    doc = frappe.get_doc("Certification Application", name)
-    current = doc.workflow_state or "Application"
-    try:
-        target = next_state(current, action)
-    except ValueError as exc:
-        frappe.throw(str(exc), frappe.ValidationError)
-
-    doc.workflow_state = target
-    # Comments use full insert hooks — skip when site hooks are broken
-    if comment:
-        try:
-            c = frappe.get_doc(
-                {
-                    "doctype": "Comment",
-                    "comment_type": "Workflow",
-                    "reference_doctype": doc.doctype,
-                    "reference_name": doc.name,
-                    "content": comment,
-                }
-            )
-            c.set_new_name()
-            c.db_insert()
-        except Exception:
-            pass
-    doc = _persist(doc, insert=False)
-
-    # Side-effects for common transitions (best-effort; never invent certificates silently)
-    if target == "Assessment":
-        from eswasa_certification.rules import rc1_application_submitted
-
-        try:
-            rc1_application_submitted(doc)
-        except Exception:
-            frappe.log_error(title="eswasa_certification R-C1 from advance_state failed")
-    if target == "Audit Scheduled" and doc.assigned_auditor:
-        _ensure_planned_audit(doc)
-    if target == "NC Resolution":
-        frappe.db.set_value(
-            doc.doctype,
-            doc.name,
-            {"nc_open": 1, "certificate_blocked": 1},
-            update_modified=False,
-        )
-    if target == "Certified":
-        _ensure_certificate_stub(doc)
-
-    _audit_log(
-        "advance_state",
-        doc.doctype,
-        doc.name,
-        f"{current} --{action}--> {target}" + (f" | {comment}" if comment else ""),
+    return act(
+        doctype="Certification Application",
+        name=name,
+        action=action,
+        expected_state=expected_state,
+        idempotency_key=idempotency_key,
+        reason=reason,
+        comment=comment,
+        confirm=confirm,
     )
-    frappe.db.commit()
-    doc.reload()
-    return serialize_application(doc.as_dict())
 
 
 @frappe.whitelist()

@@ -41,14 +41,16 @@ eswasaone/
 ├── README.md
 ├── AGENTS.md
 ├── .env.example
-├── contracts/openapi.yaml    # SOURCE OF TRUTH
+├── contracts/openapi.yaml    # HTTP contract SoT
 ├── contracts/types.ts        # generated — do not hand-edit
+├── docs/EswasaOne_WORKFLOW_MAP.md  # workflow fabric SoT (§5 = automation law)
+├── eswasa_core/              # workflow registry YAML → fixtures / display maps
 ├── engine/                   # WS1 — native bench bootstrap
 ├── apps/                     # custom Frappe apps (WS2, WS3, WS8)
-├── core/                     # WS4 (+ WS6 adapters/)
+├── core/                     # WS4 (+ WS6 adapters/) FastAPI BFF
 ├── ingest/                   # WS8 worker
 ├── portals/                  # WS5
-└── docs/                     # PORTS, nginx, mocks/
+└── docs/                     # PORTS, nginx, mocks, confirmation pack
 ```
 
 ## Contract

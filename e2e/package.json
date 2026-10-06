@@ -5,6 +5,7 @@
   "scripts": {
     "test": "playwright test",
     "test:wave0": "playwright test tests/wave0-smoke.spec.ts",
+    "test:wave1": "playwright test tests/w1-workflow-act.spec.ts",
     "report": "playwright show-report"
   },
   "devDependencies": {

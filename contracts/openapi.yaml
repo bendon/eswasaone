@@ -102,10 +102,15 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/CertificationApplication" }
 
-  /certification/applications/{id}/advance:
+  /certification/applications/{id}/act:
     post:
       tags: [certification]
-      operationId: advanceCertificationApplication
+      operationId: actCertificationApplication
+      summary: Workflow act (map §5) — guarded apply_workflow
+      description: >
+        Preferred transition API. Core passes values through; Frappe enforces
+        expected_state, reason, idempotency (L4), and ToDo allocation (L1–L2).
+        `/advance` remains as a compatibility alias.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/IdPath"
@@ -114,12 +119,137 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [confirm]
-              properties:
-                action: { type: string }
-                confirm: { type: boolean }
-                comment: { type: string }
+              $ref: "#/components/schemas/WorkflowActBody"
+      responses:
+        "200":
+          description: Transition applied
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CertificationApplication" }
+
+  /standards/work-items/{id}/act:
+    post:
+      tags: [standards]
+      operationId: actWorkItem
+      summary: Workflow act for Work Item (map §5)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowActBody"
+      responses:
+        "200":
+          description: Transition applied
+
+  /metrology/jobs/{id}/act:
+    post:
+      tags: [metrology]
+      operationId: actCalibrationJob
+      summary: Workflow act for Calibration Job (map §5)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowActBody"
+      responses:
+        "200":
+          description: Transition applied
+
+  /tbt/notifications/{id}/act:
+    post:
+      tags: [tbt]
+      operationId: actTbtNotification
+      summary: Workflow act for TBT Notification (map §5)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowActBody"
+      responses:
+        "200":
+          description: Transition applied
+
+  /governance/resolutions/{id}/act:
+    post:
+      tags: [governance]
+      operationId: actBoardResolution
+      summary: Workflow act for Board Resolution (map §5)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowActBody"
+      responses:
+        "200":
+          description: Transition applied
+
+  /governance/packs/{id}/act:
+    post:
+      tags: [governance]
+      operationId: actBoardPack
+      summary: Workflow act for Board Pack (map §5)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowActBody"
+      responses:
+        "200":
+          description: Transition applied
+
+  /field/visits/{id}/act:
+    post:
+      tags: [field]
+      operationId: actFieldVisit
+      summary: Workflow act for Field Visit (map §5.7)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowActBody"
+      responses:
+        "200":
+          description: Transition applied
+
+  /certification/applications/{id}/advance:
+    post:
+      tags: [certification]
+      operationId: advanceCertificationApplication
+      deprecated: true
+      summary: Compatibility alias for /act
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowActBody"
       responses:
         "200":
           description: Advanced
@@ -1176,6 +1306,31 @@ components:
       required: [confirm]
       properties:
         confirm: { type: boolean }
+
+    WorkflowActBody:
+      type: object
+      required: [action, confirm]
+      description: Generic workflow transition (map §1.2 / §5.2)
+      properties:
+        action: { type: string, description: Workflow action slug or Desk label }
+        confirm: { type: boolean }
+        expected_state:
+          type: string
+          description: Must match current workflow_state (optimistic concurrency)
+          nullable: true
+        idempotency_key:
+          type: string
+          description: Replay returns the original result (L4); TTL 7 days
+          nullable: true
+        reason:
+          type: string
+          description: Required for reject/return/withdraw/suspend/cancel/override
+          nullable: true
+        comment: { type: string, nullable: true }
+        payload:
+          type: object
+          additionalProperties: true
+          nullable: true
 
     AuditPatchBody:
       type: object

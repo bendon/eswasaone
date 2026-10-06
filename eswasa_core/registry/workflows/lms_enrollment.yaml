@@ -1,0 +1,50 @@
+# Training / LMS enrollment — declare (Frappe LMS Course).
+
+doctype: LMS Enrollment
+module: training
+workflow_name: LMS Enrollment Flow
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: training.summary
+guards: [expected_state, idempotency_key]
+notes: Maps onto Frappe LMS; emit when LMS DocType names confirmed.
+
+display:
+  customer:
+    Enrolled: Enrolled
+    In Progress: In progress
+    Completed: Completed
+  staff: {}
+
+states:
+  - {name: Applied, owner_role: Portal Customer, allow_edit: Portal Customer}
+  - {name: Enrolled, owner_role: System Manager, allow_edit: System Manager}
+  - {name: In Progress, owner_role: Portal Customer, allow_edit: Portal Customer}
+  - {name: Completed, owner_role: System Manager, allow_edit: System Manager, style: Success}
+  - {name: Cancelled, owner_role: System Manager, allow_edit: System Manager, style: Danger}
+
+transitions:
+  - action: Enrol
+    from: Applied
+    to: Enrolled
+    actor: System Manager
+    approvals_family: do
+  - action: Start
+    from: Enrolled
+    to: In Progress
+    actor: Portal Customer
+    approvals_family: do
+  - action: Complete
+    from: In Progress
+    to: Completed
+    actor: System Manager
+    approvals_family: do
+  - action: Cancel
+    from: Enrolled
+    to: Cancelled
+    actor: System Manager
+    reason: required
+    approvals_family: alert

@@ -1,0 +1,33 @@
+[project]
+name = "eswasa-core-registry"
+version = "0.1.0"
+description = "EswasaOne workflow registry — YAML → Frappe fixtures"
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2.0",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "black"]
+
+[project.scripts]
+eswasa-registry = "eswasa_registry.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["eswasa_registry*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100

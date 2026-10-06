@@ -94,7 +94,16 @@ doc_events = {
 }
 
 # R-G1: Board Meeting in 7d → assemble Board Pack + notify secretary
+# L5: outbox retries; L1 reconciler backfills missing owner ToDos
 scheduler_events = {
+	"cron": {
+		"*/5 * * * *": [
+			"eswasa_governance.tasks.process_outbox",
+		],
+		"*/15 * * * *": [
+			"eswasa_governance.tasks.reconcile_owner_todos",
+		],
+	},
 	"daily": [
 		"eswasa_governance.tasks.run_daily_governance_rules",
 	],

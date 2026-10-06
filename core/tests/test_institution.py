@@ -71,8 +71,12 @@ async def client():
 
 @pytest.fixture
 async def auth_headers(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
+    # Force mock auth session (invalid Frappe creds) so these tests assert
+    # "no invented KPI payloads" — real Frappe personas use demo@ separately.
     monkeypatch.setenv("CORE_ALLOW_MOCK_AUTH", "true")
-    body = await login_full_session(client, username="demo", password="demo")
+    body = await login_full_session(
+        client, username="mock.staff", password="not-a-real-password"
+    )
     token = body["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
@@ -92,7 +96,8 @@ async def test_institution_no_mock_fallback(
 ) -> None:
     """STEP 0: mock auth must not invent KPI/list numbers — fail loudly."""
     resp = await client.get(path, headers=auth_headers)
-    assert resp.status_code in (502, 503), resp.text
+    # 401 staff_required (Citizen mock) or 502/503 Frappe unavailable
+    assert resp.status_code in (401, 502, 503), resp.text
 
 
 @pytest.mark.asyncio
@@ -141,8 +146,8 @@ async def test_approvals_act_path_exists(client: AsyncClient, auth_headers: dict
         headers=auth_headers,
         json={"action": "approve", "confirm": True},
     )
-    # Mock session → Frappe unavailable (503) or method missing (502)
-    assert resp.status_code in (400, 502, 503), resp.text
+    # Mock Citizen → staff_required (401); staff mock → Frappe unavailable (502/503)
+    assert resp.status_code in (400, 401, 502, 503), resp.text
 
 
 @pytest.mark.asyncio

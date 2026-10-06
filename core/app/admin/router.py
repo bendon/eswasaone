@@ -19,7 +19,6 @@ from app.audit import audit_log
 from app.config import Settings, get_settings
 from app.frappe_client import FrappeClient, FrappeError, get_frappe_client
 from app.identity.deps import AuthContext, require_system_manager
-from app.identity.errors import AuthRequired
 from app.identity.role_profiles import (
     curated_role_names,
     get_role_profile,
@@ -70,14 +69,9 @@ def _require_confirm(confirm: bool) -> None:
 
 
 def _raise_from_frappe(exc: FrappeError) -> None:
-    if exc.status_code == 401:
-        raise AuthRequired(
-            reason="frappe_session",
-            detail="Frappe session expired — sign in again",
-        ) from exc
-    if exc.status_code == 403:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    raise HTTPException(status_code=502, detail=str(exc)) from exc
+    from app.frappe_errors import raise_from_frappe
+
+    raise_from_frappe(exc)
 
 
 async def _ensure_frappe(frappe: FrappeClient) -> None:

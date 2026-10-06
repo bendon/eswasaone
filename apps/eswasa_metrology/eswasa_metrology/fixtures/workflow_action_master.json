@@ -18,5 +18,40 @@
   "doctype": "Workflow Action Master",
   "name": "Submit for Review",
   "workflow_action_name": "Submit for Review"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Hand over",
+  "workflow_action_name": "Hand over"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Receive",
+  "workflow_action_name": "Receive"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Start testing",
+  "workflow_action_name": "Start testing"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Approve conforming",
+  "workflow_action_name": "Approve conforming"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Approve non-conforming",
+  "workflow_action_name": "Approve non-conforming"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Retain",
+  "workflow_action_name": "Retain"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Dispose",
+  "workflow_action_name": "Dispose"
  }
 ]

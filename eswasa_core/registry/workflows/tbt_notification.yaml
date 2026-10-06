@@ -1,0 +1,40 @@
+# TBT Notification — PORT of live TBT Notification Flow.
+
+doctype: TBT Notification
+module: tbt
+workflow_name: TBT Notification Flow
+submit_gate: null
+emit: true
+phase: port
+fixture_style: minimal
+fixture_app: apps/eswasa_tbt/eswasa_tbt/fixtures
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: null
+guards: [expected_state, idempotency_key]
+notes: Port of fixtures. Map adds Dismissed / Assessed / Comment Submitted later.
+
+display:
+  customer:
+    Notified: New alert
+  staff: {}
+
+states:
+  - {name: Ingested, allow_edit: Eswasa TBT Officer, owner_role: Eswasa TBT Officer}
+  - {name: Tagged, allow_edit: Eswasa TBT Officer, owner_role: Eswasa TBT Officer}
+  - {name: Notified, allow_edit: Eswasa TBT Officer, owner_role: Eswasa TBT Officer}
+
+transitions:
+  - action: Tag
+    from: Ingested
+    to: Tagged
+    actor: Eswasa TBT Analyst
+    allow_self_approval: 0
+
+  - action: Notify Subscribers
+    from: Tagged
+    to: Notified
+    actor: Eswasa TBT Officer
+    allow_self_approval: 0
+    rules: [R-T1]
+    feed: {audience: [customer], tone: alert}

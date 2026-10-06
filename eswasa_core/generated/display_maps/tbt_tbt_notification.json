@@ -1,0 +1,58 @@
+{
+ "doctype": "TBT Notification",
+ "module": "tbt",
+ "display": {
+  "customer": {
+   "Notified": "New alert"
+  },
+  "staff": {}
+ },
+ "approvals_family": "do",
+ "board_rollup": null,
+ "states": [
+  {
+   "name": "Ingested",
+   "sla": null,
+   "owner_role": "Eswasa TBT Officer",
+   "owner": null
+  },
+  {
+   "name": "Tagged",
+   "sla": null,
+   "owner_role": "Eswasa TBT Officer",
+   "owner": null
+  },
+  {
+   "name": "Notified",
+   "sla": null,
+   "owner_role": "Eswasa TBT Officer",
+   "owner": null
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Tag",
+   "from": "Ingested",
+   "to": "Tagged",
+   "actor": "Eswasa TBT Analyst",
+   "rules": [],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Notify Subscribers",
+   "from": "Tagged",
+   "to": "Notified",
+   "actor": "Eswasa TBT Officer",
+   "rules": [
+    "R-T1"
+   ],
+   "approvals_family": null,
+   "surface": null
+  }
+ ],
+ "guards": [
+  "expected_state",
+  "idempotency_key"
+ ]
+}

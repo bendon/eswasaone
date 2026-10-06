@@ -15,7 +15,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, getdate
 
-SMOKE_METHODS = ["list_calibration_jobs", "get_calibration_job"]
+SMOKE_METHODS = ["list_calibration_jobs", "get_calibration_job", "act_calibration_job"]
 
 
 def _status_of(row: Any) -> str:
@@ -135,3 +135,28 @@ def get_calibration_job(job_code: str | None = None) -> dict[str, Any]:
         as_dict=True,
     )
     return _serialize_job(row, include_results=True)
+
+
+@frappe.whitelist()
+def act_calibration_job(
+    name: str | None = None,
+    action: str | None = None,
+    expected_state: str | None = None,
+    idempotency_key: str | None = None,
+    reason: str | None = None,
+    comment: str | None = None,
+    confirm: bool | int | str = False,
+) -> dict[str, Any]:
+    """Workflow act for Calibration Job (map §5)."""
+    from eswasa_certification.workflow_act import act as shared_act
+
+    return shared_act(
+        doctype="Calibration Job",
+        name=name,
+        action=action,
+        expected_state=expected_state,
+        idempotency_key=idempotency_key,
+        reason=reason,
+        comment=comment,
+        confirm=confirm,
+    )

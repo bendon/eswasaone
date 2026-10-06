@@ -1,0 +1,60 @@
+# Calibration Job — PORT of live Metrology Calibration workflow.
+
+doctype: Calibration Job
+module: metrology
+workflow_name: Metrology Calibration
+submit_gate: null
+emit: true
+phase: port
+fixture_style: minimal
+fixture_app: apps/eswasa_metrology/eswasa_metrology/fixtures
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: metrology.summary
+guards: [expected_state, idempotency_key, four_eyes_lab]
+notes: Port of fixtures. Map adds Requested/Quoted; four-eyes on Issue Certificate later.
+
+display:
+  customer:
+    Received: Received
+    In Progress: In progress
+    Certified: Certified
+    Dispatched: Ready for collection
+  staff: {}
+
+states:
+  - {name: Received, allow_edit: Eswasa Metrology Officer, owner_role: Eswasa Metrology Officer}
+  - {name: In Progress, allow_edit: Eswasa Metrology Officer, owner_role: Eswasa Metrology Officer}
+  - {name: Reviewed, allow_edit: Eswasa Metrology Officer, owner_role: Eswasa Metrology Officer}
+  - {name: Certified, allow_edit: Eswasa Metrology Officer, owner_role: Eswasa Metrology Officer}
+  - {name: Dispatched, allow_edit: Eswasa Metrology Officer, owner_role: Eswasa Metrology Officer}
+
+transitions:
+  - action: Start Work
+    from: Received
+    to: In Progress
+    actor: Eswasa Metrology Officer
+    allow_self_approval: 0
+    rules: [R-M1]
+
+  - action: Submit for Review
+    from: In Progress
+    to: Reviewed
+    actor: Eswasa Metrology Officer
+    allow_self_approval: 0
+    rules: [R-M2]
+
+  - action: Issue Certificate
+    from: Reviewed
+    to: Certified
+    actor: Eswasa Metrology Reviewer
+    allow_self_approval: 0
+    rules: [R-M3]
+    approvals_family: approve
+
+  - action: Dispatch
+    from: Certified
+    to: Dispatched
+    actor: Eswasa Metrology Manager
+    allow_self_approval: 0
+    rules: [R-M4]

@@ -19,7 +19,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
-SMOKE_METHODS = ["list_standards", "get_standard", "publish_standard"]
+SMOKE_METHODS = ["list_standards", "get_standard", "publish_standard", "act_work_item"]
 
 STANDARDS_WRITE_ROLES = (
     "Eswasa Standards Manager",
@@ -160,3 +160,28 @@ def publish_standard(
     )
     frappe.db.commit()
     return result
+
+
+@frappe.whitelist()
+def act_work_item(
+    name: str | None = None,
+    action: str | None = None,
+    expected_state: str | None = None,
+    idempotency_key: str | None = None,
+    reason: str | None = None,
+    comment: str | None = None,
+    confirm: bool | int | str = False,
+) -> dict[str, Any]:
+    """Workflow act for Work Item (map §5) — delegates to shared pipeline."""
+    from eswasa_certification.workflow_act import act as shared_act
+
+    return shared_act(
+        doctype="Work Item",
+        name=name,
+        action=action,
+        expected_state=expected_state,
+        idempotency_key=idempotency_key,
+        reason=reason,
+        comment=comment,
+        confirm=confirm,
+    )

@@ -1,0 +1,65 @@
+{
+ "doctype": "Board Resolution",
+ "module": "governance",
+ "display": {
+  "customer": {},
+  "staff": {}
+ },
+ "approvals_family": "approve",
+ "board_rollup": "governance.resolutions",
+ "states": [
+  {
+   "name": "Draft",
+   "sla": null,
+   "owner_role": "Eswasa Board Secretary",
+   "owner": null
+  },
+  {
+   "name": "Review",
+   "sla": null,
+   "owner_role": "Eswasa Board Secretary",
+   "owner": null
+  },
+  {
+   "name": "Adopted",
+   "sla": null,
+   "owner_role": "Eswasa Board Secretary",
+   "owner": null
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Submit for Review",
+   "from": "Draft",
+   "to": "Review",
+   "actor": "Eswasa Board Secretary",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  },
+  {
+   "action": "Adopt",
+   "from": "Review",
+   "to": "Adopted",
+   "actor": "Eswasa Board Member",
+   "rules": [
+    "R-G2"
+   ],
+   "approvals_family": "approve",
+   "surface": null
+  },
+  {
+   "action": "Return to Draft",
+   "from": "Review",
+   "to": "Draft",
+   "actor": "Eswasa Board Member",
+   "rules": [],
+   "approvals_family": "do",
+   "surface": null
+  }
+ ],
+ "guards": [
+  "expected_state",
+  "idempotency_key"
+ ]
+}

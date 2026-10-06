@@ -70,7 +70,8 @@ fixtures = [
     "name",
     "in",
     [
-     "Metrology Calibration"
+     "Metrology Calibration",
+     "Sample Custody Flow"
     ]
    ]
   ]

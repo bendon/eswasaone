@@ -1,0 +1,98 @@
+{
+ "doctype": "Calibration Job",
+ "module": "metrology",
+ "display": {
+  "customer": {
+   "Received": "Received",
+   "In Progress": "In progress",
+   "Certified": "Certified",
+   "Dispatched": "Ready for collection"
+  },
+  "staff": {}
+ },
+ "approvals_family": "do",
+ "board_rollup": "metrology.summary",
+ "states": [
+  {
+   "name": "Received",
+   "sla": null,
+   "owner_role": "Eswasa Metrology Officer",
+   "owner": null
+  },
+  {
+   "name": "In Progress",
+   "sla": null,
+   "owner_role": "Eswasa Metrology Officer",
+   "owner": null
+  },
+  {
+   "name": "Reviewed",
+   "sla": null,
+   "owner_role": "Eswasa Metrology Officer",
+   "owner": null
+  },
+  {
+   "name": "Certified",
+   "sla": null,
+   "owner_role": "Eswasa Metrology Officer",
+   "owner": null
+  },
+  {
+   "name": "Dispatched",
+   "sla": null,
+   "owner_role": "Eswasa Metrology Officer",
+   "owner": null
+  }
+ ],
+ "transitions": [
+  {
+   "action": "Start Work",
+   "from": "Received",
+   "to": "In Progress",
+   "actor": "Eswasa Metrology Officer",
+   "rules": [
+    "R-M1"
+   ],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Submit for Review",
+   "from": "In Progress",
+   "to": "Reviewed",
+   "actor": "Eswasa Metrology Officer",
+   "rules": [
+    "R-M2"
+   ],
+   "approvals_family": null,
+   "surface": null
+  },
+  {
+   "action": "Issue Certificate",
+   "from": "Reviewed",
+   "to": "Certified",
+   "actor": "Eswasa Metrology Reviewer",
+   "rules": [
+    "R-M3"
+   ],
+   "approvals_family": "approve",
+   "surface": null
+  },
+  {
+   "action": "Dispatch",
+   "from": "Certified",
+   "to": "Dispatched",
+   "actor": "Eswasa Metrology Manager",
+   "rules": [
+    "R-M4"
+   ],
+   "approvals_family": null,
+   "surface": null
+  }
+ ],
+ "guards": [
+  "expected_state",
+  "idempotency_key",
+  "four_eyes_lab"
+ ]
+}

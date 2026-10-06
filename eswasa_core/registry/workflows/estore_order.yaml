@@ -1,0 +1,66 @@
+# E-store Order — declare (ERPNext Sales Order / custom Order). emit: false until wired.
+
+doctype: Eswasa Store Order
+module: estore
+workflow_name: Eswasa Store Order Flow
+submit_gate: Sales Invoice
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: estore.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  MoMo pay path. Pending Payment → Paid/Failed/Expired. R-E3 retry on fail.
+  Map onto custom DocType or Sales Order when e-store settle lands.
+
+display:
+  customer:
+    Cart: In cart
+    Pending Payment: Awaiting payment
+    Paid: Paid
+    Failed: Payment failed
+    Fulfilled: Ready
+  staff: {}
+
+states:
+  - {name: Cart, owner_role: Portal Customer, allow_edit: Portal Customer}
+  - {name: Pending Payment, owner_role: Portal Customer, allow_edit: Portal Customer}
+  - {name: Paid, owner_role: System Manager, allow_edit: System Manager, style: Success}
+  - {name: Failed, owner_role: Portal Customer, allow_edit: Portal Customer, style: Danger}
+  - {name: Expired, owner_role: System Manager, allow_edit: System Manager, style: Danger}
+  - {name: Fulfilled, owner_role: System Manager, allow_edit: System Manager, style: Success}
+
+transitions:
+  - action: Checkout
+    from: Cart
+    to: Pending Payment
+    actor: Portal Customer
+    approvals_family: do
+  - action: Confirm payment
+    from: Pending Payment
+    to: Paid
+    actor: System Manager
+    approvals_family: do
+  - action: Mark failed
+    from: Pending Payment
+    to: Failed
+    actor: System Manager
+    rules: [R-E3]
+    approvals_family: alert
+  - action: Expire
+    from: Pending Payment
+    to: Expired
+    actor: System Manager
+    approvals_family: alert
+  - action: Retry payment
+    from: Failed
+    to: Pending Payment
+    actor: Portal Customer
+    rules: [R-E3]
+    approvals_family: do
+  - action: Fulfil
+    from: Paid
+    to: Fulfilled
+    actor: System Manager
+    approvals_family: do

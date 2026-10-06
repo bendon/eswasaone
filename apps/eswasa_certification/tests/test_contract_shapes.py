@@ -56,6 +56,14 @@ class WorkflowMapTests(unittest.TestCase):
             next_state("Application", "Submit for Assessment"), "Assessment"
         )
 
+    def test_workflow_action_label(self):
+        from eswasa_certification.workflow_map import workflow_action_label
+
+        self.assertEqual(
+            workflow_action_label("submit_for_assessment"), "Submit for Assessment"
+        )
+        self.assertEqual(workflow_action_label("Certify"), "Certify")
+
 
 class DisplayStatusTests(unittest.TestCase):
     def test_portal_labels(self):

@@ -34,21 +34,21 @@
     "action": "Submit for Review",
     "next_state": "Review",
     "allowed": "Eswasa Board Secretary",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    },
    {
     "state": "Review",
     "action": "Adopt",
     "next_state": "Adopted",
     "allowed": "Eswasa Board Member",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    },
    {
     "state": "Review",
     "action": "Return to Draft",
     "next_state": "Draft",
     "allowed": "Eswasa Board Member",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    }
   ]
  },
@@ -87,14 +87,14 @@
     "action": "Submit for Review",
     "next_state": "Review",
     "allowed": "Eswasa Board Secretary",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    },
    {
     "state": "Review",
     "action": "Adopt",
     "next_state": "Adopted",
     "allowed": "Eswasa Board Member",
-    "allow_self_approval": 1
+    "allow_self_approval": 0
    }
   ]
  }

@@ -22,6 +22,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { HelpBand } from "../components/HelpBand";
 import { OutlineCard } from "../components/OutlineCard";
+import { SortMenu } from "../components/SortMenu";
 import { StaggeredGrid } from "../components/StaggeredGrid";
 import { safeText } from "../lib/safe";
 import { useCartToast } from "../ui/CartToast";
@@ -103,8 +104,28 @@ const PATHS: PathCard[] = [
   },
 ];
 
-type FilterOption = { id: string; label: string; test: (s: Scheme) => boolean };
+type FilterOption = {
+  id: string;
+  label: string;
+  test: (s: Scheme) => boolean;
+  /** Narrower options listed under this one (e.g. each standard under Management systems). */
+  children?: FilterOption[];
+};
 type FilterGroup = { id: string; label: string; open: boolean; options: FilterOption[] };
+
+const bySchemeId = (id: string) => (s: Scheme) => s.id === id;
+const MS_SHORT: Record<string, string> = {
+  iso9001: "ISO 9001 · Quality",
+  iso14001: "ISO 14001 · Environment",
+  iso22000: "ISO 22000 · Food safety",
+  iso45001: "ISO 45001 · Health & safety",
+  haccp: "HACCP (SANS 10330)",
+};
+const msStandards: FilterOption[] = LISTED_SCHEMES.filter((s) => s.flow === "ms").map((s) => ({
+  id: s.id,
+  label: MS_SHORT[s.id] ?? s.code.replace(/^SZNS /, ""),
+  test: bySchemeId(s.id),
+}));
 
 const FILTERS: FilterGroup[] = [
   {
@@ -112,21 +133,107 @@ const FILTERS: FilterGroup[] = [
     label: "Certification type",
     open: true,
     options: [
-      { id: "ms", label: "Management systems", test: (s) => s.flow === "ms" },
-      { id: "product", label: "Product certification", test: (s) => s.flow === "product" },
+      {
+        id: "ms",
+        label: "Management systems",
+        test: (s) => s.flow === "ms",
+        children: msStandards,
+      },
+      {
+        id: "product",
+        label: "Product certification",
+        test: (s) => s.flow === "product",
+        // One published scheme covers every product; these are the categories ESWASA cites.
+        children: [
+          { id: "construction", label: "Construction products", test: (s) => s.flow === "product" && s.sectors.includes("construction") },
+          { id: "food", label: "Food products", test: (s) => s.flow === "product" && s.sectors.includes("food") },
+          { id: "manufactured", label: "Other manufactured goods", test: (s) => s.flow === "product" && s.sectors.includes("manufacturing") },
+        ],
+      },
       { id: "msme", label: "Ingelo (MSME)", test: (s) => s.flow === "ingelo" },
     ],
   },
+  {
+    id: "sector",
+    label: "Sector",
+    open: true,
+    options: [
+      { id: "food", label: "Food & agriculture", test: (s) => s.sectors.includes("food") },
+      { id: "all", label: "All industries", test: (s) => s.sectors.includes("all") },
+      { id: "construction", label: "Construction", test: (s) => s.sectors.includes("construction") },
+      { id: "manufacturing", label: "Manufacturing", test: (s) => s.sectors.includes("manufacturing") },
+    ],
+  },
+  {
+    id: "fee",
+    label: "Fee",
+    open: true,
+    options: [
+      { id: "free", label: "Free support available", test: (s) => s.flow === "ingelo" },
+      { id: "quote", label: "By quotation", test: (s) => s.flow !== "ingelo" },
+    ],
+  },
+  {
+    id: "who",
+    label: "Who can apply",
+    open: false,
+    options: [
+      { id: "any", label: "Any organisation", test: (s) => s.flow !== "ingelo" },
+      { id: "msme", label: "Emaswati-owned MSMEs", test: (s) => s.flow === "ingelo" },
+    ],
+  },
+  {
+    id: "accreditation",
+    label: "Accreditation",
+    open: false,
+    options: [
+      {
+        id: "sadcas",
+        label: "SADCAS accredited",
+        test: (s) => s.facts.some((f) => f.label === "Accreditation" && f.value.includes("SADCAS")),
+      },
+    ],
+  },
 ];
+
+const SORTS = [
+  { value: "default", label: "ESWASA order" },
+  { value: "code", label: "Code A–Z" },
+  { value: "title", label: "Name A–Z" },
+  { value: "type", label: "Certification type" },
+];
+
+const FLOW_ORDER: Record<string, number> = { ms: 0, product: 1, ingelo: 2, combined: 3 };
+
+const fkey = (...parts: string[]) => parts.join(":");
+
+/** Tests a group currently applies: ticked sub-options win over their parent. */
+function activeTests(g: FilterGroup, checked: Record<string, boolean>): ((s: Scheme) => boolean)[] {
+  const tests: ((s: Scheme) => boolean)[] = [];
+  for (const o of g.options) {
+    const kids = (o.children ?? []).filter((c) => checked[fkey(g.id, o.id, c.id)]);
+    if (kids.length) tests.push(...kids.map((c) => c.test));
+    else if (checked[fkey(g.id, o.id)]) tests.push(o.test);
+  }
+  return tests;
+}
 
 function applyFilters(list: Scheme[], checked: Record<string, boolean>, skipGroup?: string): Scheme[] {
   return list.filter((s) =>
     FILTERS.every((g) => {
       if (g.id === skipGroup) return true;
-      const on = g.options.filter((o) => checked[`${g.id}:${o.id}`]);
-      return on.length === 0 || on.some((o) => o.test(s));
+      const tests = activeTests(g, checked);
+      return tests.length === 0 || tests.some((t) => t(s));
     }),
   );
+}
+
+function sortSchemes(list: Scheme[], sort: string): Scheme[] {
+  const out = [...list];
+  if (sort === "code") out.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+  else if (sort === "title") out.sort((a, b) => a.title.localeCompare(b.title));
+  else if (sort === "type") out.sort((a, b) => FLOW_ORDER[a.flow] - FLOW_ORDER[b.flow]);
+  return out;
 }
 
 const PROCESS_TABS: CertFlow[] = ["ms", "product", "ingelo"];
@@ -153,13 +260,11 @@ export function CertificationPage() {
   const [verifyResult, setVerifyResult] = useState<VerificationResult | null>(null);
   const [verifyFailed, setVerifyFailed] = useState(false);
 
-  const schemes = useMemo(() => {
-    const list = applyFilters(LISTED_SCHEMES, checked);
-    if (sort === "code") list.sort((a, b) => a.code.localeCompare(b.code));
-    return list;
-  }, [sort, checked]);
+  const [subOpen, setSubOpen] = useState<Record<string, boolean>>({});
 
-  const activeFilterCount = Object.values(checked).filter(Boolean).length;
+  const schemes = useMemo(() => sortSchemes(applyFilters(LISTED_SCHEMES, checked), sort), [sort, checked]);
+
+  const activeFilterCount = FILTERS.reduce((n, g) => n + activeTests(g, checked).length, 0);
 
   function scrollToCatalogue() {
     catalogueRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -185,12 +290,27 @@ export function CertificationPage() {
   }
 
   function clearFilters() {
-    const next: Record<string, boolean> = {};
-    for (const g of FILTERS) {
-      for (const o of g.options) next[`${g.id}:${o.id}`] = false;
-    }
-    setChecked(next);
+    setChecked({});
     showToast("Filters cleared");
+  }
+
+  /** Parent ticks/unticks all its sub-options; a parent is ticked when all of them are. */
+  function toggleOption(g: FilterGroup, o: FilterOption, child?: FilterOption) {
+    setChecked((prev) => {
+      const next = { ...prev };
+      const kids = o.children ?? [];
+      if (!child) {
+        const on = !prev[fkey(g.id, o.id)];
+        next[fkey(g.id, o.id)] = on;
+        for (const c of kids) next[fkey(g.id, o.id, c.id)] = on;
+        if (on && kids.length) setSubOpen((p) => ({ ...p, [fkey(g.id, o.id)]: true }));
+      } else {
+        const k = fkey(g.id, o.id, child.id);
+        next[k] = !prev[k];
+        next[fkey(g.id, o.id)] = kids.every((c) => next[fkey(g.id, o.id, c.id)]);
+      }
+      return next;
+    });
   }
 
   function toggleSave(id: string) {
@@ -246,22 +366,57 @@ export function CertificationPage() {
               {group.label} <Icon name="i-chev" />
             </button>
             <div className="fgroup__list">
-              {group.options.map((opt) => (
-                <label className="fcheck" key={opt.id}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(checked[`${group.id}:${opt.id}`])}
-                    onChange={() =>
-                      setChecked((prev) => ({
-                        ...prev,
-                        [`${group.id}:${opt.id}`]: !prev[`${group.id}:${opt.id}`],
-                      }))
-                    }
-                  />
-                  <span>{opt.label}</span>
-                  <em>{applyFilters(LISTED_SCHEMES, checked, group.id).filter(opt.test).length}</em>
-                </label>
-              ))}
+              {group.options.map((opt) => {
+                const base = applyFilters(LISTED_SCHEMES, checked, group.id);
+                const kids = opt.children ?? [];
+                const pkey = fkey(group.id, opt.id);
+                const someKids = kids.some((c) => checked[fkey(group.id, opt.id, c.id)]);
+                const expanded = Boolean(subOpen[pkey]);
+                return (
+                  <div key={opt.id} className={`fopt${kids.length ? " has-kids" : ""}`}>
+                    <div className="fopt__row">
+                      <label className="fcheck">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(checked[pkey])}
+                          ref={(el) => {
+                            if (el) el.indeterminate = !checked[pkey] && someKids;
+                          }}
+                          onChange={() => toggleOption(group, opt)}
+                        />
+                        <span>{opt.label}</span>
+                        <em>{base.filter(opt.test).length}</em>
+                      </label>
+                      {kids.length ? (
+                        <button
+                          type="button"
+                          className="fopt__toggle"
+                          aria-expanded={expanded}
+                          aria-label={`${expanded ? "Hide" : "Show"} ${opt.label} options`}
+                          onClick={() => setSubOpen((p) => ({ ...p, [pkey]: !p[pkey] }))}
+                        >
+                          <Icon name="i-chev" />
+                        </button>
+                      ) : null}
+                    </div>
+                    {kids.length && expanded ? (
+                      <div className="fsub">
+                        {kids.map((c) => (
+                          <label className="fcheck" key={c.id}>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(checked[fkey(group.id, opt.id, c.id)])}
+                              onChange={() => toggleOption(group, opt, c)}
+                            />
+                            <span>{c.label}</span>
+                            <em>{base.filter(c.test).length}</em>
+                          </label>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -437,13 +592,7 @@ export function CertificationPage() {
               <span className="badge">{activeFilterCount}</span>
             </button>
             <div className="toolbar__spacer" />
-            <div className="toolbar__sort">
-              <label htmlFor="certSort">Sort</label>
-              <select id="certSort" value={sort} onChange={(e) => setSort(e.target.value)}>
-                <option value="default">ESWASA order</option>
-                <option value="code">Code A–Z</option>
-              </select>
-            </div>
+            <SortMenu label="Sort" value={sort} options={SORTS} onChange={setSort} />
           </div>
 
           <ul className="certlist">

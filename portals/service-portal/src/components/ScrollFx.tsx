@@ -223,7 +223,9 @@ export function ScrollFx({ root }: { root: RefObject<HTMLElement | null> }) {
         }
 
         const bound = new WeakSet<Element>();
-        const scan = () => {
+        // Reordered lists (sorting) move bound elements without adding new ones,
+        // so trigger positions must be re-measured on any element move too.
+        const scan = (moved = false) => {
           let added = false;
           for (const [sel, bind] of BINDINGS) {
             scope.querySelectorAll<HTMLElement>(sel).forEach((el) => {
@@ -238,15 +240,20 @@ export function ScrollFx({ root }: { root: RefObject<HTMLElement | null> }) {
             const t = st.trigger;
             if (t && !t.isConnected) st.kill();
           });
-          if (added) ScrollTrigger.refresh();
+          if (added || moved) ScrollTrigger.refresh();
         };
 
         scan();
 
         let timer = 0;
-        const mo = new MutationObserver(() => {
+        const mo = new MutationObserver((records) => {
+          // Ignore text-only updates (count-up numbers) so they don't force refreshes.
+          const elementsChanged = records.some((r) =>
+            [...r.addedNodes, ...r.removedNodes].some((n) => n.nodeType === Node.ELEMENT_NODE),
+          );
+          if (!elementsChanged) return;
           window.clearTimeout(timer);
-          timer = window.setTimeout(scan, 120);
+          timer = window.setTimeout(() => scan(true), 120);
         });
         mo.observe(scope, { childList: true, subtree: true });
 

@@ -31,6 +31,8 @@ export type CertificationApplication = {
  * managementsystems.php, product.php, ingelo.php). Only facts stated there:
  * no fees, durations or validity periods the site does not publish.
  */
+export type SchemeSector = "all" | "food" | "construction" | "manufacturing";
+
 export type Scheme = {
   id: string;
   flow: CertFlow;
@@ -43,6 +45,8 @@ export type Scheme = {
   accent: string;
   tint: string;
   tone: string;
+  /** Sectors the scheme serves, used by the catalogue's sector filter. */
+  sectors: SchemeSector[];
   /** False for request types that are not a published scheme (e.g. combined). */
   listed: boolean;
   cta: string;
@@ -64,6 +68,7 @@ const MS_SOURCE = "https://www.eswasa.co.sz/managementsystems.php";
 export const SCHEMES: Scheme[] = [
   {
     id: "iso9001",
+    sectors: ["all"],
     flow: "ms",
     code: "SZNS ISO 9001:2015",
     title: "Quality Management Systems: Requirements",
@@ -77,6 +82,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "iso14001",
+    sectors: ["all"],
     flow: "ms",
     code: "SZNS ISO 14001:2015",
     title: "Environmental Management Systems: Requirements with guidance for use",
@@ -90,6 +96,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "iso22000",
+    sectors: ["food"],
     flow: "ms",
     code: "SZNS ISO 22000:2018",
     title: "Food Safety Management Systems: Requirements for any organization in the food chain",
@@ -103,6 +110,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "iso45001",
+    sectors: ["all"],
     flow: "ms",
     code: "SZNS ISO 45001:2018",
     title: "Occupational Health and Safety Management Systems: Requirements with guidance for use",
@@ -116,6 +124,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "haccp",
+    sectors: ["food"],
     flow: "ms",
     code: "SZNS SANS 10330:2020",
     title: "Hazard Analysis and Critical Control Point (HACCP)",
@@ -129,6 +138,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "product",
+    sectors: ["manufacturing", "construction", "food"],
     flow: "product",
     code: "Product Certification Mark",
     title: "Product certification",
@@ -149,6 +159,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "ingelo",
+    sectors: ["all"],
     flow: "ingelo",
     code: "Ingelo Certification Scheme",
     title: "Ingelo: certification for local MSME producers",
@@ -172,6 +183,7 @@ export const SCHEMES: Scheme[] = [
     // Not a published scheme: the RFQ form offers "Combined (e.g., ISO + Product)"
     // as a request type. The applicant chooses which standards and products.
     id: "combined",
+    sectors: ["all"],
     flow: "combined",
     code: "Combined request",
     title: "Combined request (e.g., ISO + Product)",

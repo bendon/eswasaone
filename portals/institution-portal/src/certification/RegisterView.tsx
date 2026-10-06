@@ -121,13 +121,23 @@ export function RegisterView() {
       confirmLabel: "Remove entry",
     });
     if (!ok) return;
-    liftRegisterEntry(e.id);
+    try {
+      liftRegisterEntry(e.id);
+    } catch (err) {
+      await dialogs.alert({ message: err instanceof Error ? err.message : "Not saved", kind: "error" });
+      return;
+    }
     setFlash(`${e.certificate} removed from the public register`);
     load();
   }
 
   function move(c: DeskCase, status: DeskCase["status"]) {
-    setCaseStatus(c.id, status);
+    try {
+      setCaseStatus(c.id, status);
+    } catch (err) {
+      setFlash(err instanceof Error ? err.message : "Not saved");
+      return;
+    }
     setFlash(`${c.id} → ${STATUS_LABEL[status]}`);
     load();
   }
@@ -277,12 +287,12 @@ export function RegisterView() {
                   content: (
                     <p style={{ fontSize: 13, color: "var(--muted)" }}>
                       {selected.kind === "appeal"
-                        ? `CER_PR_002: lodged within ${CHARTER.appealDays} days of the decision; reviewed by people not involved in the original decision.`
+                        ? `CER_PR_002: appeals are lodged in writing within ${CHARTER.appealDays} days of the decision.`
                         : selected.kind === "complaint"
                           ? `CER_PR_006: acknowledge within 3 working days; resolve within ${CHARTER.complaintDays} where possible.`
                           : selected.kind === "changes"
-                            ? "CER_FO_028: assess whether the change needs a special audit (CER_PR_028)."
-                            : "CER_PR_012: plan a scope-extension or special audit."}
+                            ? "Client notice of changes (CER_FO_028)."
+                            : "Extending scope of certification (CER_PR_012)."}
                     </p>
                   ),
                 },
@@ -301,6 +311,7 @@ export function RegisterView() {
         submitLabel="Publish to register"
         onClose={() => setAddOpen(false)}
         onSubmit={async (v) => {
+          try {
           await registerAction(v.kind as RegisterKind, {
             flow: v.flow as CertFlow,
             holder: v.holder,
@@ -308,6 +319,10 @@ export function RegisterView() {
             scope: v.scope,
             reason: v.reason,
           });
+          } catch (err) {
+            await dialogs.alert({ message: err instanceof Error ? err.message : "Not saved", kind: "error" });
+            return;
+          }
           setAddOpen(false);
           setFlash(`${v.certificate} published as ${KIND_LABEL[v.kind as RegisterKind].toLowerCase()}`);
           load();

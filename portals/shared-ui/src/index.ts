@@ -163,3 +163,4 @@ export {
   setBodyScrollLocked,
 } from "./system";
 export type { BrandColor } from "./system";
+export { DateField, MonthField, type DateFieldProps, type MonthFieldProps } from "./components/DatePicker";

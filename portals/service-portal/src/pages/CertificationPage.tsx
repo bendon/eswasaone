@@ -7,15 +7,15 @@ import {
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon, type IconName } from "@eswasaone/shared-ui";
-import { SCHEMES, type Scheme } from "../api/certification";
+import { LISTED_SCHEMES, type Scheme } from "../api/certification";
 import {
   CERT_DOCUMENTS,
   CHARTER,
   FLOW_LABEL,
   FLOW_STAGES,
-  REQUIRED_DOCS,
   type CertFlow,
 } from "../certification/flows";
+import { ProcessJourney } from "../certification/ProcessJourney";
 import { SideDrawer } from "../certification/ui";
 import { verifyToken, type VerificationResult } from "../api/misc";
 import { useAuth } from "../auth/AuthProvider";
@@ -26,13 +26,13 @@ import { StaggeredGrid } from "../components/StaggeredGrid";
 import { safeText } from "../lib/safe";
 import { useCartToast } from "../ui/CartToast";
 
+/** Facts published by ESWASA (certification pages + Service Charter). */
 const HERO_STATS = [
-  { value: "148", label: "Companies certified" },
-  { value: String(SCHEMES.length), label: "Active schemes" },
-  { value: "4–14 wk", label: "Typical timeline" },
-  { value: "3 yrs", label: "Certificate validity" },
+  { value: "3", label: "Certification paths" },
+  { value: "5", label: "Management-system standards" },
+  { value: `${CHARTER.quoteDays} days`, label: "Quote turnaround (working)" },
+  { value: "3 yrs", label: "Product permit validity" },
 ] as const;
-
 
 type PathCard = {
   to: string;
@@ -50,80 +50,54 @@ type PathCard = {
 
 const PATHS: PathCard[] = [
   {
-    to: "/goals/iso-9001",
-    title: "First-time exporter pack",
-    body: "ISO 9001 plus the relevant product standards and export-desk support: the shortest credible path to your first international shipment.",
-    count: "4 steps",
-    countIcon: "i-layers",
-    tag: "Export",
-    cta: "Start path",
-    hint: "Ship sooner",
-    icon: "i-globe",
+    to: "/certification/quote",
+    title: "Not sure what it will cost?",
+    body: "Request a quotation. ESWASA says cost depends on company size, operations and, for products, the certification parameters.",
+    count: `${CHARTER.quoteDays} working days`,
+    countIcon: "i-clock",
+    tag: "Quote",
+    cta: "Request a quote",
+    hint: "Service Charter",
+    icon: "i-dollar",
     tint: "#ECEEFC",
     tone: "#313391",
   },
   {
-    to: "/goals/iso-22000",
-    title: "Food processor readiness",
-    body: "HACCP first, then ISO 22000, with our internal-auditor training bundled so your team can maintain the system after certification.",
-    count: "3 stages",
-    countIcon: "i-layers",
-    tag: "Food safety",
-    cta: "Start path",
-    hint: "HACCP first",
-    icon: "i-clipboard",
-    tint: "#E3F4E9",
-    tone: "#15803D",
-  },
-  {
     to: "/certification/apply?scheme=ingelo",
-    title: "MSME starter path",
-    body: "For small businesses new to standards. Starts with the Ingelo scheme (subsidised training, testing and assessment), then SZNS Product Mark.",
-    count: "Subsidised",
-    countIcon: "i-badge",
-    tag: "MSME",
-    cta: "Start path",
-    hint: "Ingelo scheme",
+    title: "Local MSME producer?",
+    body: "Check whether you qualify for Ingelo and ask for a free pre-application consultation and gap-analysis workshop.",
+    count: "Free consultation",
+    countIcon: "i-users",
+    tag: "Ingelo",
+    cta: "Check eligibility",
+    hint: "Emaswati-owned MSMEs",
     icon: "i-users",
     tint: "#DCFCE7",
     tone: "#166534",
   },
   {
-    to: "/certification/apply?scheme=iso9001",
-    title: "Integrated management system",
-    body: "ISO 9001, ISO 14001 and ISO 45001 audited together. One integrated audit schedule, three certificates, lower total cost.",
-    count: "3 schemes",
-    countIcon: "i-layers",
-    tag: "Integrated",
-    cta: "See the bundle",
-    hint: "One audit",
-    icon: "i-layers",
-    tint: "#F0E9FB",
-    tone: "#7C3AED",
-  },
-  {
     to: "/account/applications",
-    title: "Recertification",
-    body: "Already certified and coming up to the end of your three-year cycle? Book your recertification audit and keep the certificate continuous.",
-    count: "6–10 weeks",
-    countIcon: "i-clock",
-    tag: "Renewal",
-    cta: "Book audit",
+    title: "Already certified?",
+    body: "Management-system certification continues with two surveillance audits, then a recertification audit. Track yours in your account.",
+    count: "Surveillance",
+    countIcon: "i-refresh",
+    tag: "Maintain",
+    cta: "My applications",
     hint: "Stay certified",
     icon: "i-trend",
     tint: "#E4F4F1",
     tone: "#0E7C7B",
   },
   {
-    to: "/certification/quote?scheme=iso22000",
-    title: "Upgrade from HACCP",
-    body: "Already HACCP certified? Bridge to ISO 22000 with a reduced-scope audit. Your existing HACCP plan counts toward the new system.",
-    count: "Reduced scope",
-    countIcon: "i-trend",
-    tag: "Upgrade",
-    cta: "Bridge to ISO 22000",
-    hint: "Reuse HACCP",
-    icon: "i-star",
+    to: "/applicability",
+    title: "Which standard applies?",
+    body: "Find the standard for your product or process before you apply, or buy it from the standards store.",
+    count: "Standards",
+    countIcon: "i-book",
+    tag: "Standards",
+    cta: "Check applicability",
+    hint: "Start here",
+    icon: "i-search",
     tint: "#FEF6DC",
     tone: "#B8860B",
   },
@@ -132,58 +106,15 @@ const PATHS: PathCard[] = [
 type FilterOption = { id: string; label: string; test: (s: Scheme) => boolean };
 type FilterGroup = { id: string; label: string; open: boolean; options: FilterOption[] };
 
-function minWeeks(s: Scheme): number {
-  const m = s.duration.match(/(\d+)/);
-  return m ? Number(m[1]) : 99;
-}
-
-function minFee(s: Scheme): number {
-  if (s.subsidised) return 0;
-  const m = s.fee.match(/(\d+)k/);
-  return m ? Number(m[1]) * 1000 : 0;
-}
-
 const FILTERS: FilterGroup[] = [
   {
     id: "type",
-    label: "Scheme type",
+    label: "Certification type",
     open: true,
     options: [
-      { id: "ms", label: "Management systems", test: (s) => s.flow === "ms" || s.flow === "combined" },
-      { id: "product", label: "Product certification", test: (s) => s.flow === "product" || s.flow === "combined" },
-      { id: "msme", label: "MSME / Ingelo", test: (s) => s.flow === "ingelo" },
-    ],
-  },
-  {
-    id: "sector",
-    label: "Sector",
-    open: true,
-    options: [
-      { id: "food", label: "Food & agriculture", test: (s) => s.sectors.includes("food") },
-      { id: "all", label: "All industries", test: (s) => s.sectors.includes("all") },
-      { id: "construction", label: "Construction", test: (s) => s.sectors.includes("construction") },
-      { id: "manufacturing", label: "Manufacturing", test: (s) => s.sectors.includes("manufacturing") },
-    ],
-  },
-  {
-    id: "duration",
-    label: "Duration",
-    open: true,
-    options: [
-      { id: "lt6", label: "Starts under 6 weeks", test: (s) => minWeeks(s) < 6 },
-      { id: "6-10", label: "6 – 10 weeks", test: (s) => minWeeks(s) >= 6 && minWeeks(s) < 10 },
-      { id: "10-14", label: "10 weeks or more", test: (s) => minWeeks(s) >= 10 },
-    ],
-  },
-  {
-    id: "fee",
-    label: "Fee range",
-    open: false,
-    options: [
-      { id: "free", label: "Subsidised / free", test: (s) => !!s.subsidised },
-      { id: "lt20", label: "From under SZL 20,000", test: (s) => !s.subsidised && minFee(s) < 20000 },
-      { id: "20-50", label: "From SZL 20,000 – 50,000", test: (s) => minFee(s) >= 20000 && minFee(s) < 50000 },
-      { id: "gt50", label: "From over SZL 50,000", test: (s) => minFee(s) >= 50000 },
+      { id: "ms", label: "Management systems", test: (s) => s.flow === "ms" },
+      { id: "product", label: "Product certification", test: (s) => s.flow === "product" },
+      { id: "msme", label: "Ingelo (MSME)", test: (s) => s.flow === "ingelo" },
     ],
   },
 ];
@@ -208,7 +139,7 @@ export function CertificationPage() {
   const verifyRef = useRef<HTMLElement>(null);
   const verifyInputRef = useRef<HTMLInputElement>(null);
 
-  const [sort, setSort] = useState("popular");
+  const [sort, setSort] = useState("default");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [filterOpen, setFilterOpen] = useState<Record<string, boolean>>(
@@ -220,19 +151,14 @@ export function CertificationPage() {
   const [verifyValue, setVerifyValue] = useState("");
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [verifyResult, setVerifyResult] = useState<VerificationResult | null>(null);
+  const [verifyFailed, setVerifyFailed] = useState(false);
 
   const schemes = useMemo(() => {
-    const list = applyFilters(SCHEMES, checked);
+    const list = applyFilters(LISTED_SCHEMES, checked);
     if (sort === "code") list.sort((a, b) => a.code.localeCompare(b.code));
-    else if (sort === "fastest") {
-      list.sort((a, b) => durationRank(a.duration) - durationRank(b.duration));
-    } else if (sort === "fee") {
-      list.sort((a, b) => feeRank(a) - feeRank(b));
-    }
     return list;
   }, [sort, checked]);
 
-  const openCount = schemes.filter((s) => s.open).length;
   const activeFilterCount = Object.values(checked).filter(Boolean).length;
 
   function scrollToCatalogue() {
@@ -280,8 +206,12 @@ export function CertificationPage() {
     const token = verifyValue.trim();
     if (token.length < 6) return;
     setVerifyBusy(true);
+    setVerifyFailed(false);
     try {
       setVerifyResult(await verifyToken(token));
+    } catch {
+      setVerifyResult(null);
+      setVerifyFailed(true);
     } finally {
       setVerifyBusy(false);
     }
@@ -329,7 +259,7 @@ export function CertificationPage() {
                     }
                   />
                   <span>{opt.label}</span>
-                  <em>{applyFilters(SCHEMES, checked, group.id).filter(opt.test).length}</em>
+                  <em>{applyFilters(LISTED_SCHEMES, checked, group.id).filter(opt.test).length}</em>
                 </label>
               ))}
             </div>
@@ -353,9 +283,9 @@ export function CertificationPage() {
           <span className="page-hero__label">ESWASAONE · CERTIFICATION</span>
           <h1>Certification that travels with your product.</h1>
           <p>
-            Management-system, product, and sector-specific certification issued under ESWASA
-            accreditation. Apply in minutes, track your audits, and get a certificate recognised
-            by buyers at home and abroad.
+            Management systems, product certification and the Ingelo scheme for local MSMEs,
+            from the Eswatini Standards Authority. Request a quote, apply online and follow each
+            stage of your certification.
           </p>
           <div className="page-hero__actions">
             <button type="button" className="chip-cta gold" onClick={scrollToCatalogue}>
@@ -449,7 +379,7 @@ export function CertificationPage() {
                 setVerifyValue(e.target.value);
                 setVerifyResult(null);
               }}
-              placeholder="e.g.  ESWASA-ISO9001-2024-01142"
+              placeholder="Certificate number"
               autoComplete="off"
               spellCheck={false}
             />
@@ -463,9 +393,14 @@ export function CertificationPage() {
           </div>
           <p className="verify-widget__note">
             <Icon name="i-shield" />
-            Certificate data is drawn live from the ESWASA register. See also the{" "}
+            Results come from the ESWASA register. See also the{" "}
             <Link to="/certification/status">suspended, withdrawn &amp; reduced-scope register</Link>.
           </p>
+          {verifyFailed ? (
+            <div className="verify-widget__result">
+              Couldn’t reach the register, so no result is shown. Please try again.
+            </div>
+          ) : null}
           {verifyResult ? (
             <div className={`verify-widget__result${verifyResult.valid ? " ok" : ""}`}>
               {verifyResult.valid
@@ -491,7 +426,7 @@ export function CertificationPage() {
         <div>
           <div className="toolbar">
             <span className="toolbar__count">
-              {schemes.length} certification schemes <span>· {openCount} open now</span>
+              {schemes.length} certification schemes <span>· as published by ESWASA</span>
             </span>
             <button
               type="button"
@@ -505,9 +440,7 @@ export function CertificationPage() {
             <div className="toolbar__sort">
               <label htmlFor="certSort">Sort</label>
               <select id="certSort" value={sort} onChange={(e) => setSort(e.target.value)}>
-                <option value="popular">Most popular</option>
-                <option value="fastest">Fastest to certify</option>
-                <option value="fee">Lowest fee first</option>
+                <option value="default">ESWASA order</option>
                 <option value="code">Code A–Z</option>
               </select>
             </div>
@@ -545,24 +478,17 @@ export function CertificationPage() {
                 </h2>
                 <p className="cert__abstract">{safeText(s.body)}</p>
                 <dl className="cert__facts">
-                  <div className="cert__fact">
-                    <dt>Duration</dt>
-                    <dd>{s.duration}</dd>
-                  </div>
-                  <div className="cert__fact">
-                    <dt>Certificate validity</dt>
-                    <dd>{s.validity}</dd>
-                  </div>
-                  <div className="cert__fact">
-                    <dt>{s.feeLabel || "Fee range"}</dt>
-                    <dd className="mono">{s.fee}</dd>
-                  </div>
+                  {s.facts.map((f) => (
+                    <div className="cert__fact" key={f.label}>
+                      <dt>{f.label}</dt>
+                      <dd>{f.value}</dd>
+                    </div>
+                  ))}
                 </dl>
                 <div className="cert__foot">
-                  <span className={`cert__badge${s.subsidised ? " subsidised" : ""}`}>
-                    <Icon name={s.subsidised ? "i-star" : "i-check-c"} />
-                    {s.subsidised ? "Funding available" : "Open for applications"}
-                  </span>
+                  <a className="cert__badge" href={s.source} target="_blank" rel="noopener noreferrer">
+                    <Icon name="i-open" /> eswasa.co.sz
+                  </a>
                   <div className="cert__actions">
                     <button
                       type="button"
@@ -594,8 +520,10 @@ export function CertificationPage() {
             </div>
           ) : (
             <p className="page-note">
-              Showing {schemes.length} of {SCHEMES.length} certification schemes. Not listed?{" "}
-              <Link to="/certification/quote">Request a quote</Link> and ESWASA will confirm the right scheme.
+              Showing {schemes.length} of {LISTED_SCHEMES.length} certification schemes. Need more than one
+              type, e.g. ISO + Product?{" "}
+              <Link to="/certification/quote?flow=combined">Request a combined quote</Link> and name the
+              standards and products yourself.
             </p>
           )}
         </div>
@@ -605,8 +533,8 @@ export function CertificationPage() {
         <div className="process__head">
           <h2 id="processTitle">How certification works</h2>
           <p>
-            ESWASA runs three certification paths. Each follows its own accredited process. Request a
-            quote first, or apply straight away and ESWASA will price the work after review.
+            ESWASA runs three certification paths, each with its own process as published on
+            eswasa.co.sz. Request a quote first, or apply and ESWASA will quote after reviewing.
           </p>
         </div>
         <div className="cf-tabs" role="tablist" aria-label="Certification path">
@@ -622,22 +550,12 @@ export function CertificationPage() {
             </button>
           ))}
         </div>
-        <div className="cf-steps" role="tabpanel">
-          {FLOW_STAGES[processTab].map((step, i) => (
-            <div className="cf-step" key={step.key}>
-              <span className="cf-step__n">{String(i + 1).padStart(2, "0")}</span>
-              <h3>{step.title}</h3>
-              <p>{step.body}</p>
-              {step.sla ? (
-                <span className="sla">
-                  <Icon name="i-clock" /> {step.sla}
-                </span>
-              ) : null}
-              <span className="who">
-                {step.who === "you" ? "You" : step.who === "eswasa" ? "ESWASA" : "You + ESWASA"}
-              </span>
-            </div>
-          ))}
+        <div role="tabpanel">
+          <ProcessJourney
+            key={processTab}
+            stages={FLOW_STAGES[processTab]}
+            label={`${FLOW_LABEL[processTab]} certification steps`}
+          />
         </div>
         <div className="cf-nav">
           {processTab === "ingelo" ? (
@@ -687,15 +605,8 @@ export function CertificationPage() {
         <div className="featured__head">
           <div>
             <h2 id="featuredTitle">Common starting points</h2>
-            <p>Curated schemes and prep packs for the situations we see most often.</p>
+            <p>Where to begin, depending on where you are.</p>
           </div>
-          <button
-            type="button"
-            className="featured__link"
-            onClick={() => showToast("Paths catalogue coming soon")}
-          >
-            All paths <Icon name="i-cright" />
-          </button>
         </div>
         <StaggeredGrid
           label="Common starting points"
@@ -729,7 +640,7 @@ export function CertificationPage() {
         shortcut={{
           icon: "i-steps",
           label: "Start from a goal",
-          hint: "Step-by-step guides with costs and timelines",
+          hint: "Step-by-step guides",
           to: "/goals",
         }}
       />
@@ -737,69 +648,64 @@ export function CertificationPage() {
   );
 }
 
-function durationRank(duration: string): number {
-  const m = duration.match(/(\d+)/);
-  return m ? Number(m[1]) : 99;
-}
-
-function feeRank(s: Scheme): number {
-  if (s.subsidised || /subsid/i.test(s.fee)) return 0;
-  const m = s.fee.replace(/,/g, "").match(/(\d+)/);
-  return m ? Number(m[1]) : 99;
-}
-
 function SchemeDrawer({ scheme, onClose }: { scheme: Scheme; onClose: () => void }) {
   const ingelo = scheme.flow === "ingelo";
-  const docs = REQUIRED_DOCS[scheme.flow];
   return (
-    <SideDrawer kicker={scheme.code} title={ingelo ? "Ingelo eligibility" : "Application checklist"} onClose={onClose}>
+    <SideDrawer kicker={scheme.code} title={ingelo ? "Ingelo eligibility" : "How it works"} onClose={onClose}>
       {ingelo ? (
         <>
           <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 8 }}>
-            Ingelo is a Ministry of Commerce, Industry and Trade initiative run by ESWASA for local producers.
+            Ingelo is a Ministry of Commerce, Industry and Trade initiative for local producers.
           </p>
           <div className="cf-sec">You qualify if</div>
           <ul className="cf-bul">
-            <li><Icon name="i-check" /> The business is owned by Emaswati</li>
-            <li><Icon name="i-check" /> It is a local MSME producing goods or services</li>
-            <li><Icon name="i-check" /> You are willing to scale up for export quota requirements</li>
+            <li><Icon name="i-check" /> You are Emaswati</li>
+            <li><Icon name="i-check" /> You run a local MSME producing goods or services</li>
+            <li><Icon name="i-check" /> You are willing to scale production to meet export quota requirements</li>
           </ul>
-          <div className="cf-sec">What you get</div>
+          <div className="cf-sec">Benefits listed by ESWASA</div>
           <ul className="cf-bul">
-            <li><Icon name="i-check" /> Free pre-application consultation and gap-analysis workshop</li>
-            <li><Icon name="i-check" /> Expert guidance through certification</li>
+            <li><Icon name="i-check" /> Free pre-application consultations and gap-analysis workshops</li>
+            <li><Icon name="i-check" /> Expert technical guidance throughout certification</li>
             <li><Icon name="i-check" /> The ESWASA Approved mark on your products</li>
             <li><Icon name="i-check" /> Access to local, regional and AfCFTA markets</li>
           </ul>
+          <div className="cf-sec">Application</div>
+          <p style={{ fontSize: 13.5 }}>
+            Form CER_FO_002_IPC. On eswasa.co.sz it is downloaded and emailed to certification@eswasa.co.sz or
+            handed in at Matsapha. Here you fill it in online.
+          </p>
         </>
       ) : (
-        <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 8 }}>
-          {FLOW_LABEL[scheme.flow]} · {scheme.duration} · valid {scheme.validity}. Have these ready. You can
-          also upload them after you apply.
-        </p>
+        <>
+          <div className="cf-sec">Stages</div>
+          <ol style={{ paddingLeft: 18, fontSize: 13.5, lineHeight: 1.5, display: "flex", flexDirection: "column", gap: 6 }}>
+            {FLOW_STAGES[scheme.flow].map((st) => (
+              <li key={st.key}>
+                <b>{st.title}</b>. {st.body}
+              </li>
+            ))}
+          </ol>
+          <div className="cf-sec">Documents</div>
+          <p style={{ fontSize: 13.5 }}>
+            ESWASA does not publish a document checklist. Attach what you have (up to 5 PDFs) to your quote
+            request, and ESWASA will tell you what else it needs.
+          </p>
+        </>
       )}
-      <div className="cf-sec">Documents</div>
-      <ul className="cf-bul">
-        {docs.map((d) => (
-          <li key={d.key} className={d.required ? "" : "opt"}>
-            <Icon name={d.required ? "i-check" : "i-file"} />
-            <span>
-              {d.label}
-              {d.required ? "" : " (optional)"}
-              {d.hint ? ` · ${d.hint}` : ""}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <p style={{ fontSize: 12.5, marginTop: 12 }}>
+        Source:{" "}
+        <a href={scheme.source} target="_blank" rel="noopener noreferrer">
+          {scheme.source.replace("https://", "")}
+        </a>
+      </p>
       <div className="cf-nav">
         <Link className="cf-btn cf-btn--pri" to={`/certification/apply?scheme=${scheme.id}`}>
           <Icon name="i-send" /> {ingelo ? "Check eligibility & apply" : "Start application"}
         </Link>
-        {!ingelo ? (
-          <Link className="cf-btn cf-btn--ghost" to={`/certification/quote?scheme=${scheme.id}`}>
-            Request a quote
-          </Link>
-        ) : null}
+        <Link className="cf-btn cf-btn--ghost" to={`/certification/quote?scheme=${scheme.id}`}>
+          Request a quote
+        </Link>
       </div>
     </SideDrawer>
   );

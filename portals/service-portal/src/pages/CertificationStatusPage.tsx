@@ -26,10 +26,14 @@ export function CertificationStatusPage() {
   const flow = (TABS.includes(params.get("flow") as CertFlow) ? params.get("flow") : "ms") as CertFlow;
   const [reg, setReg] = useState<StatusRegister | null>(null);
   const [q, setQ] = useState("");
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     setReg(null);
-    void getStatusRegister(flow).then(setReg);
+    setFailed(false);
+    getStatusRegister(flow)
+      .then(setReg)
+      .catch(() => setFailed(true));
   }, [flow]);
 
   const match = useMemo(() => {
@@ -86,7 +90,20 @@ export function CertificationStatusPage() {
               placeholder="Company, certificate number or scope"
             />
           </label>
-          <div className="cf-reg">
+          {failed ? (
+            <div className="cf-note cf-note--warn" role="alert">
+              <Icon name="i-warn" />
+              <span>
+                <b>The register couldn’t be loaded.</b> No entries are shown because we can’t confirm them. See
+                ESWASA’s published register:{" "}
+                <a href={`https://www.eswasa.co.sz/certification-status-${flow === "ms" ? "management-systems" : flow}.php`} target="_blank" rel="noopener noreferrer">
+                  eswasa.co.sz
+                </a>
+                .
+              </span>
+            </div>
+          ) : null}
+          <div className="cf-reg" hidden={failed}>
             {SECTIONS.map((sec) => {
               const rows = (reg?.[sec.key] ?? []).filter(match);
               return (

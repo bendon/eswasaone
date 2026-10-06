@@ -22,7 +22,7 @@ export const FLOW_LABEL: Record<CertFlow, string> = {
   ms: "Management systems",
   product: "Product certification",
   ingelo: "Ingelo (MSME)",
-  combined: "Combined (ISO + Product)",
+  combined: "Combined (e.g., ISO + Product)",
 };
 
 export const FLOW_SHORT: Record<CertFlow, string> = {
@@ -44,28 +44,32 @@ export const CHARTER = {
   appealWindowDays: 90,
 } as const;
 
+/**
+ * Stages as published on eswasa.co.sz. Wording stays close to the site;
+ * nothing is added that the site does not state.
+ */
 export const FLOW_STAGES: Record<CertFlow, FlowStage[]> = {
   // managementsystems.php: 8-step process.
   ms: [
     {
       key: "enquiry",
       title: "Initial enquiry",
-      body: "You tell us which standard and scope you want certified. Request a quote online.",
+      body: "You contact ESWASA about the standard you want. You can request a quote online.",
       who: "you",
       sla: `Quote within ${CHARTER.quoteDays} working days`,
     },
     {
       key: "application",
       title: "Promotional visit & application",
-      body: "ESWASA may visit to explain the process. You submit the application with scope, sites and documents.",
+      body: "ESWASA conducts a preliminary visit and you submit your application.",
       who: "both",
       sla: `Receipt confirmed within ${CHARTER.receiptDays} working days`,
     },
     {
       key: "quote",
       title: "Quote, contract & payment",
-      body: "You accept the quote, sign the certification agreement and pay. Audit planning starts once paid.",
-      who: "you",
+      body: "Pricing is provided, and the formal agreement and payment are arranged.",
+      who: "both",
     },
     {
       key: "stage1",
@@ -77,25 +81,25 @@ export const FLOW_STAGES: Record<CertFlow, FlowStage[]> = {
     {
       key: "stage2",
       title: "Stage 2 audit",
-      body: "On-site verification that the system is implemented and effective. Any non-conformities must be corrected.",
+      body: "Verification that the management system is implemented effectively.",
       who: "both",
     },
     {
       key: "decision",
       title: "Certification decision",
-      body: "An independent ESWASA reviewer, not the auditor, evaluates the audit findings and decides.",
+      body: "ESWASA evaluates the audit findings.",
       who: "eswasa",
     },
     {
       key: "certificate",
       title: "Certificate issued",
-      body: "Certificate granted for 3 years. Use of the mark follows CER_RU_028.",
+      body: "The certificate is granted on approval. Use of the mark follows CER_RU_028.",
       who: "eswasa",
     },
     {
       key: "surveillance",
       title: "Surveillance & recertification",
-      body: "Two surveillance audits, then a recertification audit before the 3-year cycle ends.",
+      body: "Two surveillance audits, followed by a recertification audit.",
       who: "both",
     },
   ],
@@ -104,7 +108,7 @@ export const FLOW_STAGES: Record<CertFlow, FlowStage[]> = {
     {
       key: "application",
       title: "Application, quote, planning & scheduling",
-      body: "You apply with product and factory details, accept the quote, and ESWASA plans the assessment.",
+      body: "You apply and receive a quote; ESWASA plans and schedules the assessment.",
       who: "both",
       sla: `Receipt confirmed within ${CHARTER.receiptDays} working days`,
     },
@@ -118,95 +122,84 @@ export const FLOW_STAGES: Record<CertFlow, FlowStage[]> = {
     {
       key: "testing",
       title: "Sampling & testing",
-      body: "Product samples are drawn and tested at an accredited laboratory.",
+      body: "Product samples are tested at an accredited laboratory.",
       who: "eswasa",
     },
     {
       key: "cac",
       title: "Certification Approval Committee",
-      body: "Assessment and test results go to the CAC for the certification decision.",
+      body: "Results are submitted to the Certification Approval Committee (CAC).",
       who: "eswasa",
     },
     {
       key: "permit",
       title: "Permit / certification awarded",
-      body: "Permit to use the SZNS product mark, valid for 3 years.",
+      body: "Permit / certification awarded for 3 years.",
       who: "eswasa",
     },
     {
       key: "surveillance",
       title: "Post-permit surveillance",
-      body: "Ongoing inspections, audits, and market or factory sampling and testing.",
+      body: "Post-permit inspection, audits, sampling and product testing.",
       who: "both",
     },
   ],
-  // ingelo.php: eligibility, free consultation, form CER_FO_002_IPC, mark.
+  // ingelo.php: eligibility, free consultation, form CER_FO_002_IPC, ESWASA Approved mark.
   ingelo: [
     {
       key: "eligibility",
       title: "Eligibility check",
-      body: "Emaswati-owned local MSME producing goods or services, willing to scale up for export quotas.",
+      body: "Emaswati, running a local MSME producing goods or services, willing to scale production to meet export quota requirements.",
       who: "you",
     },
     {
       key: "consultation",
       title: "Free consultation & gap analysis",
-      body: "Free pre-application consultation and gap-analysis workshop to prepare your business.",
+      body: "ESWASA offers free pre-application consultations and gap-analysis workshops.",
       who: "both",
     },
     {
       key: "application",
       title: "Application (CER_FO_002_IPC)",
-      body: "The Ingelo application form, submitted online. No need to email it or deliver it to Matsapha.",
+      body: "The Ingelo application form. On eswasa.co.sz it is emailed or handed in at Matsapha; here it is completed online.",
       who: "you",
       sla: `Receipt confirmed within ${CHARTER.receiptDays} working days`,
     },
     {
       key: "assessment",
-      title: "Certification assessment",
-      body: "ESWASA assesses your product or service, and your process, against the applicable standard.",
-      who: "eswasa",
-      sla: `Scheduled within ${CHARTER.auditScheduleDays} working days`,
-    },
-    {
-      key: "decision",
-      title: "Certification decision",
-      body: "Findings are reviewed independently and a decision is made.",
-      who: "eswasa",
+      title: "Certification",
+      body: "ESWASA takes your product or system through certification, with technical guidance along the way.",
+      who: "both",
     },
     {
       key: "mark",
       title: "ESWASA Approved mark",
-      body: "You may display the ESWASA Approved mark on your products under the mark rules.",
+      body: "Certified producers may display the ESWASA Approved mark on their products.",
       who: "eswasa",
     },
-    {
-      key: "surveillance",
-      title: "Maintaining the mark",
-      body: "ESWASA monitors that the requirements keep being met.",
-      who: "both",
-    },
   ],
+  // RFQ request type "Combined (e.g., ISO + Product)": the applicant names the
+  // standards and products; each part follows its own published process.
   combined: [
     {
       key: "application",
-      title: "Application, quote & contract",
-      body: "One application covers the management system and the product. One quote and one agreement.",
+      title: "Combined request",
+      body: "You name the management-system standard(s) and the product(s). ESWASA confirms how each part will be assessed and quotes.",
       who: "both",
       sla: `Receipt confirmed within ${CHARTER.receiptDays} working days`,
     },
     {
       key: "stage1",
-      title: "Stage 1 audit",
-      body: "Documentation review and readiness.",
+      title: "Management-system audits",
+      body: "Stage 1 and Stage 2 audits for the standard(s) you chose.",
       who: "eswasa",
-      sla: `Scheduled within ${CHARTER.auditScheduleDays} working days`,
+      sla: `Audit scheduled within ${CHARTER.auditScheduleDays} working days`,
     },
     {
       key: "stage2",
-      title: "Stage 2 audit + factory assessment",
-      body: "Management system implementation and product process assessed in one visit.",
-      who: "both",
+      title: "Product initial assessment",
+      body: "Process and systems assessed at your factory or plant.",
+      who: "eswasa",
     },
     {
       key: "testing",
@@ -216,20 +209,20 @@ export const FLOW_STAGES: Record<CertFlow, FlowStage[]> = {
     },
     {
       key: "decision",
-      title: "Certification decision (CAC)",
-      body: "Independent decision on both the system and the product.",
+      title: "Certification decisions",
+      body: "ESWASA evaluates the audit findings; product results go to the Certification Approval Committee.",
       who: "eswasa",
     },
     {
       key: "certificate",
-      title: "Certificate + permit",
-      body: "System certificate and product permit, each valid for 3 years.",
+      title: "Certificate and permit",
+      body: "Management-system certificate on approval; product permit awarded for 3 years.",
       who: "eswasa",
     },
     {
       key: "surveillance",
       title: "Surveillance",
-      body: "Combined surveillance audits and product sampling.",
+      body: "Surveillance audits for the system; post-permit surveillance for the product.",
       who: "both",
     },
   ],
@@ -240,7 +233,7 @@ export function stageFromStatus(flow: CertFlow, status: string): string {
   const s = status.toLowerCase();
   const pick = (m: Record<CertFlow, string>) => m[flow];
   if (s.includes("withdraw")) return "withdrawn";
-  if (s.includes("surveil") || s.includes("renew")) return "surveillance";
+  if (s.includes("surveil") || s.includes("renew")) return flow === "ingelo" ? "mark" : "surveillance";
   if (s.includes("certified"))
     return pick({ ms: "certificate", product: "permit", ingelo: "mark", combined: "certificate" });
   if (s.includes("nc"))
@@ -276,45 +269,29 @@ export function documentsFor(flow: CertFlow): CertDocument[] {
   return CERT_DOCUMENTS.filter((d) => d.flows === "all" || d.flows.includes(flow));
 }
 
-/** What to have ready, per flow. Drives the checklist drawer and the document step. */
-export type RequiredDoc = { key: string; label: string; required: boolean; hint?: string };
+/**
+ * Uploads per flow. ESWASA publishes no document checklist for management
+ * systems or products, so those are free "supporting documents". The Ingelo
+ * entries come from form CER_FO_002_IPC (informant passport-size photo).
+ */
+export type RequiredDoc = { key: string; label: string; required: boolean; hint?: string; multiple?: boolean };
+
+const SUPPORTING: RequiredDoc = {
+  key: "supporting",
+  label: "Supporting documents",
+  required: false,
+  hint: "Anything you already have. ESWASA will tell you what else it needs.",
+  multiple: true,
+};
 
 export const REQUIRED_DOCS: Record<CertFlow, RequiredDoc[]> = {
-  ms: [
-    { key: "registration", label: "Company registration / trading licence", required: true },
-    { key: "orgchart", label: "Organisation chart", required: true },
-    { key: "manual", label: "Management system manual or documented information", required: true },
-    { key: "procedures", label: "Procedures and records required by the standard", required: true },
-    { key: "internal_audit", label: "Internal audit report (last 12 months)", required: true },
-    { key: "mgmt_review", label: "Management review minutes", required: true },
-    { key: "legal_register", label: "Legal & other requirements register", required: false, hint: "ISO 14001 / ISO 45001" },
-    { key: "haccp_plan", label: "HACCP plan and prerequisite programmes", required: false, hint: "ISO 22000 / HACCP" },
-  ],
-  product: [
-    { key: "registration", label: "Company registration / trading licence", required: true },
-    { key: "spec", label: "Product specification and labels", required: true },
-    { key: "process_flow", label: "Process flow diagram", required: true },
-    { key: "qc_plan", label: "Quality control plan and inspection records", required: true },
-    { key: "test_reports", label: "Existing test reports (accredited laboratory)", required: false },
-    { key: "suppliers", label: "Raw material supplier list", required: false },
-    { key: "layout", label: "Factory / plant layout", required: false },
-  ],
+  ms: [SUPPORTING],
+  product: [SUPPORTING],
   ingelo: [
-    { key: "national_id", label: "National ID of the informant", required: true },
-    { key: "photo", label: "Passport-size photo of the informant", required: true },
-    { key: "trading_licence", label: "Trading licence (where applicable)", required: false },
-    { key: "product_photo", label: "Product / label photos", required: false },
-    { key: "documented_system", label: "Any documented system or recipes", required: false },
+    { key: "photo", label: "Passport-size photo of the informant", required: true, hint: "Asked for on form CER_FO_002_IPC" },
+    SUPPORTING,
   ],
-  combined: [
-    { key: "registration", label: "Company registration / trading licence", required: true },
-    { key: "manual", label: "Management system manual or documented information", required: true },
-    { key: "internal_audit", label: "Internal audit report (last 12 months)", required: true },
-    { key: "mgmt_review", label: "Management review minutes", required: true },
-    { key: "spec", label: "Product specification and labels", required: true },
-    { key: "qc_plan", label: "Quality control plan and inspection records", required: true },
-    { key: "test_reports", label: "Existing test reports (accredited laboratory)", required: false },
-  ],
+  combined: [SUPPORTING],
 };
 
 /* ---------- Request for Quotation (qoute_certification.php) ---------- */

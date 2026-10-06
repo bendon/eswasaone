@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AuthError, Icon, useDialogs } from "@eswasaone/shared-ui";
+import { AuthError, DateField, Icon, useDialogs } from "@eswasaone/shared-ui";
 import { createLeave } from "./api";
 import {
   fmtDateRange,
@@ -225,20 +225,21 @@ function LeaveRequestForm({
       </label>
       <label className="me-field">
         <span>From</span>
-        <input
-          type="date"
+        <DateField
           value={fromDate}
-          onChange={(e) => onFrom(e.target.value)}
+          onChange={onFrom}
+          ariaLabel="From"
           required
           disabled={busy}
         />
       </label>
       <label className="me-field">
         <span>To</span>
-        <input
-          type="date"
+        <DateField
           value={toDate}
-          onChange={(e) => onTo(e.target.value)}
+          onChange={onTo}
+          min={fromDate || undefined}
+          ariaLabel="To"
           required
           disabled={busy}
         />

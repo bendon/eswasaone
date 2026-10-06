@@ -12,6 +12,7 @@ import {
   type Quote,
 } from "../../api/certification";
 import { FLOW_SHORT, fmtDate, stageProgress, stageTitle } from "../../certification/flows";
+import { demoMode } from "../../certification/demoStore";
 import { useToast } from "../../ui/Toast";
 import { Skeleton } from "./Skeleton";
 
@@ -29,13 +30,18 @@ export function AccountApplicationsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const { showToast } = useToast();
 
+  const [loadErr, setLoadErr] = useState(false);
+  const [answerErr, setAnswerErr] = useState<string | null>(null);
+
   function load() {
     setLoading(true);
+    setLoadErr(false);
     void Promise.all([listApplications(), listQuotes()])
       .then(([a, q]) => {
         setApps(a);
         setQuotes(q);
       })
+      .catch(() => setLoadErr(true))
       .finally(() => setLoading(false));
   }
 
@@ -56,10 +62,13 @@ export function AccountApplicationsPage() {
 
   async function answer(q: Quote, accept: boolean) {
     setBusy(q.id);
+    setAnswerErr(null);
     try {
       await respondToQuote(q.id, accept);
       showToast(accept ? "Quote accepted. Continue to the application." : "Quote declined");
       load();
+    } catch {
+      setAnswerErr(`Your response to ${q.id} was not sent. Reply to ESWASA's quotation email instead.`);
     } finally {
       setBusy(null);
     }
@@ -69,7 +78,14 @@ export function AccountApplicationsPage() {
     <section className="panel is-on" role="tabpanel">
       <div className="panel__head">
         <div>
-          <h2>Certification applications</h2>
+          <h2>
+            Certification applications{" "}
+            {demoMode() ? (
+              <span className="cf-chip cf-chip--amber" title="Sample data for testing: not real cases">
+                Demo data
+              </span>
+            ) : null}
+          </h2>
           <p>Quotes, applications, audits and certificates in one place.</p>
         </div>
         <div className="actions">
@@ -142,7 +158,24 @@ export function AccountApplicationsPage() {
         </select>
       </div>
 
-      {loading ? (
+      {answerErr ? (
+        <p className="page-note" role="alert">
+          <b>Not sent.</b> {answerErr}
+        </p>
+      ) : null}
+
+      {loadErr ? (
+        <div className="empty" role="alert">
+          <span className="empty__ic">
+            <Icon name="i-alert-c" />
+          </span>
+          <b>Can’t reach ESWASA right now</b>
+          <p>Your applications couldn’t be loaded, so nothing is shown rather than out-of-date information.</p>
+          <button type="button" className="abtn ghost" onClick={load}>
+            Try again
+          </button>
+        </div>
+      ) : loading ? (
         <div className="cf-apps">
           <Skeleton lines={3} />
           <Skeleton lines={3} />

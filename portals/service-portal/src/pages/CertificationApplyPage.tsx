@@ -13,7 +13,7 @@ import {
 } from "../api/certification";
 import { useAuth } from "../auth/AuthProvider";
 import { Breadcrumbs } from "../components/Breadcrumbs";
-import { clearDraft, loadDraft, saveDraft } from "../certification/demoStore";
+import { CERT_EMAIL, clearDraft, demoMode, loadDraft, mailtoCert, saveDraft } from "../certification/demoStore";
 import {
   BusinessStep,
   ConsultStep,
@@ -42,7 +42,7 @@ import {
   type WizardState,
 } from "../certification/wizard";
 import { CHARTER, FLOW_LABEL, FLOW_STAGES, fmtDate } from "../certification/flows";
-import { Sheet } from "../certification/ui";
+import { NotSentNotice, Sheet } from "../certification/ui";
 
 const STEP_LEAD: Partial<Record<StepKey, string>> = {
   scheme: "Confirm the scheme and link your quote if you already have one.",
@@ -178,7 +178,7 @@ export function CertificationApplyPage() {
       setDone(created);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
-      setSubmitErr("We couldn’t submit the application. Your answers are saved. Try again.");
+      setSubmitErr("ESWASA's system didn't accept the application, so nothing was sent. Your answers are saved on this device. Try again, or email the application instead.");
     } finally {
       setBusy(false);
     }
@@ -223,12 +223,24 @@ export function CertificationApplyPage() {
                   </span>
                 </li>
               ) : null}
-              {done.documents.some((d) => d.required && d.status === "requested") ? (
+              {!demoMode() ? (
                 <li>
                   <Icon name="i-file" />
-                  <span>Some required documents are still outstanding. Upload them from your tracker.</span>
+                  <span>
+                    ESWASA's system has your reference, scheme and contact details. Online upload of documents and the
+                    full form isn't connected yet, so{" "}
+                    <a href={mailtoCert(`Application ${done.id}: full details & documents`, applicationSummary(s, done.id))}>
+                      email the full application
+                    </a>{" "}
+                    and your documents to {CERT_EMAIL}, quoting <b>{done.id}</b>.
+                  </span>
                 </li>
-              ) : null}
+              ) : (
+                <li>
+                  <Icon name="i-file" />
+                  <span>Demo mode: this application and its files exist only on this device.</span>
+                </li>
+              )}
               <li>
                 <Icon name="i-steps" />
                 <span>Next stage: {firstStages[1]?.title ?? "Review"}.</span>
@@ -314,7 +326,7 @@ export function CertificationApplyPage() {
         </div>
         {s.flow === "ingelo" ? (
           <span className="cf-chip cf-chip--green">
-            <Icon name="i-star" /> Subsidised MSME scheme
+            <Icon name="i-star" /> Free consultation &amp; gap analysis
           </span>
         ) : null}
       </header>
@@ -398,10 +410,11 @@ export function CertificationApplyPage() {
             <dd>{s.documents.length} attached</dd>
           </dl>
           {submitErr ? (
-            <div className="cf-note cf-note--err" style={{ marginTop: 12 }}>
-              <Icon name="i-alert-c" />
-              <span>{submitErr}</span>
-            </div>
+            <NotSentNotice
+              title="Not submitted."
+              detail={submitErr}
+              mailto={mailtoCert(`Certification application: ${s.org.name || schemeTitle(s.scheme)}`, applicationSummary(s))}
+            />
           ) : null}
           <div className="cf-nav">
             <button type="button" className="cf-btn cf-btn--ghost" onClick={() => setConfirming(false)} disabled={busy}>
@@ -548,4 +561,37 @@ function FragmentRow({ a, b }: { a: string; b: ReactNode }) {
       <dd>{b}</dd>
     </>
   );
+}
+
+/** Plain-text copy of the wizard, for the email fallback. */
+function applicationSummary(s: WizardState, ref?: string): string {
+  const lines: string[] = [];
+  if (ref) lines.push(`Reference: ${ref}`);
+  lines.push(`Scheme: ${schemeTitle(s.scheme)}`, `Standards: ${s.standards.join(", ")}`);
+  if (s.quote_ref) lines.push(`Quote: ${s.quote_ref}`);
+  lines.push(
+    "",
+    `Organisation: ${s.org.name}`,
+    `Registration no.: ${s.org.registration_no}`,
+    `Trading licence: ${s.org.trading_licence}`,
+    `Year of first registration: ${s.org.year_registered}`,
+    `Address: ${[s.org.address, s.org.town, s.org.inkhundla, s.org.region].filter(Boolean).join(", ")}`,
+    `Personnel: ${s.org.employees}`,
+    "",
+    `Contact: ${s.contact.name}, ${s.contact.position}, ${s.contact.phone}, ${s.contact.email}`,
+    `Alternative contact: ${s.alt_contact.name} ${s.alt_contact.phone} ${s.alt_contact.email}`.trim(),
+  );
+  if (s.scope) lines.push("", `Scope: ${s.scope}`);
+  if (s.sites.length) lines.push(`Sites: ${s.sites.map((x) => `${x.name} (${x.address})`).join("; ")}`);
+  const products = detProducts(s);
+  if (products.length && products[0].name) lines.push(`Products: ${products.map((p) => `${p.name} [${p.standard}]`).join("; ")}`);
+  const skip = new Set(["products"]);
+  const extra = Object.entries(s.details)
+    .filter(([k, v]) => !skip.has(k) && v !== "" && !(Array.isArray(v) && !v.length))
+    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`);
+  if (extra.length) lines.push("", ...extra);
+  if (s.consultant) lines.push(`Consultant: ${s.consultant}`);
+  if (s.consultation) lines.push(`Consultation requested: ${s.consultation.date}, ${s.consultation.mode}`);
+  lines.push("", `Signed: ${s.signature.name}, ${s.signature.date}`);
+  return lines.join("\n");
 }

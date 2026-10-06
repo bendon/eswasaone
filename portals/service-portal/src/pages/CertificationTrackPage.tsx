@@ -16,9 +16,11 @@ import {
   type ApplicationDetail,
   type ApplicationRequest,
   type Finding,
+  NotConnectedError,
 } from "../api/certification";
 import { lodgeComplaint } from "../api/misc";
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { demoMode, mailtoCert } from "../certification/demoStore";
 import {
   addWorkingDays,
   CHARTER,
@@ -32,7 +34,9 @@ import {
 import {
   Activity,
   FileRow,
+  isoToday,
   FlowTimeline,
+  NotSentNotice,
   Sheet,
   TextField,
   UploadButton,
@@ -52,25 +56,25 @@ const REQUEST_COPY: Record<
 > = {
   changes: {
     title: "Notify ESWASA of changes",
-    lead: "Client notice of changes (CER_FO_028): ownership, key personnel, sites, scope, processes or legal status.",
+    lead: "Client notice of changes (CER_FO_028). Tell ESWASA what has changed and from when.",
     label: "What has changed, and from when?",
     cta: "Send notice",
   },
   scope: {
     title: "Request a scope extension",
-    lead: "Extending scope of certification (CER_PR_012). ESWASA may need a special audit (CER_PR_028).",
+    lead: "Extending scope of certification is handled under CER_PR_012.",
     label: "Describe the activities, products or sites to add",
     cta: "Send request",
   },
   appeal: {
     title: "Lodge an appeal",
-    lead: `Appeals against certification decisions are handled under CER_PR_002 and must be lodged within ${CHARTER.appealWindowDays} days of the decision. The appeal is reviewed by people not involved in the original decision.`,
+    lead: `Appeals against certification decisions are handled under CER_PR_002 and must be lodged in writing within ${CHARTER.appealWindowDays} days of the decision.`,
     label: "Grounds for your appeal",
     cta: "Lodge appeal",
   },
   withdraw: {
     title: "Withdraw this application",
-    lead: "ESWASA stops work on this case. Fees for work already done may still be payable.",
+    lead: "Ask ESWASA to stop work on this application.",
     label: "Reason for withdrawing",
     cta: "Withdraw application",
     danger: true,
@@ -98,9 +102,14 @@ export function CertificationTrackPage() {
   const [d, setD] = useState<ApplicationDetail | null | undefined>(undefined);
   const [sheet, setSheet] = useState<SheetKind | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [loadErr, setLoadErr] = useState(false);
+  const [notSent, setNotSent] = useState<{ title: string; body: string } | null>(null);
 
   const load = useCallback(() => {
-    void getApplicationDetail(id).then(setD);
+    setLoadErr(false);
+    getApplicationDetail(id)
+      .then(setD)
+      .catch(() => setLoadErr(true));
   }, [id]);
 
   useEffect(load, [load]);
@@ -115,6 +124,27 @@ export function CertificationTrackPage() {
     />
   );
 
+  if (loadErr) {
+    return (
+      <div className="page">
+        {crumbs}
+        <div className="cf-card" style={{ marginTop: 20 }}>
+          <h1 className="page-h">Can’t reach ESWASA right now</h1>
+          <p className="page-lead">
+            The status of {safeText(id)} couldn’t be loaded. Nothing is shown rather than out-of-date information.
+          </p>
+          <div className="cf-nav">
+            <button type="button" className="cf-btn cf-btn--pri" onClick={load}>
+              Try again
+            </button>
+            <a className="cf-btn cf-btn--ghost" href={mailtoCert(`Status of ${id}`, `Please send me the status of application ${id}.`)}>
+              Ask by email
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (d === undefined) {
     return (
       <div className="page">
@@ -151,13 +181,22 @@ export function CertificationTrackPage() {
     (Date.now() - decisionDate.getTime()) / 86_400_000 <= CHARTER.appealWindowDays;
   const withdrawn = detail.stage === "withdrawn";
 
-  async function run(key: string, fn: () => Promise<ApplicationDetail | null>, ok: string) {
+  /** Runs an action; if ESWASA can't receive it, says so and offers email. Never fakes success. */
+  async function run(key: string, fn: () => Promise<ApplicationDetail | null>, ok: string, emailBody = "") {
     setBusy(key);
+    setNotSent(null);
     try {
       const res = await fn();
       if (res) setD(res);
       else load();
       showToast(ok);
+    } catch (err) {
+      setSheet(null);
+      setNotSent({
+        title: err instanceof NotConnectedError ? err.message : "This wasn't sent.",
+        body: `${ok.replace(/: sent$/, "")} for application ${detail.id}.\n\n${emailBody}`.trim(),
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setBusy(null);
     }
@@ -198,9 +237,9 @@ export function CertificationTrackPage() {
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {statusChip(detail)}
-          {detail.local ? (
-            <span className="cf-chip cf-chip--muted" title="Shown from this device until ESWASA’s system confirms it">
-              Saved on this device
+          {detail.local || demoMode() ? (
+            <span className="cf-chip cf-chip--muted" title="Sample or device-only data: not a confirmed ESWASA record">
+              Demo data
             </span>
           ) : null}
         </div>
@@ -208,6 +247,14 @@ export function CertificationTrackPage() {
 
       <div className="cf-track">
         <div>
+          {notSent ? (
+            <NotSentNotice
+              title={notSent.title}
+              detail="Nothing was recorded by ESWASA. Send it by email to the certification desk instead."
+              mailto={mailtoCert(`Application ${detail.id}`, notSent.body)}
+              onClose={() => setNotSent(null)}
+            />
+          ) : null}
           {/* Where you are */}
           <section className="cf-card cf-now">
             <span className="cf-head__kicker">Where you are</span>
@@ -304,8 +351,8 @@ export function CertificationTrackPage() {
                 <div className="cf-note" style={{ marginTop: 12 }}>
                   <Icon name="i-dollar" />
                   <span>
-                    Quote accepted. ESWASA sends the certification agreement and invoice. Pay by EFT or MTN
-                    MoMo using reference <b>{detail.id}</b>. Audit planning starts once payment is received.
+                    Quote accepted. ESWASA arranges the contract and payment with you; contact the certification desk
+                    quoting <b>{detail.id}</b>.
                   </span>
                 </div>
               ) : null}
@@ -533,7 +580,7 @@ export function CertificationTrackPage() {
               <div className="cf-card__h">
                 <div>
                   <h2>Certification decision</h2>
-                  <p>Made by the {detail.decision.body}, independently of the auditors.</p>
+                  <p>Made by the {detail.decision.body}.</p>
                 </div>
                 <span
                   className={`cf-chip${detail.decision.outcome === "granted" ? " cf-chip--green" : detail.decision.outcome === "refused" ? " cf-chip--red" : " cf-chip--amber"}`}
@@ -607,8 +654,7 @@ export function CertificationTrackPage() {
               <div className="cf-note" style={{ marginTop: 12 }}>
                 <Icon name="i-badge" />
                 <span>
-                  Use the mark only within the certified scope and as set out in CER_RU_028. Misuse can lead to
-                  suspension or withdrawal (CER_PR_026).
+                  Use of the certification mark follows CER_RU_028.
                 </span>
               </div>
             </section>
@@ -946,7 +992,7 @@ function RescheduleSheet({
           if (reason.trim() && preferred) onSubmit(reason.trim(), preferred);
         }}
       >
-        <TextField label="Preferred date" type="date" required value={preferred} onChange={setPreferred} />
+        <TextField label="Preferred date" type="date" min={isoToday()} required value={preferred} onChange={setPreferred} />
         <TextField label="Reason" required multiline value={reason} onChange={setReason} />
         <div className="cf-nav">
           <button type="button" className="cf-btn cf-btn--ghost" onClick={onClose}>
@@ -982,7 +1028,7 @@ function ConsultSheet({
           if (date) onSubmit({ date, mode, topic });
         }}
       >
-        <TextField label="Preferred date" type="date" required value={date} onChange={setDate} />
+        <TextField label="Preferred date" type="date" min={isoToday()} required value={date} onChange={setDate} />
         <label className="cf-field">
           <span className="lbl">How should we meet?</span>
           <select value={mode} onChange={(e) => setMode(e.target.value)}>

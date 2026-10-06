@@ -1,4 +1,5 @@
 import { apiFetch } from "@eswasaone/shared-ui";
+import { demoMode } from "../certification/demoStore";
 
 export type ApplicabilityResult = {
   summary: string;
@@ -64,12 +65,14 @@ export async function listTbtAlerts(): Promise<TbtAlert[]> {
 export async function verifyToken(token: string): Promise<VerificationResult> {
   try {
     return await apiFetch<VerificationResult>(`/verify/${encodeURIComponent(token)}`);
-  } catch {
+  } catch (err) {
+    // Never report a certificate as valid unless the register answered.
+    if (!demoMode()) throw err;
     const valid = /^ESW-|^CERT-/i.test(token);
     return {
       valid,
       token,
-      subject: valid ? "Demo organisation: Product Mark" : null,
+      subject: valid ? "DEMO DATA: not a real certificate" : null,
     };
   }
 }
@@ -84,8 +87,10 @@ export async function lodgeComplaint(body: {
       method: "POST",
       body: JSON.stringify(body),
     });
-  } catch {
-    return { id: `CMP-${Date.now().toString(36).toUpperCase()}` };
+  } catch (err) {
+    // No complaints endpoint in Core yet: don't invent a reference number.
+    if (!demoMode()) throw err;
+    return { id: `DEMO-CMP-${Date.now().toString(36).toUpperCase()}` };
   }
 }
 

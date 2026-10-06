@@ -30,7 +30,7 @@ import {
 import { CHARTER, FLOW_LABEL, SUBSTEPS, flowForScheme, fmtDate, normalizeStage, type CertFlow } from "./pipeline";
 
 /**
- * Decisions: independent certification decision (MS / Ingelo) or
+ * Decisions: certification decision (MS / Ingelo) or
  * Certification Approval Committee (product / combined). Impartiality:
  * the decision maker may not be the lead auditor for the case.
  */
@@ -45,7 +45,8 @@ type Row = {
 };
 
 function bodyFor(flow: CertFlow): DeskDecision["body"] {
-  return flow === "product" || flow === "combined" ? "Certification Approval Committee" : "Certification reviewer";
+  // product.php names the CAC; management systems/Ingelo pages just say "certification decision".
+  return flow === "product" || flow === "combined" ? "Certification Approval Committee" : "Certification decision";
 }
 
 export function DecisionsView() {
@@ -111,7 +112,6 @@ export function DecisionsView() {
   ];
 
   async function decide(r: Row, outcome: DeskDecision["outcome"]) {
-    if (conflict) return;
     if (!note.trim()) {
       await dialogs.alert({ message: "Record the basis for the decision.", kind: "error" });
       return;
@@ -202,11 +202,13 @@ export function DecisionsView() {
         },
         {
           heading: "Decision",
-          content: conflict ? (
-            <p style={{ color: "var(--red)", fontWeight: 600, fontSize: 13 }}>
-              Impartiality: you were the lead auditor on this case, so another reviewer must decide.
-            </p>
-          ) : (
+          content: (
+            <>
+            {conflict ? (
+              <p style={{ color: "var(--amber)", fontWeight: 600, fontSize: 13 }}>
+                Note: you are recorded as the lead auditor on this case.
+              </p>
+            ) : null}
             <textarea
               aria-label="Decision basis"
               placeholder="Basis for the decision (recorded on file and sent to the client)"
@@ -214,6 +216,7 @@ export function DecisionsView() {
               onChange={(e) => setNote(e.target.value)}
               style={{ width: "100%", minHeight: 90, font: "inherit", padding: 8, border: "1px solid var(--line)", borderRadius: 8 }}
             />
+            </>
           ),
         },
       ]
@@ -225,9 +228,9 @@ export function DecisionsView() {
           label: busy ? "…" : "Grant certification",
           variant: "gold",
           onClick: () => void decide(selected, "granted"),
-          disabled: busy || conflict || selected.blockers.length > 0,
+          disabled: busy || selected.blockers.length > 0,
         },
-        { label: "Refuse", variant: "ghost", onClick: () => void decide(selected, "refused"), disabled: busy || conflict },
+        { label: "Refuse", variant: "ghost", onClick: () => void decide(selected, "refused"), disabled: busy },
         { label: "Close", variant: "ghost", onClick: () => setOpenId(null) },
       ]
     : [];
@@ -246,7 +249,7 @@ export function DecisionsView() {
         <>
           <ModuleHeader
             title="Certification decisions"
-            subtitle="Independent review after audit, NC closure and, for products, laboratory testing (CER_PR_014)."
+            subtitle="Certification decision after audit and, for products, testing and the Certification Approval Committee (CER_PR_014)."
             summary={summary}
           />
           {dialogs.host}

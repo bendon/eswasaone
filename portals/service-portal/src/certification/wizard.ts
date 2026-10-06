@@ -8,6 +8,7 @@ import {
   type ProductLine,
 } from "../api/certification";
 import { REQUIRED_DOCS, type CertFlow } from "./flows";
+import { demoMode } from "./demoStore";
 
 /** Apply-wizard state, step plan and validation (no components). */
 
@@ -232,10 +233,12 @@ export function validateStep(step: StepKey, s: WizardState): Record<string, stri
       if (!det(s, "other_support")) e.other_support = "Please answer.";
       break;
     case "documents": {
+      // Outside demo mode uploads aren't available yet (documents go by email), so nothing to check.
+      if (!demoMode()) break;
       const missing = REQUIRED_DOCS[flow].filter(
         (d) => d.required && !s.documents.some((x) => x.key === d.key),
       );
-      if (missing.length) e.documents = `${missing.length} required document(s) still to add. You can also send them later from your tracker.`;
+      if (missing.length) e.documents = `${missing.length} required document(s) still to add. You can also email them after submitting.`;
       break;
     }
     case "declare":

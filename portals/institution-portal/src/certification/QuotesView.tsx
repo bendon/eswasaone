@@ -36,31 +36,9 @@ const STATUS_LABEL: Record<QuoteStatus, string> = {
   expired: "Expired",
 };
 
-/** Indicative rate card. TODO: wire real (ERPNext price list for certification items). */
-const RATE = { application: 2500, auditorDay: 6500, certification: 4000, sampling: 7800, surveillanceDay: 6500 };
-
-function defaultLines(q: DeskQuote): QuoteLine[] {
-  if (q.flow === "ingelo") {
-    return [
-      { label: "Application fee (Ingelo, subsidised)", amount: 0 },
-      { label: "Certification assessment (subsidised)", amount: 0 },
-    ];
-  }
-  const staff = Number(q.employees || "0");
-  const sites = Math.max(1, Number(q.sites || "1"));
-  const days = Math.max(2, Math.ceil(staff / 40) + sites); // rough IAF MD5-style sizing
-  const lines: QuoteLine[] = [{ label: "Application fee", amount: RATE.application }];
-  if (q.flow !== "product") {
-    lines.push({ label: "Stage 1 audit (1 auditor-day)", amount: RATE.auditorDay });
-    lines.push({ label: `Stage 2 audit (${days} auditor-days)`, amount: RATE.auditorDay * days });
-  } else {
-    lines.push({ label: "Initial factory assessment (1 auditor-day)", amount: RATE.auditorDay });
-  }
-  if (q.flow === "product" || q.flow === "combined") {
-    lines.push({ label: "Sampling & accredited laboratory testing", amount: RATE.sampling });
-  }
-  lines.push({ label: q.flow === "product" ? "Permit fee" : "Certification fee", amount: RATE.certification });
-  return lines;
+/** ESWASA publishes no fee schedule: staff enter the lines. TODO: wire real (ERPNext price list). */
+function defaultLines(): QuoteLine[] {
+  return [{ label: "", amount: 0 }];
 }
 
 function slaOf(q: DeskQuote): { kind: "breach" | "due" | "ok"; text: string } {
@@ -107,7 +85,7 @@ export function QuotesView() {
 
   useEffect(() => {
     if (!selected) return;
-    setLines(selected.lines?.length ? selected.lines : defaultLines(selected));
+    setLines(selected.lines?.length ? selected.lines : defaultLines());
     setNotes(selected.notes ?? "");
     setValidDays(30);
   }, [selected?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -145,13 +123,20 @@ export function QuotesView() {
       await issueQuote(q.id, lines, validDays, notes);
       setFlash(`Quote ${q.id} issued to ${q.org}`);
       load();
+    } catch (err) {
+      await dialogs.alert({ message: err instanceof Error ? err.message : "Quote not issued", kind: "error" });
     } finally {
       setBusy(false);
     }
   }
 
   async function mark(q: DeskQuote, s: QuoteStatus) {
-    setQuoteStatus(q.id, s);
+    try {
+      setQuoteStatus(q.id, s);
+    } catch (err) {
+      await dialogs.alert({ message: err instanceof Error ? err.message : "Not saved", kind: "error" });
+      return;
+    }
     setFlash(`${q.id} marked ${STATUS_LABEL[s].toLowerCase()}`);
     load();
   }
@@ -176,7 +161,11 @@ export function QuotesView() {
         received_at: new Date().toISOString().slice(0, 10),
         notes: q.scope,
       });
-      setQuoteStatus(q.id, "accepted", res.id);
+      try {
+        setQuoteStatus(q.id, "accepted", res.id);
+      } catch {
+        /* application exists in Core; the quote link can't be stored until quotes are wired */
+      }
       setFlash(`Application ${res.id} created from ${q.id}`);
       load();
     } catch (err) {
@@ -249,10 +238,7 @@ export function QuotesView() {
                 <b>Total</b>
                 <span className="mono" style={{ fontWeight: 800 }}>SZL {total.toLocaleString()}</span>
               </div>
-              <div className="kv">
-                <b>Annual surveillance</b>
-                <span>{selected.flow === "ingelo" ? "Per Ingelo scheme" : `≈ SZL ${(RATE.surveillanceDay * 2).toLocaleString()} / year (quoted separately)`}</span>
-              </div>
+
               {selected.status === "requested" ? (
                 <>
                   <div className="kv">
@@ -285,7 +271,7 @@ export function QuotesView() {
   const actions: DrawerAction[] = selected
     ? [
         ...(selected.status === "requested"
-          ? [{ label: busy ? "…" : "Issue quote", variant: "gold" as const, onClick: () => void issue(selected), disabled: busy || total < 0 }]
+          ? [{ label: busy ? "…" : "Issue quote", variant: "gold" as const, onClick: () => void issue(selected), disabled: busy || total <= 0 || lines.some((l) => !l.label.trim()) }]
           : []),
         ...(selected.status === "issued"
           ? [

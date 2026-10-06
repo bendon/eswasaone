@@ -1,8 +1,15 @@
 import { useEffect, useId, type ReactNode } from "react";
-import { Icon } from "@eswasaone/shared-ui";
+import { DateField, Icon, MonthField } from "@eswasaone/shared-ui";
 import { FLOW_STAGES, fmtDate, type CertFlow } from "./flows";
 
 /* ---------- Fields ---------- */
+
+/** Local "YYYY-MM-DD" (or "YYYY-MM" with month=true) for date picker bounds. */
+export function isoToday(month = false): string {
+  const d = new Date();
+  const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return month ? ym : `${ym}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 export function Field({
   label,
@@ -45,6 +52,8 @@ export function TextField({
   multiline,
   inputMode,
   autoComplete,
+  min,
+  max,
 }: {
   label: string;
   value: string;
@@ -58,10 +67,24 @@ export function TextField({
   multiline?: boolean;
   inputMode?: "text" | "email" | "tel" | "numeric";
   autoComplete?: string;
+  /** For type="date" / "month": ISO bounds. */
+  min?: string;
+  max?: string;
 }) {
+  const Picker = type === "date" ? DateField : type === "month" ? MonthField : null;
   return (
     <Field label={label} required={required} hint={hint} error={error} className={className}>
-      {multiline ? (
+      {Picker ? (
+        <Picker
+          value={value}
+          onChange={onChange}
+          min={min}
+          max={max}
+          placeholder={placeholder}
+          required={required}
+          invalid={Boolean(error)}
+        />
+      ) : multiline ? (
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -429,5 +452,37 @@ export function Activity({ items }: { items: { at: string; who: "you" | "eswasa"
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Shown when something could not reach ESWASA. Never pretends it was sent. */
+export function NotSentNotice({
+  title,
+  detail,
+  mailto,
+  onClose,
+}: {
+  title: string;
+  detail: string;
+  mailto: string;
+  onClose?: () => void;
+}) {
+  return (
+    <div className="cf-note cf-note--err" role="alert" style={{ marginTop: 12 }}>
+      <Icon name="i-alert-c" />
+      <span>
+        <b>{title}</b> {detail}
+        <span style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+          <a className="cf-btn cf-btn--pri cf-btn--sm" href={mailto}>
+            <Icon name="i-mail" /> Send by email instead
+          </a>
+          {onClose ? (
+            <button type="button" className="cf-btn cf-btn--ghost cf-btn--sm" onClick={onClose}>
+              Dismiss
+            </button>
+          ) : null}
+        </span>
+      </span>
+    </div>
   );
 }

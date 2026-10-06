@@ -27,8 +27,9 @@ import {
   REQUIRED_DOCS,
   RFQ_MAX_MB,
 } from "./flows";
-import { Choice, FileRow, MultiChoice, SelectField, TextField, UploadButton, YesNo } from "./ui";
+import { Choice, FileRow, isoToday, MultiChoice, SelectField, TextField, UploadButton, YesNo } from "./ui";
 import { det, detList, detProducts, type StepProps } from "./wizard";
+import { CERT_EMAIL, demoMode } from "./demoStore";
 
 /* ---------------- steps ---------------- */
 
@@ -81,7 +82,7 @@ export function SchemeStep({
           <MultiChoice
             className="span2"
             label="Integrated audit: add other standards (optional)"
-            hint="ISO 9001, ISO 14001 and ISO 45001 can be audited together: one audit schedule, lower total cost."
+            hint="Name any other management-system standards you want certified in the same request. ESWASA confirms how they will be audited."
             values={s.standards.filter((x) => x !== scheme?.code)}
             onChange={(v) => set((d) => void (d.standards = [scheme?.code ?? "", ...v].filter(Boolean)))}
             options={msOptions.filter((x) => x !== scheme?.code)}
@@ -92,8 +93,7 @@ export function SchemeStep({
         <div className="cf-note" style={{ marginTop: 16 }}>
           <Icon name="i-badge" />
           <span>
-            <b>{FLOW_LABEL[scheme.flow]}.</b> Typical duration {scheme.duration}, certificate validity{" "}
-            {scheme.validity}, indicative fee {scheme.fee}.
+            <b>{FLOW_LABEL[scheme.flow]}.</b> {scheme.body} Fee: by quotation.
           </span>
         </div>
       ) : null}
@@ -243,6 +243,7 @@ export function ConsultStep({ s, set, errors }: StepProps) {
             <TextField
               label="Preferred date"
               type="date"
+              min={isoToday()}
               required
               value={s.consultation?.date ?? ""}
               onChange={(v) => set((d) => void (d.consultation = { ...(d.consultation ?? { date: "", mode: "", topic: "" }), date: v }))}
@@ -354,7 +355,7 @@ export function OrganisationStep({ s, set, errors }: StepProps) {
             label="Consultant who assisted you (if any)"
             value={s.consultant}
             onChange={(v) => set((d) => void (d.consultant = v))}
-            hint="Declared for impartiality. ESWASA does not consult on systems it certifies."
+            hint="Also asked on the Ingelo form (3.5)."
           />
         </>
       ) : null}
@@ -433,7 +434,7 @@ export function ContactsStep({ s, set, errors }: StepProps) {
             value={det(s, "national_id")}
             onChange={(v) => set((d) => void (d.details.national_id = v))}
             error={errors.national_id}
-            hint="Upload a copy and a passport-size photo on the Documents step."
+            hint="Form CER_FO_002_IPC, item 1.9."
           />
         ) : null}
       </div>
@@ -466,7 +467,7 @@ export function ScopeStep({ s, set, errors }: StepProps) {
           value={s.scope}
           onChange={(v) => set((d) => void (d.scope = v))}
           error={errors.scope}
-          hint="Activities, products/services and locations the certificate should cover. This wording appears on the certificate."
+          hint="The activities, products/services and locations you want certified."
         />
       </div>
       <div className="cf-sec">Sites</div>
@@ -535,6 +536,7 @@ export function SystemStep({ s, set, errors }: StepProps) {
       <TextField
         label="System implemented since"
         type="month"
+        max={isoToday(true)}
         value={det(s, "implemented_since")}
         onChange={(v) => set((d) => void (d.details.implemented_since = v))}
       />
@@ -568,17 +570,9 @@ export function SystemStep({ s, set, errors }: StepProps) {
         value={det(s, "preferred_window")}
         onChange={(v) => set((d) => void (d.details.preferred_window = v))}
         placeholder="e.g. First half of November"
-        hint={`ESWASA schedules audits within ${CHARTER.auditScheduleDays} working days of a complete application.`}
+        hint={`Service Charter: audit scheduling within ${CHARTER.auditScheduleDays} working days.`}
       />
-      {(det(s, "internal_audit_done") === "no" || det(s, "mgmt_review_done") === "no") ? (
-        <div className="cf-note cf-note--warn span2">
-          <Icon name="i-warn" />
-          <span>
-            Stage 2 normally needs at least one full internal audit and management review. You can still
-            apply. The Stage 1 audit will confirm readiness.
-          </span>
-        </div>
-      ) : null}
+
     </div>
   );
 }
@@ -692,7 +686,7 @@ export function FactoryStep({ s, set, errors }: StepProps) {
         values={detList(s, "lab_fields")}
         onChange={(v) => set((d) => void (d.details.lab_fields = v))}
         options={LAB_FIELDS}
-        hint="ESWASA facilitates testing in these fields. Your quote will include sampling and testing."
+        hint="ESWASA facilitates testing in these fields through accredited laboratories."
       />
       <TextField
         className="span2"
@@ -886,54 +880,96 @@ export function RequirementsStep({ s, set, errors }: StepProps) {
 export function DocumentsStep({ s, set, errors }: StepProps) {
   const docs = REQUIRED_DOCS[s.flow];
   const [fileErr, setFileErr] = useState<string | null>(null);
-  function onFile(key: string, f: File) {
+  function onFile(key: string, f: File, multiple?: boolean) {
     if (f.size > RFQ_MAX_MB * 1024 * 1024) {
       setFileErr(`${f.name} is larger than ${RFQ_MAX_MB} MB.`);
       return;
     }
     setFileErr(null);
     set((d) => {
-      d.documents = [...d.documents.filter((x) => x.key !== key), { key, name: f.name, size: f.size }];
+      const others = multiple ? d.documents : d.documents.filter((x) => x.key !== key);
+      d.documents = [...others, { key, name: f.name, size: f.size }];
     });
+  }
+  if (!demoMode()) {
+    // TODO: wire real (POST /certification/applications/{id}/documents). Until then, be explicit.
+    return (
+      <>
+        <div className="cf-note cf-note--warn">
+          <Icon name="i-warn" />
+          <span>
+            <b>Online document upload isn’t connected to ESWASA yet.</b> After you submit, email your documents
+            to <a href={`mailto:${CERT_EMAIL}`}>{CERT_EMAIL}</a> quoting your application reference.
+          </span>
+        </div>
+        <ul className="cf-bul" style={{ marginTop: 12 }}>
+          {docs.map((d) => (
+            <li key={d.key} className={d.required ? "" : "opt"}>
+              <Icon name={d.required ? "i-check" : "i-file"} />
+              <span>
+                {d.label}
+                {d.required ? "" : " (optional)"}
+                {d.hint ? `: ${d.hint}` : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </>
+    );
   }
   return (
     <>
-      <div className="cf-files">
+      <div className="cf-note">
+        <Icon name="i-warn" />
+        <span>Demo mode: files stay on this device and are not sent to ESWASA.</span>
+      </div>
+      <div className="cf-files" style={{ marginTop: 12 }}>
         {docs.map((doc) => {
-          const up = s.documents.find((x) => x.key === doc.key);
+          const ups = s.documents.filter((x) => x.key === doc.key);
           return (
-            <FileRow
-              key={doc.key}
-              title={doc.label + (doc.required ? "" : " (optional)")}
-              sub={up ? `${up.name} · ${fmtSize(up.size)}` : doc.hint ?? (doc.required ? "Required" : "Optional")}
-              state={up ? "ok" : doc.required ? "req" : "idle"}
-              action={
-                <div style={{ display: "flex", gap: 6 }}>
-                  {up ? (
+            <div key={doc.key} className="cf-files">
+              {ups.map((up, i) => (
+                <FileRow
+                  key={`${up.name}-${i}`}
+                  title={doc.label}
+                  sub={`${up.name} · ${fmtSize(up.size)}`}
+                  state="ok"
+                  action={
                     <button
                       type="button"
                       className="cf-btn cf-btn--ghost cf-btn--sm"
-                      onClick={() => set((d) => void (d.documents = d.documents.filter((x) => x.key !== doc.key)))}
-                      aria-label={`Remove ${doc.label}`}
+                      onClick={() =>
+                        set((d) => {
+                          const idx = d.documents.findIndex((y) => y.key === doc.key && y.name === up.name);
+                          if (idx >= 0) d.documents.splice(idx, 1);
+                        })
+                      }
+                      aria-label={`Remove ${up.name}`}
                     >
                       <Icon name="i-x" />
                     </button>
-                  ) : null}
-                  <UploadButton
-                    label={up ? "Replace" : "Upload"}
-                    accept={doc.key === "photo" || doc.key === "product_photo" ? "image/*,application/pdf" : "application/pdf,image/*"}
-                    onFile={(f) => onFile(doc.key, f)}
-                  />
-                </div>
-              }
-            />
+                  }
+                />
+              ))}
+              {!ups.length || doc.multiple ? (
+                <FileRow
+                  title={doc.label + (doc.required ? "" : " (optional)")}
+                  sub={doc.hint ?? (doc.required ? "Required" : "Optional")}
+                  state={ups.length ? "ok" : doc.required ? "req" : "idle"}
+                  action={
+                    <UploadButton
+                      label={ups.length ? "Add another" : "Upload"}
+                      accept={doc.key === "photo" ? "image/*,application/pdf" : "application/pdf,image/*"}
+                      onFile={(f) => onFile(doc.key, f, doc.multiple)}
+                    />
+                  }
+                />
+              ) : null}
+            </div>
           );
         })}
       </div>
-      <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10 }}>
-        PDF or image, up to {RFQ_MAX_MB} MB each. Missing something? Submit now and upload it later from your
-        tracker. ESWASA will list anything outstanding.
-      </p>
+      <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10 }}>PDF or image, up to {RFQ_MAX_MB} MB each.</p>
       {fileErr ? <p className="cf-field"><span className="err">{fileErr}</span></p> : null}
       {errors.documents ? (
         <div className="cf-note cf-note--warn" style={{ marginTop: 10 }}>
@@ -960,10 +996,10 @@ export function DeclareStep({ s, set, errors }: StepProps) {
   return (
     <>
       {row("accurate", "The information in this application is true and complete.", "False information may lead to refusal or withdrawal of certification.")}
-      {row("mark_rules", "I have read the Rules for the Use of the Certification Mark (CER_RU_028).", "The mark may only be used within the certified scope, after certification is granted.")}
-      {row("impartiality", "I accept ESWASA’s Impartiality Policy.", "ESWASA does not provide consultancy on systems or products it certifies.")}
-      {row("terms", "I accept the certification terms and the Grant of Certification Procedure (CER_PR_014).", "Includes surveillance, recertification, and suspension, withdrawal or reduced scope under CER_PR_026.")}
-      {row("notify_changes", "I will notify ESWASA of significant changes (CER_FO_028).", "Ownership, key personnel, sites, scope or processes.")}
+      {row("mark_rules", "I have read the Rules for the Use of the Certification Mark (CER_RU_028).", "Published with ESWASA's certification documents.")}
+      {row("impartiality", "I accept ESWASA’s Impartiality Policy.", "Published with ESWASA's certification policies.")}
+      {row("terms", "I accept the certification terms and the Grant of Certification Procedure (CER_PR_014).", "See also suspension, withdrawal and reduced scope (CER_PR_026).")}
+      {row("notify_changes", "I will notify ESWASA of significant changes (CER_FO_028).", "Using the client notice of changes form.")}
       {errors.declarations ? <p className="cf-field"><span className="err">{errors.declarations}</span></p> : null}
 
       <div className="cf-grid" style={{ marginTop: 16 }}>
@@ -977,6 +1013,7 @@ export function DeclareStep({ s, set, errors }: StepProps) {
         <TextField
           label="Date"
           type="date"
+          max={isoToday()}
           value={s.signature.date}
           onChange={(v) => set((x) => void (x.signature.date = v))}
         />

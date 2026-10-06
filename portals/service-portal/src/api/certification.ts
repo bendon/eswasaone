@@ -6,7 +6,16 @@ import {
   stageFromStatus,
   type CertFlow,
 } from "../certification/flows";
-import { newRef, readStore, updateStore, writeStore } from "../certification/demoStore";
+import {
+  demoMode,
+  newRef,
+  NotConnectedError,
+  readStore,
+  updateStore,
+  writeStore,
+} from "../certification/demoStore";
+
+export { NotConnectedError } from "../certification/demoStore";
 
 export type CertificationApplication = {
   id: string;
@@ -17,178 +26,170 @@ export type CertificationApplication = {
   updated_at?: string;
 };
 
+/**
+ * Certification schemes as published on eswasa.co.sz (Certification.php,
+ * managementsystems.php, product.php, ingelo.php). Only facts stated there:
+ * no fees, durations or validity periods the site does not publish.
+ */
 export type Scheme = {
   id: string;
   flow: CertFlow;
-  /** Sector filter keys: food | construction | manufacturing | all. */
-  sectors: string[];
   code: string;
   title: string;
   body: string;
+  /** Facts shown on the card; each is stated on the ESWASA website. */
+  facts: { label: string; value: string }[];
   chip: string;
   accent: string;
   tint: string;
   tone: string;
-  duration: string;
-  validity: string;
-  fee: string;
-  feeLabel?: string;
-  open: boolean;
-  subsidised?: boolean;
+  /** False for request types that are not a published scheme (e.g. combined). */
+  listed: boolean;
   cta: string;
   ctaClass?: "primary" | "gold";
   secondaryLabel: string;
+  /** Page on eswasa.co.sz the content comes from. */
+  source: string;
 };
+
+const MS_FACTS = [
+  { label: "Audits", value: "Stage 1 and Stage 2" },
+  { label: "After certification", value: "2 surveillance audits, then recertification" },
+  { label: "Fee", value: "By quotation" },
+];
+
+const MS_STYLE = { chip: "Management system", cta: "Start application", secondaryLabel: "Process", listed: true };
+const MS_SOURCE = "https://www.eswasa.co.sz/managementsystems.php";
 
 export const SCHEMES: Scheme[] = [
   {
     id: "iso9001",
     flow: "ms",
-    sectors: ["all"],
-    code: "ISO 9001:2015",
-    title: "Quality management systems certification",
-    body: "Prove your organisation consistently delivers products and services that meet customer and regulatory requirements. Stage 1 documentation review, Stage 2 on-site audit, and a three-year certificate with annual surveillance.",
-    chip: "Management system",
+    code: "SZNS ISO 9001:2015",
+    title: "Quality Management Systems: Requirements",
+    body: "Certification of your quality management system against SZNS ISO 9001:2015. ESWASA's management systems certification for ISO 9001 is accredited by SADCAS.",
+    facts: [...MS_FACTS.slice(0, 2), { label: "Accreditation", value: "SADCAS (ISO/IEC 17021-1)" }, MS_FACTS[2]],
+    ...MS_STYLE,
     accent: "#313391",
     tint: "#ECEEFC",
     tone: "#313391",
-    duration: "6–12 weeks",
-    validity: "3 years",
-    fee: "SZL 18k – 45k",
-    open: true,
-    cta: "Start application",
-    secondaryLabel: "Checklist",
-  },
-  {
-    id: "iso22000",
-    flow: "ms",
-    sectors: ["food"],
-    code: "ISO 22000:2018",
-    title: "Food safety management systems certification",
-    body: "End-to-end food safety management from primary production through to retail. Required by most EU food importers and by major retailers in the SACU region. Prerequisite programmes and HACCP plans are audited as part of Stage 2.",
-    chip: "Management system",
-    accent: "#15803D",
-    tint: "#E3F4E9",
-    tone: "#15803D",
-    duration: "8–14 weeks",
-    validity: "3 years",
-    fee: "SZL 22k – 55k",
-    open: true,
-    cta: "Start application",
-    secondaryLabel: "Checklist",
-  },
-  {
-    id: "haccp",
-    flow: "ms",
-    sectors: ["food"],
-    code: "SZNS SANS 10330",
-    title: "HACCP: Hazard analysis and critical control points",
-    body: "The faster, leaner path to food safety certification. Ideal for processors and caterers beginning their compliance journey, and a natural stepping-stone to full ISO 22000 later.",
-    chip: "Food safety",
-    accent: "#15803D",
-    tint: "#E3F4E9",
-    tone: "#15803D",
-    duration: "4–8 weeks",
-    validity: "2 years",
-    fee: "SZL 12k – 28k",
-    open: true,
-    cta: "Start application",
-    secondaryLabel: "Checklist",
-  },
-  {
-    id: "product",
-    flow: "product",
-    sectors: ["food", "construction", "manufacturing"],
-    code: "SZNS Product Mark",
-    title: "SZNS Product Mark: conformity mark for local goods",
-    body: "The mark that tells buyers your product meets the Eswatini national standard. Required for many locally manufactured foods, bottled water, and construction materials sold through formal retail.",
-    chip: "Product",
-    accent: "#B8860B",
-    tint: "#FEF6DC",
-    tone: "#B8860B",
-    duration: "4–8 weeks",
-    validity: "3 years",
-    fee: "SZL 8k – 25k",
-    open: true,
-    cta: "Start application",
-    secondaryLabel: "Checklist",
-  },
-  {
-    id: "ingelo",
-    flow: "ingelo",
-    sectors: ["food", "manufacturing"],
-    code: "Ingelo Certification",
-    title: "Ingelo Certification Scheme: MSME quality approval",
-    body: "A government-backed scheme helping local small businesses meet quality, health and safety standards. Funding covers training, testing, and the certification assessment itself. Open to Eswatini-registered MSMEs with fewer than 50 staff.",
-    chip: "MSME · Ingelo",
-    accent: "#16A34A",
-    tint: "#DCFCE7",
-    tone: "#166534",
-    duration: "6–10 weeks",
-    validity: "2 years",
-    fee: "Subsidised",
-    feeLabel: "Fee to applicant",
-    open: true,
-    subsidised: true,
-    cta: "Check eligibility",
-    ctaClass: "gold",
-    secondaryLabel: "Eligibility",
+    source: MS_SOURCE,
   },
   {
     id: "iso14001",
     flow: "ms",
-    sectors: ["all", "construction"],
-    code: "ISO 14001:2015",
-    title: "Environmental management systems certification",
-    body: "Demonstrate control over your environmental impact and compliance obligations. Increasingly requested by mining, agro-processing, and construction buyers in the SADC region.",
-    chip: "Management system",
+    code: "SZNS ISO 14001:2015",
+    title: "Environmental Management Systems: Requirements with guidance for use",
+    body: "Certification of your environmental management system against SZNS ISO 14001:2015.",
+    facts: MS_FACTS,
+    ...MS_STYLE,
     accent: "#0E7C7B",
     tint: "#E4F4F1",
     tone: "#0E7C7B",
-    duration: "8–14 weeks",
-    validity: "3 years",
-    fee: "SZL 20k – 50k",
-    open: true,
-    cta: "Start application",
-    secondaryLabel: "Checklist",
+    source: MS_SOURCE,
+  },
+  {
+    id: "iso22000",
+    flow: "ms",
+    code: "SZNS ISO 22000:2018",
+    title: "Food Safety Management Systems: Requirements for any organization in the food chain",
+    body: "Certification of your food safety management system against SZNS ISO 22000:2018.",
+    facts: MS_FACTS,
+    ...MS_STYLE,
+    accent: "#15803D",
+    tint: "#E3F4E9",
+    tone: "#15803D",
+    source: MS_SOURCE,
   },
   {
     id: "iso45001",
     flow: "ms",
-    sectors: ["all", "construction"],
-    code: "ISO 45001:2018",
-    title: "Occupational health & safety certification",
-    body: "The international benchmark for workplace safety. Required for many mining, construction and industrial contracts, and increasingly for public tenders.",
-    chip: "Management system",
+    code: "SZNS ISO 45001:2018",
+    title: "Occupational Health and Safety Management Systems: Requirements with guidance for use",
+    body: "Certification of your occupational health and safety management system against SZNS ISO 45001:2018.",
+    facts: MS_FACTS,
+    ...MS_STYLE,
     accent: "#7C3AED",
     tint: "#F0E9FB",
     tone: "#7C3AED",
-    duration: "8–14 weeks",
-    validity: "3 years",
-    fee: "SZL 20k – 50k",
-    open: true,
-    cta: "Start application",
-    secondaryLabel: "Checklist",
+    source: MS_SOURCE,
   },
   {
+    id: "haccp",
+    flow: "ms",
+    code: "SZNS SANS 10330:2020",
+    title: "Hazard Analysis and Critical Control Point (HACCP)",
+    body: "Certification of your HACCP system against SZNS SANS 10330:2020.",
+    facts: MS_FACTS,
+    ...MS_STYLE,
+    accent: "#15803D",
+    tint: "#E3F4E9",
+    tone: "#15803D",
+    source: MS_SOURCE,
+  },
+  {
+    id: "product",
+    flow: "product",
+    code: "Product Certification Mark",
+    title: "Product certification",
+    body: "A voluntary scheme for products manufactured to national or international standards, with independent testing at an accredited laboratory. Certified examples include concrete roof tiles (SZNS SANS 542:2020) and chilli sauce (SZNS CODEXSTAN 306:2015).",
+    facts: [
+      { label: "Process", value: "Factory assessment, sampling & testing, CAC decision" },
+      { label: "Validity", value: "3 years, with post-permit surveillance" },
+      { label: "Fee", value: "By quotation" },
+    ],
+    chip: "Product",
+    accent: "#B8860B",
+    tint: "#FEF6DC",
+    tone: "#B8860B",
+    listed: true,
+    cta: "Start application",
+    secondaryLabel: "Process",
+    source: "https://www.eswasa.co.sz/product.php",
+  },
+  {
+    id: "ingelo",
+    flow: "ingelo",
+    code: "Ingelo Certification Scheme",
+    title: "Ingelo: certification for local MSME producers",
+    body: "A Ministry of Commerce, Industry and Trade initiative supporting local producers through system and product certification, so they can meet market quality and safety requirements. ESWASA offers free pre-application consultations and gap-analysis workshops.",
+    facts: [
+      { label: "For", value: "Emaswati-owned local MSMEs" },
+      { label: "Support", value: "Free consultation & gap analysis" },
+      { label: "Outcome", value: "ESWASA Approved mark" },
+    ],
+    chip: "MSME · Ingelo",
+    accent: "#16A34A",
+    tint: "#DCFCE7",
+    tone: "#166534",
+    listed: true,
+    cta: "Check eligibility",
+    ctaClass: "gold",
+    secondaryLabel: "Eligibility",
+    source: "https://www.eswasa.co.sz/ingelo.php",
+  },
+  {
+    // Not a published scheme: the RFQ form offers "Combined (e.g., ISO + Product)"
+    // as a request type. The applicant chooses which standards and products.
     id: "combined",
     flow: "combined",
-    sectors: ["food", "manufacturing", "construction"],
-    code: "ISO + SZNS Product Mark",
-    title: "Combined: management system + product mark",
-    body: "One application, one quote and one audit visit cover both your management system and your product. Best for manufacturers who need ISO 9001 or ISO 22000 and the SZNS mark.",
+    code: "Combined request",
+    title: "Combined request (e.g., ISO + Product)",
+    body: "One request covering more than one type of certification. You choose the management-system standard(s) and the product(s); ESWASA confirms how it will be assessed.",
+    facts: [{ label: "Fee", value: "By quotation" }],
     chip: "Combined",
     accent: "#0E7C7B",
     tint: "#E4F4F1",
     tone: "#0E7C7B",
-    duration: "10–16 weeks",
-    validity: "3 years",
-    fee: "SZL 30k – 70k",
-    open: true,
+    listed: false,
     cta: "Start application",
-    secondaryLabel: "Checklist",
+    secondaryLabel: "Process",
+    source: "https://www.eswasa.co.sz/qoute_certification.php",
   },
 ];
+
+/** Schemes shown in the catalogue (published by ESWASA). */
+export const LISTED_SCHEMES = SCHEMES.filter((s) => s.listed);
 
 export function schemeById(id: string): Scheme | undefined {
   return SCHEMES.find((s) => s.id === id);
@@ -564,8 +565,11 @@ function seedQuotes(): Record<string, Quote> {
 function store() {
   const s = readStore();
   if (!s.seeded) {
-    s.details = seedDetails();
-    s.quotes = seedQuotes();
+    // Sample cases are fictional: only ever shown with VITE_DEMO_MODE=true.
+    if (demoMode()) {
+      s.details = seedDetails();
+      s.quotes = seedQuotes();
+    }
     s.seeded = true;
     writeStore(s);
   }
@@ -612,7 +616,8 @@ export async function listApplications(status?: string): Promise<ApplicationDeta
     );
     // TODO: wire real (GET /account/applications) to scope the list to the signed-in applicant.
     return (res.items ?? []).map((a) => ({ ...blankDetail(a), ...stripLive(localDetail(a.id)), ...a }));
-  } catch {
+  } catch (err) {
+    if (!demoMode()) throw err;
     return Object.values(store().details as Record<string, ApplicationDetail>).sort((a, b) =>
       String(b.created_at).localeCompare(String(a.created_at)),
     );
@@ -634,7 +639,8 @@ export async function getApplicationDetail(id: string): Promise<ApplicationDetai
   let live: CertificationApplication | null = null;
   try {
     live = await getApplication(id);
-  } catch {
+  } catch (err) {
+    if (!demoMode()) throw err;
     live = null;
   }
   // TODO: wire real (GET /certification/applications/{id}/timeline).
@@ -668,7 +674,8 @@ export async function createApplication(payload: ApplicationPayload): Promise<Ap
       method: "POST",
       body: JSON.stringify(body),
     });
-  } catch {
+  } catch (err) {
+    if (!demoMode()) throw err;
     local = true;
     created = {
       id: newRef(payload.flow === "ingelo" ? "ING" : "CERT"),
@@ -696,9 +703,10 @@ export async function createApplication(payload: ApplicationPayload): Promise<Ap
         key: d.key,
         label: d.label,
         required: d.required,
-        status: uploaded.includes(d.key) ? "uploaded" : d.required ? "requested" : "missing",
-        file: f?.name,
-        uploaded_at: f ? now : undefined,
+        // Outside demo mode files are not transmitted (no upload endpoint yet).
+        status: local && uploaded.includes(d.key) ? "uploaded" : d.required ? "requested" : "missing",
+        file: local ? f?.name : undefined,
+        uploaded_at: local && f ? now : undefined,
       };
     }),
     consultation: payload.consultation
@@ -763,6 +771,7 @@ export async function requestQuote(req: QuoteRequest): Promise<Quote> {
       body: JSON.stringify({ ...req, confirm: true }),
     });
   } catch {
+    if (!demoMode()) throw new NotConnectedError("Quote requests");
     updateStore((s) => {
       s.quotes[fallback.id] = fallback;
     });
@@ -775,6 +784,7 @@ export async function listQuotes(): Promise<Quote[]> {
     const res = await apiFetch<{ items: Quote[] }>("/certification/quotes");
     return res.items ?? [];
   } catch {
+    if (!demoMode()) return [];
     return Object.values(store().quotes as Record<string, Quote>).sort((a, b) =>
       b.requested_at.localeCompare(a.requested_at),
     );
@@ -785,6 +795,7 @@ export async function getQuote(id: string): Promise<Quote | null> {
   try {
     return await apiFetch<Quote>(`/certification/quotes/${encodeURIComponent(id)}`);
   } catch {
+    if (!demoMode()) return null;
     return (store().quotes[id] as Quote | undefined) ?? null;
   }
 }
@@ -797,6 +808,7 @@ export async function respondToQuote(id: string, accept: boolean): Promise<Quote
       body: JSON.stringify({ confirm: true }),
     });
   } catch {
+    if (!demoMode()) throw new NotConnectedError("Quote responses");
     let out: Quote | null = null;
     updateStore((s) => {
       const q = s.quotes[id] as Quote | undefined;
@@ -858,7 +870,7 @@ export async function uploadApplicationDocument(
       body: JSON.stringify({ key, name: file.name, size: file.size, confirm: true }),
     });
   } catch {
-    /* fall through to local record */
+    if (!demoMode()) throw new NotConnectedError("Document uploads");
   }
   await ensureLocal(id);
   const now = new Date().toISOString();
@@ -882,7 +894,7 @@ export async function submitCorrectiveAction(
       body: JSON.stringify({ ...response, application_id: id, confirm: true }),
     });
   } catch {
-    /* local */
+    if (!demoMode()) throw new NotConnectedError("Corrective actions");
   }
   await ensureLocal(id);
   const now = new Date().toISOString();
@@ -906,7 +918,7 @@ export async function respondToAudit(
       body: JSON.stringify({ ...answer, confirm_commit: true }),
     });
   } catch {
-    /* local */
+    if (!demoMode()) throw new NotConnectedError("Audit date responses");
   }
   await ensureLocal(id);
   const now = new Date().toISOString();
@@ -956,7 +968,7 @@ export async function sendApplicationRequest(
       body: JSON.stringify({ text, confirm: true }),
     });
   } catch {
-    /* local */
+    if (!demoMode()) throw new NotConnectedError("This request");
   }
   await ensureLocal(id);
   const now = new Date().toISOString();
@@ -981,7 +993,7 @@ export async function bookConsultation(
       body: JSON.stringify({ ...slot, application_id: id, confirm: true }),
     });
   } catch {
-    /* local */
+    if (!demoMode()) throw new NotConnectedError("Consultation bookings");
   }
   await ensureLocal(id);
   const now = new Date().toISOString();
@@ -1023,8 +1035,9 @@ export async function getStatusRegister(flow: CertFlow): Promise<StatusRegister>
   try {
     // TODO: wire real (GET /certification/register?flow=). Public, no auth.
     return await apiFetch<StatusRegister>(`/certification/register?flow=${flow}`);
-  } catch {
-    // Mirrors the live site today: all three lists are empty.
+  } catch (err) {
+    // Never claim "nothing suspended" unless the register actually answered.
+    if (!demoMode()) throw err;
     return { suspended: [], withdrawn: [], reduced: [] };
   }
 }

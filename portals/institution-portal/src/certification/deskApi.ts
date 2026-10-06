@@ -63,7 +63,7 @@ export type LabEntry = {
 export type DeskDecision = {
   application_id: string;
   outcome: "granted" | "refused";
-  body: "Certification reviewer" | "Certification Approval Committee";
+  body: "Certification decision" | "Certification Approval Committee";
   decided_by: string;
   note: string;
   at: string;
@@ -113,7 +113,19 @@ type Store = {
 
 const KEY = "eswasaone.desk.cert.v1";
 
-function demoMode(): boolean {
+export class NotConnectedError extends Error {
+  constructor(what: string) {
+    super(`${what}: not saved. This isn't connected to the certification system yet.`);
+    this.name = "NotConnectedError";
+  }
+}
+
+/** Local-only writes are allowed in demo mode only; otherwise they would claim work that went nowhere. */
+function requireDemo(what: string): void {
+  if (!demoMode()) throw new NotConnectedError(what);
+}
+
+export function demoMode(): boolean {
   try {
     return String(import.meta.env.VITE_DEMO_MODE ?? "").toLowerCase() === "true";
   } catch {
@@ -343,6 +355,8 @@ export function setFlow(id: string, flow: CertFlow): void {
 export async function assignAuditor(appId: string, auditor: string, auditId?: string): Promise<void> {
   if (auditId) {
     await patchAudit(auditId, "assign", { auditor });
+  } else {
+    requireDemo("Auditor assignment (no audit scheduled yet)");
   }
   // TODO: wire real (application-level auditor assignment; Frappe field assigned_auditor).
   update((st) => {
@@ -404,7 +418,7 @@ export async function registerAction(
       body: JSON.stringify({ confirm: true, reason: entry.reason, scope: entry.scope }),
     });
   } catch {
-    /* local */
+    requireDemo("Register update");
   }
   update((s) => {
     s.register[full.id] = full;
@@ -418,6 +432,7 @@ export function listRegister(): RegisterEntry[] {
 
 export function liftRegisterEntry(id: string): void {
   // TODO: wire real (reinstatement / scope restored).
+  requireDemo("Register update");
   update((s) => {
     delete s.register[id];
   });
@@ -443,7 +458,7 @@ export async function issueQuote(id: string, lines: QuoteLine[], validDays: numb
       body: JSON.stringify({ confirm: true, lines, valid_days: validDays, notes }),
     });
   } catch {
-    /* local */
+    requireDemo("Quote");
   }
   update((s) => {
     const q = s.quotes[id];
@@ -461,6 +476,7 @@ export async function issueQuote(id: string, lines: QuoteLine[], validDays: numb
 }
 
 export function setQuoteStatus(id: string, status: QuoteStatus, applicationId?: string): void {
+  requireDemo("Quote status");
   update((s) => {
     const q = s.quotes[id];
     if (q) s.quotes[id] = { ...q, status, application_id: applicationId ?? q.application_id };
@@ -487,7 +503,7 @@ export async function raiseFinding(f: Omit<DeskFinding, "id" | "raised_at" | "st
       body: JSON.stringify({ ...f, confirm: true }),
     });
   } catch {
-    /* local */
+    requireDemo("Finding");
   }
   update((s) => {
     s.findings[full.id] = full;
@@ -503,7 +519,7 @@ export async function reviewCorrectiveAction(id: string, accept: boolean, note: 
       body: JSON.stringify({ confirm: true, accept, note }),
     });
   } catch {
-    /* local */
+    requireDemo("Corrective-action review");
   }
   update((s) => {
     const f = s.findings[id];
@@ -519,6 +535,7 @@ export function listLab(): LabEntry[] {
 
 export function recordLab(e: Omit<LabEntry, "id" | "at">): LabEntry {
   // TODO: wire real (LIMS results feed from eswasa_metrology / accredited labs).
+  requireDemo("Laboratory result");
   const full: LabEntry = { ...e, id: ref("LAB"), at: new Date().toISOString() };
   update((s) => {
     s.lab[full.id] = full;
@@ -536,6 +553,8 @@ export function listDecisions(): Record<string, DeskDecision> {
 export async function recordDecision(d: DeskDecision): Promise<void> {
   if (d.outcome === "granted") {
     await advanceApplication(d.application_id, "certify", `${d.body}: ${d.note}`);
+  } else {
+    requireDemo("Refusal");
   }
   // TODO: wire real (decision record + refusal letter; opens the 90-day appeal window).
   update((s) => {
@@ -556,6 +575,7 @@ export async function listCases(): Promise<DeskCase[]> {
 
 export function setCaseStatus(id: string, status: DeskCase["status"]): void {
   // TODO: wire real (PATCH /certification/cases/{id}).
+  requireDemo("Case status");
   update((s) => {
     const c = s.cases[id];
     if (c) s.cases[id] = { ...c, status };

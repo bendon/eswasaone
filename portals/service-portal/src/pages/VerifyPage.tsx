@@ -9,6 +9,7 @@ export function VerifyPage() {
   const [token, setToken] = useState(pathToken || "");
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (pathToken) {
@@ -19,8 +20,12 @@ export function VerifyPage() {
 
   async function run(t: string) {
     setBusy(true);
+    setFailed(false);
     try {
       setResult(await verifyToken(t.trim()));
+    } catch {
+      setResult(null);
+      setFailed(true);
     } finally {
       setBusy(false);
     }
@@ -53,6 +58,15 @@ export function VerifyPage() {
         Looking for suspended, withdrawn or reduced-scope certifications? See the{" "}
         <Link to="/certification/status">public status register</Link>.
       </p>
+      {failed ? (
+        <div className="verify-result">
+          <b>Couldn’t check right now</b>
+          <p>
+            The register didn’t respond, so no result is shown. Try again, or ask the Marketing &amp; Sales
+            Officer on (+268) 2518 4633.
+          </p>
+        </div>
+      ) : null}
       {result ? (
         <div className={`verify-result${result.valid ? " ok" : ""}`}>
           <b>{result.valid ? "Valid" : "Not found"}</b>

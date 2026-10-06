@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -19,7 +19,7 @@ vi.mock("@eswasaone/shared-ui", async (importOriginal) => ({
   apiFetch: vi.fn().mockRejectedValue(new Error("offline")),
 }));
 
-const requireAuth = vi.fn(() => false);
+const requireAuth = vi.fn((): boolean => false);
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => ({ user: null, requireAuth, openAuth: vi.fn() }),
 }));
@@ -96,20 +96,60 @@ describe("certification screens", () => {
     expect(screen.getByText(/organisation name is required/i)).toBeInTheDocument();
   });
 
-  it("tracks a case with open non-conformities", async () => {
-    renderAt("/certification/CERT-0051", "/certification/:id", <CertificationTrackPage />);
-    expect(await screen.findByRole("heading", { name: /non-conformities/i })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /submit corrective action/i }).length).toBe(2);
+  describe("demo mode (VITE_DEMO_MODE=true)", () => {
+    beforeEach(() => vi.stubEnv("VITE_DEMO_MODE", "true"));
+    afterEach(() => vi.unstubAllEnvs());
+
+    it("tracks a sample case with open non-conformities", async () => {
+      renderAt("/certification/CERT-0051", "/certification/:id", <CertificationTrackPage />);
+      expect(await screen.findByRole("heading", { name: /non-conformities/i })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: /submit corrective action/i }).length).toBe(2);
+      expect(screen.getByText("Demo data")).toBeInTheDocument();
+    });
+
+    it("lists sample applications and quotes", async () => {
+      renderAt("/account/applications", "/account/applications", <AccountApplicationsPage />);
+      expect(await screen.findByText("CERT-0051", { exact: false })).toBeInTheDocument();
+      expect(screen.getByText(/QTE-00342/)).toBeInTheDocument();
+    });
   });
 
-  it("lists applications with actions required", async () => {
-    renderAt("/account/applications", "/account/applications", <AccountApplicationsPage />);
-    expect(await screen.findByText("CERT-0051", { exact: false })).toBeInTheDocument();
-    expect(screen.getByText(/QTE-00342/)).toBeInTheDocument();
-  });
+  describe("offline outside demo mode: never fake data or success", () => {
+    it("does not invent a case", async () => {
+      renderAt("/certification/CERT-0051", "/certification/:id", <CertificationTrackPage />);
+      expect(await screen.findByRole("heading", { name: /can’t reach eswasa/i })).toBeInTheDocument();
+      expect(screen.queryByText(/non-conformities/i)).not.toBeInTheDocument();
+    });
 
-  it("renders the public status register", async () => {
-    renderAt("/certification/status?flow=product", "/certification/status", <CertificationStatusPage />);
-    expect(await screen.findByText(/no certifications are currently under suspension/i)).toBeInTheDocument();
+    it("does not show sample applications", async () => {
+      renderAt("/account/applications", "/account/applications", <AccountApplicationsPage />);
+      expect(await screen.findByText(/can’t reach eswasa right now/i)).toBeInTheDocument();
+      expect(screen.queryByText(/CERT-0051/)).not.toBeInTheDocument();
+    });
+
+    it("does not claim the register is empty", async () => {
+      renderAt("/certification/status?flow=product", "/certification/status", <CertificationStatusPage />);
+      expect(await screen.findByText(/the register couldn’t be loaded/i)).toBeInTheDocument();
+    });
+
+    it("says a quote request was not sent and offers email", async () => {
+      requireAuth.mockReturnValue(true);
+      renderAt("/certification/quote?flow=ms", "/certification/quote", <CertificationQuotePage />);
+      const type = (name: RegExp, v: string) => userEvent.type(screen.getByRole("textbox", { name }), v);
+      await type(/organisation name/i, "Test Co");
+      await type(/contact person/i, "T. Test");
+      await type(/email address/i, "t@test.sz");
+      await type(/phone number/i, "+26876000000");
+      await type(/scope of certification/i, "Packing");
+      await userEvent.click(within(screen.getByRole("radiogroup", { name: /based in eswatini/i })).getByLabelText("Yes"));
+      await userEvent.click(screen.getByRole("button", { name: /submit request for quotation/i }));
+      expect(await screen.findByText(/your request was not sent/i)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /send by email instead/i })).toHaveAttribute(
+        "href",
+        expect.stringContaining("mailto:certification@eswasa.co.sz"),
+      );
+      expect(screen.queryByText(/quote request received/i)).not.toBeInTheDocument();
+      requireAuth.mockReturnValue(false);
+    });
   });
 });

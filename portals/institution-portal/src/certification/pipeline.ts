@@ -40,7 +40,7 @@ export const FLOW_LABEL: Record<CertFlow, string> = {
   ms: "Management system",
   product: "Product",
   ingelo: "Ingelo (MSME)",
-  combined: "Combined",
+  combined: "Combined (e.g., ISO + Product)",
 };
 
 export const STAGES: {
@@ -133,55 +133,50 @@ export function flowForScheme(scheme: string): CertFlow {
 /** Flow-specific sub-steps tracked under each backend state. */
 export type SubStep = { key: string; label: string; stage: CertStage };
 
+/** Checklist = the stages ESWASA publishes for each path (plus the Service Charter receipt). */
 export const SUBSTEPS: Record<CertFlow, SubStep[]> = {
   ms: [
-    { key: "receipt", label: "Receipt confirmed to client (≤5 working days)", stage: "application" },
-    { key: "scope_review", label: "Scope, sites & IAF code reviewed; audit days set", stage: "assessment" },
-    { key: "quote", label: "Quote accepted, contract signed", stage: "assessment" },
-    { key: "payment", label: "Payment received", stage: "assessment" },
-    { key: "team", label: "Audit team assigned (competence + impartiality)", stage: "scheduled" },
-    { key: "stage1", label: "Stage 1 audit: documentation & readiness", stage: "audit" },
-    { key: "stage2", label: "Stage 2 audit: implementation", stage: "audit" },
-    { key: "report", label: "Audit report submitted", stage: "audit" },
-    { key: "decision", label: "Independent certification decision", stage: "certified" },
-    { key: "issued", label: "Certificate issued, register + QR updated", stage: "certified" },
+    { key: "receipt", label: "Application receipt confirmed (Service Charter: 5 working days)", stage: "application" },
+    { key: "visit", label: "Promotional visit", stage: "application" },
+    { key: "quote", label: "Quote, contract & payment", stage: "assessment" },
+    { key: "stage1", label: "Stage 1 audit", stage: "audit" },
+    { key: "stage2", label: "Stage 2 audit", stage: "audit" },
+    { key: "decision", label: "Certification decision", stage: "certified" },
+    { key: "issued", label: "Certificate issued", stage: "certified" },
   ],
   product: [
-    { key: "receipt", label: "Receipt confirmed to client (≤5 working days)", stage: "application" },
-    { key: "quote", label: "Quote accepted; assessment planned", stage: "assessment" },
-    { key: "payment", label: "Payment received", stage: "assessment" },
+    { key: "receipt", label: "Application receipt confirmed (Service Charter: 5 working days)", stage: "application" },
+    { key: "quote", label: "Quote, planning & scheduling", stage: "assessment" },
     { key: "factory", label: "Initial assessment at factory/plant", stage: "audit" },
-    { key: "sampling", label: "Samples drawn", stage: "audit" },
-    { key: "lab", label: "Accredited laboratory results received", stage: "audit" },
+    { key: "lab", label: "Sampling & testing (accredited laboratory)", stage: "audit" },
     { key: "cac", label: "Submitted to Certification Approval Committee", stage: "audit" },
-    { key: "permit", label: "Permit awarded (3 years)", stage: "certified" },
+    { key: "permit", label: "Permit / certification awarded (3 years)", stage: "certified" },
   ],
   ingelo: [
-    { key: "eligibility", label: "Eligibility confirmed (Emaswati MSME, local production)", stage: "application" },
-    { key: "receipt", label: "Receipt confirmed to client (≤5 working days)", stage: "application" },
-    { key: "consultation", label: "Free consultation / gap-analysis workshop held", stage: "assessment" },
-    { key: "assessment", label: "Certification assessment done", stage: "audit" },
-    { key: "decision", label: "Certification decision", stage: "certified" },
+    { key: "eligibility", label: "Eligibility confirmed (Emaswati, local MSME)", stage: "application" },
+    { key: "receipt", label: "Application receipt confirmed (Service Charter: 5 working days)", stage: "application" },
+    { key: "consultation", label: "Free consultation / gap-analysis workshop", stage: "assessment" },
     { key: "mark", label: "ESWASA Approved mark granted", stage: "certified" },
   ],
   combined: [
-    { key: "receipt", label: "Receipt confirmed to client (≤5 working days)", stage: "application" },
-    { key: "quote", label: "Quote accepted, contract signed, paid", stage: "assessment" },
+    { key: "receipt", label: "Application receipt confirmed (Service Charter: 5 working days)", stage: "application" },
+    { key: "quote", label: "Quote, contract & payment", stage: "assessment" },
     { key: "stage1", label: "Stage 1 audit", stage: "audit" },
-    { key: "stage2", label: "Stage 2 audit + factory assessment", stage: "audit" },
-    { key: "lab", label: "Sampling & laboratory results", stage: "audit" },
-    { key: "cac", label: "CAC decision", stage: "certified" },
-    { key: "issued", label: "Certificate + permit issued", stage: "certified" },
+    { key: "stage2", label: "Stage 2 audit", stage: "audit" },
+    { key: "factory", label: "Product initial assessment", stage: "audit" },
+    { key: "lab", label: "Sampling & testing (accredited laboratory)", stage: "audit" },
+    { key: "cac", label: "Certification Approval Committee (product)", stage: "audit" },
+    { key: "issued", label: "Certificate and permit issued", stage: "certified" },
   ],
 };
 
 export const TIMELINE_STEPS: [string, string][] = [
   ["Submitted", "application received"],
-  ["In review", "scope, quote & contract"],
-  ["Audit scheduled", "team assigned"],
+  ["In review", "quote, contract & payment"],
+  ["Audit scheduled", "Service Charter: 30 working days"],
   ["Audit / testing", "stage 1 + 2 · factory · lab"],
   ["NC resolution", "findings & corrective actions"],
-  ["Certified", "decision, certificate, register, QR"],
+  ["Certified", "certificate / permit"],
   ["Surveillance", "2 surveillance audits"],
   ["Renewal", "recertification"],
 ];

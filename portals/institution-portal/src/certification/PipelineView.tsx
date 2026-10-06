@@ -632,7 +632,7 @@ function CertDrawer({
           </div>
 
           <div className="dh">
-            {FLOW_LABEL[item.flow]} checklist · {done}/{steps.length}
+            {FLOW_LABEL[item.flow]} checklist · {done}/{steps.length} (saved on this device only)
           </div>
           {steps.map((x) => (
             <label key={x.key} className="kv" style={{ cursor: "pointer", alignItems: "center" }}>

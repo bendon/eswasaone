@@ -114,7 +114,12 @@ export function FindingsView() {
       await dialogs.alert({ message: "Add a review note telling the client what is missing.", kind: "error" });
       return;
     }
-    await reviewCorrectiveAction(f.id, accept, note.trim());
+    try {
+      await reviewCorrectiveAction(f.id, accept, note.trim());
+    } catch (err) {
+      await dialogs.alert({ message: err instanceof Error ? err.message : "Not saved", kind: "error" });
+      return;
+    }
     setFlash(`${f.id} ${accept ? "closed" : "returned to client"}`);
     setOpenId(null);
     load();
@@ -345,6 +350,7 @@ export function FindingsView() {
         submitLabel="Raise finding"
         onClose={() => setRaiseOpen(false)}
         onSubmit={async (v) => {
+          try {
           await raiseFinding({
             application_id: v.application_id,
             org: orgOf(v.application_id),
@@ -353,6 +359,10 @@ export function FindingsView() {
             statement: v.statement,
             due: new Date(v.due).toISOString(),
           });
+          } catch (err) {
+            await dialogs.alert({ message: err instanceof Error ? err.message : "Not saved", kind: "error" });
+            return;
+          }
           setRaiseOpen(false);
           setFlash(`Finding raised on ${v.application_id}. The client is asked to respond.`);
           load();
@@ -367,7 +377,8 @@ export function FindingsView() {
         values={{ application_id: appFilter }}
         submitLabel="Save result"
         onClose={() => setLabOpen(false)}
-        onSubmit={(v) => {
+        onSubmit={async (v) => {
+          try {
           recordLab({
             application_id: v.application_id,
             sample: v.sample,
@@ -375,6 +386,10 @@ export function FindingsView() {
             status: v.status as LabEntry["status"],
             report: v.report || undefined,
           });
+          } catch (err) {
+            await dialogs.alert({ message: err instanceof Error ? err.message : "Not saved", kind: "error" });
+            return;
+          }
           setLabOpen(false);
           setFlash(`Result recorded for ${v.application_id}`);
           load();

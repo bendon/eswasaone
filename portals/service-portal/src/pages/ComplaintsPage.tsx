@@ -14,15 +14,19 @@ export function ComplaintsPage() {
   const [contact, setContact] = useState("");
   const [ref, setRef] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
+    setFailed(false);
     try {
       const res = await lodgeComplaint({ subject, detail, contact: contact || undefined });
       setRef(res.id);
       setSubject("");
       setDetail("");
+    } catch {
+      setFailed(true);
     } finally {
       setBusy(false);
     }
@@ -41,7 +45,22 @@ export function ComplaintsPage() {
         </p>
       ) : null}
       {ref ? (
-        <p className="page-note">Received. Reference {ref}. Typical response 24–48 hours.</p>
+        <p className="page-note">
+          Received. Reference {ref}. ESWASA acknowledges complaints within 3 working days.
+        </p>
+      ) : null}
+      {failed ? (
+        <p className="page-note" role="alert">
+          <b>Not sent.</b> Online complaints aren’t connected to ESWASA yet. Please{" "}
+          <a
+            href={`mailto:info@eswasa.co.sz?subject=${encodeURIComponent(subject || "Complaint")}&body=${encodeURIComponent(
+              `${detail}\n\n${contact ? `Contact: ${contact}` : ""}`,
+            )}`}
+          >
+            email info@eswasa.co.sz
+          </a>{" "}
+          (your text is pre-filled) or call (+268) 2518 4633.
+        </p>
       ) : null}
       <form className="form" onSubmit={onSubmit}>
         <label>

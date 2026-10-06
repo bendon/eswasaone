@@ -20,6 +20,7 @@ import {
   type DataMetaItem,
   type DrawerSection,
   type DrawerAction,
+  DateField,
 } from "@eswasaone/shared-ui";
 import { patchAudit } from "./deskApi";
 
@@ -248,17 +249,11 @@ export function AuditsView() {
               </div>
               <div className="kv">
                 <b>Scheduled date</b>
-                <input
-                  type="date"
+                <DateField
                   value={draftDue || selected.due_date || ""}
-                  onChange={(e) => setDraftDue(e.target.value)}
-                  style={{
-                    font: "inherit",
-                    padding: "8px 10px",
-                    borderRadius: 8,
-                    border: "1px solid var(--line)",
-                    width: "100%",
-                  }}
+                  onChange={setDraftDue}
+                  ariaLabel="Scheduled date"
+                  required
                 />
               </div>
               <div className="kv">

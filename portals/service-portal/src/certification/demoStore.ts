@@ -72,3 +72,33 @@ export function clearDraft(key: string): void {
     /* ignore */
   }
 }
+
+/* ---------------- Connection honesty ---------------- */
+
+/**
+ * Demo mode (VITE_DEMO_MODE=true) seeds sample cases and keeps writes on this
+ * device. Outside demo mode nothing is shown as "sent to ESWASA" unless Core
+ * accepted it: missing endpoints raise NotConnectedError instead.
+ */
+export function demoMode(): boolean {
+  try {
+    return String(import.meta.env.VITE_DEMO_MODE ?? "").toLowerCase() === "true";
+  } catch {
+    return false;
+  }
+}
+
+export class NotConnectedError extends Error {
+  constructor(what: string) {
+    super(`${what} can't be sent to ESWASA online yet.`);
+    this.name = "NotConnectedError";
+  }
+}
+
+/** Address published on ingelo.php for certification submissions. */
+export const CERT_EMAIL = "certification@eswasa.co.sz";
+
+export function mailtoCert(subject: string, body: string): string {
+  const trimmed = body.length > 1800 ? `${body.slice(0, 1800)}\n…` : body;
+  return `mailto:${CERT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(trimmed)}`;
+}

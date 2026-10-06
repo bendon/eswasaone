@@ -12,6 +12,8 @@ export default defineConfig({
   envDir,
   plugins: [react()],
   resolve: {
+    // shared-ui deps (e.g. react-day-picker) must use this portal's single React copy.
+    dedupe: ["react", "react-dom"],
     alias: [
       {
         find: /^@eswasaone\/shared-ui\/(.*)$/,

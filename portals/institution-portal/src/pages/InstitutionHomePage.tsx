@@ -11,6 +11,7 @@ import {
   type DrawerSection,
   type InstitutionHome,
   type IconName,
+  DateField,
 } from "@eswasaone/shared-ui";
 import { Bar } from "react-chartjs-2";
 import { fontSans } from "@eswasaone/shared-ui/system";
@@ -452,17 +453,11 @@ export function InstitutionHomePage() {
                 content: (
                   <div className="kv">
                     <b>New date</b>
-                    <input
-                      type="date"
+                    <DateField
                       value={draftDue}
-                      onChange={(e) => setDraftDue(e.target.value)}
-                      style={{
-                        font: "inherit",
-                        padding: "8px 10px",
-                        borderRadius: 8,
-                        border: "1px solid var(--line)",
-                        width: "100%",
-                      }}
+                      onChange={setDraftDue}
+                      ariaLabel="New date"
+                      required
                     />
                   </div>
                 ),

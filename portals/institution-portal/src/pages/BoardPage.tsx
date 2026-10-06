@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   FormDrawer,
   Icon,
@@ -7,34 +7,27 @@ import {
   type FormDrawerField,
 } from "@eswasaone/shared-ui";
 import { ModulePageShell } from "./ModulePageShell";
+import { useBodies } from "../governance/useBodies";
 
-const MEETING_FIELDS: FormDrawerField[] = [
-  { name: "title", label: "Title", required: true, placeholder: "Q4 Board meeting" },
-  {
-    name: "body",
-    label: "Body",
-    type: "select",
-    required: true,
-    options: [
-      { value: "Full Board", label: "Full Board" },
-      { value: "Audit & Risk Committee", label: "Audit & Risk Committee" },
-      { value: "Finance & Investment Committee", label: "Finance & Investment Committee" },
-      { value: "HR & Remuneration Committee", label: "HR & Remuneration Committee" },
-      { value: "Technical Committee", label: "Technical Committee" },
-    ],
-  },
-  { name: "date", label: "Date", type: "date", required: true },
-  { name: "venue", label: "Venue", placeholder: "ESWASA Boardroom, Matsapha" },
-];
+function meetingFields(bodies: { value: string; label: string }[]): FormDrawerField[] {
+  return [
+    { name: "title", label: "Title", required: true, placeholder: "Q4 Board meeting" },
+    { name: "body", label: "Body", type: "select", required: true, options: bodies },
+    { name: "date", label: "Date", type: "date", required: true },
+    { name: "venue", label: "Venue", placeholder: "ESWASA Boardroom, Matsapha" },
+  ];
+}
 
 const RESOLUTION_FIELDS: FormDrawerField[] = [
   { name: "title", label: "Resolution", required: true, type: "textarea" },
   { name: "meeting", label: "Meeting ref", required: true, placeholder: "BM-2026-Q3" },
 ];
 
-/** Board & Governance — Overview · Meetings · Pack · Resolutions · Risks · Members */
+/** Board & Governance — Overview · Meetings · Pack · Resolutions · CAC · Risks · Members */
 export function BoardPage() {
   const { confirmAction, host } = useConfirmAction();
+  const { options: bodyOptions } = useBodies();
+  const MEETING_FIELDS = useMemo(() => meetingFields(bodyOptions), [bodyOptions]);
   const [flash, setFlash] = useState<string | null>(null);
   const [meetingOpen, setMeetingOpen] = useState(false);
   const [resolutionOpen, setResolutionOpen] = useState(false);
@@ -89,6 +82,7 @@ export function BoardPage() {
           { to: "meetings", label: "Meetings", icon: "i-cal" },
           { to: "pack", label: "Board pack", icon: "i-layers" },
           { to: "resolutions", label: "Resolutions", icon: "i-file" },
+          { to: "cac", label: "CAC", icon: "i-award" },
           { to: "risks", label: "Risk register", icon: "i-shield" },
           { to: "members", label: "Members", icon: "i-users" },
         ]}

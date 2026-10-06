@@ -383,6 +383,32 @@ export const STUB_BODIES: GovernanceBody[] = [
   { id: "c2", name: "Finance & Investment", type: "Committee", chair: "Mr. Mandla Mamba", members: [], meeting_frequency: "Quarterly", quorum: 3 },
   { id: "c3", name: "HR & Remuneration", type: "Committee", chair: "Ms. Nokuthula Simelane", members: [], meeting_frequency: "Bi-annually", quorum: 2 },
   { id: "c4", name: "Technical (Standards)", type: "Committee", chair: "Dr. Zanele Magagula", members: [], meeting_frequency: "Quarterly", quorum: 3 },
+  {
+    id: "c5",
+    name: "Certification Approval Committee",
+    type: "Committee",
+    chair: "Dr. Zanele Magagula",
+    members: ["Dr. Zanele Magagula", "Mr. Sipho Matsebula", "Ms. Thandi Vilakati", "Mr. Musa Dube", "Dr. Nonhlanhla Ginindza"],
+    meeting_frequency: "Monthly",
+    quorum: 3,
+  },
+];
+
+/**
+ * Certification Approval Committee (CAC) — decides product certification independently of the
+ * audit team (product.php; ISO/IEC 17065 §7.6). Balanced membership: industry, consumers,
+ * regulator, academia; ESWASA's certification manager is non-voting secretary.
+ * TODO: wire real — GET /governance/bodies + members once the CAC body is configured in Desk.
+ */
+export type CacMember = { id: string; name: string; interest: string; role: "Chair" | "Member" | "Secretary" };
+
+export const STUB_CAC_MEMBERS: CacMember[] = [
+  { id: "cac1", name: "Dr. Zanele Magagula", interest: "Technical — Board Technical Committee", role: "Chair" },
+  { id: "cac2", name: "Mr. Sipho Matsebula", interest: "Industry — Business Eswatini", role: "Member" },
+  { id: "cac3", name: "Ms. Thandi Vilakati", interest: "Consumers — Consumer Protection", role: "Member" },
+  { id: "cac4", name: "Mr. Musa Dube", interest: "Regulator — Ministry of Commerce, Industry & Trade", role: "Member" },
+  { id: "cac5", name: "Dr. Nonhlanhla Ginindza", interest: "Academia — University of Eswatini", role: "Member" },
+  { id: "cac6", name: "Ms. Lindiwe Hlophe", interest: "ESWASA Certification Manager (non-voting)", role: "Secretary" },
 ];
 
 export const STUB_DECLARATIONS: GovernanceDeclaration[] = [

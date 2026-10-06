@@ -466,3 +466,58 @@
     transform: translateX(-50%) translateY(0);
   }
 }
+
+/* ---------- NC editor, evidence photos, samples (certification lifecycle) ---------- */
+.aud-nc--edit {
+  display: grid;
+  gap: 10px;
+  background: #fff;
+}
+.aud-fld {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--field-ink);
+}
+.aud-fld input,
+.aud-fld textarea,
+.aud-fld select {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 12px;
+  border: 1px solid var(--field-line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--field-ink);
+  width: 100%;
+}
+.aud-fld textarea { min-height: 72px; resize: vertical; }
+.aud-fld input:focus,
+.aud-fld textarea:focus,
+.aud-fld select:focus { outline: 2px solid var(--field-navy-mid); outline-offset: 0; }
+.aud-tri--sev { align-self: flex-start; }
+.aud-tri--sev button { font-size: 12px; padding: 8px 14px; }
+.aud-tri--sev button.on { background: var(--field-navy); color: #fff; }
+.aud-ev { flex-wrap: wrap; }
+.aud-ev__img {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--field-line);
+  background: #eceefc;
+}
+.aud-ev__add {
+  width: 56px;
+  height: 56px;
+  cursor: pointer;
+  position: relative;
+}
+.aud-ev__add input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.aud-row-btns { display: flex; gap: 8px; }
+.aud-row-btns .aud-btn { flex: 1; }
+.aud-form { display: grid; gap: 10px; padding-top: 12px; }
+.aud-form__2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.aud-sign__box:disabled { opacity: 0.6; cursor: not-allowed; }

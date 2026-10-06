@@ -486,6 +486,17 @@ export const router = createBrowserRouter(
                 ),
               },
               {
+                path: "cac",
+                element: (
+                  <L
+                    factory={() =>
+                      import("./governance/sub-views").then((m) => ({ default: m.CacSessionView }))
+                    }
+                    skeleton="panel"
+                  />
+                ),
+              },
+              {
                 path: "risks",
                 element: (
                   <L

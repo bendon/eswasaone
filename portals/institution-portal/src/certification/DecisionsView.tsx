@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   AuthError,
   DataRow,
@@ -21,13 +21,12 @@ import {
   allExtras,
   listDecisions,
   listFindings,
-  listLab,
   recordDecision,
   type DeskDecision,
   type DeskFinding,
-  type LabEntry,
 } from "./deskApi";
-import { CHARTER, FLOW_LABEL, SUBSTEPS, flowForScheme, fmtDate, normalizeStage, type CertFlow } from "./pipeline";
+import { buildDecisionRows, bodyFor, type DecisionRow } from "./decisionQueue";
+import { CHARTER, FLOW_LABEL, SUBSTEPS, fmtDate } from "./pipeline";
 
 /**
  * Decisions: certification decision (MS / Ingelo) or
@@ -35,24 +34,13 @@ import { CHARTER, FLOW_LABEL, SUBSTEPS, flowForScheme, fmtDate, normalizeStage, 
  * the decision maker may not be the lead auditor for the case.
  */
 
-type Row = {
-  app: CertificationApplication;
-  flow: CertFlow;
-  auditor?: string;
-  findings: DeskFinding[];
-  lab: LabEntry[];
-  blockers: string[];
-};
-
-function bodyFor(flow: CertFlow): DeskDecision["body"] {
-  // product.php names the CAC; management systems/Ingelo pages just say "certification decision".
-  return flow === "product" || flow === "combined" ? "Certification Approval Committee" : "Certification decision";
-}
+type Row = DecisionRow;
 
 export function DecisionsView() {
   const { user, sessionKey, openAuth } = useInstitution();
   const dialogs = useDialogs();
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const apps = useApiResource<{ items?: CertificationApplication[] }>("/certification/applications?limit=200", {
     enabled: Boolean(user),
     refreshKey: sessionKey,
@@ -74,29 +62,10 @@ export function DecisionsView() {
   }, []);
   useEffect(load, [load]);
 
-  const rows: Row[] = useMemo(() => {
-    const ex = allExtras();
-    const lab = listLab();
-    return (apps.data?.items ?? [])
-      .filter((a) => {
-        const st = normalizeStage(a.status);
-        return st === "audit" || st === "nc";
-      })
-      .map((a) => {
-        const flow = ex[a.id]?.flow ?? flowForScheme(a.scheme);
-        const fs = findings.filter((f) => f.application_id === a.id);
-        const ls = lab.filter((l) => l.application_id === a.id);
-        const auditor = ex[a.id]?.auditor ?? audits.data?.items?.find((x) => x.application_id === a.id)?.auditor;
-        const blockers: string[] = [];
-        const openMajor = fs.filter((f) => f.severity === "major" && f.status !== "accepted").length;
-        const openMinor = fs.filter((f) => f.severity === "minor" && f.status !== "accepted").length;
-        if (openMajor) blockers.push(`${openMajor} major NC open`);
-        if (openMinor) blockers.push(`${openMinor} minor NC without accepted corrective action`);
-        if ((flow === "product" || flow === "combined") && (!ls.length || ls.some((l) => l.status === "pending" || l.status === "in_test")))
-          blockers.push("Laboratory results outstanding");
-        return { app: a, flow, auditor, findings: fs, lab: ls, blockers };
-      });
-  }, [apps.data, audits.data, findings]);
+  const rows: Row[] = useMemo(
+    () => buildDecisionRows(apps.data?.items ?? [], audits.data?.items, findings),
+    [apps.data, audits.data, findings],
+  );
 
   const selected = rows.find((r) => r.app.id === openId) ?? null;
   const me = user?.full_name || user?.username || "";
@@ -231,6 +200,15 @@ export function DecisionsView() {
           disabled: busy || selected.blockers.length > 0,
         },
         { label: "Refuse", variant: "ghost", onClick: () => void decide(selected, "refused"), disabled: busy },
+        ...(bodyFor(selected.flow) === "Certification Approval Committee"
+          ? [
+              {
+                label: "Open in CAC session",
+                variant: "ghost" as const,
+                onClick: () => navigate(`/board/cac?case=${encodeURIComponent(selected.app.id)}`),
+              },
+            ]
+          : []),
         { label: "Close", variant: "ghost", onClick: () => setOpenId(null) },
       ]
     : [];

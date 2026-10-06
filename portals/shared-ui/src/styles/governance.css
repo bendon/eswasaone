@@ -196,3 +196,40 @@
   .gov .nm { padding: 16px; }
   .gov .toolbar .search { min-width: 0; width: 100%; }
 }
+
+/* ---------- Board → CAC session (certification decisions) ---------- */
+.cac { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 980px) { .cac { grid-template-columns: 1fr; } }
+.cac__side, .cac-pack { display: grid; gap: 14px; }
+.cac-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.cac-card h3 { font-size: 14px; font-weight: 800; margin: 0 0 10px; }
+.cac-card__h { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.cac-card__h h3 { font-size: 17px; margin: 2px 0 0; }
+.cac-muted { font-size: 12.5px; color: var(--muted); margin: 4px 0; line-height: 1.5; }
+.cac-warn { font-size: 12.5px; font-weight: 600; color: #92400e; background: var(--amber-l); border-radius: 8px; padding: 7px 10px; margin: 8px 0 0; }
+.cac-agenda { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cac-agenda button {
+  width: 100%; display: flex; gap: 10px; align-items: center; text-align: left;
+  font: inherit; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; cursor: pointer;
+}
+.cac-agenda button.on { border-color: var(--navy); box-shadow: 0 0 0 3px var(--navy-l); }
+.cac-agenda .n { font-weight: 800; color: var(--muted-2); font-size: 12px; }
+.cac-agenda .t { flex: 1; min-width: 0; }
+.cac-agenda .t b { display: block; font-size: 13px; }
+.cac-agenda .t small, .cac-check small, .cac-outcome small { display: block; font-size: 11.5px; color: var(--muted); }
+.cac-check { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; padding: 5px 0; }
+.cac-check input, .cac-chip input, .cac-outcome input { accent-color: var(--navy); margin-top: 2px; }
+.cac-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 720px) { .cac-2 { grid-template-columns: 1fr; } }
+.cac-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cac-chip { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; cursor: pointer; }
+.cac-chip.on { background: var(--red-l); border-color: #fbcfe0; color: #9f1239; }
+.cac-chip[aria-disabled="true"] { opacity: 0.5; }
+.cac-outcomes { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.cac-outcome { display: flex; gap: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: 13px; }
+.cac-outcome.on { border-color: var(--navy); box-shadow: 0 0 0 3px var(--navy-l); }
+.cac-field { display: grid; gap: 5px; font-size: 12.5px; font-weight: 600; margin-bottom: 10px; }
+.cac-field textarea, .cac-field input { font: inherit; font-size: 13.5px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.cac-field textarea { min-height: 72px; resize: vertical; }
+.cac-votes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cac-actions { display: flex; justify-content: flex-end; margin-top: 10px; }

@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/certification/schemes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Public catalogue of active Certification Schemes. `code` is the value CreateCertificationApplication.scheme accepts. */
+        get: operations["listCertificationSchemes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/certification/applications": {
         parameters: {
             query?: never;
@@ -944,6 +961,18 @@ export interface components {
             /** Format: date-time */
             updated_at?: string;
         };
+        CertificationScheme: {
+            code: string;
+            name: string;
+            standard_ref?: string | null;
+            /** @enum {string} */
+            scheme_type: "Management System" | "Product";
+            accreditation_basis?: string | null;
+            surveillance_interval_months?: number | null;
+            certificate_validity_months?: number | null;
+            fee?: number | null;
+            description?: string | null;
+        };
         CreateCertificationApplication: {
             scheme: string;
             applicant_name: string;
@@ -1369,6 +1398,2221 @@ export interface components {
         GovernanceMeetingSummary: components["schemas"]["GovernanceMeeting"];
         GovernanceResolutionSummary: components["schemas"]["GovernanceResolution"];
         GovernanceRiskSummary: components["schemas"]["GovernanceRisk"];
+        /** AccountActivityItem */
+        AccountActivityItem: {
+            /** Id */
+            id: string;
+            /** Tint */
+            tint?: string | null;
+            /** Tone */
+            tone?: string | null;
+            /** Icon */
+            icon?: string | null;
+            /** Title */
+            title: string;
+            /** Subtitle */
+            subtitle?: string | null;
+            /** Time */
+            time?: string | null;
+            /** Href */
+            href?: string | null;
+        };
+        /** AccountAlert */
+        AccountAlert: {
+            /** Id */
+            id: string;
+            /**
+             * Tone
+             * @default info
+             */
+            tone: string;
+            /** Tint */
+            tint?: string | null;
+            /** Border Tint */
+            border_tint?: string | null;
+            /** Icon */
+            icon?: string | null;
+            /** Title */
+            title: string;
+            /** Body */
+            body: string;
+            /** Cta */
+            cta?: string | null;
+            /** Href */
+            href?: string | null;
+        };
+        /** AccountEntitiesResponse */
+        AccountEntitiesResponse: {
+            /** Items */
+            items: components["schemas"]["AccountEntity"][];
+            /** Active */
+            active: string;
+        };
+        /** AccountEntity */
+        AccountEntity: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Short Name */
+            short_name?: string | null;
+            /** Kind */
+            kind: string;
+            /** Role */
+            role: string;
+            /** Initials */
+            initials?: string | null;
+            /** Member Since */
+            member_since?: string | null;
+            /**
+             * Verified
+             * @default false
+             */
+            verified: boolean;
+        };
+        /** AccountOverview */
+        AccountOverview: {
+            stats: components["schemas"]["AccountStats"];
+            /** Alerts */
+            alerts: components["schemas"]["AccountAlert"][];
+            /** Feed */
+            feed: components["schemas"]["AccountActivityItem"][];
+            /** Summary */
+            summary: components["schemas"]["AccountSummaryCard"][];
+        };
+        /** AccountStatItem */
+        AccountStatItem: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: number;
+            /** Accent */
+            accent?: boolean | null;
+        };
+        /** AccountStats */
+        AccountStats: {
+            /** Items */
+            items: components["schemas"]["AccountStatItem"][];
+        };
+        /** AccountSummaryCard */
+        AccountSummaryCard: {
+            /** Id */
+            id: string;
+            /** Tint */
+            tint: string;
+            /** Tone */
+            tone: string;
+            /** Icon */
+            icon: string;
+            /** Title */
+            title: string;
+            /** Subtitle */
+            subtitle: string;
+        };
+        /** ActApprovalBody */
+        ActApprovalBody: {
+            /** Action */
+            action: string;
+            /** Confirm */
+            confirm: boolean;
+            /** Comment */
+            comment?: string | null;
+        };
+        /** AddRoleBody */
+        AddRoleBody: {
+            /** Role */
+            role: string;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** AdminAccessDevice */
+        AdminAccessDevice: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Fingerprint */
+            fingerprint: string;
+            /** Owner Username */
+            owner_username?: string | null;
+            /**
+             * Status
+             * @default pending
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "revoked" | "expired";
+            /** Created At */
+            created_at: string;
+            /** Approved At */
+            approved_at?: string | null;
+            /** Approved By */
+            approved_by?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Last Seen At */
+            last_seen_at?: string | null;
+            /** Last Seen Ip */
+            last_seen_ip?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** AdminAccessDeviceCreate */
+        AdminAccessDeviceCreate: {
+            /** Confirm */
+            confirm: boolean;
+            /** Label */
+            label: string;
+            /** Fingerprint */
+            fingerprint: string;
+            /** Owner Username */
+            owner_username?: string | null;
+            /**
+             * Status
+             * @default pending
+             * @enum {string}
+             */
+            status: "pending" | "approved";
+            /** Expires At */
+            expires_at?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** AdminAccessDevicePatch */
+        AdminAccessDevicePatch: {
+            /** Confirm */
+            confirm: boolean;
+            /** Label */
+            label?: string | null;
+            /** Status */
+            status?: ("pending" | "approved" | "revoked" | "expired") | null;
+            /** Owner Username */
+            owner_username?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** AdminAccessEvaluateResult */
+        AdminAccessEvaluateResult: {
+            /** Allowed */
+            allowed: boolean;
+            /** Reason */
+            reason: string;
+            /** Enforce Off Lan */
+            enforce_off_lan: boolean;
+            /** On Trusted Network */
+            on_trusted_network: boolean;
+            /** Device Status */
+            device_status?: string | null;
+            /**
+             * Redirect Path
+             * @default /
+             */
+            redirect_path: string;
+        };
+        /** AdminAccessNetwork */
+        AdminAccessNetwork: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Cidr */
+            cidr: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** AdminAccessNetworkCreate */
+        AdminAccessNetworkCreate: {
+            /** Confirm */
+            confirm: boolean;
+            /** Label */
+            label: string;
+            /** Cidr */
+            cidr: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * AdminAccessPolicy
+         * @description Controls Institution portal access outside trusted LAN/WAN.
+         */
+        AdminAccessPolicy: {
+            /**
+             * Enforce Off Lan
+             * @default false
+             */
+            enforce_off_lan: boolean;
+            /**
+             * Fail Closed
+             * @default true
+             */
+            fail_closed: boolean;
+            /**
+             * Redirect Path
+             * @default /
+             */
+            redirect_path: string;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** AdminAppVersion */
+        AdminAppVersion: {
+            /** App */
+            app: string;
+            /** Installed */
+            installed: string;
+            /** Latest */
+            latest?: string | null;
+            /**
+             * Status
+             * @default unknown
+             * @enum {string}
+             */
+            status: "current" | "update" | "unknown";
+            /** Notes */
+            notes?: string | null;
+        };
+        /** AdminCommandResult */
+        AdminCommandResult: {
+            /** Ok */
+            ok: boolean;
+            /** Message */
+            message?: string | null;
+            /** Lines */
+            lines?: string[] | null;
+            /** Lock Holder */
+            lock_holder?: string | null;
+        };
+        /** AdminEmailSettings */
+        AdminEmailSettings: {
+            /** Outgoing Ok */
+            outgoing_ok: boolean;
+            /** Smtp Host */
+            smtp_host?: string | null;
+            /** Smtp Port */
+            smtp_port?: number | null;
+            /** From Address */
+            from_address?: string | null;
+            /** Use Tls */
+            use_tls?: boolean | null;
+            /** Incoming Set */
+            incoming_set?: boolean | null;
+            /** Account Name */
+            account_name?: string | null;
+        };
+        /** AdminJobsSnapshot */
+        AdminJobsSnapshot: {
+            /** Running */
+            running: number;
+            /** Queued */
+            queued: number;
+            /** Completed 24H */
+            completed_24h: number;
+            /** Failed */
+            failed: number;
+        };
+        /** AdminOverview */
+        AdminOverview: {
+            /** Site */
+            site: string;
+            /** Environment */
+            environment?: string | null;
+            /** Frappe Version */
+            frappe_version: string;
+            /** Erpnext Version */
+            erpnext_version: string;
+            /**
+             * Frappe Status
+             * @default ok
+             * @enum {string}
+             */
+            frappe_status: "ok" | "warn" | "err";
+            /**
+             * Erpnext Status
+             * @default ok
+             * @enum {string}
+             */
+            erpnext_status: "ok" | "warn" | "err";
+            /** Active Users */
+            active_users: number;
+            /** Seat Limit */
+            seat_limit?: number | null;
+            /** Online Now */
+            online_now?: number | null;
+            /** Last Backup Ago */
+            last_backup_ago?: string | null;
+            /** Last Backup Ok */
+            last_backup_ok?: boolean | null;
+            /** Services */
+            services: components["schemas"]["AdminServiceStatus"][];
+            /** Apps */
+            apps: components["schemas"]["AdminAppVersion"][];
+            /**
+             * Updates Available
+             * @default 0
+             */
+            updates_available: number;
+        };
+        /** AdminScheduledJob */
+        AdminScheduledJob: {
+            /** Name */
+            name: string;
+            /** Method */
+            method: string;
+            /** Frequency */
+            frequency: string;
+            /** Last Run */
+            last_run?: string | null;
+            /** Status */
+            status: string;
+            /** Stopped */
+            stopped?: boolean | null;
+        };
+        /** AdminSchedulerResponse */
+        AdminSchedulerResponse: {
+            /** Enabled */
+            enabled: boolean;
+            /** Heartbeat Ago */
+            heartbeat_ago?: string | null;
+            /** Jobs */
+            jobs: components["schemas"]["AdminScheduledJob"][];
+        };
+        /** AdminServiceStatus */
+        AdminServiceStatus: {
+            /** Name */
+            name: string;
+            /** Meta */
+            meta?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "warn" | "err" | "info";
+            /** Detail */
+            detail?: string | null;
+        };
+        /** AdminSystemSettings */
+        AdminSystemSettings: {
+            /** Time Zone */
+            time_zone?: string | null;
+            /** Date Format */
+            date_format?: string | null;
+            /** Currency */
+            currency?: string | null;
+            /** Number Format */
+            number_format?: string | null;
+            /** Session Expiry */
+            session_expiry?: string | null;
+            /** Enable Scheduler */
+            enable_scheduler?: boolean | null;
+            /** Disable User Pass Login */
+            disable_user_pass_login?: boolean | null;
+            /** Allow Consecutive Login Attempts */
+            allow_consecutive_login_attempts?: number | null;
+            /** Force Https */
+            force_https?: boolean | null;
+        };
+        /** AdminUpdateRunBody */
+        AdminUpdateRunBody: {
+            /** Confirm */
+            confirm: boolean;
+            /**
+             * Channel
+             * @default stable
+             */
+            channel: string;
+            /**
+             * Backup Before
+             * @default true
+             */
+            backup_before: boolean;
+            /**
+             * Migrate
+             * @default true
+             */
+            migrate: boolean;
+            /**
+             * Maintenance
+             * @default true
+             */
+            maintenance: boolean;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+        };
+        /** AdminUpdatesResponse */
+        AdminUpdatesResponse: {
+            /** Channel */
+            channel: string;
+            /** Items */
+            items: components["schemas"]["AdminAppVersion"][];
+        };
+        /** AdminUserSummary */
+        AdminUserSummary: {
+            /** Name */
+            name: string;
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email?: string | null;
+            /** Role Profile Name */
+            role_profile_name?: string | null;
+            /** Last Active */
+            last_active?: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** User Type */
+            user_type?: string | null;
+        };
+        /**
+         * AdvanceCertificationBody
+         * @description Workflow act body — used by /act and deprecated /advance.
+         */
+        AdvanceCertificationBody: {
+            /** Action */
+            action: string;
+            /** Confirm */
+            confirm: boolean;
+            /** Expected State */
+            expected_state?: string | null;
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Comment */
+            comment?: string | null;
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** AdvanceHrApplicantBody */
+        AdvanceHrApplicantBody: {
+            /** Stage */
+            stage: string;
+            /** Confirm */
+            confirm: boolean;
+            /** Note */
+            note?: string | null;
+        };
+        /** AnalyticsAskBody */
+        AnalyticsAskBody: {
+            /** Question */
+            question: string;
+        };
+        /** AnalyticsAskResponse */
+        AnalyticsAskResponse: {
+            /** Answer */
+            answer: string;
+            /** Citations */
+            citations?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Figures */
+            figures?: {
+                [key: string]: unknown;
+            }[] | null;
+        };
+        /** AnalyticsReportSummary */
+        AnalyticsReportSummary: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Period */
+            period?: string | null;
+        };
+        /** ApplicabilityRequest */
+        ApplicabilityRequest: {
+            /** Query */
+            query: string;
+            /** Jurisdiction */
+            jurisdiction?: string | null;
+            /** Sector */
+            sector?: string | null;
+            /** Hs Code */
+            hs_code?: string | null;
+        };
+        /** ApplicabilityStep */
+        ApplicabilityStep: {
+            /** Order */
+            order: number;
+            /** Title */
+            title: string;
+            /** Detail */
+            detail?: string | null;
+            /** Href */
+            href?: string | null;
+        };
+        /** ApprovalItem */
+        ApprovalItem: {
+            /** Id */
+            id: string;
+            /** Doctype */
+            doctype: string;
+            /** Name */
+            name: string;
+            /** Title */
+            title: string;
+            /** Module */
+            module: string;
+            /** Status */
+            status: string;
+            /** Due At */
+            due_at?: string | null;
+            /** Sla Breached */
+            sla_breached: boolean;
+        };
+        /** ApprovalsResponse */
+        ApprovalsResponse: {
+            /** Items */
+            items: components["schemas"]["ApprovalItem"][];
+            /** Pending Count */
+            pending_count: number;
+        };
+        /** BackupBody */
+        BackupBody: {
+            /** Confirm */
+            confirm: boolean;
+            /**
+             * With Files
+             * @default true
+             */
+            with_files: boolean;
+        };
+        /** BoardPackSection */
+        BoardPackSection: {
+            /** Title */
+            title: string;
+            /** Status */
+            status: string;
+        };
+        /** Body_upload_media_api_media_upload_post */
+        Body_upload_media_api_media_upload_post: {
+            /** File */
+            file: string;
+            /**
+             * Prefix
+             * @default uploads
+             */
+            prefix: string;
+        };
+        /** CheckoutItem */
+        CheckoutItem: {
+            /** Standard Code */
+            standard_code: string;
+            /** Qty */
+            qty: number;
+        };
+        /** CheckoutRequest */
+        CheckoutRequest: {
+            /** Items */
+            items: components["schemas"]["CheckoutItem"][];
+            /** Payment Method */
+            payment_method?: ("momo" | "invoice") | null;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** CreateCrmDealBody */
+        CreateCrmDealBody: {
+            /** Title */
+            title: string;
+            /** Amount */
+            amount?: number | null;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** CreateCrmLeadBody */
+        CreateCrmLeadBody: {
+            /** Title */
+            title: string;
+            /** Organization */
+            organization?: string | null;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** CreateFinanceInvoiceBody */
+        CreateFinanceInvoiceBody: {
+            /** Customer */
+            customer: string;
+            /** Items */
+            items?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /**
+         * CreateHrEmployeeBody
+         * @description OpenAPI: HrEmployeeCreate.
+         */
+        CreateHrEmployeeBody: {
+            /** Employee Name */
+            employee_name: string;
+            /** Confirm */
+            confirm: boolean;
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Department */
+            department?: string | null;
+            /** Designation */
+            designation?: string | null;
+            /** Date Of Joining */
+            date_of_joining?: string | null;
+            /** Company Email */
+            company_email?: string | null;
+            /** Gender */
+            gender?: string | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /** Company */
+            company?: string | null;
+            /** Reports To */
+            reports_to?: string | null;
+            /**
+             * Invite
+             * @default false
+             */
+            invite: boolean;
+            /** Email */
+            email?: string | null;
+            /** Roles */
+            roles?: string[] | null;
+            /** Profile Name */
+            profile_name?: string | null;
+        };
+        /** CreateHrJobBody */
+        CreateHrJobBody: {
+            /** Job Title */
+            job_title: string;
+            /** Confirm */
+            confirm: boolean;
+            /** Department */
+            department?: string | null;
+            /** Designation */
+            designation?: string | null;
+            /** Vacancies */
+            vacancies?: number | null;
+        };
+        /** CreateHrLeaveBody */
+        CreateHrLeaveBody: {
+            /** Leave Type */
+            leave_type: string;
+            /** From Date */
+            from_date: string;
+            /** To Date */
+            to_date: string;
+            /** Reason */
+            reason?: string | null;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** CreateMarketingCampaignBody */
+        CreateMarketingCampaignBody: {
+            /** Title */
+            title: string;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** CrmDealSummary */
+        CrmDealSummary: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Amount */
+            amount?: number | null;
+            /** Status */
+            status: string;
+        };
+        /** CrmLeadSummary */
+        CrmLeadSummary: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Organization */
+            organization?: string | null;
+            /** Status */
+            status: string;
+        };
+        /** CrmPipeline */
+        CrmPipeline: {
+            /** Stages */
+            stages: components["schemas"]["CrmPipelineStage"][];
+            /** Companies */
+            companies: number;
+        };
+        /** CrmPipelineStage */
+        CrmPipelineStage: {
+            /** Name */
+            name: string;
+            /** Count */
+            count: number;
+        };
+        /** EnrolTrainingBody */
+        EnrolTrainingBody: {
+            /** Course */
+            course: string;
+            /** Batch */
+            batch?: string | null;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /**
+         * EvaluateBody
+         * @description Optional preview inputs for System Managers.
+         */
+        EvaluateBody: {
+            /** Ip */
+            ip?: string | null;
+            /** Fingerprint */
+            fingerprint?: string | null;
+            /** Username */
+            username?: string | null;
+            /**
+             * Path
+             * @default /institution/
+             */
+            path: string | null;
+            /**
+             * Record
+             * @default false
+             */
+            record: boolean;
+        };
+        /** FinanceDashboard */
+        FinanceDashboard: {
+            /** Revenue Ytd Szl */
+            revenue_ytd_szl: number;
+            /** Budget Ytd Szl */
+            budget_ytd_szl: number;
+            /** Variance Pct */
+            variance_pct: number;
+            months: components["schemas"]["FinanceMonths"];
+            /** Plan */
+            plan: components["schemas"]["PlanTrafficLight"][];
+        };
+        /** FinanceInvoiceSummary */
+        FinanceInvoiceSummary: {
+            /** Id */
+            id: string;
+            /** Customer */
+            customer: string;
+            /** Status */
+            status: string;
+            /** Grand Total */
+            grand_total: number;
+            /** Due Date */
+            due_date?: string | null;
+            /** Overdue */
+            overdue?: boolean | null;
+        };
+        /** FinanceMonths */
+        FinanceMonths: {
+            /** Labels */
+            labels: string[];
+            /** Budget Thousands */
+            budget_thousands: number[];
+            /** Actual Thousands */
+            actual_thousands: number[];
+        };
+        /**
+         * FinanceSettings
+         * @description Finance department configuration snapshot (ERP-lite foundation).
+         */
+        FinanceSettings: {
+            /** Company Id */
+            company_id?: string | null;
+            /** Company Name */
+            company_name?: string | null;
+            /** Default Currency */
+            default_currency?: string | null;
+            /** Country */
+            country?: string | null;
+            /**
+             * Has Chart Of Accounts
+             * @default false
+             */
+            has_chart_of_accounts: boolean;
+            /**
+             * Has Cost Centres
+             * @default false
+             */
+            has_cost_centres: boolean;
+            /**
+             * Has Fiscal Year
+             * @default false
+             */
+            has_fiscal_year: boolean;
+            /**
+             * Pastel Status
+             * @default not_configured
+             * @enum {string}
+             */
+            pastel_status: "not_configured" | "stubbed";
+            /**
+             * Payment Gateway Status
+             * @default not_configured
+             * @enum {string}
+             */
+            payment_gateway_status: "not_configured" | "stubbed";
+            /**
+             * Steps
+             * @default []
+             */
+            steps: components["schemas"]["FinanceSetupStep"][];
+        };
+        /** FinanceSetupStep */
+        FinanceSetupStep: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Done */
+            done: boolean;
+            /** Href */
+            href?: string | null;
+        };
+        /** GuideAction */
+        GuideAction: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "buy" | "apply" | "book" | "open";
+            /** Label */
+            label: string;
+            /** Target */
+            target: string;
+            /** Auth Required */
+            auth_required: boolean;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** GuideCitation */
+        GuideCitation: {
+            /** Label */
+            label: string;
+            /** Url */
+            url: string;
+            /**
+             * Rights
+             * @enum {string}
+             */
+            rights: "open" | "public" | "licensed";
+        };
+        /** GuideMeta */
+        GuideMeta: {
+            /** Standards */
+            standards: number;
+            /** Est Fee */
+            est_fee: string;
+            /** Est Timeline */
+            est_timeline: string;
+            /** Steps */
+            steps: number;
+        };
+        /** GuideRequest */
+        GuideRequest: {
+            /** Goal */
+            goal: string;
+            /** Locale */
+            locale?: string | null;
+        };
+        /** GuideResponse */
+        GuideResponse: {
+            /** Title */
+            title: string;
+            /** Summary */
+            summary: string;
+            meta: components["schemas"]["GuideMeta"];
+            /** Steps */
+            steps: components["schemas"]["GuideStep"][];
+        };
+        /** GuideStep */
+        GuideStep: {
+            /** Title */
+            title: string;
+            /** Detail */
+            detail: string;
+            /** Citations */
+            citations?: components["schemas"]["GuideCitation"][];
+            action?: components["schemas"]["GuideAction"] | null;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HeatCell */
+        HeatCell: {
+            /** L */
+            L: number;
+            /** I */
+            I: number;
+            /** Count */
+            count: number;
+        };
+        /** HrActivityItem */
+        HrActivityItem: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** At */
+            at?: string | null;
+            /** Kind */
+            kind?: string | null;
+            /** Href */
+            href?: string | null;
+        };
+        /** HrApplicant */
+        HrApplicant: {
+            /** Id */
+            id: string;
+            /** Applicant Name */
+            applicant_name: string;
+            /** Status */
+            status: string;
+            /** Job */
+            job?: string | null;
+            /** Stage */
+            stage?: string | null;
+        };
+        /** HrAppraisalSummary */
+        HrAppraisalSummary: {
+            /** Id */
+            id: string;
+            /** Employee */
+            employee: string;
+            /** Cycle */
+            cycle?: string | null;
+            /** Status */
+            status: string;
+        };
+        /** HrAttendanceSnapshot */
+        HrAttendanceSnapshot: {
+            /** Date */
+            date: string;
+            /** Out Today */
+            out_today: components["schemas"]["HrOutTodayItem"][];
+            /** Present Count */
+            present_count?: number | null;
+            /** Absent Count */
+            absent_count?: number | null;
+        };
+        /** HrCostCentre */
+        HrCostCentre: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Code */
+            code?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Finance Account Code */
+            finance_account_code?: string | null;
+            /**
+             * Status
+             * @default active
+             * @enum {string}
+             */
+            status: "active" | "draft" | "archived";
+            /**
+             * Employee Count
+             * @default 0
+             */
+            employee_count: number;
+        };
+        /** HrCostCentreCreate */
+        HrCostCentreCreate: {
+            /** Name */
+            name: string;
+            /** Confirm */
+            confirm: boolean;
+            /** Code */
+            code?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Finance Account Code */
+            finance_account_code?: string | null;
+            /**
+             * Status
+             * @default active
+             * @enum {string}
+             */
+            status: "active" | "draft" | "archived";
+        };
+        /** HrCostCentrePatch */
+        HrCostCentrePatch: {
+            /** Confirm */
+            confirm: boolean;
+            /** Name */
+            name?: string | null;
+            /** Code */
+            code?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Finance Account Code */
+            finance_account_code?: string | null;
+            /** Status */
+            status?: ("active" | "draft" | "archived") | null;
+        };
+        /** HrCostCentreRef */
+        HrCostCentreRef: {
+            /** Id */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+        };
+        /** HrDepartment */
+        HrDepartment: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Code */
+            code?: string | null;
+            /** Parent Department Id */
+            parent_department_id?: string | null;
+            head?: components["schemas"]["HrEmployeeRef"] | null;
+            cost_centre?: components["schemas"]["HrCostCentreRef"] | null;
+            /**
+             * Status
+             * @default active
+             * @enum {string}
+             */
+            status: "active" | "archived";
+            /**
+             * Designation Count
+             * @default 0
+             */
+            designation_count: number;
+            /**
+             * Filled Count
+             * @default 0
+             */
+            filled_count: number;
+            /**
+             * Total Positions
+             * @default 0
+             */
+            total_positions: number;
+        };
+        /** HrDepartmentCreate */
+        HrDepartmentCreate: {
+            /** Name */
+            name: string;
+            /** Confirm */
+            confirm: boolean;
+            /** Code */
+            code?: string | null;
+            /** Parent Department Id */
+            parent_department_id?: string | null;
+            /** Cost Centre Id */
+            cost_centre_id?: string | null;
+        };
+        /** HrDepartmentHeadBody */
+        HrDepartmentHeadBody: {
+            /** Employee Id */
+            employee_id: string;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** HrDepartmentPatch */
+        HrDepartmentPatch: {
+            /** Confirm */
+            confirm: boolean;
+            /** Name */
+            name?: string | null;
+            /** Code */
+            code?: string | null;
+            /** Parent Department Id */
+            parent_department_id?: string | null;
+            /** Cost Centre Id */
+            cost_centre_id?: string | null;
+            /** Status */
+            status?: ("active" | "archived") | null;
+        };
+        /** HrDepartmentRef */
+        HrDepartmentRef: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Code */
+            code?: string | null;
+        };
+        /** HrDesignation */
+        HrDesignation: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Code */
+            code?: string | null;
+            /** Description */
+            description?: string | null;
+            department?: components["schemas"]["HrDepartmentRef"] | null;
+            grade_band?: components["schemas"]["HrGradeBandRef"] | null;
+            /**
+             * Filled
+             * @default 0
+             */
+            filled: number;
+            /** Total */
+            total?: number | null;
+        };
+        /** HrDesignationCreate */
+        HrDesignationCreate: {
+            /** Title */
+            title: string;
+            /** Confirm */
+            confirm: boolean;
+            /** Code */
+            code?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Department Id */
+            department_id?: string | null;
+            /** Grade Band Id */
+            grade_band_id?: string | null;
+            /** Approved Headcount */
+            approved_headcount?: number | null;
+        };
+        /** HrDesignationPatch */
+        HrDesignationPatch: {
+            /** Confirm */
+            confirm: boolean;
+            /** Title */
+            title?: string | null;
+            /** Code */
+            code?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Department Id */
+            department_id?: string | null;
+            /** Grade Band Id */
+            grade_band_id?: string | null;
+            /** Approved Headcount */
+            approved_headcount?: number | null;
+        };
+        /** HrEmployeeRef */
+        HrEmployeeRef: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Initials */
+            initials?: string | null;
+        };
+        /** HrEmployeeSummary */
+        HrEmployeeSummary: {
+            /** Id */
+            id: string;
+            /** Employee Name */
+            employee_name: string;
+            /** Department */
+            department?: string | null;
+            /** Designation */
+            designation?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Date Of Joining */
+            date_of_joining?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Initials */
+            initials?: string | null;
+            /** Reports To */
+            reports_to?: string | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Desk Path */
+            desk_path?: string | null;
+        };
+        /** HrGradeBand */
+        HrGradeBand: {
+            /** Id */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name?: string | null;
+            /** Level */
+            level?: number | null;
+            /** Min Salary */
+            min_salary?: number | null;
+            /** Max Salary */
+            max_salary?: number | null;
+            /**
+             * Currency
+             * @default SZL
+             */
+            currency: string | null;
+        };
+        /** HrGradeBandCreate */
+        HrGradeBandCreate: {
+            /** Code */
+            code: string;
+            /** Confirm */
+            confirm: boolean;
+            /** Name */
+            name?: string | null;
+            /** Level */
+            level?: number | null;
+            /** Min Salary */
+            min_salary?: number | null;
+            /** Max Salary */
+            max_salary?: number | null;
+            /**
+             * Currency
+             * @default SZL
+             */
+            currency: string;
+        };
+        /** HrGradeBandPatch */
+        HrGradeBandPatch: {
+            /** Confirm */
+            confirm: boolean;
+            /** Code */
+            code?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Level */
+            level?: number | null;
+            /** Min Salary */
+            min_salary?: number | null;
+            /** Max Salary */
+            max_salary?: number | null;
+            /** Currency */
+            currency?: string | null;
+        };
+        /** HrGradeBandRef */
+        HrGradeBandRef: {
+            /** Id */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name?: string | null;
+            /** Level */
+            level?: number | null;
+        };
+        /** HrHoliday */
+        HrHoliday: {
+            /** Date */
+            date: string;
+            /** Id */
+            id?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Holiday List */
+            holiday_list?: string | null;
+        };
+        /** HrJobOpening */
+        HrJobOpening: {
+            /** Id */
+            id: string;
+            /** Job Title */
+            job_title: string;
+            /** Status */
+            status: string;
+            /** Department */
+            department?: string | null;
+            /** Designation */
+            designation?: string | null;
+            /** Vacancies */
+            vacancies?: number | null;
+        };
+        /**
+         * HrLeaveActBody
+         * @description OpenAPI: HrLeaveAct.
+         */
+        HrLeaveActBody: {
+            /** Decision */
+            decision: string;
+            /** Confirm */
+            confirm: boolean;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** HrLeaveBalance */
+        HrLeaveBalance: {
+            /** Leave Type */
+            leave_type: string;
+            /** Allocated */
+            allocated: number;
+            /** Used */
+            used: number;
+            /** Balance */
+            balance: number;
+            /** Employee */
+            employee?: string | null;
+        };
+        /** HrLeaveSummary */
+        HrLeaveSummary: {
+            /** Id */
+            id: string;
+            /** Employee */
+            employee: string;
+            /** Leave Type */
+            leave_type: string;
+            /** From Date */
+            from_date?: string | null;
+            /** To Date */
+            to_date?: string | null;
+            /** Status */
+            status: string;
+        };
+        /** HrLocation */
+        HrLocation: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Code */
+            code?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Type */
+            type?: ("hq" | "lab" | "satellite") | null;
+            /**
+             * Status
+             * @default active
+             * @enum {string}
+             */
+            status: "active" | "closed";
+            /**
+             * Employee Count
+             * @default 0
+             */
+            employee_count: number;
+        };
+        /** HrLocationCreate */
+        HrLocationCreate: {
+            /** Name */
+            name: string;
+            /** Confirm */
+            confirm: boolean;
+            /** Code */
+            code?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Type */
+            type?: ("hq" | "lab" | "satellite") | null;
+        };
+        /** HrLocationPatch */
+        HrLocationPatch: {
+            /** Confirm */
+            confirm: boolean;
+            /** Name */
+            name?: string | null;
+            /** Code */
+            code?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Type */
+            type?: ("hq" | "lab" | "satellite") | null;
+            /** Status */
+            status?: ("active" | "closed") | null;
+        };
+        /** HrLocationRef */
+        HrLocationRef: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Code */
+            code?: string | null;
+        };
+        /** HrOrgChartNode */
+        HrOrgChartNode: {
+            /** Id */
+            id: string;
+            /** Employee Name */
+            employee_name: string;
+            /** Designation */
+            designation?: string | null;
+            /** Department */
+            department?: string | null;
+            /** Reports To */
+            reports_to?: string | null;
+            /** Initials */
+            initials?: string | null;
+            /** Email */
+            email?: string | null;
+        };
+        /** HrOrganisation */
+        HrOrganisation: {
+            /** Id */
+            id: string;
+            /** Legal Name */
+            legal_name: string;
+            /** Registration Number */
+            registration_number?: string | null;
+            /** Founded Year */
+            founded_year?: number | null;
+            /** Sector */
+            sector?: string | null;
+            /** Registered Address */
+            registered_address?: string | null;
+            /** Primary Location Id */
+            primary_location_id?: string | null;
+            primary_location?: components["schemas"]["HrLocationRef"] | null;
+        };
+        /** HrOrganisationCounts */
+        HrOrganisationCounts: {
+            /** Departments */
+            departments: number;
+            /** Designations */
+            designations: number;
+            /** Filled Positions */
+            filled_positions: number;
+            /** Vacant Positions */
+            vacant_positions: number;
+            /** Locations */
+            locations: number;
+            /** Cost Centres */
+            cost_centres: number;
+            /** Employees */
+            employees: number;
+        };
+        /**
+         * HrOrganisationCreate
+         * @description Create the singleton Frappe Company (confirm-before-commit).
+         */
+        HrOrganisationCreate: {
+            /** Confirm */
+            confirm: boolean;
+            /** Legal Name */
+            legal_name: string;
+            /** Abbr */
+            abbr?: string | null;
+            /**
+             * Default Currency
+             * @default SZL
+             */
+            default_currency: string;
+            /**
+             * Country
+             * @default Eswatini
+             */
+            country: string;
+            /** Registration Number */
+            registration_number?: string | null;
+            /** Founded Year */
+            founded_year?: number | null;
+            /** Sector */
+            sector?: string | null;
+            /** Registered Address */
+            registered_address?: string | null;
+        };
+        /** HrOrganisationOverview */
+        HrOrganisationOverview: {
+            setup: components["schemas"]["HrSetupProgress"];
+            counts: components["schemas"]["HrOrganisationCounts"];
+            /** Departments */
+            departments: components["schemas"]["HrDepartment"][];
+            /** Designations Preview */
+            designations_preview: components["schemas"]["HrDesignation"][];
+            /** Designations Total */
+            designations_total: number;
+            /** Locations */
+            locations: components["schemas"]["HrLocation"][];
+            /** Cost Centres */
+            cost_centres: components["schemas"]["HrCostCentre"][];
+            payroll: components["schemas"]["HrPayrollReadiness"];
+            organisation?: components["schemas"]["HrOrganisation"] | null;
+        };
+        /** HrOrganisationPatch */
+        HrOrganisationPatch: {
+            /** Confirm */
+            confirm: boolean;
+            /** Legal Name */
+            legal_name?: string | null;
+            /** Registration Number */
+            registration_number?: string | null;
+            /** Founded Year */
+            founded_year?: number | null;
+            /** Sector */
+            sector?: string | null;
+            /** Registered Address */
+            registered_address?: string | null;
+            /** Primary Location Id */
+            primary_location_id?: string | null;
+        };
+        /** HrOutTodayItem */
+        HrOutTodayItem: {
+            /** Employee */
+            employee: string;
+            /** Id */
+            id?: string | null;
+            /** Employee Name */
+            employee_name?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Leave Type */
+            leave_type?: string | null;
+            /** From Date */
+            from_date?: string | null;
+            /** To Date */
+            to_date?: string | null;
+            /** Status */
+            status?: string | null;
+        };
+        /** HrPayrollReadiness */
+        HrPayrollReadiness: {
+            /** Ready */
+            ready: boolean;
+            /** Label */
+            label: string;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** HrPayrollStatus */
+        HrPayrollStatus: {
+            /** Status */
+            status: string;
+            /** Period */
+            period?: string | null;
+            /** Employees Processed */
+            employees_processed?: number | null;
+            /** Message */
+            message?: string | null;
+        };
+        /** HrPayslip */
+        HrPayslip: {
+            /** Id */
+            id: string;
+            /** Employee */
+            employee: string;
+            /** Status */
+            status: string;
+            /** Period */
+            period?: string | null;
+            /** Net Pay */
+            net_pay?: number | null;
+        };
+        /** HrSetupProgress */
+        HrSetupProgress: {
+            /** Has Profile */
+            has_profile: boolean;
+            /** Has Departments */
+            has_departments: boolean;
+            /** Has Designations */
+            has_designations: boolean;
+            /** Has Locations */
+            has_locations: boolean;
+            /** Has Grades */
+            has_grades: boolean;
+            /** Has Cost Centres */
+            has_cost_centres: boolean;
+            /** Has Employees */
+            has_employees: boolean;
+            /** Completion Pct */
+            completion_pct: number;
+            /** Steps Completed */
+            steps_completed: number;
+            /** Steps Total */
+            steps_total: number;
+        };
+        /**
+         * HrSummary
+         * @description GET /hr/summary and GET /hr/overview share this payload.
+         */
+        HrSummary: {
+            /** Headcount */
+            headcount: number;
+            /** Appraisal Completion Pct */
+            appraisal_completion_pct: number;
+            /** Open Leave */
+            open_leave: number;
+            /**
+             * New Hires Q
+             * @default 0
+             */
+            new_hires_q: number;
+            /**
+             * On Leave Today
+             * @default 0
+             */
+            on_leave_today: number;
+            /**
+             * Leave Pending
+             * @default 0
+             */
+            leave_pending: number;
+            /**
+             * Open Positions
+             * @default 0
+             */
+            open_positions: number;
+            /** Out Today */
+            out_today?: components["schemas"]["HrOutTodayItem"][] | null;
+            /** Activity */
+            activity?: components["schemas"]["HrActivityItem"][] | null;
+        };
+        /** InviteStaffRequest */
+        InviteStaffRequest: {
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string;
+            /** Roles */
+            roles: string[];
+            /** Org */
+            org?: string | null;
+        };
+        /** InviteStaffResponse */
+        InviteStaffResponse: {
+            /** Ok */
+            ok: boolean;
+            /** Email */
+            email: string;
+            /** Message */
+            message?: string | null;
+        };
+        /** InviteTeamBody */
+        InviteTeamBody: {
+            /** Email */
+            email: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "admin" | "member" | "viewer";
+            /** Confirm */
+            confirm: boolean;
+        };
+        /**
+         * LoginRequest
+         * @description Prefer email; username kept for dual-path / desk users.
+         */
+        LoginRequest: {
+            /** Email */
+            email?: string | null;
+            /** Username */
+            username?: string | null;
+            /** Password */
+            password?: string | null;
+            /** Otp */
+            otp?: string | null;
+            /** Challenge Id */
+            challenge_id?: string | null;
+        };
+        /** MaintenanceBody */
+        MaintenanceBody: {
+            /** Confirm */
+            confirm: boolean;
+            /** Enabled */
+            enabled: boolean;
+        };
+        /** MarketingCampaignSummary */
+        MarketingCampaignSummary: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Status */
+            status: string;
+        };
+        /** MediaObjectOut */
+        MediaObjectOut: {
+            /** Key */
+            key: string;
+            /** Bucket */
+            bucket: string;
+            /** Content Type */
+            content_type: string;
+            /** Size */
+            size: number;
+            /** Url */
+            url: string;
+            /** Backend */
+            backend: string;
+        };
+        /** MediaStatusOut */
+        MediaStatusOut: {
+            /** Backend */
+            backend: string;
+            /** Bucket */
+            bucket?: string | null;
+            /**
+             * Ready
+             * @default true
+             */
+            ready: boolean;
+        };
+        /** MetrologyJobSummary */
+        MetrologyJobSummary: {
+            /** Id */
+            id: string;
+            /** Instrument */
+            instrument: string;
+            /** Customer */
+            customer?: string | null;
+            /** Status */
+            status: string;
+            /** Due Date */
+            due_date?: string | null;
+        };
+        /** NotificationPrefs */
+        NotificationPrefs: {
+            /**
+             * Application Updates
+             * @default true
+             */
+            application_updates: boolean;
+            /**
+             * Order Confirmations
+             * @default true
+             */
+            order_confirmations: boolean;
+            /**
+             * Certificate Expiry
+             * @default true
+             */
+            certificate_expiry: boolean;
+            /**
+             * Training Announcements
+             * @default false
+             */
+            training_announcements: boolean;
+            /**
+             * Two Factor
+             * @default false
+             */
+            two_factor: boolean;
+        };
+        /** OtpRequest */
+        OtpRequest: {
+            /** Email */
+            email: string;
+        };
+        /** OtpResponse */
+        OtpResponse: {
+            /** Ok */
+            ok: boolean;
+            /** Message */
+            message?: string | null;
+            /**
+             * Stubbed
+             * @default false
+             */
+            stubbed: boolean;
+        };
+        /** PasswordResetRequest */
+        PasswordResetRequest: {
+            /** Email */
+            email: string;
+        };
+        /** PasswordResetResponse */
+        PasswordResetResponse: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            /** Message */
+            message: string;
+            /**
+             * Stubbed
+             * @default false
+             */
+            stubbed: boolean;
+        };
+        /** PatchAccessPolicyBody */
+        PatchAccessPolicyBody: {
+            /** Confirm */
+            confirm: boolean;
+            policy: components["schemas"]["AdminAccessPolicy"];
+        };
+        /**
+         * PatchHrEmployeeBody
+         * @description OpenAPI: HrEmployeePatch.
+         */
+        PatchHrEmployeeBody: {
+            /** Confirm */
+            confirm: boolean;
+            /** Employee Name */
+            employee_name?: string | null;
+            /** Department */
+            department?: string | null;
+            /** Designation */
+            designation?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Reports To */
+            reports_to?: string | null;
+        };
+        /** PatchSystemSettingsBody */
+        PatchSystemSettingsBody: {
+            /** Confirm */
+            confirm: boolean;
+            values: components["schemas"]["AdminSystemSettings"];
+        };
+        /** PatchUserBody */
+        PatchUserBody: {
+            /** Confirm */
+            confirm: boolean;
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Role Profile Name */
+            role_profile_name?: string | null;
+        };
+        /** PlanTrafficLight */
+        PlanTrafficLight: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Actual */
+            actual: string;
+            /** Target */
+            target: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "green" | "amber" | "red";
+        };
+        /** PublishStandardBody */
+        PublishStandardBody: {
+            /** Standard */
+            standard: string;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** RaiseFindingBody */
+        RaiseFindingBody: {
+            /** Clause */
+            clause: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "major" | "minor" | "observation";
+            /** Statement */
+            statement: string;
+            /** Due */
+            due: string;
+            /** Org */
+            org?: string | null;
+            /**
+             * Confirm
+             * @default false
+             */
+            confirm: boolean;
+        };
+        /** ReassignBody */
+        ReassignBody: {
+            /** To User */
+            to_user: string;
+            /** Comment */
+            comment?: string | null;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** RegisterRequest */
+        RegisterRequest: {
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
+            /** Org */
+            org?: string | null;
+            /** Password */
+            password?: string | null;
+        };
+        /** ReviewFindingBody */
+        ReviewFindingBody: {
+            /** Accept */
+            accept: boolean;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Confirm
+             * @default false
+             */
+            confirm: boolean;
+        };
+        /** SlaSweepBody */
+        SlaSweepBody: {
+            /**
+             * Confirm
+             * @default false
+             */
+            confirm: boolean;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+            /**
+             * Limit
+             * @default 50
+             */
+            limit: number;
+        };
+        /** TbtNotificationSummary */
+        TbtNotificationSummary: {
+            /** Id */
+            id: string;
+            /** Symbol */
+            symbol: string;
+            /** Title */
+            title: string;
+            /**
+             * Impact
+             * @enum {string}
+             */
+            impact: "high" | "medium" | "low";
+            /** Unread */
+            unread: boolean;
+            /** Published At */
+            published_at?: string | null;
+        };
+        /** TbtNotificationsResponse */
+        TbtNotificationsResponse: {
+            /** Items */
+            items: components["schemas"]["TbtNotificationSummary"][];
+            /** New Count */
+            new_count: number;
+        };
+        /** TbtSubscribeBody */
+        TbtSubscribeBody: {
+            /** Sector */
+            sector?: string | null;
+            /** Hs Code */
+            hs_code?: string | null;
+            /** Jurisdiction */
+            jurisdiction?: string | null;
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** TeamMember */
+        TeamMember: {
+            /** Id */
+            id: string;
+            /** Initials */
+            initials?: string | null;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Role */
+            role: string;
+            /** Role Label */
+            role_label: string;
+            /** When */
+            when?: string | null;
+            /**
+             * Avatar Variant
+             * @default default
+             */
+            avatar_variant: string | null;
+        };
+        /** TestEmailBody */
+        TestEmailBody: {
+            /** Confirm */
+            confirm: boolean;
+            /** To */
+            to: string;
+        };
+        /** TrainingCourseSummary */
+        TrainingCourseSummary: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Published */
+            published?: boolean | null;
+        };
+        /** TrainingEnrolmentSummary */
+        TrainingEnrolmentSummary: {
+            /** Id */
+            id: string;
+            /** Course */
+            course: string;
+            /** Member */
+            member?: string | null;
+            /** Status */
+            status: string;
+        };
+        /** UnlockRequest */
+        UnlockRequest: {
+            /** Email */
+            email?: string | null;
+            /** Username */
+            username?: string | null;
+            /** Password */
+            password: string;
+        };
+        /**
+         * UpdateItem
+         * @description A single update / announcement card for the landing page.
+         */
+        UpdateItem: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Summary */
+            summary: string;
+            /** Tag */
+            tag: string;
+            /** Date */
+            date: string;
+            /** Href */
+            href: string;
+            /** Foot Icon */
+            foot_icon: string;
+            /** Foot Label */
+            foot_label: string;
+        };
+        /** UpdateMeBody */
+        UpdateMeBody: {
+            /** Confirm */
+            confirm: boolean;
+            /** Full Name */
+            full_name?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Email */
+            email?: string | null;
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
+        };
+        /** ConfirmBody */
+        app__admin__router__ConfirmBody: {
+            /** Confirm */
+            confirm: boolean;
+        };
+        /** ConfirmBody */
+        app__gateway__wave1__ConfirmBody: {
+            /**
+             * Confirm
+             * @default false
+             */
+            confirm: boolean;
+        };
+        /** ConfirmBody */
+        app__governance__schemas__ConfirmBody: {
+            /**
+             * Confirm
+             * @default false
+             */
+            confirm: boolean;
+        };
+        LoginChallenge: {
+            /** @enum {string} */
+            status: "otp_required";
+            challenge_id: string;
+            message?: string;
+            stubbed?: boolean;
+            email_hint?: string;
+        };
+        AuthRequiredError: {
+            /** @constant */
+            auth_required: true;
+            reason?: string;
+            detail?: string;
+        };
+        AdminBackupSummary: {
+            timestamp: string;
+            size?: string | null;
+            backup_type?: string | null;
+            path: string;
+        };
+        AdminBackupPolicy: {
+            frequency?: string | null;
+            include_files?: boolean | null;
+            retention_days?: number | null;
+            offsite?: boolean | null;
+            encrypt?: boolean | null;
+        };
+        AdminLogEntry: {
+            time: string;
+            source: string;
+            message: string;
+            /** @enum {string} */
+            level: "ok" | "warn" | "err" | "info";
+            name?: string | null;
+        };
+        AdminIntegrationStatus: {
+            id: string;
+            title: string;
+            /** @enum {string} */
+            status: "ok" | "warn" | "err" | "info";
+            detail: string;
+            href?: string | null;
+        };
+        AdminAccessEvent: {
+            id: string;
+            time: string;
+            /** @enum {string} */
+            outcome: "allow" | "deny";
+            reason: string;
+            ip?: string | null;
+            username?: string | null;
+            device_id?: string | null;
+            path?: string | null;
+        };
+        OrderSummary: {
+            id: string;
+            title: string;
+            subtitle?: string;
+            /** Format: date */
+            date: string;
+            amount: string;
+            /** @enum {string} */
+            status: "done" | "review" | "pending" | "failed";
+            status_label?: string;
+            /** @enum {string} */
+            entity?: "personal" | "business";
+        };
+        HrExpense: {
+            id: string;
+            amount: number;
+            expense_type: string;
+            description?: string | null;
+            status: string;
+        };
     };
     responses: never;
     parameters: {
@@ -1416,6 +3660,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceHome"];
+                };
+            };
+        };
+    };
+    listCertificationSchemes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: components["schemas"]["CertificationScheme"][];
+                    };
                 };
             };
         };

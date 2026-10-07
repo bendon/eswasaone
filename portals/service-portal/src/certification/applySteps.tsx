@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Icon } from "@eswasaone/shared-ui";
 import {
   checkIngeloEligibility,
-  SCHEMES,
   schemeById,
   type IngeloEligibility,
   type Person,
@@ -30,6 +29,7 @@ import {
 import { Choice, FileRow, isoToday, MultiChoice, SelectField, TextField, UploadButton, YesNo } from "./ui";
 import { det, detList, detProducts, type StepProps } from "./wizard";
 import { CERT_EMAIL, demoMode } from "./demoStore";
+import { useSchemes } from "./useSchemes";
 
 /* ---------------- steps ---------------- */
 
@@ -39,11 +39,12 @@ export function SchemeStep({
   errors,
   quotes,
 }: StepProps & { quotes: Quote[] }) {
+  const schemes = useSchemes();
   const scheme = schemeById(s.scheme);
   const linkable = quotes.filter(
     (q) => (q.status === "issued" || q.status === "accepted") && !q.application_id,
   );
-  const msOptions = SCHEMES.filter((x) => x.flow === "ms").map((x) => x.code);
+  const msOptions = schemes.filter((x) => x.flow === "ms").map((x) => x.code);
   return (
     <>
       <div className="cf-grid">
@@ -61,7 +62,7 @@ export function SchemeStep({
               d.standards = next.flow === "ms" || next.flow === "product" ? [next.code] : [];
             })
           }
-          options={SCHEMES.filter((x) => x.flow !== "ingelo").map((x) => ({
+          options={schemes.filter((x) => x.flow !== "ingelo").map((x) => ({
             value: x.id,
             label: `${x.code}: ${x.title}`,
           }))}

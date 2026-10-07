@@ -384,6 +384,14 @@ def patch_audit(
     return result
 
 
+@frappe.whitelist(allow_guest=True)
+def list_schemes() -> dict:
+    """Active Certification Schemes for the public portal catalogue."""
+    from eswasa_certification.schemes import active_schemes
+
+    return {"items": active_schemes()}
+
+
 @frappe.whitelist()
 def create_application(
     scheme: str | None = None,

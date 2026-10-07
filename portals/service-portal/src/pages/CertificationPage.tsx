@@ -7,7 +7,7 @@ import {
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon, type IconName } from "@eswasaone/shared-ui";
-import { LISTED_SCHEMES, type Scheme } from "../api/certification";
+import { type Scheme } from "../api/certification";
 import {
   CERT_DOCUMENTS,
   CHARTER,
@@ -17,6 +17,7 @@ import {
 } from "../certification/flows";
 import { ProcessJourney } from "../certification/ProcessJourney";
 import { SideDrawer } from "../certification/ui";
+import { useSchemes } from "../certification/useSchemes";
 import { verifyToken, type VerificationResult } from "../api/misc";
 import { useAuth } from "../auth/AuthProvider";
 import { Breadcrumbs } from "../components/Breadcrumbs";
@@ -121,80 +122,82 @@ const MS_SHORT: Record<string, string> = {
   iso45001: "ISO 45001 · Health & safety",
   haccp: "HACCP (SANS 10330)",
 };
-const msStandards: FilterOption[] = LISTED_SCHEMES.filter((s) => s.flow === "ms").map((s) => ({
-  id: s.id,
-  label: MS_SHORT[s.id] ?? s.code.replace(/^SZNS /, ""),
-  test: bySchemeId(s.id),
-}));
-
-const FILTERS: FilterGroup[] = [
-  {
-    id: "type",
-    label: "Certification type",
-    open: true,
-    options: [
-      {
-        id: "ms",
-        label: "Management systems",
-        test: (s) => s.flow === "ms",
-        children: msStandards,
-      },
-      {
-        id: "product",
-        label: "Product certification",
-        test: (s) => s.flow === "product",
-        // One published scheme covers every product; these are the categories ESWASA cites.
-        children: [
-          { id: "construction", label: "Construction products", test: (s) => s.flow === "product" && s.sectors.includes("construction") },
-          { id: "food", label: "Food products", test: (s) => s.flow === "product" && s.sectors.includes("food") },
-          { id: "manufactured", label: "Other manufactured goods", test: (s) => s.flow === "product" && s.sectors.includes("manufacturing") },
-        ],
-      },
-      { id: "msme", label: "Ingelo (MSME)", test: (s) => s.flow === "ingelo" },
-    ],
-  },
-  {
-    id: "sector",
-    label: "Sector",
-    open: true,
-    options: [
-      { id: "food", label: "Food & agriculture", test: (s) => s.sectors.includes("food") },
-      { id: "all", label: "All industries", test: (s) => s.sectors.includes("all") },
-      { id: "construction", label: "Construction", test: (s) => s.sectors.includes("construction") },
-      { id: "manufacturing", label: "Manufacturing", test: (s) => s.sectors.includes("manufacturing") },
-    ],
-  },
-  {
-    id: "fee",
-    label: "Fee",
-    open: true,
-    options: [
-      { id: "free", label: "Free support available", test: (s) => s.flow === "ingelo" },
-      { id: "quote", label: "By quotation", test: (s) => s.flow !== "ingelo" },
-    ],
-  },
-  {
-    id: "who",
-    label: "Who can apply",
-    open: false,
-    options: [
-      { id: "any", label: "Any organisation", test: (s) => s.flow !== "ingelo" },
-      { id: "msme", label: "Emaswati-owned MSMEs", test: (s) => s.flow === "ingelo" },
-    ],
-  },
-  {
-    id: "accreditation",
-    label: "Accreditation",
-    open: false,
-    options: [
-      {
-        id: "sadcas",
-        label: "SADCAS accredited",
-        test: (s) => s.facts.some((f) => f.label === "Accreditation" && f.value.includes("SADCAS")),
-      },
-    ],
-  },
-];
+/** Filter groups; the per-standard options follow the schemes the backend lists. */
+function buildFilters(listed: Scheme[]): FilterGroup[] {
+  const msStandards: FilterOption[] = listed.filter((s) => s.flow === "ms").map((s) => ({
+    id: s.id,
+    label: MS_SHORT[s.id] ?? s.code.replace(/^SZNS /, ""),
+    test: bySchemeId(s.id),
+  }));
+  return [
+    {
+      id: "type",
+      label: "Certification type",
+      open: true,
+      options: [
+        {
+          id: "ms",
+          label: "Management systems",
+          test: (s) => s.flow === "ms",
+          children: msStandards,
+        },
+        {
+          id: "product",
+          label: "Product certification",
+          test: (s) => s.flow === "product",
+          // One published scheme covers every product; these are the categories ESWASA cites.
+          children: [
+            { id: "construction", label: "Construction products", test: (s) => s.flow === "product" && s.sectors.includes("construction") },
+            { id: "food", label: "Food products", test: (s) => s.flow === "product" && s.sectors.includes("food") },
+            { id: "manufactured", label: "Other manufactured goods", test: (s) => s.flow === "product" && s.sectors.includes("manufacturing") },
+          ],
+        },
+        { id: "msme", label: "Ingelo (MSME)", test: (s) => s.flow === "ingelo" },
+      ],
+    },
+    {
+      id: "sector",
+      label: "Sector",
+      open: true,
+      options: [
+        { id: "food", label: "Food & agriculture", test: (s) => s.sectors.includes("food") },
+        { id: "all", label: "All industries", test: (s) => s.sectors.includes("all") },
+        { id: "construction", label: "Construction", test: (s) => s.sectors.includes("construction") },
+        { id: "manufacturing", label: "Manufacturing", test: (s) => s.sectors.includes("manufacturing") },
+      ],
+    },
+    {
+      id: "fee",
+      label: "Fee",
+      open: true,
+      options: [
+        { id: "free", label: "Free support available", test: (s) => s.flow === "ingelo" },
+        { id: "quote", label: "By quotation", test: (s) => s.flow !== "ingelo" },
+      ],
+    },
+    {
+      id: "who",
+      label: "Who can apply",
+      open: false,
+      options: [
+        { id: "any", label: "Any organisation", test: (s) => s.flow !== "ingelo" },
+        { id: "msme", label: "Emaswati-owned MSMEs", test: (s) => s.flow === "ingelo" },
+      ],
+    },
+    {
+      id: "accreditation",
+      label: "Accreditation",
+      open: false,
+      options: [
+        {
+          id: "sadcas",
+          label: "SADCAS accredited",
+          test: (s) => s.facts.some((f) => f.label === "Accreditation" && f.value.includes("SADCAS")),
+        },
+      ],
+    },
+  ];
+}
 
 const SORTS = [
   { value: "default", label: "ESWASA order" },
@@ -218,9 +221,14 @@ function activeTests(g: FilterGroup, checked: Record<string, boolean>): ((s: Sch
   return tests;
 }
 
-function applyFilters(list: Scheme[], checked: Record<string, boolean>, skipGroup?: string): Scheme[] {
+function applyFilters(
+  filters: FilterGroup[],
+  list: Scheme[],
+  checked: Record<string, boolean>,
+  skipGroup?: string,
+): Scheme[] {
   return list.filter((s) =>
-    FILTERS.every((g) => {
+    filters.every((g) => {
       if (g.id === skipGroup) return true;
       const tests = activeTests(g, checked);
       return tests.length === 0 || tests.some((t) => t(s));
@@ -250,7 +258,7 @@ export function CertificationPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [filterOpen, setFilterOpen] = useState<Record<string, boolean>>(
-    Object.fromEntries(FILTERS.map((g) => [g.id, g.open])),
+    Object.fromEntries(buildFilters([]).map((g) => [g.id, g.open])),
   );
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [processTab, setProcessTab] = useState<CertFlow>("ms");
@@ -261,10 +269,16 @@ export function CertificationPage() {
   const [verifyFailed, setVerifyFailed] = useState(false);
 
   const [subOpen, setSubOpen] = useState<Record<string, boolean>>({});
+  const allSchemes = useSchemes();
+  const listedSchemes = useMemo(() => allSchemes.filter((s) => s.listed), [allSchemes]);
+  const filters = useMemo(() => buildFilters(listedSchemes), [listedSchemes]);
 
-  const schemes = useMemo(() => sortSchemes(applyFilters(LISTED_SCHEMES, checked), sort), [sort, checked]);
+  const schemes = useMemo(
+    () => sortSchemes(applyFilters(filters, listedSchemes, checked), sort),
+    [filters, listedSchemes, sort, checked],
+  );
 
-  const activeFilterCount = FILTERS.reduce((n, g) => n + activeTests(g, checked).length, 0);
+  const activeFilterCount = filters.reduce((n, g) => n + activeTests(g, checked).length, 0);
 
   function scrollToCatalogue() {
     catalogueRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -350,7 +364,7 @@ export function CertificationPage() {
             Clear all
           </button>
         </div>
-        {FILTERS.map((group) => (
+        {filters.map((group) => (
           <div
             key={group.id}
             className="fgroup"
@@ -367,7 +381,7 @@ export function CertificationPage() {
             </button>
             <div className="fgroup__list">
               {group.options.map((opt) => {
-                const base = applyFilters(LISTED_SCHEMES, checked, group.id);
+                const base = applyFilters(filters, listedSchemes, checked, group.id);
                 const kids = opt.children ?? [];
                 const pkey = fkey(group.id, opt.id);
                 const someKids = kids.some((c) => checked[fkey(group.id, opt.id, c.id)]);
@@ -669,7 +683,7 @@ export function CertificationPage() {
             </div>
           ) : (
             <p className="page-note">
-              Showing {schemes.length} of {LISTED_SCHEMES.length} certification schemes. Need more than one
+              Showing {schemes.length} of {listedSchemes.length} certification schemes. Need more than one
               type, e.g. ISO + Product?{" "}
               <Link to="/certification/quote?flow=combined">Request a combined quote</Link> and name the
               standards and products yourself.

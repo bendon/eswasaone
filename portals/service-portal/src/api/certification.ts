@@ -35,6 +35,8 @@ export type SchemeSector = "all" | "food" | "construction" | "manufacturing";
 
 export type Scheme = {
   id: string;
+  /** Certification Scheme code in Frappe (GET /certification/schemes `code`); sent on create. */
+  backendCode: string;
   flow: CertFlow;
   code: string;
   title: string;
@@ -65,9 +67,15 @@ const MS_FACTS = [
 const MS_STYLE = { chip: "Management system", cta: "Start application", secondaryLabel: "Process", listed: true };
 const MS_SOURCE = "https://www.eswasa.co.sz/managementsystems.php";
 
-export const SCHEMES: Scheme[] = [
+/**
+ * Card presentation (flow, chip, colours, facts) for each scheme ESWASA publishes,
+ * keyed by `backendCode`. Which schemes exist, and their code/title/body/fee, come
+ * from the backend via `loadSchemes()`; these are also the offline fallback.
+ */
+const SCHEME_TEMPLATES: Scheme[] = [
   {
     id: "iso9001",
+    backendCode: "ISO9001-QMS",
     sectors: ["all"],
     flow: "ms",
     code: "SZNS ISO 9001:2015",
@@ -82,6 +90,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "iso14001",
+    backendCode: "ISO14001-EMS",
     sectors: ["all"],
     flow: "ms",
     code: "SZNS ISO 14001:2015",
@@ -96,6 +105,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "iso22000",
+    backendCode: "ISO22000-FSMS",
     sectors: ["food"],
     flow: "ms",
     code: "SZNS ISO 22000:2018",
@@ -110,6 +120,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "iso45001",
+    backendCode: "ISO45001-OHSMS",
     sectors: ["all"],
     flow: "ms",
     code: "SZNS ISO 45001:2018",
@@ -124,6 +135,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "haccp",
+    backendCode: "HACCP-10330",
     sectors: ["food"],
     flow: "ms",
     code: "SZNS SANS 10330:2020",
@@ -138,6 +150,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "product",
+    backendCode: "PRODUCT-MARK",
     sectors: ["manufacturing", "construction", "food"],
     flow: "product",
     code: "Product Certification Mark",
@@ -159,6 +172,7 @@ export const SCHEMES: Scheme[] = [
   },
   {
     id: "ingelo",
+    backendCode: "INGELO",
     sectors: ["all"],
     flow: "ingelo",
     code: "Ingelo Certification Scheme",
@@ -183,6 +197,7 @@ export const SCHEMES: Scheme[] = [
     // Not a published scheme: the RFQ form offers "Combined (e.g., ISO + Product)"
     // as a request type. The applicant chooses which standards and products.
     id: "combined",
+    backendCode: "COMBINED",
     sectors: ["all"],
     flow: "combined",
     code: "Combined request",
@@ -200,11 +215,110 @@ export const SCHEMES: Scheme[] = [
   },
 ];
 
-/** Schemes shown in the catalogue (published by ESWASA). */
-export const LISTED_SCHEMES = SCHEMES.filter((s) => s.listed);
+/** GET /certification/schemes row (contracts/openapi.yaml CertificationScheme). */
+export type BackendScheme = {
+  code: string;
+  name: string;
+  standard_ref?: string | null;
+  scheme_type: string;
+  accreditation_basis?: string | null;
+  surveillance_interval_months?: number | null;
+  certificate_validity_months?: number | null;
+  fee?: number | null;
+  description?: string | null;
+};
 
+/** Card style for a backend scheme the portal has no template for (added in Desk). */
+function genericTemplate(row: BackendScheme): Scheme {
+  const product = row.scheme_type === "Product";
+  return {
+    id: row.code,
+    backendCode: row.code,
+    flow: product ? "product" : "ms",
+    code: row.code,
+    title: row.name,
+    body: "",
+    facts: product ? [{ label: "Fee", value: "By quotation" }] : MS_FACTS,
+    sectors: ["all"],
+    ...(product
+      ? { chip: "Product", cta: "Start application", secondaryLabel: "Process", listed: true }
+      : MS_STYLE),
+    accent: product ? "#B8860B" : "#313391",
+    tint: product ? "#FEF6DC" : "#ECEEFC",
+    tone: product ? "#B8860B" : "#313391",
+    source: product ? "https://www.eswasa.co.sz/product.php" : MS_SOURCE,
+  };
+}
+
+function withFee(facts: Scheme["facts"], fee?: number | null): Scheme["facts"] {
+  if (!fee) return facts;
+  const value = `E ${fee.toLocaleString("en-SZ", { minimumFractionDigits: 2 })}`;
+  return facts.some((f) => f.label === "Fee")
+    ? facts.map((f) => (f.label === "Fee" ? { ...f, value } : f))
+    : [...facts, { label: "Fee", value }];
+}
+
+/** Backend schemes in template order (unknown codes last), styled by their template. */
+export function mergeSchemes(rows: BackendScheme[]): Scheme[] {
+  const byCode = new Map(rows.map((r) => [r.code, r]));
+  const fromRow = (row: BackendScheme, t: Scheme): Scheme => ({
+    ...t,
+    backendCode: row.code,
+    code: row.standard_ref || t.code,
+    title: row.name || t.title,
+    body: row.description || t.body,
+    facts: withFee(t.facts, row.fee),
+  });
+  const known = SCHEME_TEMPLATES.filter((t) => byCode.has(t.backendCode)).map((t) =>
+    fromRow(byCode.get(t.backendCode)!, t),
+  );
+  const templated = new Set(SCHEME_TEMPLATES.map((t) => t.backendCode));
+  const extra = rows.filter((r) => !templated.has(r.code)).map((r) => fromRow(r, genericTemplate(r)));
+  return [...known, ...extra];
+}
+
+let liveSchemes: Scheme[] = SCHEME_TEMPLATES;
+let schemesLoad: Promise<Scheme[]> | null = null;
+const schemeListeners = new Set<() => void>();
+
+/** Current scheme list: backend-driven once `loadSchemes()` resolves, templates before. */
+export function getSchemes(): Scheme[] {
+  return liveSchemes;
+}
+
+/** Schemes shown in the catalogue (published by ESWASA). */
+export function getListedSchemes(): Scheme[] {
+  return liveSchemes.filter((s) => s.listed);
+}
+
+export function subscribeSchemes(fn: () => void): () => void {
+  schemeListeners.add(fn);
+  return () => schemeListeners.delete(fn);
+}
+
+/** Fetch active schemes once; keeps the templates in demo mode or if Core is unreachable. */
+export function loadSchemes(): Promise<Scheme[]> {
+  if (!schemesLoad) {
+    schemesLoad = (async () => {
+      if (demoMode()) return liveSchemes;
+      try {
+        const res = await apiFetch<{ items: BackendScheme[] }>("/certification/schemes");
+        liveSchemes = mergeSchemes(res.items ?? []);
+        schemeListeners.forEach((fn) => fn());
+      } catch (err) {
+        schemesLoad = null; // retry on next mount
+        console.warn("[certification] scheme catalogue unavailable; showing built-in list", err);
+      }
+      return liveSchemes;
+    })();
+  }
+  return schemesLoad;
+}
+
+/** Look up by portal id (URLs, drafts) or backend code (application rows from Core). */
 export function schemeById(id: string): Scheme | undefined {
-  return SCHEMES.find((s) => s.id === id);
+  const match = (s: Scheme) => s.id === id || s.backendCode === id;
+  return liveSchemes.find(match) ?? SCHEME_TEMPLATES.find(match);
 }
 
 /** Infer the flow from a scheme id or display name returned by Core. */
@@ -221,7 +335,7 @@ export function flowForScheme(scheme: string): CertFlow {
 /** Best scheme match for a quote, so "Accept & apply" opens the right wizard. */
 export function schemeForQuote(q: Pick<Quote, "flow" | "standards">): string {
   if (q.flow === "combined" || q.flow === "ingelo" || q.flow === "product") return q.flow;
-  const hit = SCHEMES.find((s) => s.flow === "ms" && q.standards.includes(s.code.split(":")[0]));
+  const hit = getSchemes().find((s) => s.flow === "ms" && q.standards.includes(s.code.split(":")[0]));
   return hit?.id ?? "iso9001";
 }
 
@@ -669,7 +783,8 @@ export async function getApplicationDetail(id: string): Promise<ApplicationDetai
 export async function createApplication(payload: ApplicationPayload): Promise<ApplicationDetail> {
   const now = new Date().toISOString();
   const body = {
-    scheme: payload.scheme,
+    // Core/Frappe key schemes by Certification Scheme code, not the portal id.
+    scheme: schemeById(payload.scheme)?.backendCode ?? payload.scheme,
     applicant_name: payload.contact.name || payload.org.name,
     contact_email: payload.contact.email || undefined,
     confirm: true,

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import frappe
 
+from eswasa_certification.schemes import ensure_published_schemes
 from eswasa_certification.seed import ensure_demo_data
 
 APP_LOGO = "/assets/eswasa_certification/images/eswasa-lockup.png"
@@ -37,6 +38,10 @@ def after_install() -> None:
         boot_workflow_guards()
     except Exception:
         frappe.log_error(title="eswasa_certification workflow guards bootstrap failed")
+    try:
+        ensure_published_schemes()
+    except Exception:
+        frappe.log_error(title="eswasa_certification published schemes bootstrap failed")
     ensure_demo_data()
 
 
@@ -54,6 +59,12 @@ def after_migrate() -> None:
         frappe.db.commit()
     except Exception:
         frappe.log_error(title="eswasa_certification website branding migrate failed")
+    try:
+        # Real master data (not demo-gated): the portal catalogue lists these.
+        ensure_published_schemes()
+        frappe.db.commit()
+    except Exception:
+        frappe.log_error(title="eswasa_certification published schemes migrate failed")
     try:
         ensure_demo_data()
     except Exception:

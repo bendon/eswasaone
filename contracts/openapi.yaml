@@ -49,6 +49,23 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ServiceHome" }
 
+  /certification/schemes:
+    get:
+      tags: [certification]
+      operationId: listCertificationSchemes
+      description: Public catalogue of active Certification Schemes. `code` is the value CreateCertificationApplication.scheme accepts.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CertificationScheme" }
+
   /certification/applications:
     get:
       tags: [certification]
@@ -1143,6 +1160,20 @@ components:
         status: { type: string }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+
+    CertificationScheme:
+      type: object
+      required: [code, name, scheme_type]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        standard_ref: { type: string, nullable: true }
+        scheme_type: { type: string, enum: ["Management System", "Product"] }
+        accreditation_basis: { type: string, nullable: true }
+        surveillance_interval_months: { type: integer, nullable: true }
+        certificate_validity_months: { type: integer, nullable: true }
+        fee: { type: number, nullable: true }
+        description: { type: string, nullable: true }
 
     CreateCertificationApplication:
       type: object

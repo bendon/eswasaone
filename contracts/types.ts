@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/certification/schemes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Public catalogue of active Certification Schemes. `code` is the value CreateCertificationApplication.scheme accepts. */
+        get: operations["listCertificationSchemes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/certification/applications": {
         parameters: {
             query?: never;
@@ -944,6 +961,18 @@ export interface components {
             /** Format: date-time */
             updated_at?: string;
         };
+        CertificationScheme: {
+            code: string;
+            name: string;
+            standard_ref?: string | null;
+            /** @enum {string} */
+            scheme_type: "Management System" | "Product";
+            accreditation_basis?: string | null;
+            surveillance_interval_months?: number | null;
+            certificate_validity_months?: number | null;
+            fee?: number | null;
+            description?: string | null;
+        };
         CreateCertificationApplication: {
             scheme: string;
             applicant_name: string;
@@ -1416,6 +1445,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceHome"];
+                };
+            };
+        };
+    };
+    listCertificationSchemes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: components["schemas"]["CertificationScheme"][];
+                    };
                 };
             };
         };

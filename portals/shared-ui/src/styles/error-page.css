@@ -1,4 +1,4 @@
-/* Route error boundary (ErrorPage.tsx) — in-layout and standalone variants. */
+/* Route error boundary (service + institution ErrorPage.tsx) — in-layout and standalone variants. */
 .errpage{display:grid;place-items:center;padding:56px 0 96px}
 .errpage--standalone{min-height:100vh;padding:40px 16px;background:var(--bg)}
 .errpage__card{

@@ -54,9 +54,9 @@ const TAB_LABEL_TO_ID: Record<string, TabId> = {
 };
 
 const TAB_DEFS: ReadonlyArray<SubTab & { manual: true }> = [
-  { label: "Approvals", icon: "i-check-c", manual: true },
-  { label: "Tasks", icon: "i-clipboard", manual: true },
-  { label: "Alerts", icon: "i-warn", manual: true },
+  { to: "", label: "Approvals", icon: "i-check-c", manual: true },
+  { to: "", label: "Tasks", icon: "i-clipboard", manual: true },
+  { to: "", label: "Alerts", icon: "i-warn", manual: true },
 ];
 
 /** Map an inbox family to the DataRow icon-variant palette. */

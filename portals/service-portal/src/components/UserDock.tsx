@@ -66,7 +66,7 @@ function overviewToDock(ov: AccountOverview): {
     title: a.title,
     detail: a.body,
     tone: (a.tone as UserAlert["tone"]) || "info",
-    to: a.href,
+    to: a.href ?? undefined,
     unread: a.tone === "alert" || a.tone === "pending",
   }));
 

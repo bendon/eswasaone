@@ -293,7 +293,7 @@ export function InstitutionHomePage() {
     }
     setActing(true);
     try {
-      if ((selected.kind === "audit_reschedule" || selected.kind === "audit_overdue") && selected.name) {
+      if (selected.kind === "audit_reschedule" && selected.name) {
         await apiFetch(`/certification/audits/${encodeURIComponent(selected.name)}`, {
           method: "PATCH",
           headers: { "Idempotency-Key": `${selected.name}-reschedule-${Date.now()}` },

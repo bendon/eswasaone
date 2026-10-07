@@ -128,7 +128,6 @@ export function HrChrome() {
             key={step.to}
             to={step.to}
             className={lifeActive(loc.pathname, step.to) ? "on" : undefined}
-            end={step.to === "/hr" ? true : undefined}
           >
             <Icon name={step.icon} />
             {step.label}

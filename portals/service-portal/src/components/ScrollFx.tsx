@@ -222,7 +222,12 @@ export function ScrollFx({ root }: { root: RefObject<HTMLElement | null> }) {
           return;
         }
 
+        // A new page must not inherit the previous page's remembered offset:
+        // refresh() restores it after measuring, which yanks the new page down.
+        ScrollTrigger.clearScrollMemory();
+
         const bound = new WeakSet<Element>();
+        let boundCount = 0;
         // Reordered lists (sorting) move bound elements without adding new ones,
         // so trigger positions must be re-measured on any element move too.
         const scan = (moved = false) => {
@@ -231,6 +236,7 @@ export function ScrollFx({ root }: { root: RefObject<HTMLElement | null> }) {
             scope.querySelectorAll<HTMLElement>(sel).forEach((el) => {
               if (bound.has(el)) return;
               bound.add(el);
+              boundCount += 1;
               ctx.add(() => bind(el));
               added = true;
             });
@@ -240,7 +246,10 @@ export function ScrollFx({ root }: { root: RefObject<HTMLElement | null> }) {
             const t = st.trigger;
             if (t && !t.isConnected) st.kill();
           });
-          if (added || moved) ScrollTrigger.refresh();
+          // refresh() resets and restores window scroll, which cancels any in-flight
+          // smooth scroll (e.g. a wizard step change). Pages with nothing animated
+          // (forms) skip it so their own scrolling is left alone.
+          if (added || (moved && boundCount > 0)) ScrollTrigger.refresh();
         };
 
         scan();

@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import {
   BrandLogo,
   Dock,
@@ -119,7 +119,9 @@ export function ServiceLayout() {
   const mainRef = useRef<HTMLElement>(null);
 
   // SPA navigation keeps the previous page's scroll offset; start new pages at the top.
-  useEffect(() => {
+  // Layout effect so this lands before ScrollFx (a child, whose passive effects run
+  // first) records the scroll position during its ScrollTrigger.refresh().
+  useLayoutEffect(() => {
     if (!loc.hash) window.scrollTo(0, 0);
   }, [loc.pathname, loc.hash]);
 

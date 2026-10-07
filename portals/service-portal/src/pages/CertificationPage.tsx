@@ -15,7 +15,6 @@ import {
   FLOW_STAGES,
   type CertFlow,
 } from "../certification/flows";
-import { ProcessJourney } from "../certification/ProcessJourney";
 import { SideDrawer } from "../certification/ui";
 import { useSchemes } from "../certification/useSchemes";
 import { verifyToken, type VerificationResult } from "../api/misc";
@@ -713,12 +712,22 @@ export function CertificationPage() {
             </button>
           ))}
         </div>
-        <div role="tabpanel">
-          <ProcessJourney
-            key={processTab}
-            stages={FLOW_STAGES[processTab]}
-            label={`${FLOW_LABEL[processTab]} certification steps`}
-          />
+        <div className="cf-steps" role="tabpanel" aria-label={`${FLOW_LABEL[processTab]} certification steps`}>
+          {FLOW_STAGES[processTab].map((step, i) => (
+            <div className="cf-step" key={step.key}>
+              <span className="cf-step__n">{String(i + 1).padStart(2, "0")}</span>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+              {step.sla ? (
+                <span className="sla">
+                  <Icon name="i-clock" /> {step.sla}
+                </span>
+              ) : null}
+              <span className="who">
+                {step.who === "you" ? "You" : step.who === "eswasa" ? "ESWASA" : "You + ESWASA"}
+              </span>
+            </div>
+          ))}
         </div>
         <div className="cf-nav">
           {processTab === "ingelo" ? (

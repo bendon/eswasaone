@@ -4,7 +4,8 @@
  *
  * Real (Core): GET/POST /certification/applications, POST …/{id}/advance,
  * PATCH /certification/audits/{id}, POST /certification/certificates/{id}/revoke|renew,
- * GET /certification/certificates/{id}/pdf, GET /verify/{token}, GET /org/staff.
+ * GET /certification/certificates/{id}/pdf, GET /verify/{token}, GET /org/staff,
+ * GET /certification/findings, POST …/applications/{id}/findings, POST …/findings/{id}/review.
  */
 import { apiFetch } from "@eswasaone/shared-ui";
 import type { CertAction, CertFlow } from "./pipeline";
@@ -483,47 +484,44 @@ export function setQuoteStatus(id: string, status: QuoteStatus, applicationId?: 
   });
 }
 
-/* ---------------- findings (local until /certification/findings) ---------------- */
+/* ---------------- findings (Core → Frappe Audit Finding; local store in demo mode only) ---------------- */
 
 export async function listFindings(): Promise<DeskFinding[]> {
+  if (demoMode()) return Object.values(read().findings).sort((a, b) => a.due.localeCompare(b.due));
   try {
     const res = await apiFetch<{ items: DeskFinding[] }>("/certification/findings");
     return res.items ?? [];
   } catch {
-    return Object.values(read().findings).sort((a, b) => a.due.localeCompare(b.due));
+    return [];
   }
 }
 
 export async function raiseFinding(f: Omit<DeskFinding, "id" | "raised_at" | "status">): Promise<DeskFinding> {
-  const full: DeskFinding = { ...f, id: ref("NC"), raised_at: new Date().toISOString(), status: "open" };
-  try {
-    // TODO: wire real (POST /certification/applications/{id}/findings). Field app raises via PATCH audits submit_outcome.
-    await apiFetch(`/certification/applications/${encodeURIComponent(f.application_id)}/findings`, {
-      method: "POST",
-      body: JSON.stringify({ ...f, confirm: true }),
+  if (demoMode()) {
+    const full: DeskFinding = { ...f, id: ref("NC"), raised_at: new Date().toISOString(), status: "open" };
+    update((s) => {
+      s.findings[full.id] = full;
     });
-  } catch {
-    requireDemo("Finding");
+    return full;
   }
-  update((s) => {
-    s.findings[full.id] = full;
+  // Field app raises via PATCH audits submit_outcome (R-C2); desk raises here.
+  return apiFetch<DeskFinding>(`/certification/applications/${encodeURIComponent(f.application_id)}/findings`, {
+    method: "POST",
+    body: JSON.stringify({ ...f, confirm: true }),
   });
-  return full;
 }
 
 export async function reviewCorrectiveAction(id: string, accept: boolean, note: string): Promise<void> {
-  try {
-    // TODO: wire real (POST /certification/findings/{id}/review).
-    await apiFetch(`/certification/findings/${encodeURIComponent(id)}/review`, {
-      method: "POST",
-      body: JSON.stringify({ confirm: true, accept, note }),
+  if (demoMode()) {
+    update((s) => {
+      const f = s.findings[id];
+      if (f) s.findings[id] = { ...f, status: accept ? "accepted" : "rejected", review_note: note };
     });
-  } catch {
-    requireDemo("Corrective-action review");
+    return;
   }
-  update((s) => {
-    const f = s.findings[id];
-    if (f) s.findings[id] = { ...f, status: accept ? "accepted" : "rejected", review_note: note };
+  await apiFetch(`/certification/findings/${encodeURIComponent(id)}/review`, {
+    method: "POST",
+    body: JSON.stringify({ confirm: true, accept, note }),
   });
 }
 

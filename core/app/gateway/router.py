@@ -4863,6 +4863,223 @@ async def list_certification_audits(
         raise  # pragma: no cover
 
 
+# --- Certification findings (Audit Finding) ---------------------------------
+# Desk Findings view: NCs raised by R-C2 / Field audits / desk, plus the
+# corrective-action review. Shape matches institution-portal DeskFinding.
+
+_FINDING_SEVERITY = {"Major NC": "major", "Minor NC": "minor", "Observation": "observation", "OFI": "observation"}
+_SEVERITY_TO_TYPE = {"major": "Major NC", "minor": "Minor NC", "observation": "Observation"}
+_REVIEW_PREFIX = "[finding-review]"
+
+
+class RaiseFindingBody(BaseModel):
+    clause: str
+    severity: Literal["major", "minor", "observation"]
+    statement: str
+    due: str
+    org: str | None = None
+    confirm: bool = False
+
+
+class ReviewFindingBody(BaseModel):
+    accept: bool
+    note: str = ""
+    confirm: bool = False
+
+
+def _finding_status(row: dict[str, Any], review: dict[str, Any] | None) -> str:
+    s = str(row.get("status") or "Open")
+    if s == "Closed":
+        return "accepted"
+    if s == "Under Review":
+        return "submitted"
+    if review and review.get("accept") is False:
+        return "rejected"
+    return "open"
+
+
+def _as_desk_finding(row: dict[str, Any], review: dict[str, Any] | None = None) -> dict[str, Any]:
+    status_ = _finding_status(row, review)
+    ca = (row.get("corrective_action") or "").strip()
+    return {
+        "id": row.get("name"),
+        "application_id": row.get("application") or "",
+        "audit_id": row.get("audit"),
+        "org": "",
+        "clause": row.get("clause_ref") or row.get("finding_type") or "",
+        "severity": _FINDING_SEVERITY.get(str(row.get("finding_type") or ""), "observation"),
+        "statement": row.get("description") or "",
+        "raised_at": str(row.get("creation") or ""),
+        "due": str(row.get("due_date") or row.get("creation") or ""),
+        "status": status_,
+        "response": (
+            {"root_cause": "", "correction": "", "corrective_action": ca, "evidence": []}
+            if ca and status_ in ("submitted", "accepted")
+            else None
+        ),
+        "review_note": (review or {}).get("note") or None,
+    }
+
+
+async def _finding_reviews(session: FrappeClient, names: list[str]) -> dict[str, dict[str, Any]]:
+    """Latest desk review per finding, kept as Comments (no review fields on the doctype)."""
+    if not names:
+        return {}
+    rows = await _frappe_get_list(
+        session,
+        "Comment",
+        fields=["reference_name", "content", "creation"],
+        filters=[
+            ["reference_doctype", "=", "Audit Finding"],
+            ["reference_name", "in", names],
+            ["content", "like", f"{_REVIEW_PREFIX}%"],
+        ],
+        limit=len(names) * 5,
+        order_by="creation asc",
+        soft=True,
+    )
+    out: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        text = str(r.get("content") or "")[len(_REVIEW_PREFIX) :].strip()
+        verdict, _, note = text.partition(":")
+        out[str(r.get("reference_name"))] = {"accept": verdict.strip() == "accepted", "note": note.strip()}
+    return out
+
+
+_FINDING_FIELDS = [
+    "name",
+    "audit",
+    "application",
+    "finding_type",
+    "status",
+    "clause_ref",
+    "due_date",
+    "description",
+    "corrective_action",
+    "creation",
+]
+
+
+@router.get("/certification/findings", tags=["certification"])
+async def list_certification_findings(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    application_id: str | None = None,
+    limit: int = 200,
+) -> dict[str, list[dict[str, Any]]]:
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    session = auth.frappe(frappe)
+    filters = [["application", "=", application_id]] if application_id else None
+    rows = await _frappe_get_list(
+        session,
+        "Audit Finding",
+        fields=_FINDING_FIELDS,
+        filters=filters,
+        limit=limit,
+        order_by="due_date asc",
+        soft=True,
+    )
+    reviews = await _finding_reviews(session, [str(r.get("name")) for r in rows])
+    return {"items": [_as_desk_finding(r, reviews.get(str(r.get("name")))) for r in rows]}
+
+
+@router.post("/certification/applications/{id}/findings", tags=["certification"])
+async def raise_certification_finding(
+    id: str,
+    body: RaiseFindingBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    if not body.confirm:
+        raise HTTPException(status_code=400, detail="confirm=true required before commit")
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    session = auth.frappe(frappe)
+    audits = await _frappe_get_list(
+        session,
+        "Audit",
+        fields=["name"],
+        filters=[["application", "=", id]],
+        limit=1,
+        order_by="creation desc",
+    )
+    if not audits:
+        raise HTTPException(
+            status_code=409,
+            detail=f"{id} has no audit yet. Schedule an audit before raising a finding.",
+        )
+    doc = await _frappe_insert(
+        session,
+        {
+            "doctype": "Audit Finding",
+            "audit": audits[0]["name"],
+            "application": id,
+            "finding_type": _SEVERITY_TO_TYPE[body.severity],
+            "status": "Open",
+            "clause_ref": body.clause,
+            "description": body.statement,
+            "due_date": body.due[:10],
+        },
+    )
+    audit_log(
+        action="certification.findings.raise",
+        actor=auth.user.username,
+        resource=str(doc.get("name") or id),
+        detail={"application": id, "severity": body.severity, "clause": body.clause},
+        confirmed=True,
+    )
+    return _as_desk_finding(doc)
+
+
+@router.post("/certification/findings/{id}/review", tags=["certification"])
+async def review_certification_finding(
+    id: str,
+    body: ReviewFindingBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    if not body.confirm:
+        raise HTTPException(status_code=400, detail="confirm=true required before commit")
+    if not body.accept and not body.note.strip():
+        raise HTTPException(status_code=400, detail="A review note is required when returning a finding")
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    session = auth.frappe(frappe)
+    # set_value runs doc.save → on_update R-C2 close clears the certificate block.
+    fields: dict[str, Any] = (
+        {"status": "Closed", "closed_on": date.today().isoformat()}
+        if body.accept
+        else {"status": "Open"}
+    )
+    raw = await _frappe_set_value(session, "Audit Finding", id, fields)
+    verdict = "accepted" if body.accept else "returned"
+    try:
+        await session.method(
+            "frappe.client.insert",
+            json={
+                "doc": {
+                    "doctype": "Comment",
+                    "comment_type": "Comment",
+                    "reference_doctype": "Audit Finding",
+                    "reference_name": id,
+                    "content": f"{_REVIEW_PREFIX} {verdict}: {body.note.strip()}",
+                }
+            },
+        )
+    except FrappeError:
+        logger.warning("finding review comment not saved for %s", id)
+    audit_log(
+        action=f"certification.findings.review.{verdict}",
+        actor=auth.user.username,
+        resource=id,
+        detail={"note": body.note},
+        confirmed=True,
+    )
+    row = raw if isinstance(raw, dict) else {"name": id, "status": fields["status"]}
+    return _as_desk_finding(row, {"accept": body.accept, "note": body.note.strip()})
+
+
 @router.get("/certification/certificates", tags=["certification"])
 async def list_certification_certificates(
     auth: Annotated[AuthContext, Depends(require_auth)],

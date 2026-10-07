@@ -15,7 +15,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
     "paths": {
       "@eswasaone/shared-ui": ["../shared-ui/src"],
       "@eswasaone/shared-ui/*": ["../shared-ui/src/*"],

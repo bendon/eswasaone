@@ -13,6 +13,7 @@ import {
   type DrawerSection,
   type FormDrawerField,
   type IconName,
+  Select,
 } from "@eswasaone/shared-ui";
 import type {
   AllowedAction,
@@ -294,32 +295,18 @@ export function MeetingsView() {
         <Toast message={flash} />
 
         <div className="toolbar">
-          <select
-            className="sel"
+          <Select
             aria-label="Filter by body"
             value={bodyFilter}
-            onChange={(e) => setBodyFilter(e.target.value)}
-          >
-            <option value="">All bodies</option>
-            {bodies.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-          <select
-            className="sel"
+            onChange={setBodyFilter}
+            options={[{ value: "", label: "All bodies" }, ...bodies]}
+          />
+          <Select
             aria-label="Filter by status"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-          >
-            <option value="">All statuses</option>
-            {WORKFLOW_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setStatusFilter(v as StatusFilter)}
+            options={[{ value: "", label: "All statuses" }, ...WORKFLOW_STATUSES]}
+          />
           <label className="search">
             <Icon name="i-search" />
             <input

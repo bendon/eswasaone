@@ -181,3 +181,4 @@ export {
 } from "./system";
 export type { BrandColor } from "./system";
 export { DateField, MonthField, type DateFieldProps, type MonthFieldProps } from "./components/DatePicker";
+export { Select, type SelectOption, type SelectProps } from "./components/Select";

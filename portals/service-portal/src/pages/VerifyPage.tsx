@@ -72,6 +72,19 @@ export function VerifyPage() {
           <b>{result.valid ? "Valid" : "Not found"}</b>
           <p>Token: {safeText(result.token)}</p>
           {result.subject ? <p>{safeText(result.subject)}</p> : null}
+          <p style={{ marginTop: 10 }}>
+            {result.valid ? (
+              <>
+                Product doesn't live up to its certificate?{" "}
+                <Link to={`/complaints/new/product_report?cert=${encodeURIComponent(result.token)}`}>Report this product</Link>.
+              </>
+            ) : (
+              <>
+                Seen this number or a mark on a product?{" "}
+                <Link to={`/complaints/new/mark_misuse?cert=${encodeURIComponent(result.token)}`}>Report a possible fake</Link> — you can stay anonymous.
+              </>
+            )}
+          </p>
         </div>
       ) : null}
     </div>

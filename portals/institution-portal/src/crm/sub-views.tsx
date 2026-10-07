@@ -1,8 +1,18 @@
 import type { ReactNode } from "react";
 
-export { CrmPipelineView } from "./CrmPipelineView";
-export { LeadsView } from "./LeadsView";
-export { DealsView } from "./DealsView";
+// CRM & Commercial + Service desk. LeadsView / DealsView / the old CrmPipelineView are superseded
+// by Signals and Opportunities; /crm/leads and /crm/deals redirect to /crm/pipeline.
+export { CrmOverviewView } from "./OverviewView";
+export { CrmCasesView, CrmAppealsView } from "./CasesView";
+export { CrmCaseWorkspace } from "./CaseWorkspace";
+export { CrmClientsView } from "./ClientsView";
+export { CrmClient360 } from "./Client360";
+export { CrmSignalsView } from "./SignalsView";
+export { CrmPipelineView } from "./PipelineView";
+export { CrmQuotesView } from "./QuotesView";
+export { CrmRenewalsView } from "./RenewalsView";
+export { CrmInsightsView } from "./InsightsView";
+export { CrmSettingsView } from "./SettingsView";
 
 /* ---------- Shared helpers for CRM sub-views ---------- */
 

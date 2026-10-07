@@ -12,6 +12,7 @@ import {
   type DrawerAction,
   type DrawerSection,
   type FormDrawerField,
+  Select,
 } from "@eswasaone/shared-ui";
 import type {
   GovernanceResolution,
@@ -243,17 +244,12 @@ export function ResolutionsView() {
               <p>Every action raised by a resolution, until it is closed</p>
             </div>
             <div className="r">
-              <select
-                className="sel"
+              <Select
                 aria-label="Filter actions"
                 value={actionFilter}
-                onChange={(e) => setActionFilter(e.target.value)}
-              >
-                <option value="">All open</option>
-                <option value="Overdue">Overdue</option>
-                <option value="Open">Open</option>
-                <option value="Completed">Completed</option>
-              </select>
+                onChange={setActionFilter}
+                options={[{ value: "", label: "All open" }, "Overdue", "Open", "Completed"]}
+              />
             </div>
           </div>
           <div className="tbl-wrap">

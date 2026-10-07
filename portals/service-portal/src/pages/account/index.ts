@@ -6,3 +6,4 @@ export { AccountTrainingPage } from "./AccountTrainingPage";
 export { AccountTeamPage } from "./AccountTeamPage";
 export { AccountSettingsPage } from "./AccountSettingsPage";
 export { AccountApplicationsPage } from "./AccountApplicationsPage";
+export { AccountCasesPage, AccountCaseDetailPage } from "./AccountCasesPage";

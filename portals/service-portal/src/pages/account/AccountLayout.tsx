@@ -10,6 +10,7 @@ const TABS: { to: string; label: string; icon: IconName; end?: boolean; business
   { to: "/account/orders", label: "Orders", icon: "i-book" },
   { to: "/account/certificates", label: "Certificates", icon: "i-badge" },
   { to: "/account/training", label: "Training", icon: "i-cap" },
+  { to: "/account/cases", label: "Cases", icon: "i-alert-c" },
   { to: "/account/team", label: "Team", icon: "i-users", businessOnly: true },
   { to: "/account/settings", label: "Settings", icon: "i-settings" },
 ];
@@ -159,6 +160,7 @@ function labelForPath(path: string): string {
   if (path.endsWith("/training")) return "Training";
   if (path.endsWith("/team")) return "Team";
   if (path.endsWith("/settings")) return "Settings";
+  if (path.includes("/cases")) return "Cases";
   return "Overview";
 }
 

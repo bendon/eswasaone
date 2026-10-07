@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { apiFetch, AuthError, RecordDrawer, type DrawerSection } from "@eswasaone/shared-ui";
+import { apiFetch, AuthError, RecordDrawer, type DrawerSection, Select } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
@@ -176,25 +176,24 @@ export function EmployeesView() {
           ) : null}
 
           <div className="hr-filters">
-            <select className="hr-sel" value={dept} onChange={(e) => setDept(e.target.value)} aria-label="Department">
-              {departments.map((d) => (
-                <option key={d} value={d}>
-                  {d === "all" ? "All departments" : d}
-                </option>
-              ))}
-            </select>
-            <select
-              className="hr-sel"
+            <Select
+              value={dept}
+              onChange={setDept}
+              aria-label="Department"
+              options={departments.map((d) => ({ value: d, label: d === "all" ? "All departments" : d }))}
+            />
+            <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              onChange={(v) => setStatusFilter(v as StatusFilter)}
               aria-label="Status"
-            >
-              <option value="all">All status</option>
-              <option value="active">Active</option>
-              <option value="on_leave">On leave</option>
-              <option value="probation">Probation</option>
-              <option value="inactive">Inactive</option>
-            </select>
+              options={[
+                { value: "all", label: "All status" },
+                { value: "active", label: "Active" },
+                { value: "on_leave", label: "On leave" },
+                { value: "probation", label: "Probation" },
+                { value: "inactive", label: "Inactive" },
+              ]}
+            />
             <div className="hr-search">
               <input
                 placeholder="Search name, ID, designation…"

@@ -16,6 +16,7 @@ import {
   onEscape,
   type SessionUser,
 } from "@eswasaone/shared-ui";
+import { caseSla, crmDemoMode, isOpen, listCases, publicCrmConfig } from "@eswasaone/shared-ui/crm";
 import { InstitutionSidebar } from "./InstitutionSidebar";
 import { AccessDeniedPanel } from "../components/AccessDeniedPanel";
 import { titleForPath, type InstitutionRouteId, INSTITUTION_NAV, routeFromAsk } from "../nav";
@@ -163,7 +164,7 @@ export function InstitutionLayout() {
     void Promise.allSettled([
       apiFetch<{ pending_count: number }>("/approvals?limit=1"),
       apiFetch<{ new_count: number }>("/tbt/alerts?limit=1"),
-    ]).then((results) => {
+    ]).then(async (results) => {
       if (cancelled) return;
       const next: BadgePayload = {};
       if (results[0].status === "fulfilled" && results[0].value.pending_count > 0) {
@@ -177,6 +178,14 @@ export function InstitutionLayout() {
       if (pendingAccess > 0 && canAccessRoute(user.roles, "hr")) {
         next.hr = pendingAccess;
       }
+      // CRM: cases past their SLA. TODO: wire real — breaching_count from GET /cases once Core has it.
+      if (crmDemoMode() && canAccessRoute(user.roles, "crm")) {
+        const cfg = publicCrmConfig();
+        const cases = await listCases().catch(() => []);
+        const breaching = cases.filter((c) => isOpen(c) && caseSla(c, cfg.case_types[c.type]).status === "breach").length;
+        if (breaching > 0) next.crm = breaching;
+      }
+      if (cancelled) return;
       setBadges(next);
     });
     return () => {

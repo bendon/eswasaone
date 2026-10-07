@@ -21,6 +21,7 @@ import {
   type DrawerSection,
   type DrawerAction,
   DateField,
+  Select,
 } from "@eswasaone/shared-ui";
 import { patchAudit } from "./deskApi";
 
@@ -283,17 +284,12 @@ export function AuditsView() {
           content: (
             <div className="kv">
               <b>Type</b>
-              <select
-                className="sel"
+              <Select
                 aria-label="Audit type"
                 value={draftType}
-                onChange={(e) => setDraftType(e.target.value)}
-              >
-                <option value="">Per schedule</option>
-                {AUDIT_TYPES.map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
+                onChange={setDraftType}
+                options={[{ value: "", label: "Per schedule" }, ...AUDIT_TYPES]}
+              />
             </div>
           ),
         },

@@ -15,10 +15,12 @@ import { TrainingDetailPage } from "./pages/TrainingDetailPage";
 import { ExportPage } from "./pages/ExportPage";
 import { ApplicabilityPage } from "./pages/ApplicabilityPage";
 import { VerifyPage } from "./pages/VerifyPage";
-import { ComplaintsPage } from "./pages/ComplaintsPage";
+import { ComplaintsPage, ContactSalesPage, FeedbackPage, LodgeCasePage, TrackCasePage } from "./pages/ComplaintsPage";
 import { AiTechPage } from "./pages/AiTechPage";
 import {
   AccountApplicationsPage,
+  AccountCaseDetailPage,
+  AccountCasesPage,
   AccountCertificatesPage,
   AccountLayout,
   AccountOrdersPage,
@@ -79,6 +81,11 @@ export const router = createBrowserRouter(
             { path: "verify", element: <VerifyPage /> },
             { path: "verify/:token", element: <VerifyPage /> },
             { path: "complaints", element: <ComplaintsPage /> },
+            { path: "complaints/new/:type", element: <LodgeCasePage /> },
+            { path: "complaints/track", element: <TrackCasePage /> },
+            { path: "complaints/track/:ref", element: <TrackCasePage /> },
+            { path: "feedback/:ref", element: <FeedbackPage /> },
+            { path: "contact-sales", element: <ContactSalesPage /> },
             { path: "ai-tech", element: <AiTechPage /> },
             { path: "ai-tech/standards", element: <AiTechPage /> },
             { path: "ai-tech/lab", element: <AiTechPage /> },
@@ -100,6 +107,8 @@ export const router = createBrowserRouter(
                 { path: "orders", element: <AccountOrdersPage /> },
                 { path: "certificates", element: <AccountCertificatesPage /> },
                 { path: "training", element: <AccountTrainingPage /> },
+                { path: "cases", element: <AccountCasesPage /> },
+                { path: "cases/:ref", element: <AccountCaseDetailPage /> },
                 { path: "team", element: <AccountTeamPage /> },
                 { path: "settings", element: <AccountSettingsPage /> },
               ],

@@ -3,7 +3,7 @@ import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
 import { useInstitution } from "../layout/InstitutionLayout";
-import { Icon, RecordDrawer, type DrawerSection } from "@eswasaone/shared-ui";
+import { Icon, RecordDrawer, type DrawerSection, Select } from "@eswasaone/shared-ui";
 import type { HrAppraisalsResponse, HrAppraisalSummary } from "../api/types";
 import { openDesk } from "./desk";
 
@@ -132,17 +132,17 @@ export function AppraisalsView() {
           </div>
 
           <div className="hr-filters">
-            <select
-              className="hr-sel"
+            <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              onChange={(v) => setStatusFilter(v as StatusFilter)}
               aria-label="Filter appraisals"
-            >
-              <option value="all">All statuses</option>
-              <option value="pending">Pending</option>
-              <option value="in_progress">In progress</option>
-              <option value="completed">Completed</option>
-            </select>
+              options={[
+                { value: "all", label: "All statuses" },
+                { value: "pending", label: "Pending" },
+                { value: "in_progress", label: "In progress" },
+                { value: "completed", label: "Completed" },
+              ]}
+            />
           </div>
 
           {filtered.length === 0 ? (

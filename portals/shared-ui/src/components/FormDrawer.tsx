@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
+import { Select } from "./Select";
 
 export type FormDrawerField = {
   name: string;
@@ -84,19 +85,15 @@ export function FormDrawer({
                   onChange={(e) => setLocal((s) => ({ ...s, [f.name]: e.target.value }))}
                 />
               ) : f.type === "select" ? (
-                <select
+                <Select
+                  block
                   value={local[f.name] ?? ""}
                   required={f.required}
                   disabled={busy}
-                  onChange={(e) => setLocal((s) => ({ ...s, [f.name]: e.target.value }))}
-                >
-                  <option value="">Select…</option>
-                  {(f.options ?? []).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                  placeholder={f.placeholder ?? "Select…"}
+                  options={f.options ?? []}
+                  onChange={(v) => setLocal((s) => ({ ...s, [f.name]: v }))}
+                />
               ) : (
                 <input
                   type={f.type ?? "text"}

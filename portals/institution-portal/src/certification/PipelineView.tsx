@@ -10,6 +10,7 @@ import {
   useDialogs,
   type FormDrawerField,
   type IconName,
+  Select,
 } from "@eswasaone/shared-ui";
 import type { AuditSummary, CertificationApplication, CertificationAuditsResponse } from "../api/types";
 import { useApiResource } from "../hooks/useApiResource";
@@ -303,37 +304,38 @@ export function PipelineView() {
           {dialogs.host}
 
           <div className="cert-filters">
-            <select className="sel" value={flowFilter} onChange={(e) => setFlowFilter(e.target.value)} aria-label="Path">
-              <option value="">All paths</option>
-              {(Object.keys(FLOW_LABEL) as CertFlow[]).map((f) => (
-                <option key={f} value={f}>
-                  {FLOW_LABEL[f]}
-                </option>
-              ))}
-            </select>
-            <select className="sel" value={schemeFilter} onChange={(e) => setSchemeFilter(e.target.value)} aria-label="Scheme">
-              <option value="">All schemes</option>
-              {schemes.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <select className="sel" value={auditorFilter} onChange={(e) => setAuditorFilter(e.target.value)} aria-label="Auditor">
-              <option value="">All auditors</option>
-              {auditors.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-              <option value="Unassigned">Unassigned</option>
-            </select>
-            <select className="sel" value={slaFilter} onChange={(e) => setSlaFilter(e.target.value)} aria-label="Service Charter">
-              <option value="">Charter: all</option>
-              <option value="breach">Breached</option>
-              <option value="due">Due soon</option>
-              <option value="ok">On track</option>
-            </select>
+            <Select
+              value={flowFilter}
+              onChange={setFlowFilter}
+              aria-label="Path"
+              options={[
+                { value: "", label: "All paths" },
+                ...(Object.keys(FLOW_LABEL) as CertFlow[]).map((f) => ({ value: f, label: FLOW_LABEL[f] })),
+              ]}
+            />
+            <Select
+              value={schemeFilter}
+              onChange={setSchemeFilter}
+              aria-label="Scheme"
+              options={[{ value: "", label: "All schemes" }, ...schemes]}
+            />
+            <Select
+              value={auditorFilter}
+              onChange={setAuditorFilter}
+              aria-label="Auditor"
+              options={[{ value: "", label: "All auditors" }, ...auditors, "Unassigned"]}
+            />
+            <Select
+              value={slaFilter}
+              onChange={setSlaFilter}
+              aria-label="Service Charter"
+              options={[
+                { value: "", label: "Charter: all" },
+                { value: "breach", label: "Breached" },
+                { value: "due", label: "Due soon" },
+                { value: "ok", label: "On track" },
+              ]}
+            />
             <label className="sel" style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
               <input type="checkbox" checked={showWithdrawn} onChange={() => setShowWithdrawn(!showWithdrawn)} /> Withdrawn
             </label>
@@ -657,21 +659,15 @@ function CertDrawer({
           <div className="kv">
             <b>Path</b>
             <span>
-              <select
-                className="sel"
+              <Select
                 value={item.flow}
-                onChange={(e) => {
-                  setFlow(item.id, e.target.value as CertFlow);
+                onChange={(v) => {
+                  setFlow(item.id, v as CertFlow);
                   onExtrasChange();
                 }}
                 aria-label="Certification path"
-              >
-                {(Object.keys(FLOW_LABEL) as CertFlow[]).map((f) => (
-                  <option key={f} value={f}>
-                    {FLOW_LABEL[f]}
-                  </option>
-                ))}
-              </select>
+                options={(Object.keys(FLOW_LABEL) as CertFlow[]).map((f) => ({ value: f, label: FLOW_LABEL[f] }))}
+              />
             </span>
           </div>
           <div className="kv">

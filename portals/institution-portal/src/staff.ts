@@ -23,7 +23,17 @@ const ROUTE_ACCESS: Record<InstitutionRouteId, Access> = {
     "Administrator",
     "Desk User",
   ],
-  crm: ["Sales User", "Sales Manager", "System Manager", "Administrator", "Desk User"],
+  // Certification roles own complaint cases (complaint.yaml). TODO: add Quality Manager /
+  // Customer Service / Appeals Panel once those Role fixtures exist.
+  crm: [
+    "Sales User",
+    "Sales Manager",
+    "Certification Manager",
+    "Certification Officer",
+    "System Manager",
+    "Administrator",
+    "Desk User",
+  ],
   certification: [
     "Certification Manager",
     "Certification Officer",

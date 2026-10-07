@@ -645,7 +645,7 @@ export const router = createBrowserRouter(
                       <L
                         factory={() =>
                           import("./crm/sub-views").then((m) => ({
-                            default: m.CrmPipelineView,
+                            default: m.CrmOverviewView,
                           }))
                         }
                         skeleton="dashboard"
@@ -653,29 +653,142 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
-                    path: "leads",
+                    path: "cases",
                     element: (
                       <L
                         factory={() =>
                           import("./crm/sub-views").then((m) => ({
-                            default: m.LeadsView,
+                            default: m.CrmCasesView,
                           }))
                         }
                       />
                     ),
                   },
                   {
-                    path: "deals",
+                    path: "cases/:ref",
                     element: (
                       <L
                         factory={() =>
                           import("./crm/sub-views").then((m) => ({
-                            default: m.DealsView,
+                            default: m.CrmCaseWorkspace,
+                          }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "appeals",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmAppealsView,
                           }))
                         }
                       />
                     ),
                   },
+                  {
+                    path: "clients",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmClientsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "clients/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmClient360,
+                          }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "signals",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmSignalsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "pipeline",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmPipelineView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "quotes",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmQuotesView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "renewals",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmRenewalsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "insights",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmInsightsView,
+                          }))
+                        }
+                        skeleton="dashboard"
+                      />
+                    ),
+                  },
+                  {
+                    path: "settings",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmSettingsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  { path: "leads", element: <Navigate to="../pipeline" replace /> },
+                  { path: "deals", element: <Navigate to="../pipeline" replace /> },
                 ],
               ),
             },

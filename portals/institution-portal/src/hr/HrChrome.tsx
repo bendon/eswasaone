@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Icon, inviteStaff, type InviteStaffRequest } from "@eswasaone/shared-ui";
+import { Icon, inviteStaff, type InviteStaffRequest, Select } from "@eswasaone/shared-ui";
 
 const INVITE_ROLES = [
   "ESWASA Staff",
@@ -104,13 +104,7 @@ export function HrChrome() {
               </label>
               <label>
                 Role
-                <select value={role} onChange={(e) => setRole(e.target.value)}>
-                  {INVITE_ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
+                <Select block value={role} onChange={setRole} options={INVITE_ROLES} />
               </label>
               {err ? <p style={{ color: "var(--red)", margin: 0 }}>{err}</p> : null}
               {msg ? <p style={{ color: "var(--navy)", margin: 0 }}>{msg}</p> : null}

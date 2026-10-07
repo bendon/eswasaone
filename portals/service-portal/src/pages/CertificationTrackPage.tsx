@@ -801,7 +801,19 @@ export function CertificationTrackPage() {
               async () => {
                 // Complaints also go to the shared complaints desk (Customer Care).
                 if (sheet.type === "complaint")
-                  await lodgeComplaint({ subject: `Certification ${detail.id}`, detail: text });
+                  await lodgeComplaint({
+                    subject: `Certification ${detail.id}`,
+                    detail: text,
+                    about: { kind: "application", label: `${detail.id} · ${detail.org}`, ref: detail.id },
+                  });
+                // Appeals open a restricted case for the independent appeals panel (CER_PR_002).
+                if (sheet.type === "appeal" && demoMode())
+                  await lodgeComplaint({
+                    type: "appeal",
+                    subject: `Appeal: ${detail.id}`,
+                    detail: text,
+                    about: { kind: "application", label: `${detail.id} decision`, ref: detail.id },
+                  });
                 return sendApplicationRequest(detail.id, sheet.type, text);
               },
               `${REQUEST_COPY[sheet.type].title}: sent`,

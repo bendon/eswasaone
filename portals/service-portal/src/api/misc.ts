@@ -1,5 +1,6 @@
 import { apiFetch } from "@eswasaone/shared-ui";
 import { demoMode } from "../certification/demoStore";
+import { lodgeCase, type CaseSubject, type CaseType } from "@eswasaone/shared-ui/crm";
 
 export type ApplicabilityResult = {
   summary: string;
@@ -77,21 +78,34 @@ export async function verifyToken(token: string): Promise<VerificationResult> {
   }
 }
 
+/** Quick complaint from other pages (e.g. certification tracker). The full journey lives at /complaints. */
 export async function lodgeComplaint(body: {
   subject: string;
   detail: string;
   contact?: string;
+  type?: CaseType;
+  about?: CaseSubject;
 }): Promise<{ id: string }> {
-  try {
-    return await apiFetch<{ id: string }>("/complaints", {
-      method: "POST",
-      body: JSON.stringify(body),
+  // Demo: goes to the shared CRM case store so staff see it in /institution/crm/cases.
+  if (demoMode()) {
+    const contact = body.contact?.trim();
+    const c = await lodgeCase({
+      type: body.type ?? "service_complaint",
+      subject: body.subject,
+      description: body.detail,
+      channel: "account",
+      about: body.about,
+      reporter: contact
+        ? { anonymous: false, email: contact.includes("@") ? contact : undefined, phone: contact.includes("@") ? undefined : contact, preferred: contact.includes("@") ? "email" : "sms" }
+        : { anonymous: true, preferred: "email" },
     });
-  } catch (err) {
-    // No complaints endpoint in Core yet: don't invent a reference number.
-    if (!demoMode()) throw err;
-    return { id: `DEMO-CMP-${Date.now().toString(36).toUpperCase()}` };
+    return { id: c.ref };
   }
+  // TODO: wire real — POST /cases. No complaints endpoint in Core yet: don't invent a reference number.
+  return apiFetch<{ id: string }>("/complaints", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 export type ActivityItem = {

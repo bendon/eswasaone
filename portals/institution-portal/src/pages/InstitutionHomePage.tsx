@@ -25,7 +25,6 @@ import {
 import { useInstitution } from "../layout/InstitutionLayout";
 import { type PriorityItem } from "../dashboard/fixtures";
 import { buildLiveAttentionQueue } from "../dashboard/attention";
-import { probeCoreHealth } from "../lib/coreHealth";
 import type {
   ApprovalsResponse,
   AuditSummary,
@@ -106,7 +105,6 @@ export function InstitutionHomePage() {
   const [approvals, setApprovals] = useState<ApprovalsResponse | null>(null);
   const [tbt, setTbt] = useState<TbtNotificationsResponse | null>(null);
   const [overdueAudits, setOverdueAudits] = useState<AuditSummary[]>([]);
-  const [coreHealth, setCoreHealth] = useState<"up" | "down" | "unknown">("unknown");
   const [toast, setToast] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
 
@@ -122,12 +120,6 @@ export function InstitutionHomePage() {
   const [chaseNote, setChaseNote] = useState("");
   const [acting, setActing] = useState(false);
   const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
-
-  useEffect(() => {
-    void probeCoreHealth()
-      .then(setCoreHealth)
-      .catch(() => setCoreHealth("down"));
-  }, [sessionKey]);
 
   useEffect(() => {
     void apiFetch<InstitutionHome>("/home/institution")
@@ -270,13 +262,6 @@ export function InstitutionHomePage() {
       },
     ];
   }, [home, finance, approvals, overdueAudits]);
-
-  const coreLabel =
-    coreHealth === "up"
-      ? "Core API reachable"
-      : coreHealth === "down"
-        ? "Core API unreachable"
-        : "Checking Core API…";
 
   const feed = home?.feed ?? [];
 
@@ -591,10 +576,6 @@ export function InstitutionHomePage() {
               {attentionN > 0
                 ? `${attentionN} item${attentionN === 1 ? "" : "s"} need${attentionN === 1 ? "s" : ""} your attention`
                 : "Nothing needs your attention"}
-            </span>
-            <span className="hero2__health" role="status">
-              <span className={`status__dot ${coreHealth === "unknown" ? "warn" : coreHealth}`} />
-              {coreLabel}
             </span>
           </div>
         </div>

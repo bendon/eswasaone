@@ -1,6 +1,6 @@
 import {
   checkIngeloEligibility,
-  SCHEMES,
+  getSchemes,
   schemeById,
   type ApplicationPayload,
   type IngeloEligibility,
@@ -88,7 +88,7 @@ export function stepsFor(flow: CertFlow): StepKey[] {
 const emptyPerson = (): Person => ({ name: "", position: "", email: "", phone: "" });
 
 export function emptyWizard(schemeId: string): WizardState {
-  const scheme = schemeById(schemeId) ?? SCHEMES[0];
+  const scheme = schemeById(schemeId) ?? getSchemes()[0];
   return {
     scheme: scheme.id,
     flow: scheme.flow,

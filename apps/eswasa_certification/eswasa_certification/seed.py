@@ -104,8 +104,8 @@ def _ensure_scheme() -> str:
         {
             "doctype": "Certification Scheme",
             "scheme_code": DEMO_SCHEME,
-            "scheme_name": "Quality Management Systems (ISO 9001)",
-            "standard_ref": "ISO 9001:2015",
+            "scheme_name": "Quality Management Systems: Requirements",
+            "standard_ref": "SZNS ISO 9001:2015",
             "scheme_type": "Management System",
             "accreditation_basis": "ISO/IEC 17021",
             "surveillance_interval_months": 12,

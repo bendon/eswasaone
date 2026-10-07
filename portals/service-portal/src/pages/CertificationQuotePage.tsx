@@ -4,11 +4,11 @@ import { Icon } from "@eswasaone/shared-ui";
 import {
   requestQuote,
   schemeById,
-  SCHEMES,
   type Quote,
   type QuoteRequest,
 } from "../api/certification";
 import { useAuth } from "../auth/AuthProvider";
+import { useSchemes } from "../certification/useSchemes";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import {
   clearDraft,
@@ -63,9 +63,6 @@ function emptyForm(flow: CertFlow | ""): FormState {
   };
 }
 
-const STANDARD_OPTIONS = SCHEMES.filter((s) => s.flow !== "combined").map(
-  (s) => s.code,
-);
 
 const STEPS = [
   { title: "Certification request", short: "What to certify" },
@@ -87,6 +84,11 @@ const FIELD_STEP: Record<string, number> = {
 
 export function CertificationQuotePage() {
   const [params] = useSearchParams();
+  const schemes = useSchemes();
+  const standardOptions = useMemo(
+    () => schemes.filter((s) => s.flow !== "combined").map((s) => s.code),
+    [schemes],
+  );
   const preScheme = schemeById(params.get("scheme") || "");
   const preFlow =
     (params.get("flow") as CertFlow | null) || preScheme?.flow || "";
@@ -430,7 +432,7 @@ export function CertificationQuotePage() {
                 label="Applicable standards (if known)"
                 values={form.standards}
                 onChange={(v) => set("standards", v)}
-                options={STANDARD_OPTIONS}
+                options={standardOptions}
               />
               <TextField
                 className="span2"

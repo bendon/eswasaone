@@ -31,6 +31,7 @@ from app.schemas import (
     ApprovalsResponse,
     AuditSummary,
     CertificationApplication,
+    CertificationScheme,
     CheckoutRequest,
     CheckoutResult,
     Citation,
@@ -214,6 +215,23 @@ async def get_service_home(
 
 
 # --- Certification (WS2) ----------------------------------------------------
+
+
+@router.get("/certification/schemes", tags=["certification"])
+async def list_certification_schemes(
+    auth: Annotated[AuthContext, Depends(get_actor)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, list[CertificationScheme]]:
+    """Public catalogue: active Certification Schemes (codes accepted by POST /applications)."""
+    if auth.mock or not await frappe.health():
+        return {"items": mocks.mock_schemes()}
+    try:
+        raw = await auth.frappe(frappe).method("eswasa_certification.api.list_schemes")
+        items_raw = raw.get("items", raw) if isinstance(raw, dict) else raw
+        return {"items": [CertificationScheme.model_validate(i) for i in (items_raw or [])]}
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
 
 
 @router.get("/certification/applications", tags=["certification"])

@@ -6,7 +6,7 @@ import {
   listQuotes,
   respondToQuote,
   schemeById,
-  SCHEMES,
+  getSchemes,
   schemeTitle,
   type ApplicationDetail,
   type Quote,
@@ -43,6 +43,7 @@ import {
 } from "../certification/wizard";
 import { CHARTER, FLOW_LABEL, FLOW_STAGES, fmtDate } from "../certification/flows";
 import { NotSentNotice, Sheet } from "../certification/ui";
+import { useSchemes } from "../certification/useSchemes";
 
 const STEP_LEAD: Partial<Record<StepKey, string>> = {
   scheme: "Confirm the scheme and link your quote if you already have one.",
@@ -68,7 +69,8 @@ function draftKey(scheme: string) {
 export function CertificationApplyPage() {
   const [params] = useSearchParams();
   const requested = params.get("scheme");
-  const initialScheme = schemeById(requested || "")?.id ?? SCHEMES[0].id;
+  useSchemes(); // re-render once the backend catalogue arrives
+  const initialScheme = schemeById(requested || "")?.id ?? getSchemes()[0].id;
   const { user, requireAuth } = useAuth();
 
   const [s, setS] = useState<WizardState>(() => {

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from app.schemas import (
+    CertificationScheme,
     ApprovalItem,
     ApprovalsResponse,
     AuditSummary,
@@ -134,6 +135,54 @@ def mock_service_home() -> ServiceHome:
             )
         ],
     )
+
+
+_MOCK_SCHEMES = (
+    ("ISO9001-QMS", "Quality Management Systems: Requirements", "SZNS ISO 9001:2015", "Management System"),
+    (
+        "ISO14001-EMS",
+        "Environmental Management Systems: Requirements with guidance for use",
+        "SZNS ISO 14001:2015",
+        "Management System",
+    ),
+    (
+        "ISO22000-FSMS",
+        "Food Safety Management Systems: Requirements for any organization in the food chain",
+        "SZNS ISO 22000:2018",
+        "Management System",
+    ),
+    (
+        "ISO45001-OHSMS",
+        "Occupational Health and Safety Management Systems: Requirements with guidance for use",
+        "SZNS ISO 45001:2018",
+        "Management System",
+    ),
+    (
+        "HACCP-10330",
+        "Hazard Analysis and Critical Control Point (HACCP)",
+        "SZNS SANS 10330:2020",
+        "Management System",
+    ),
+    ("PRODUCT-MARK", "Product certification", "Product Certification Mark", "Product"),
+    ("INGELO", "Ingelo: certification for local MSME producers", "Ingelo Certification Scheme", "Product"),
+    ("COMBINED", "Combined request (e.g., ISO + Product)", "Combined request", "Management System"),
+)
+
+
+def mock_schemes() -> list[CertificationScheme]:
+    """Mirror of eswasa_certification.schemes.PUBLISHED_SCHEMES for offline dev."""
+    return [
+        CertificationScheme(
+            code=code,
+            name=name,
+            standard_ref=ref,
+            scheme_type=kind,
+            accreditation_basis="ISO/IEC 17065" if kind == "Product" else "ISO/IEC 17021",
+            surveillance_interval_months=12,
+            certificate_validity_months=36,
+        )
+        for code, name, ref, kind in _MOCK_SCHEMES
+    ]
 
 
 def mock_applications(status: str | None = None, limit: int = 20) -> list[CertificationApplication]:

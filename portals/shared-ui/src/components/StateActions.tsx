@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { useDemoMode } from "./DemoBadge";
 
 /** Legal next transition from Core (workflow / docstate). */
 export type AllowedAction = {
@@ -33,7 +32,7 @@ export type StateActionsProps = {
 
 /**
  * Renders only Core-returned allowed_actions[]. No hard-coded button sets.
- * Demo mode disables writes against fixture records.
+ * Writes are never disabled for demo mode: the parent saves to Core or the local demo store.
  */
 export function StateActions({
   actions,
@@ -43,7 +42,6 @@ export function StateActions({
   className = "state-actions",
   empty = null,
 }: StateActionsProps) {
-  const demo = useDemoMode();
   const list = actions?.filter((a) => a?.action && a?.label) ?? [];
 
   if (!list.length) return <>{empty}</>;
@@ -55,17 +53,11 @@ export function StateActions({
           key={a.action}
           type="button"
           className={a.danger ? "cta dialog-cta--danger" : "cta"}
-          disabled={busy || demo}
-          title={
-            demo
-              ? "Disabled in demo mode: fixture records cannot be committed"
-              : a.rule_id
-                ? `${a.label} (${a.rule_id})`
-                : a.label
-          }
+          disabled={busy}
+          title={a.rule_id ? `${a.label} (${a.rule_id})` : a.label}
           onClick={() => {
             void (async () => {
-              if (demo || busy) return;
+              if (busy) return;
               const ok = await confirm({
                 title: a.label,
                 message: `${a.label}?\n\nThis will save the change and update the record for the team.`,

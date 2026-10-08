@@ -331,9 +331,11 @@ function QuoteDrawer({
               <Icon name="i-check-c" /> Create work orders &amp; invoice
             </button>
           ) : null}
-          <button type="button" className="crm-btn crm-btn--ghost" onClick={() => window.print()}>
-            <Icon name="i-download" /> Print / PDF
-          </button>
+          {quote ? (
+            <a className="crm-btn crm-btn--ghost" href={`/institution/print/quote/${encodeURIComponent(quote.id)}`} target="_blank" rel="noreferrer">
+              <Icon name="i-download" /> Print / PDF
+            </a>
+          ) : null}
         </>
       }
     >

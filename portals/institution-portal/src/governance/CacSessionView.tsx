@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { AuthError, Icon, ModuleHeader, Toast, sessionFetch, useDialogs } from "@eswasaone/shared-ui";
+import { AuthError, Icon, ModuleHeader, Toast, useDialogs } from "@eswasaone/shared-ui";
 import type { CertificationApplication, CertificationAuditsResponse } from "../api/types";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
@@ -9,26 +9,24 @@ import { useInstitution } from "../layout/InstitutionLayout";
 import { listDecisions, listFindings, recordDecision, type DeskDecision, type DeskFinding } from "../certification/deskApi";
 import { bodyFor, buildDecisionRows, type DecisionRow } from "../certification/decisionQueue";
 import { CHARTER, FLOW_LABEL, fmtDate } from "../certification/pipeline";
-import { STUB_CAC_MEMBERS } from "./stubs";
+import { useStoreResource } from "@eswasaone/shared-ui/store";
+import { govStore, recordDeclaration, setAttendance } from "@eswasaone/shared-ui/governance";
+import { actorFrom } from "../approvals/live";
+
+/** CAC members from the governance store (Board → Settings → Bodies). */
+export type CacMember = { id: string; name: string; interest: string; role: "Chair" | "Member" | "Secretary" };
 
 /**
  * Board → CAC. The Certification Approval Committee sits as a governance committee and decides
  * product (and combined) certification independently of the audit team (product.php; ISO/IEC 17065 §7.6).
  * Same queue and blockers as Certification → Decisions (decisionQueue.ts); the decision is recorded
  * through deskApi.recordDecision so both screens stay in step.
- * TODO: wire real — CAC body/members, per-member votes and recusals, resolution record (POST /governance/resolutions).
+ * Members, sittings, attendance and recusals live in the governance store (CAC body + its meetings);
+ * recusals are recorded as per-meeting declarations of interest so they show in the register.
  */
 
 type Sitting = { id: string; title: string; date?: string };
 type Outcome = "grant" | "grant_conditions" | "refuse";
-
-const QUORUM = 3;
-
-const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
-const FALLBACK_SITTINGS: Sitting[] = [
-  { id: "cac-next", title: "CAC sitting — next scheduled", date: inDays(6) },
-  { id: "cac-following", title: "CAC sitting — following month", date: inDays(34) },
-];
 
 export function CacSessionView() {
   const { user, sessionKey, openAuth } = useInstitution();
@@ -44,12 +42,31 @@ export function CacSessionView() {
   });
   const [findings, setFindings] = useState<DeskFinding[]>([]);
   const [decisions, setDecisions] = useState<Record<string, DeskDecision>>({});
-  const [sittings, setSittings] = useState<Sitting[]>(FALLBACK_SITTINGS);
-  const [present, setPresent] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(STUB_CAC_MEMBERS.map((m) => [m.id, true])),
-  );
-  const [recusals, setRecusals] = useState<Record<string, string[]>>({});
+  const gov = useStoreResource([govStore], () => {
+    const s = govStore.read();
+    const body = s.bodies.CAC;
+    const meetings = Object.values(s.meetings)
+      .filter((m) => m.body_id === "CAC" && m.state !== "Cancelled")
+      .sort((a, b) => b.scheduled_at.localeCompare(a.scheduled_at));
+    return structuredClone({ body, meetings, members: s.members });
+  }, []);
   const [flash, setFlash] = useState<string | null>(null);
+  const actor = useMemo(() => actorFrom(user), [user]);
+  const QUORUM = gov.data?.body?.quorum ?? 3;
+  const CAC_MEMBERS: CacMember[] = useMemo(
+    () =>
+      (gov.data?.body?.members ?? []).map((name) => ({
+        id: name,
+        name,
+        interest: gov.data?.members[name]?.title ?? "",
+        role: name === gov.data?.body?.secretary ? "Secretary" : name === gov.data?.body?.chair ? "Chair" : "Member",
+      })),
+    [gov.data],
+  );
+  const sittings: Sitting[] = useMemo(
+    () => (gov.data?.meetings ?? []).map((m) => ({ id: m.id, title: m.title, date: m.scheduled_at })),
+    [gov.data],
+  );
 
   const load = useCallback(() => {
     void listFindings().then(setFindings);
@@ -57,23 +74,14 @@ export function CacSessionView() {
   }, []);
   useEffect(load, [load]);
 
-  useEffect(() => {
-    // CAC sittings are governance meetings of the CAC body; fall back to a placeholder schedule.
-    void sessionFetch<{ items?: { id: string; title: string; date?: string | null; body?: string | null; body_name?: string | null }[] }>(
-      "/governance/meetings?limit=50",
-      { quiet: true },
-    )
-      .then((res) => {
-        const cac = (res.items || []).filter((m) =>
-          /approval committee|\bcac\b/i.test(`${m.body_name ?? ""} ${m.body ?? ""} ${m.title}`),
-        );
-        if (cac.length) setSittings(cac.map((m) => ({ id: m.id, title: m.title, date: m.date ?? undefined })));
-      })
-      .catch(() => undefined);
-  }, [sessionKey]);
-
   const sittingId = params.get("sitting") || sittings[0]?.id || "";
   const sitting = sittings.find((s) => s.id === sittingId) ?? sittings[0];
+  const meeting = gov.data?.meetings.find((m) => m.id === sitting?.id);
+  const present: Record<string, boolean> = Object.fromEntries(
+    CAC_MEMBERS.map((m) => [m.id, meeting?.attendance[m.name]?.present ?? meeting?.attendance[m.name]?.rsvp === "yes"]),
+  );
+  const recusals: Record<string, string[]> = {};
+  for (const d of meeting?.declarations ?? []) if (d.item_id) (recusals[d.item_id] ??= []).push(d.member);
 
   const agenda = useMemo(
     () =>
@@ -93,7 +101,7 @@ export function CacSessionView() {
 
   const caseId = params.get("case") || agenda[0]?.app.id || "";
   const selected = agenda.find((r) => r.app.id === caseId) ?? null;
-  const voting = STUB_CAC_MEMBERS.filter((m) => m.role !== "Secretary");
+  const voting = CAC_MEMBERS.filter((m) => m.role !== "Secretary");
 
   function setParam(k: string, v: string) {
     const next = new URLSearchParams(params);
@@ -176,12 +184,13 @@ export function CacSessionView() {
 
               <section className="cac-card">
                 <h3>Attendance</h3>
-                {STUB_CAC_MEMBERS.map((m) => (
+                {CAC_MEMBERS.map((m) => (
                   <label key={m.id} className="cac-check">
                     <input
                       type="checkbox"
                       checked={Boolean(present[m.id])}
-                      onChange={(e) => setPresent((p) => ({ ...p, [m.id]: e.target.checked }))}
+                      disabled={!meeting}
+                      onChange={(e) => meeting && void setAttendance(meeting.id, m.name, { present: e.target.checked }, actor)}
                     />
                     <span>
                       <b>{m.name}</b>
@@ -211,9 +220,15 @@ export function CacSessionView() {
                   row={selected}
                   sitting={sitting}
                   voting={voting}
+                  quorum={QUORUM}
                   present={present}
                   recused={recusals[selected.app.id] ?? []}
-                  onRecuse={(ids) => setRecusals((p) => ({ ...p, [selected.app.id]: ids }))}
+                  onRecuse={(ids) => {
+                    if (!meeting) return;
+                    const added = ids.filter((x) => !(recusals[selected.app.id] ?? []).includes(x));
+                    for (const name of added)
+                      void recordDeclaration({ member: name, kind: "meeting", meeting_id: meeting.id, item_id: selected.app.id, interest: `Recused from ${selected.app.applicant} (${selected.app.id})`, recorded_by: actor.name });
+                  }}
                   who={user?.full_name || user?.username || "CAC Secretary"}
                   dialogs={dialogs}
                   onDecided={(msg) => {
@@ -238,6 +253,7 @@ function DecisionPack({
   row,
   sitting,
   voting,
+  quorum: QUORUM,
   present,
   recused,
   onRecuse,
@@ -248,7 +264,8 @@ function DecisionPack({
 }: {
   row: DecisionRow;
   sitting?: Sitting;
-  voting: typeof STUB_CAC_MEMBERS;
+  voting: CacMember[];
+  quorum: number;
   present: Record<string, boolean>;
   recused: string[];
   onRecuse: (ids: string[]) => void;

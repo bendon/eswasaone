@@ -10,6 +10,7 @@ import {
   type SiteFooterColumn,
 } from "@eswasaone/shared-ui";
 import { useAuth } from "../auth/AuthProvider";
+import { CustomerBell } from "../pages/account/AccountNotificationsPage";
 import { useCartToast } from "../ui/CartToast";
 import { CitizenMenu } from "../components/CitizenMenu";
 import { ESWASA_CONTACT } from "../lib/contact";
@@ -206,7 +207,10 @@ export function ServiceLayout() {
                 Sign in
               </button>
             ) : (
-              <CitizenMenu user={user} onSignOut={handleSignOut} />
+              <>
+                <CustomerBell />
+                <CitizenMenu user={user} onSignOut={handleSignOut} />
+              </>
             )}
             <NavLink className="reportbtn" to="/complaints">
               Report an Issue
@@ -232,7 +236,10 @@ export function ServiceLayout() {
               Sign in
             </button>
           ) : (
-            <CitizenMenu user={user} onSignOut={handleSignOut} compact />
+            <>
+              <CustomerBell />
+              <CitizenMenu user={user} onSignOut={handleSignOut} compact />
+            </>
           )}
         </div>
       </header>

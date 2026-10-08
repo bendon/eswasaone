@@ -65,6 +65,8 @@ export {
   type ConfirmActionOptions,
 } from "./components/ConfirmAction";
 export { DemoBadge, useDemoMode } from "./components/DemoBadge";
+export { demoDataEnabled } from "./demo";
+export { DEMO_PERSONAS, getDemoPersona, setDemoPersona, type DemoPersona } from "./demoSession";
 export {
   DeskLink,
   deskAvailable,
@@ -134,6 +136,7 @@ export {
   getCsrfToken,
   setCsrfToken,
   STAFF_ROLES,
+  PROVISIONAL_ROLE_MAP,
   FIELD_ESS_ROLES,
   DESK_ONLY_ROLES,
   INSTITUTION_PORTAL_PATH,

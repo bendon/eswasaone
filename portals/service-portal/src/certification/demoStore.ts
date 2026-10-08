@@ -3,6 +3,7 @@
  * Persisted in localStorage so a demo journey survives reloads.
  * TODO: wire real. Every write here has a matching endpoint in the backend handover list.
  */
+import { demoDataEnabled } from "@eswasaone/shared-ui";
 
 const KEY = "eswasaone.cert.v1";
 
@@ -76,16 +77,12 @@ export function clearDraft(key: string): void {
 /* ---------------- Connection honesty ---------------- */
 
 /**
- * Demo mode (VITE_DEMO_MODE=true) seeds sample cases and keeps writes on this
+ * Demo mode (on unless VITE_DEMO_MODE=false) seeds sample cases and keeps writes on this
  * device. Outside demo mode nothing is shown as "sent to ESWASA" unless Core
  * accepted it: missing endpoints raise NotConnectedError instead.
  */
 export function demoMode(): boolean {
-  try {
-    return String(import.meta.env.VITE_DEMO_MODE ?? "").toLowerCase() === "true";
-  } catch {
-    return false;
-  }
+  return demoDataEnabled();
 }
 
 export class NotConnectedError extends Error {

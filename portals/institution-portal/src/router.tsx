@@ -57,6 +57,118 @@ function nest(
 export const router = createBrowserRouter(
   [
     {
+      // Board member area (gap 03 G4): own minimal shell, no staff sidebar.
+      path: "/member",
+      errorElement: <ErrorPage standalone />,
+      ...nest(
+        () =>
+          import("./board/MemberArea").then((m) => ({
+            default: m.MemberLayout,
+          })),
+        [
+        {
+          index: true,
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberHome,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "meetings/:id",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberMeeting,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "votes",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberVotes,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "minutes",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberMinutes,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "declarations",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberDeclarations,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "evaluation",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberEvaluation,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "profile",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberProfile,
+                }))
+              }
+            />
+          ),
+        },
+        ],
+      ),
+    },
+    {
+      // Printable documents (gap 01 C10) — outside the app shell.
+      path: "/print/:kind/:id",
+      errorElement: <ErrorPage standalone />,
+      element: (
+        <L
+          factory={() =>
+            import("./print/PrintPage").then((m) => ({
+              default: m.PrintPage,
+            }))
+          }
+          skeleton="panel"
+        />
+      ),
+    },
+    {
       path: "/",
       element: <InstitutionLayout />,
       // Layout itself failed — no sidebar/topbar to render inside.
@@ -81,14 +193,61 @@ export const router = createBrowserRouter(
             },
             {
               path: "approvals",
-              element: (
-                <L
-                  factory={() =>
-                    import("./pages/ApprovalsPage").then((m) => ({
-                      default: m.ApprovalsPage,
-                    }))
-                  }
-                />
+              ...nest(
+                () =>
+                  import("./pages/ApprovalsPage").then((m) => ({
+                    default: m.ApprovalsPage,
+                  })),
+                [
+                  {
+                    index: true,
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./approvals/sub-views").then((m) => ({
+                            default: m.InboxView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "team",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./approvals/sub-views").then((m) => ({
+                            default: m.TeamView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "delegations",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./approvals/sub-views").then((m) => ({
+                            default: m.DelegationsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "done",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./approvals/sub-views").then((m) => ({
+                            default: m.DoneView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                ],
               ),
             },
             {
@@ -546,11 +705,10 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
-                            default: m.OverviewView,
+                          import("./board/sub-views").then((m) => ({
+                            default: m.BoardOverview,
                           }))
                         }
-                        skeleton="dashboard"
                       />
                     ),
                   },
@@ -559,8 +717,56 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
-                            default: m.MeetingsView,
+                          import("./board/sub-views").then((m) => ({
+                            default: m.MeetingsList,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "meetings/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.MeetingRecordPage,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "meetings/:id/agenda",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.AgendaBuilderPage,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "meetings/:id/run",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.RunMeetingPage,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "meetings/:id/minutes",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.MinutesEditorPage,
                           }))
                         }
                       />
@@ -571,8 +777,20 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
-                            default: m.BoardPackView,
+                          import("./board/sub-views").then((m) => ({
+                            default: m.PackIndex,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "pack/:meetingId",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.PackBuilderPage,
                           }))
                         }
                       />
@@ -583,8 +801,32 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
+                          import("./board/sub-views").then((m) => ({
                             default: m.ResolutionsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "resolutions/written/new",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.WrittenResolutionNewPage,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "resolutions/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.ResolutionRecordPage,
                           }))
                         }
                       />
@@ -595,11 +837,10 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
+                          import("./board/sub-views").then((m) => ({
                             default: m.CacSessionView,
                           }))
                         }
-                        skeleton="panel"
                       />
                     ),
                   },
@@ -608,8 +849,32 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
+                          import("./board/sub-views").then((m) => ({
                             default: m.RiskRegisterView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "risks/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.RiskRecordPage,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "declarations",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.DeclarationsView,
                           }))
                         }
                       />
@@ -620,11 +885,34 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
+                          import("./board/sub-views").then((m) => ({
                             default: m.MembersView,
                           }))
                         }
-                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "calendar",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.CalendarView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "settings",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.GovSettingsView,
+                          }))
+                        }
                       />
                     ),
                   },

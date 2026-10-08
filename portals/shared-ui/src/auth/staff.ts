@@ -33,7 +33,38 @@ export const STAFF_ROLES = new Set([
   "Eswasa Verification Officer",
   "Ingest Curator",
   "Ingest Viewer",
+  // UI-phase roles the workflow map needs but engine/fixtures doesn't have yet (gap 01 C13).
+  // TODO: fixture — add these Role fixtures in engine/fixtures and keep this list in sync.
+  "Quality Manager",
+  "Customer Service",
+  "Customer Service Manager",
+  "Eswasa Appeals Panel",
+  "Technical Reviewer",
+  "Scheme Manager",
+  "Lab Manager",
+  "Technical Manager",
+  "Head of Standards",
+  "TC Secretary",
+  "Company Secretary",
 ]);
+
+/**
+ * Nearest existing fixture for each UI-phase role (gap 01 C13), used until the fixtures exist.
+ * TODO: fixture — drop entries as the real roles land.
+ */
+export const PROVISIONAL_ROLE_MAP: Record<string, string> = {
+  "Quality Manager": "Certification Manager",
+  "Customer Service": "Desk User",
+  "Customer Service Manager": "Sales Manager",
+  "Eswasa Appeals Panel": "Certification Manager",
+  "Technical Reviewer": "Certification Officer",
+  "Scheme Manager": "Certification Manager",
+  "Lab Manager": "Eswasa Metrology Manager",
+  "Technical Manager": "Eswasa Metrology Reviewer",
+  "Head of Standards": "Eswasa Standards Manager",
+  "TC Secretary": "Eswasa Standards Officer",
+  "Company Secretary": "Eswasa Board Secretary",
+};
 
 /**
  * Field workers + HRMS ESS — land on Field PWA after login.

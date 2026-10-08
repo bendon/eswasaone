@@ -1,5 +1,5 @@
 /**
- * Demo seed for the CRM store — loaded only when VITE_DEMO_MODE=true.
+ * Demo seed for the CRM store — loaded unless VITE_DEMO_MODE=false.
  * All organisations and people are fictional.
  */
 import type {

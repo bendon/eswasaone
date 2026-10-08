@@ -6,6 +6,9 @@ import {
   requestOtp,
   logout,
   isLoginChallenge,
+  demoDataEnabled,
+  DEMO_PERSONAS,
+  setDemoPersona,
   type SessionUser,
 } from "@eswasaone/shared-ui";
 import { hasStaffRole } from "../staff";
@@ -207,6 +210,36 @@ export function StaffGate({ onStaffSession, deniedMessage }: Props) {
             </>
           ) : null}
         </form>
+        {demoDataEnabled() ? (
+          <div className="staff-gate__demo">
+            <p className="staff-gate__lead" style={{ margin: "18px 0 8px", fontWeight: 700 }}>
+              No staff account yet? Continue as a demo user
+            </p>
+            <select
+              className="crm-select"
+              aria-label="Demo staff account"
+              defaultValue=""
+              onChange={(e) => {
+                const p = DEMO_PERSONAS.find((x) => x.username === e.target.value);
+                if (!p) return;
+                setDemoPersona(p);
+                onStaffSession({ username: p.username, full_name: p.full_name, email: p.email, roles: p.roles });
+              }}
+            >
+              <option value="" disabled>
+                Choose a role to try…
+              </option>
+              {DEMO_PERSONAS.map((p) => (
+                <option key={p.username} value={p.username}>
+                  {p.full_name} — {p.title}
+                </option>
+              ))}
+            </select>
+            <p className="crm-small" style={{ marginTop: 6 }}>
+              Demo data is saved in this browser only. Sign out to switch roles.
+            </p>
+          </div>
+        ) : null}
         <p className="staff-gate__foot">
           Public services: <a href="/">Service Portal</a>
         </p>

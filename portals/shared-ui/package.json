@@ -16,7 +16,13 @@
     "./brand": "./src/brand/index.ts",
     "./system": "./src/system/index.ts",
     "./crm": "./src/crm/index.ts",
-    "./types": "./src/types.ts"
+    "./types": "./src/types.ts",
+    "./workflow": "./src/workflow/index.ts",
+    "./tasks": "./src/tasks/index.ts",
+    "./notify": "./src/notify/index.ts",
+    "./record": "./src/record/index.ts",
+    "./store": "./src/store/index.ts",
+    "./governance": "./src/governance/index.ts"
   },
   "peerDependencies": {
     "react": "^18.3.1",

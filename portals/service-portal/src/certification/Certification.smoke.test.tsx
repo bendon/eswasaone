@@ -115,6 +115,8 @@ describe("certification screens", () => {
   });
 
   describe("offline outside demo mode: never fake data or success", () => {
+    // Demo data is on by default now; these cover the explicit opt-out (VITE_DEMO_MODE=false).
+    beforeEach(() => vi.stubEnv("VITE_DEMO_MODE", "false"));
     it("does not invent a case", async () => {
       renderAt("/certification/CERT-0051", "/certification/:id", <CertificationTrackPage />);
       expect(await screen.findByRole("heading", { name: /can’t reach eswasa/i })).toBeInTheDocument();

@@ -15,6 +15,7 @@
 @import "./admin.css";
 @import "./skeletons.css";
 @import "./crm.css";
+@import "./workflow.css";
 
 .app {
   display: grid;

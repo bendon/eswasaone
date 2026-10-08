@@ -42,6 +42,12 @@ const MODULE_ICON: Record<string, IconName> = {
   crm: "i-briefcase",
   Training: "i-cap",
   training: "i-cap",
+  Field: "i-map",
+  field: "i-map",
+  Procurement: "i-cart",
+  procurement: "i-cart",
+  "E-store": "i-cart",
+  estore: "i-cart",
 };
 
 const MODULE_LABEL: Record<string, string> = {
@@ -55,6 +61,10 @@ const MODULE_LABEL: Record<string, string> = {
   crm: "CRM",
   training: "Training",
   knowledge: "Knowledge",
+  field: "Field",
+  procurement: "Procurement",
+  estore: "E-store",
+  "e-store": "E-store",
 };
 
 export function moduleIcon(module: string): IconName {
@@ -133,12 +143,19 @@ export function fromApprovalItem(item: ApprovalItem): InboxItem {
   };
 }
 
+/** Every module that can put work in the inbox (gap 02 A9). */
 export const MODULE_FILTERS = [
   "All modules",
+  "CRM",
   "Certification",
   "Metrology",
   "Standards",
   "Governance",
+  "Finance",
+  "Training",
+  "Field",
+  "Procurement",
+  "E-store",
   "WTO/TBT",
   "HR",
 ] as const;

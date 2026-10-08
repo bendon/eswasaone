@@ -1,14 +1,15 @@
 /**
  * Certification desk API: real Core endpoints where they exist, otherwise a
- * local store marked TODO: wire real. Demo fixtures load only with VITE_DEMO_MODE=true.
+ * local store marked TODO: wire real. Demo fixtures load unless VITE_DEMO_MODE=false.
  *
  * Real (Core): GET/POST /certification/applications, POST …/{id}/advance,
  * PATCH /certification/audits/{id}, POST /certification/certificates/{id}/revoke|renew,
  * GET /certification/certificates/{id}/pdf, GET /verify/{token}, GET /org/staff,
  * GET /certification/findings, POST …/applications/{id}/findings, POST …/findings/{id}/review.
  */
-import { apiFetch } from "@eswasaone/shared-ui";
 import type { CertAction, CertFlow } from "./pipeline";
+import { apiFetch, demoDataEnabled } from "@eswasaone/shared-ui";
+import { reconcileDeskTasks, syncDecisionTask, syncDeskCaseTask, syncFindingTask } from "./deskTasks";
 
 /* ---------------- types ---------------- */
 
@@ -127,11 +128,7 @@ function requireDemo(what: string): void {
 }
 
 export function demoMode(): boolean {
-  try {
-    return String(import.meta.env.VITE_DEMO_MODE ?? "").toLowerCase() === "true";
-  } catch {
-    return false;
-  }
+  return demoDataEnabled();
 }
 
 function emptyStore(): Store {
@@ -487,7 +484,11 @@ export function setQuoteStatus(id: string, status: QuoteStatus, applicationId?: 
 /* ---------------- findings (Core → Frappe Audit Finding; local store in demo mode only) ---------------- */
 
 export async function listFindings(): Promise<DeskFinding[]> {
-  if (demoMode()) return Object.values(read().findings).sort((a, b) => a.due.localeCompare(b.due));
+  if (demoMode()) {
+    const s = read();
+    reconcileDeskTasks(Object.values(s.findings), Object.values(s.cases));
+    return Object.values(s.findings).sort((a, b) => a.due.localeCompare(b.due));
+  }
   try {
     const res = await apiFetch<{ items: DeskFinding[] }>("/certification/findings");
     return res.items ?? [];
@@ -517,6 +518,8 @@ export async function reviewCorrectiveAction(id: string, accept: boolean, note: 
       const f = s.findings[id];
       if (f) s.findings[id] = { ...f, status: accept ? "accepted" : "rejected", review_note: note };
     });
+    const f = read().findings[id];
+    if (f) syncFindingTask(f);
     return;
   }
   await apiFetch(`/certification/findings/${encodeURIComponent(id)}/review`, {
@@ -558,6 +561,7 @@ export async function recordDecision(d: DeskDecision): Promise<void> {
   update((s) => {
     s.decisions[d.application_id] = d;
   });
+  syncDecisionTask(d);
 }
 
 /* ---------------- appeals, complaints, notices ---------------- */
@@ -567,7 +571,9 @@ export async function listCases(): Promise<DeskCase[]> {
     const res = await apiFetch<{ items: DeskCase[] }>("/certification/cases");
     return res.items ?? [];
   } catch {
-    return Object.values(read().cases).sort((a, b) => b.received_at.localeCompare(a.received_at));
+    const s = read();
+    reconcileDeskTasks(Object.values(s.findings), Object.values(s.cases));
+    return Object.values(s.cases).sort((a, b) => b.received_at.localeCompare(a.received_at));
   }
 }
 
@@ -578,4 +584,6 @@ export function setCaseStatus(id: string, status: DeskCase["status"]): void {
     const c = s.cases[id];
     if (c) s.cases[id] = { ...c, status };
   });
+  const c = read().cases[id];
+  if (c) syncDeskCaseTask(c);
 }

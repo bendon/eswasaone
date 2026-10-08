@@ -2,7 +2,7 @@
  * CRM & service-desk data layer shared by the Service and Institution portals.
  *
  * Core has no /crm/* or /cases/* endpoints yet, so every call goes to a local store that
- * loads only with VITE_DEMO_MODE=true (same rule as certification/deskApi.ts). Outside demo
+ * loads unless VITE_DEMO_MODE=false (same rule as certification/deskApi.ts). Outside demo
  * mode each call throws CrmNotConnectedError and screens show their not-connected state.
  * Both portals share one origin (/ and /institution/), so a case lodged publicly shows up in
  * the staff queue, and the `storage` event keeps open tabs in sync.
@@ -15,6 +15,7 @@
 import { DEFAULT_CONFIG } from "./config";
 import { canTransition, findTransition, type CaseActionId } from "./caseFlow";
 import { workingDaysBetween } from "./sla";
+import { notifyCaseCustomer, reconcileCaseTasks, syncCaseTasks } from "./caseTasks";
 import { SEED_CASES, SEED_CLIENTS, SEED_OPPORTUNITIES, SEED_QUOTES, SEED_SIGNALS } from "./seed";
 import type {
   Case,
@@ -33,15 +34,12 @@ import type {
   OpportunityStage,
   Signal,
 } from "./types";
+import { demoDataEnabled } from "../demo";
 
 /* ---------------- mode ---------------- */
 
 export function crmDemoMode(): boolean {
-  try {
-    return String(import.meta.env.VITE_DEMO_MODE ?? "").toLowerCase() === "true";
-  } catch {
-    return false;
-  }
+  return demoDataEnabled();
 }
 
 export class CrmNotConnectedError extends Error {
@@ -101,6 +99,7 @@ function read(): Store {
     persist(s);
   }
   cache = autoClose(s);
+  reconcileCaseTasks(Object.values(cache.cases));
   return cache;
 }
 
@@ -204,6 +203,11 @@ function rememberMine(ref: string) {
   } catch {
     /* ignore */
   }
+}
+
+/** Case references lodged from this browser (anonymous / signed-out customers). */
+export function myCaseRefs(): string[] {
+  return mineRefs();
 }
 
 function mineRefs(): string[] {
@@ -310,6 +314,7 @@ export async function lodgeCase(input: LodgeCaseInput): Promise<Case> {
     });
     if (rule) addMsg(c, { author: "Routing", role: "system", visibility: "internal", body: `Auto-routed by rule: ${rule}` });
     s.cases[ref] = c;
+    syncCaseTasks(c, who, "Lodged");
     detectRepeatComplaints(s, c);
     return c;
   });
@@ -444,6 +449,13 @@ export async function getCase(ref: string): Promise<Case | null> {
   return c ? structuredClone(c) : null;
 }
 
+/** Synchronous read for the Approvals preview (no guard: returns null when the store is off). */
+export function peekCase(ref: string): Case | null {
+  if (!crmDemoMode()) return null;
+  const c = read().cases[ref];
+  return c ? structuredClone(c) : null;
+}
+
 function must(s: Store, ref: string): Case {
   const c = s.cases[ref];
   if (!c) throw new Error(`Case ${ref} not found`);
@@ -517,6 +529,8 @@ function applyTransition(s: Store, c: Case, action: CaseActionId, actor: string,
     default:
       break;
   }
+  syncCaseTasks(c, actor, t.label);
+  notifyCaseCustomer(c, action, note);
 }
 
 export async function actOnCase(
@@ -560,6 +574,7 @@ export async function assignCase(ref: string, actor: CrmActor, assignee: string,
     if (team) c.team = team;
     c.updated_at = now();
     c.events.push({ at: now(), actor: actor.name, action: `Assigned to ${assignee}${team ? ` (${team})` : ""}` });
+    syncCaseTasks(c, actor.name, `Assigned to ${assignee}`);
     return c;
   });
 }

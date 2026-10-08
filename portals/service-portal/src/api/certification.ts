@@ -691,7 +691,7 @@ function seedQuotes(): Record<string, Quote> {
 function store() {
   const s = readStore();
   if (!s.seeded) {
-    // Sample cases are fictional: only ever shown with VITE_DEMO_MODE=true.
+    // Sample cases are fictional: only shown while demo data is on (default; VITE_DEMO_MODE=false turns it off).
     if (demoMode()) {
       s.details = seedDetails();
       s.quotes = seedQuotes();

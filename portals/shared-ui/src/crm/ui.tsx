@@ -134,7 +134,7 @@ export function CrmEmpty({
   );
 }
 
-/** Shown when the CRM store isn't available (VITE_DEMO_MODE off, Core endpoints not live yet). */
+/** Shown only when demo data is explicitly off (VITE_DEMO_MODE=false) and Core endpoints aren't live. */
 export function CrmNotConnected({ what = "This screen", audience = "staff" }: { what?: string; audience?: "staff" | "public" }) {
   return (
     <CrmEmpty
@@ -142,7 +142,7 @@ export function CrmNotConnected({ what = "This screen", audience = "staff" }: { 
       title={`${what} isn't connected yet`}
       detail={
         audience === "staff"
-          ? "Cases, clients and the commercial pipeline need Core's /cases and /crm endpoints. Run the portals with VITE_DEMO_MODE=true to work with sample data."
+          ? "Demo data has been turned off (VITE_DEMO_MODE=false) and Core's /cases and /crm endpoints aren't live yet. Remove the flag to work with sample data."
           : "Online cases aren't connected to ESWASA yet. Please email info@eswasa.co.sz or call (+268) 2518 4633 and we'll log it for you."
       }
     />

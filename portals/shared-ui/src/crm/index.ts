@@ -6,3 +6,5 @@ export * from "./store";
 export * from "./derive";
 export * from "./useCrm";
 export * from "./ui";
+import "./taskHandler";
+export { syncCaseTasks, CASE_TASK_DEF } from "./caseTasks";

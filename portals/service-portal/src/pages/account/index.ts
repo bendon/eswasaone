@@ -7,3 +7,4 @@ export { AccountTeamPage } from "./AccountTeamPage";
 export { AccountSettingsPage } from "./AccountSettingsPage";
 export { AccountApplicationsPage } from "./AccountApplicationsPage";
 export { AccountCasesPage, AccountCaseDetailPage } from "./AccountCasesPage";
+export { AccountNotificationsPage, CustomerBell } from "./AccountNotificationsPage";

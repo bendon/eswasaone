@@ -4,11 +4,11 @@
  * snoozed alerts, daily digest preview.
  */
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Icon, useDialogs } from "@eswasaone/shared-ui";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Icon, Select, useDialogs } from "@eswasaone/shared-ui";
 import { CrmBanner } from "@eswasaone/shared-ui/crm";
 import { MessagePreview } from "@eswasaone/shared-ui/notify";
-import { claimTask, delegatedRoles, isManager, type TaskQueue } from "@eswasaone/shared-ui/tasks";
+import { claimTask, delegatedRoles, isManager, releaseTask, snoozeTask, type TaskQueue } from "@eswasaone/shared-ui/tasks";
 import { ReasonDialog } from "@eswasaone/shared-ui/workflow";
 import { PageSkeleton } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
@@ -16,8 +16,9 @@ import { MODULE_FILTERS, moduleIcon } from "./inbox";
 import { actorFrom } from "./live";
 import { conflictOf, FAMILY_LABEL, handlerFor, slaOf, useInbox, type InboxTask } from "./model";
 import { TaskDrawer } from "./TaskDrawer";
+import { RowMenu, type RowMenuItem } from "./RowMenu";
 
-type View = { id: string; label: string; queue: TaskQueue; family?: InboxTask["family"]; module?: string; breachOnly?: boolean; withinDays?: number; escalated?: boolean };
+type View = { id: string; label: string; queue: TaskQueue; family?: InboxTask["family"]; module?: string; sla?: "breach" | "due" | "ok" | "paused"; assignee?: string; breachOnly?: boolean; withinDays?: number; escalated?: boolean; custom?: boolean };
 
 const BUILT_IN_VIEWS: View[] = [
   { id: "breaching", label: "My breaching", queue: "mine", breachOnly: true },
@@ -26,6 +27,20 @@ const BUILT_IN_VIEWS: View[] = [
 ];
 
 const VIEWS_KEY = "eswasaone.approvals.views";
+
+type SortKey = "title" | "module" | "family" | "assignee" | "priority" | "due" | "created";
+
+function SortTh({ k, label, sort, dir, onSort }: { k: SortKey; label: string; sort: SortKey; dir: 1 | -1; onSort: (k: SortKey) => void }) {
+  const on = sort === k;
+  return (
+    <th aria-sort={on ? (dir === 1 ? "ascending" : "descending") : "none"}>
+      <button type="button" className="eo-sort" onClick={() => onSort(k)}>
+        {label}
+        <span aria-hidden="true">{on ? (dir === 1 ? " ▲" : " ▼") : " ↕"}</span>
+      </button>
+    </th>
+  );
+}
 
 function loadViews(): View[] {
   try {
@@ -40,12 +55,18 @@ export function InboxView() {
   const actor = useMemo(() => actorFrom(user), [user]);
   const manager = isManager(actor);
   const dialogs = useDialogs();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [queue, setQueue] = useState<TaskQueue>(() => (params.get("queue") as TaskQueue) || "all");
-  const [family, setFamily] = useState<InboxTask["family"]>("approve");
+  const [family, setFamily] = useState<InboxTask["family"] | "">("");
   const [moduleFilter, setModuleFilter] = useState<string>("All modules");
+  const [slaFilter, setSlaFilter] = useState<"" | "breach" | "due" | "ok" | "paused">("");
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("");
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState<"sla" | "priority" | "newest">("sla");
+  const [sort, setSort] = useState<SortKey>("due");
+  const [dir, setDir] = useState<1 | -1>(1);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
   const [view, setView] = useState<View | null>(null);
   const [saved, setSaved] = useState<View[]>(loadViews);
   const [showSnoozed, setShowSnoozed] = useState(false);
@@ -75,14 +96,33 @@ export function InboxView() {
     if (view?.breachOnly) rows = rows.filter((t) => slaOf(t).status === "breach");
     if (view?.withinDays) rows = rows.filter((t) => new Date(t.due).getTime() - now < view.withinDays! * 86_400_000);
     if (view?.escalated) rows = rows.filter((t) => t.escalated || t.rule === "R-A2");
+    const slaF = view?.sla ?? slaFilter;
+    const asgF = view?.assignee ?? assigneeFilter;
+    if (slaF) rows = rows.filter((t) => slaOf(t).status === slaF);
+    if (asgF === "__pool") rows = rows.filter((t) => !t.assignee);
+    else if (asgF) rows = rows.filter((t) => t.assignee === asgF);
     if (q.trim()) {
       const s = q.toLowerCase();
-      rows = rows.filter((t) => `${t.title} ${t.name} ${t.doctype} ${t.assignee ?? ""}`.toLowerCase().includes(s));
+      rows = rows.filter((t) => `${t.title} ${t.name} ${t.doctype} ${t.assignee ?? ""} ${t.role}`.toLowerCase().includes(s));
     }
     const pri = (t: InboxTask) => ({ breach: 0, due: 1, paused: 3, ok: 2 })[slaOf(t).status] + (t.priority === "urgent" ? -0.5 : 0);
-    rows = [...rows].sort((a, b) => (sort === "newest" ? b.created_at.localeCompare(a.created_at) : sort === "priority" ? pri(a) - pri(b) : a.due.localeCompare(b.due)));
+    const key: Record<SortKey, (t: InboxTask) => string | number> = {
+      title: (t) => t.title.toLowerCase(),
+      module: (t) => t.module,
+      family: (t) => t.family,
+      assignee: (t) => t.assignee ?? "~",
+      priority: pri,
+      due: (t) => t.due,
+      created: (t) => t.created_at,
+    };
+    const k = key[sort];
+    rows = [...rows].sort((a, b) => {
+      const x = k(a);
+      const y = k(b);
+      return (x < y ? -1 : x > y ? 1 : 0) * dir;
+    });
     return rows;
-  }, [inbox.tasks, moduleFilter, showSnoozed, view, q, sort]);
+  }, [inbox.tasks, moduleFilter, showSnoozed, view, q, sort, dir, slaFilter, assigneeFilter]);
 
   const counts = useMemo(() => {
     const c = { approve: 0, do: 0, alert: 0 };
@@ -91,7 +131,20 @@ export function InboxView() {
   }, [filtered]);
 
   const effectiveFamily = view?.family ?? family;
-  const rows = filtered.filter((t) => t.family === effectiveFamily);
+  const allRows = effectiveFamily ? filtered.filter((t) => t.family === effectiveFamily) : filtered;
+  const pageCount = Math.max(1, Math.ceil(allRows.length / pageSize));
+  const safePage = Math.min(page, pageCount - 1);
+  const rows = allRows.slice(safePage * pageSize, safePage * pageSize + pageSize);
+  const assignees = useMemo(() => [...new Set(inbox.tasks.map((t) => t.assignee).filter(Boolean) as string[])].sort(), [inbox.tasks]);
+  const sortBy = (k: SortKey) => {
+    if (sort === k) setDir((d) => (d === 1 ? -1 : 1));
+    else {
+      setSort(k);
+      setDir(1);
+    }
+  };
+  const resetPage = () => (setPage(0), setFocus(0));
+  useEffect(resetPage, [queue, family, moduleFilter, slaFilter, assigneeFilter, q, view, pageSize]);
   const breached = filtered.filter((t) => slaOf(t).status === "breach").length;
   const dueToday = filtered.filter((t) => slaOf(t).status === "due").length;
 
@@ -101,7 +154,6 @@ export function InboxView() {
     if (!key || !inbox.tasks.length) return;
     const hit = inbox.tasks.find((t) => t.name === key || t.id === key || `${t.doctype}::${t.name}` === key);
     if (hit) {
-      setFamily(hit.family);
       setOpen({ id: hit.id });
     }
     params.delete("open");
@@ -142,9 +194,9 @@ export function InboxView() {
   const openTask = inbox.tasks.find((t) => t.id === open?.id) ?? null;
 
   const saveView = async () => {
-    const label = await dialogs.prompt({ title: "Save view", label: "Name this view", defaultValue: `${FAMILY_LABEL[family]} · ${moduleFilter}`, confirmLabel: "Save" });
+    const label = await dialogs.prompt({ title: "Save view", label: "Name this view", defaultValue: `${family ? FAMILY_LABEL[family] : "All types"} · ${moduleFilter}`, confirmLabel: "Save" });
     if (!label) return;
-    const v: View = { id: `v${Date.now()}`, label, queue, family, module: moduleFilter === "All modules" ? undefined : moduleFilter };
+    const v: View = { id: `v${Date.now()}`, label, queue, family: family || undefined, module: moduleFilter === "All modules" ? undefined : moduleFilter, sla: slaFilter || undefined, assignee: assigneeFilter || undefined, custom: true };
     const next = [...saved, v];
     setSaved(next);
     try {
@@ -152,6 +204,37 @@ export function InboxView() {
     } catch {
       /* ignore */
     }
+  };
+
+  const removeView = async () => {
+    const name = await dialogs.prompt({ title: "Delete a saved view", label: `Type the name of the view to delete (${saved.map((v) => v.label).join(", ")})`, confirmLabel: "Delete" });
+    const hit = saved.find((v) => v.label.toLowerCase() === name?.trim().toLowerCase());
+    if (!hit) return;
+    const next = saved.filter((v) => v.id !== hit.id);
+    setSaved(next);
+    if (view?.id === hit.id) setView(null);
+    try {
+      localStorage.setItem(VIEWS_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const rowMenu = (t: InboxTask): RowMenuItem[] => {
+    const acts = t.closed_at ? [] : handlerFor(t).actions(actor).filter((a) => !a.disabledReason);
+    const primary = acts.find((a) => a.primary);
+    const reject = acts.find((a) => /reject/.test(a.action)) ?? acts.find((a) => /return|request_info/.test(a.action));
+    const items: RowMenuItem[] = [{ label: "Open details", onSelect: () => setOpen({ id: t.id }) }];
+    if (primary) items.push({ label: `${primary.label}…`, onSelect: () => setOpen({ id: t.id, auto: "primary" }) });
+    if (reject) items.push({ label: `${reject.label}…`, danger: /reject/.test(reject.action), onSelect: () => setOpen({ id: t.id, auto: "reject" }) });
+    items.push("divider");
+    if (!t.live && !t.assignee) items.push({ label: "Claim", onSelect: () => void claimTask(t.id, actor).then(() => setToast("Claimed — SLA clock started."), (e: Error) => setConflicts((c) => ({ ...c, [t.id]: e.message }))) });
+    if (!t.live && t.assignee === actor.name) items.push({ label: "Release to pool", onSelect: () => void releaseTask(t.id, actor).then(() => setToast("Released to the pool.")) });
+    if (!t.live) items.push({ label: "Reassign…", onSelect: () => setOpen({ id: t.id, auto: "reassign" }) });
+    items.push({ label: "Escalate…", onSelect: () => setOpen({ id: t.id, auto: "escalate" }) });
+    if (!t.live && t.family === "alert") items.push({ label: "Snooze 1 day", onSelect: () => void snoozeTask(t.id, 1, actor).then(() => setToast("Snoozed until tomorrow.")) });
+    items.push("divider", { label: "Go to record", onSelect: () => navigate(t.link) });
+    return items;
   };
 
   const runBulk = async (kind: "approve" | "reject", reason?: string) => {
@@ -245,29 +328,74 @@ export function InboxView() {
           ))}
         </div>
         <span className="crm-spacer" />
-        <select className="crm-select" style={{ width: "auto" }} value={moduleFilter} onChange={(e) => setModuleFilter(e.target.value)} aria-label="Module">
-          {MODULE_FILTERS.map((m) => (
-            <option key={m}>{m}</option>
-          ))}
-        </select>
-        <select className="crm-select" style={{ width: "auto" }} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort">
-          <option value="sla">SLA first</option>
-          <option value="priority">Priority</option>
-          <option value="newest">Newest</option>
-        </select>
-        <input className="crm-input" style={{ width: 220 }} placeholder="Search tasks…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search" />
+        <input className="crm-input" style={{ width: 240 }} placeholder="Search title, reference, person…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search" />
+      </div>
+
+      <div className="eo-inbox__bar eo-filters">
+        <Select
+          value={effectiveFamily}
+          onChange={(v) => (setView(null), setFamily(v as InboxTask["family"] | ""))}
+          aria-label="Type"
+          options={[{ value: "", label: `All types (${filtered.length})` }, ...(["approve", "do", "alert"] as const).map((f) => ({ value: f, label: `${FAMILY_LABEL[f]} (${counts[f]})` }))]}
+        />
+        <Select value={moduleFilter} onChange={setModuleFilter} aria-label="Module" options={[...MODULE_FILTERS]} />
+        <Select
+          value={slaFilter}
+          onChange={(v) => setSlaFilter(v as typeof slaFilter)}
+          aria-label="SLA"
+          options={[
+            { value: "", label: "Any SLA" },
+            { value: "breach", label: "Breached" },
+            { value: "due", label: "Due today / tomorrow" },
+            { value: "ok", label: "On track" },
+            { value: "paused", label: "Paused" },
+          ]}
+        />
+        <Select
+          value={assigneeFilter}
+          onChange={setAssigneeFilter}
+          aria-label="Assignee"
+          options={[{ value: "", label: "Anyone" }, { value: "__pool", label: "Unclaimed (pool)" }, ...assignees.map((a) => ({ value: a, label: a === actor.name ? `${a} (me)` : a }))]}
+        />
+        {family || moduleFilter !== "All modules" || slaFilter || assigneeFilter || q ? (
+          <button
+            type="button"
+            className="crm-link"
+            onClick={() => {
+              setFamily("");
+              setModuleFilter("All modules");
+              setSlaFilter("");
+              setAssigneeFilter("");
+              setQ("");
+              setView(null);
+            }}
+          >
+            Clear filters
+          </button>
+        ) : null}
       </div>
 
       <div className="eo-inbox__bar">
-        <span className="crm-small">Views:</span>
-        {[...BUILT_IN_VIEWS, ...saved].map((v) => (
-          <button key={v.id} type="button" className={`crm-pill ${view?.id === v.id ? "" : "crm-pill--outline"}`} style={{ cursor: "pointer", border: view?.id === v.id ? 0 : undefined }} onClick={() => setView(view?.id === v.id ? null : v)}>
-            {v.label}
-          </button>
-        ))}
-        <button type="button" className="crm-link" onClick={() => void saveView()}>
-          + Save current view
-        </button>
+        <div className="crm-row crm-small" style={{ gap: 6 }}>
+          Saved views
+          <Select
+            className="eo-views-select"
+            value={view?.id ?? ""}
+            onChange={(id) => {
+              if (id === "__save") return void saveView();
+              if (id === "__manage") return void removeView();
+              setView([...BUILT_IN_VIEWS, ...saved].find((v) => v.id === id) ?? null);
+            }}
+            aria-label="Saved views"
+            options={[
+              { value: "", label: "None — use the filters" },
+              ...BUILT_IN_VIEWS.map((v) => ({ value: v.id, label: v.label, group: "Standard" })),
+              ...saved.map((v) => ({ value: v.id, label: v.label, group: "Mine" })),
+              { value: "__save", label: "Save current filters as a view…", group: "Manage" },
+              ...(saved.length ? [{ value: "__manage", label: "Delete a saved view…", group: "Manage" }] : []),
+            ]}
+          />
+        </div>
         <span className="crm-spacer" />
         <label className="crm-check crm-small">
           <input type="checkbox" checked={showSnoozed} onChange={(e) => setShowSnoozed(e.target.checked)} /> Show snoozed
@@ -277,14 +405,6 @@ export function InboxView() {
         </span>
       </div>
 
-      <div className="crm-tabs" role="tablist" aria-label="Family">
-        {(["approve", "do", "alert"] as const).map((f) => (
-          <button key={f} type="button" role="tab" aria-selected={effectiveFamily === f} className={effectiveFamily === f ? "on" : ""} onClick={() => (setFamily(f), setView(view?.family ? null : view), setFocus(0))}>
-            {FAMILY_LABEL[f]} <span className="n">{counts[f]}</span>
-          </button>
-        ))}
-      </div>
-
       {sel.length ? (
         <div className="crm-banner crm-banner--info">
           <div className="crm-row" style={{ width: "100%" }}>
@@ -292,9 +412,9 @@ export function InboxView() {
             {!sameKind ? <span className="crm-small">Bulk actions only work on tasks of the same type and step.</span> : null}
             <span className="crm-spacer" />
             <button type="button" className="crm-btn crm-btn--sm crm-btn--pri" disabled={!sameKind} onClick={() => setBulk("approve")}>
-              Bulk {effectiveFamily === "approve" ? "approve" : "complete"}
+              Bulk {sel[0]?.family === "approve" ? "approve" : "complete"}
             </button>
-            {effectiveFamily === "approve" ? (
+            {sel[0]?.family === "approve" ? (
               <button type="button" className="crm-btn crm-btn--sm crm-btn--danger" disabled={!sameKind} onClick={() => setBulk("reject")}>
                 Bulk reject (one reason)
               </button>
@@ -306,58 +426,134 @@ export function InboxView() {
         </div>
       ) : null}
 
-      <div className="eo-inbox__list" role="list">
-        {!rows.length ? (
-          <div className="crm-empty">
+      <div className="crm-card crm-card--flush">
+        {!allRows.length ? (
+          <div className="crm-empty" style={{ border: 0 }}>
             <Icon name="i-check-c" />
             <b>Nothing here</b>
-            <p>{queue === "mine" ? "No tasks assigned to you. Check Unclaimed for pool work." : "This queue is clear."}</p>
+            <p>{queue === "mine" ? "No tasks assigned to you. Check Unclaimed for pool work." : "No tasks match these filters."}</p>
           </div>
         ) : (
-          rows.map((t, i) => {
-            const sla = slaOf(t);
-            const conflict = conflicts[t.id] ?? conflictOf(t);
-            return (
-              <div
-                key={t.id}
-                role="listitem"
-                className={`eo-task${i === focus ? " is-focus" : ""}${conflict ? " is-conflict" : ""}`}
-                onClick={() => (setFocus(i), setOpen({ id: t.id }))}
-              >
-                <div className="crm-row" style={{ gap: 10 }}>
-                  <input type="checkbox" checked={selected.has(t.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggle(t.id)} aria-label={`Select ${t.title}`} />
-                  <span className={`eo-task__ic eo-task__ic--${t.family}`}>
-                    <Icon name={moduleIcon(t.module)} />
-                  </span>
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <b>{t.title}</b>
-                  <div className="eo-task__meta">
-                    <span className={`crm-sla crm-sla--${sla.status === "ok" ? "ok" : sla.status}`}>{sla.label}</span>
-                    <span>{t.module}</span>
-                    <span className="crm-mono">{t.name}</span>
-                    <span>{t.assignee ? `→ ${t.assignee}` : `Pool: ${t.role}`}</span>
-                    {t.on_behalf_of ? <span className="crm-pill crm-pill--purple">on behalf of {t.on_behalf_of}</span> : null}
-                    {t.escalated ? <span className="crm-pill crm-pill--red">Escalated</span> : null}
-                    {t.rule ? <span className="crm-pill crm-pill--slate crm-mono">{t.rule}</span> : null}
-                    {t.live ? <span className="crm-pill">Live</span> : null}
-                  </div>
-                  {conflict ? <p className="crm-small" style={{ color: "var(--amber)", margin: "4px 0 0" }}>{conflict}</p> : null}
-                </div>
-                <div className="eo-task__act" onClick={(e) => e.stopPropagation()}>
-                  {!t.assignee && !t.live ? (
-                    <button type="button" className="crm-btn crm-btn--sm" onClick={() => void claimTask(t.id, actor).then(() => setToast("Claimed — SLA clock started.")).catch((e: Error) => setConflicts((c) => ({ ...c, [t.id]: e.message })))}>
-                      Claim
-                    </button>
-                  ) : null}
-                  <button type="button" className="crm-btn crm-btn--sm crm-btn--pri" onClick={() => setOpen({ id: t.id })}>
-                    Open
-                  </button>
-                </div>
-              </div>
-            );
-          })
+          <div className="crm-table-wrap">
+            <table className="crm-table eo-inbox-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 34 }}>
+                    <input
+                      type="checkbox"
+                      aria-label="Select all on this page"
+                      checked={rows.length > 0 && rows.every((t) => selected.has(t.id))}
+                      onChange={(e) =>
+                        setSelected((cur) => {
+                          const n = new Set(cur);
+                          for (const t of rows) {
+                            if (e.target.checked) n.add(t.id);
+                            else n.delete(t.id);
+                          }
+                          return n;
+                        })
+                      }
+                    />
+                  </th>
+                  <SortTh k="title" label="Task" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortTh k="module" label="Module" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortTh k="family" label="Type" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortTh k="assignee" label="Assignee" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortTh k="priority" label="SLA" sort={sort} dir={dir} onSort={sortBy} />
+                  <SortTh k="due" label="Due" sort={sort} dir={dir} onSort={sortBy} />
+                  <th className="num" style={{ width: 48 }}>
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((t, i) => {
+                  const sla = slaOf(t);
+                  const conflict = conflicts[t.id] ?? conflictOf(t);
+                  return (
+                    <tr
+                      key={t.id}
+                      className={`is-click${i === focus ? " is-focus" : ""}${conflict ? " is-conflict" : ""}`}
+                      onClick={() => (setFocus(i), setOpen({ id: t.id }))}
+                    >
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" checked={selected.has(t.id)} onChange={() => toggle(t.id)} aria-label={`Select ${t.title}`} />
+                      </td>
+                      <td style={{ minWidth: 260 }}>
+                        <b>{t.title}</b>
+                        <span className="crm-small">
+                          <span className="crm-mono">{t.name}</span> · {t.doctype}
+                          {t.rule ? ` · ${t.rule}` : ""}
+                        </span>
+                        {t.escalated || t.on_behalf_of || t.live ? (
+                          <span className="crm-row" style={{ gap: 4, marginTop: 4 }}>
+                            {t.escalated ? <span className="crm-pill crm-pill--red">Escalated</span> : null}
+                            {t.on_behalf_of ? <span className="crm-pill crm-pill--purple">for {t.on_behalf_of}</span> : null}
+                            {t.live ? <span className="crm-pill">Live</span> : null}
+                          </span>
+                        ) : null}
+                        {conflict ? <span className="crm-small" style={{ color: "var(--amber)" }}>{conflict}</span> : null}
+                      </td>
+                      <td>
+                        <span className="crm-row" style={{ gap: 6, flexWrap: "nowrap" }}>
+                          <Icon name={moduleIcon(t.module)} />
+                          {t.module}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`crm-pill crm-pill--${t.family === "alert" ? "red" : t.family === "do" ? "gold" : "navy"}`}>{FAMILY_LABEL[t.family].replace(/s$/, "")}</span>
+                      </td>
+                      <td>
+                        {t.assignee ? (
+                          <>
+                            {t.assignee === actor.name ? <b>Me</b> : t.assignee}
+                          </>
+                        ) : (
+                          <span className="crm-muted">Pool</span>
+                        )}
+                        <span className="crm-small">{t.role}</span>
+                      </td>
+                      <td>
+                        <span className={`crm-sla crm-sla--${sla.status}`}>{sla.label}</span>
+                      </td>
+                      <td style={{ whiteSpace: "nowrap" }}>{new Date(t.due).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</td>
+                      <td className="num" onClick={(e) => e.stopPropagation()}>
+                        <RowMenu items={rowMenu(t)} label={`Actions for ${t.title}`} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
+        {allRows.length ? (
+          <div className="eo-pager">
+            <span className="crm-small">
+              {safePage * pageSize + 1}–{Math.min(allRows.length, (safePage + 1) * pageSize)} of {allRows.length}
+            </span>
+            <span className="crm-spacer" />
+            <span className="crm-small crm-row" style={{ gap: 6 }}>
+              Rows
+              <Select value={String(pageSize)} onChange={(v) => setPageSize(Number(v))} options={["10", "25", "50", "100"]} aria-label="Rows per page" />
+            </span>
+            <button type="button" className="crm-btn crm-btn--sm" disabled={safePage === 0} onClick={() => (setPage(0), setFocus(0))} aria-label="First page">
+              «
+            </button>
+            <button type="button" className="crm-btn crm-btn--sm" disabled={safePage === 0} onClick={() => (setPage(safePage - 1), setFocus(0))}>
+              Previous
+            </button>
+            <span className="crm-small">
+              Page {safePage + 1} of {pageCount}
+            </span>
+            <button type="button" className="crm-btn crm-btn--sm" disabled={safePage >= pageCount - 1} onClick={() => (setPage(safePage + 1), setFocus(0))}>
+              Next
+            </button>
+            <button type="button" className="crm-btn crm-btn--sm" disabled={safePage >= pageCount - 1} onClick={() => (setPage(pageCount - 1), setFocus(0))} aria-label="Last page">
+              »
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {openTask ? (
@@ -376,7 +572,7 @@ export function InboxView() {
 
       {bulk ? (
         <ReasonDialog
-          title={bulk === "approve" ? `Bulk ${effectiveFamily === "approve" ? "approve" : "complete"} ${sel.length} tasks` : `Reject ${sel.length} tasks`}
+          title={bulk === "approve" ? `Bulk ${sel[0]?.family === "approve" ? "approve" : "complete"} ${sel.length} tasks` : `Reject ${sel.length} tasks`}
           requires={bulk === "reject" ? "reason" : undefined}
           danger={bulk === "reject"}
           consequence={bulk === "approve" ? `Applies the primary action to ${sel.length} ${sel[0]?.doctype} task(s) at "${sel[0]?.state}". Each one is checked again before it's applied.` : "One reason is recorded on every selected task and shown to each originator."}

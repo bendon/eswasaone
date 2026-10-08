@@ -91,7 +91,7 @@ describe("Approvals routes (gap 02)", () => {
     ["", "InboxView", /SLA breached/],
     ["team", "TeamView", /Load per officer/],
     ["delegations", "DelegationsView", /New delegation/],
-    ["done", "DoneView", /What I handled/],
+    ["done", "DoneView", /Handled last 30 days/],
   ] as const)("/approvals/%s", async (sub, name, text) => {
     const El = approvals[name];
     mount(`/approvals/${sub}`, [{ path: "approvals", element: <ApprovalsPage />, children: [sub ? { path: sub, element: <El /> } : { index: true, element: <El /> }] }]);

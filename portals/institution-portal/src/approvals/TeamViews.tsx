@@ -2,8 +2,8 @@
  * Supervisor team view (A8), delegations (A7) and my done history — gap 02.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Link, useNavigate } from "react-router-dom";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { CrmBanner, CrmDrawer } from "@eswasaone/shared-ui/crm";
 import { fmtDate, fmtStamp } from "@eswasaone/shared-ui/record";
 import { useStoreResource } from "@eswasaone/shared-ui/store";
@@ -25,11 +25,19 @@ import { useInstitution } from "../layout/InstitutionLayout";
 import { actorFrom } from "./live";
 import { ReassignDialog } from "./TaskDrawer";
 
+/** Staff as grouped Select options (by team), optionally with job title. */
+function staffOptions(list: typeof DEMO_STAFF, withTitle = false) {
+  return [...list]
+    .sort((a, b) => a.team.localeCompare(b.team) || a.name.localeCompare(b.name))
+    .map((s) => ({ value: s.name, label: withTitle ? `${s.name} — ${s.title}` : s.name, group: s.team }));
+}
+
 function heat(n: number, warn = 1, bad = 3) {
   return n >= bad ? "l2" : n >= warn ? "l1" : "";
 }
 
 export function TeamView() {
+  const navigate = useNavigate();
   const { user } = useInstitution();
   const actor = useMemo(() => actorFrom(user), [user]);
   const res = useStoreResource([taskStore], () => ({ load: teamLoad(), tasks: listTasks(actor, { queue: "team" }) }), [actor.name]);
@@ -37,6 +45,7 @@ export function TeamView() {
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [reassign, setReassign] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [tab, setTab] = useState<"load" | "pool">("load");
   useEffect(() => {
     if (!toast) return;
     const t = window.setTimeout(() => setToast(null), 3000);
@@ -79,10 +88,23 @@ export function TeamView() {
 
       <div className="crm-card crm-card--flush">
         <div className="crm-card__h">
-          <h3>Load per officer</h3>
-          <p>Open, due and breached tasks, average age in working days, and workload cap. Click a row to rebalance.</p>
+          <div className="crm-seg" role="tablist" aria-label="Team view">
+            <button type="button" role="tab" aria-selected={tab === "load"} className={tab === "load" ? "on" : ""} onClick={() => setTab("load")}>
+              Load per officer <span className="n">{load.length}</span>
+            </button>
+            <button type="button" role="tab" aria-selected={tab === "pool"} className={tab === "pool" ? "on" : ""} onClick={() => setTab("pool")}>
+              Unclaimed in pools <span className={`n${unclaimed.length ? " red" : ""}`}>{unclaimed.length}</span>
+            </button>
+          </div>
+          <p>{tab === "load" ? "Open, due and breached tasks, average age and workload cap. Click a row to rebalance." : "Pool tasks nobody has claimed yet, oldest SLA first."}</p>
+          {tab === "pool" ? (
+            <Link className="crm-link" to="/approvals?queue=unclaimed">
+              Open in inbox
+            </Link>
+          ) : null}
         </div>
-        <div className="crm-table-wrap">
+        {tab === "load" ? (
+        <div className="crm-table-wrap eo-scroll">
           <table className="crm-table eo-team">
             <thead>
               <tr>
@@ -134,30 +156,40 @@ export function TeamView() {
             </tbody>
           </table>
         </div>
-      </div>
-
-      <div className="crm-card">
-        <div className="crm-card__h">
-          <h3>Unclaimed in pools</h3>
-          <Link className="crm-link" to="/approvals?queue=unclaimed">
-            Open in inbox
-          </Link>
-        </div>
-        {!unclaimed.length ? (
-          <p className="crm-muted">Every pool task has an owner.</p>
+        ) : !unclaimed.length ? (
+          <p className="crm-muted" style={{ padding: "0 20px 20px" }}>
+            Every pool task has an owner.
+          </p>
         ) : (
-          <ul className="eo-notes">
-            {unclaimed.slice(0, 8).map((t) => (
-              <li key={t.id} className="eo-note">
-                <div style={{ flex: 1 }}>
-                  <b>{t.title}</b>
-                  <span className="crm-small">
-                    {t.role} · {taskSla(t).label}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <div className="crm-table-wrap eo-scroll">
+            <table className="crm-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Module</th>
+                  <th>Pool role</th>
+                  <th>SLA</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...unclaimed]
+                  .sort((a, b) => a.due.localeCompare(b.due))
+                  .map((t) => (
+                    <tr key={t.id} className="is-click" onClick={() => navigate(`/approvals?open=${encodeURIComponent(t.name)}`)}>
+                      <td>
+                        <b>{t.title}</b>
+                        <span className="crm-small crm-mono">{t.name}</span>
+                      </td>
+                      <td>{t.module}</td>
+                      <td>{t.role}</td>
+                      <td>
+                        <span className={`crm-sla crm-sla--${taskSla(t).status}`}>{taskSla(t).label}</span>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -308,24 +340,20 @@ export function DelegationsView() {
           <h3>New delegation</h3>
         </div>
         <div className="crm-form">
-          <label className="crm-field">
+          <div className="crm-field">
             Who is away
-            <select className="crm-select" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value, roles: [] })}>
-              <option value={actor.name}>{actor.name} (me)</option>
-              {isManager(actor) ? DEMO_STAFF.filter((s) => s.name !== actor.name).map((s) => <option key={s.name}>{s.name}</option>) : null}
-            </select>
-          </label>
-          <label className="crm-field">
+            <Select
+              block
+              aria-label="Who is away"
+              value={form.from}
+              onChange={(v) => setForm({ ...form, from: v, roles: [], to: form.to === v ? "" : form.to })}
+              options={[{ value: actor.name, label: `${actor.name} (me)` }, ...(isManager(actor) ? staffOptions(DEMO_STAFF.filter((s) => s.name !== actor.name)) : [])]}
+            />
+          </div>
+          <div className="crm-field">
             Delegate
-            <select className="crm-select" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })}>
-              <option value="">Choose…</option>
-              {DEMO_STAFF.filter((s) => s.name !== form.from).map((s) => (
-                <option key={s.name} value={s.name}>
-                  {s.name} — {s.title}
-                </option>
-              ))}
-            </select>
-          </label>
+            <Select block aria-label="Delegate" placeholder="Choose who acts for them…" value={form.to} onChange={(v) => setForm({ ...form, to: v })} options={staffOptions(DEMO_STAFF.filter((s) => s.name !== form.from), true)} />
+          </div>
           <div className="crm-field">
             Roles covered <span className="hint">None ticked = all roles</span>
             {roleChoices.map((r) => (
@@ -368,7 +396,7 @@ export function DoneView() {
   return (
     <div className="crm-card crm-card--flush">
       <div className="crm-card__h">
-        <h3>What I handled — last 30 days</h3>
+        <h3>Handled last 30 days</h3>
         <input className="crm-input" style={{ width: 220, marginLeft: "auto" }} placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       {!rows.length ? (

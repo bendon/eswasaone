@@ -1,3 +1,4 @@
+import { CampaignButton } from "./CrmExtras";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon, ModuleHeader } from "@eswasaone/shared-ui";
@@ -97,13 +98,7 @@ export function CrmSignalsView() {
               {selected.size ? (
                 <div className="crm-row" style={{ marginLeft: "auto" }}>
                   <span className="crm-small">{selected.size} selected</span>
-                  <Link
-                    className="crm-btn crm-btn--sm"
-                    to="/marketing"
-                    title="Hands the selected clients to Marketing as a campaign segment"
-                  >
-                    <Icon name="i-mega" /> Outreach campaign
-                  </Link>
+                  <CampaignButton signals={signals.filter((x) => selected.has(x.id))} />
                   <button type="button" className="crm-btn crm-btn--sm" onClick={() => void bulk("snoozed")}>
                     Snooze
                   </button>

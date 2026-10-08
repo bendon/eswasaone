@@ -385,6 +385,12 @@ export function StandardsPage() {
             and buy the licensed full text, delivered as a secured PDF to your inbox.
           </p>
           <div className="page-hero__actions">
+            <Link className="chip-cta" to="/standards/drafts">
+              Have your say on drafts
+            </Link>
+            <Link className="chip-cta" to="/standards/propose">
+              Propose a standard
+            </Link>
             <button
               type="button"
               className="chip-cta gold"

@@ -1,4 +1,5 @@
-import { apiFetch } from "@eswasaone/shared-ui";
+import { apiFetch, demoDataEnabled } from "@eswasaone/shared-ui";
+import { publicCatalogue } from "@eswasaone/shared-ui/standards";
 
 export type StandardSummary = {
   code: string;
@@ -113,6 +114,13 @@ export async function listStandards(q?: string, sector?: string): Promise<Standa
     const key = slug(f.code).toLowerCase();
     if (!bySlug.has(key)) bySlug.set(key, f);
   }
+  // Demo: the shared catalogue (what staff publish in Standards → Publication) is listed too.
+  if (demoDataEnabled())
+    for (const c of publicCatalogue()) {
+      const key = slug(c.ref.split(":")[0]).toLowerCase();
+      const row: StandardSummary = { code: c.ref, title: c.title, sector: c.sector, status: c.status === "current" ? (c.compulsory ? "Compulsory" : "Current") : c.status === "draft" ? "Draft for comment" : c.status === "superseded" ? `Superseded by ${c.superseded_by ?? ""}` : "Withdrawn", year: new Date(c.published_at).getFullYear(), price: c.price ? `SZL ${c.price}` : undefined, abstract: c.abstract, buy_url: c.status === "current" ? `/estore/${slug(c.ref)}` : undefined };
+      bySlug.set(key, { ...bySlug.get(key), ...row });
+    }
   items = [...bySlug.values()];
   if (q) {
     const ql = q.toLowerCase();

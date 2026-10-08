@@ -18,6 +18,7 @@ import { workingDaysBetween } from "./sla";
 import { notifyCaseCustomer, reconcileCaseTasks, syncCaseTasks } from "./caseTasks";
 import { SEED_CASES, SEED_CLIENTS, SEED_OPPORTUNITIES, SEED_QUOTES, SEED_SIGNALS } from "./seed";
 import type {
+  CampaignDraft,
   Case,
   CaseLink,
   CaseMessage,
@@ -33,8 +34,21 @@ import type {
   Opportunity,
   OpportunityStage,
   Signal,
+  KbArticle,
+  MessageDelivery,
+  ServiceContract,
+  SignalRules,
+  Contact,
+  CasePriority,
 } from "./types";
 import { demoDataEnabled } from "../demo";
+import { createInvoice } from "../billing/store";
+import { planVisit, registerSampleParent, registerVisitParent } from "../field/store";
+import type { VisitType } from "../field/types";
+import { notifySafe } from "../notify/store";
+import { openTask } from "../tasks/store";
+import { DEMO_STAFF } from "../tasks/staff";
+import { SEED_KB, SEED_CONTRACTS, DEFAULT_SIGNAL_RULES } from "./seedExtras";
 
 /* ---------------- mode ---------------- */
 
@@ -64,6 +78,12 @@ type Store = {
   opportunities: Record<string, Opportunity>;
   quotes: Record<string, CrmQuote>;
   config: CrmConfig;
+  /* Added for gap 04 — created lazily so existing demo data survives (ensureExtras). */
+  kb?: Record<string, KbArticle>;
+  contracts?: Record<string, ServiceContract>;
+  deliveries?: Record<string, MessageDelivery>;
+  campaigns?: Record<string, CampaignDraft>;
+  signal_rules?: SignalRules;
 };
 
 const KEY = "eswasaone.crm.v1";
@@ -98,7 +118,7 @@ function read(): Store {
     s = seeded();
     persist(s);
   }
-  cache = autoClose(s);
+  cache = ensureExtras(autoClose(s));
   reconcileCaseTasks(Object.values(cache.cases));
   return cache;
 }
@@ -531,6 +551,7 @@ function applyTransition(s: Store, c: Case, action: CaseActionId, actor: string,
   }
   syncCaseTasks(c, actor, t.label);
   notifyCaseCustomer(c, action, note);
+  if (["request_info", "resolve", "mark_duplicate"].includes(action) && note) logDelivery(s, c, `${t.label} — ${c.ref}`, note);
 }
 
 export async function actOnCase(
@@ -557,7 +578,10 @@ export async function postMessage(
   return mutate((s) => {
     const c = must(s, ref);
     addMsg(c, { author: actor.name, role: "staff", visibility, body });
-    if (visibility === "public") c.acknowledged_at ??= now();
+    if (visibility === "public") {
+      c.acknowledged_at ??= now();
+      logDelivery(s, c, `Update on your case ${c.ref}`, body);
+    }
     c.updated_at = now();
     return c;
   });
@@ -919,5 +943,650 @@ export async function saveCrmConfig(cfg: CrmConfig): Promise<CrmConfig> {
   return mutate((s) => {
     s.config = structuredClone(cfg);
     return cfg;
+  });
+}
+
+/* =====================================================================
+ * Gap 04 additions — clients & contacts, customer quotes, knowledge base,
+ * contracts, outbound delivery log, signal rules, field visits from cases,
+ * appeals panel, campaign hand-off. TODO: wire real — /crm/clients (POST/PATCH,
+ * /merge, /contacts), /crm/quotes/{id}/customer-act, /crm/knowledge, /crm/contracts,
+ * /crm/deliveries (+resend), /crm/signal-rules, /crm/campaigns, /cases/{ref}/field-visit,
+ * /cases/{ref}/appeal-decision.
+ * ===================================================================== */
+
+function ensureExtras(s: Store): Store {
+  s.kb ??= Object.fromEntries(structuredClone(SEED_KB).map((a) => [a.id, a]));
+  s.contracts ??= Object.fromEntries(structuredClone(SEED_CONTRACTS).map((c) => [c.id, c]));
+  s.deliveries ??= {};
+  s.campaigns ??= {};
+  s.signal_rules ??= structuredClone(DEFAULT_SIGNAL_RULES);
+  const q = s.quotes["QT-26-014"];
+  if (q && !q.customer_email) {
+    q.customer_email = "demo";
+    q.public_code = "VD7Q2K";
+  }
+  for (const x of Object.values(s.quotes)) {
+    if (!x.customer_email && x.client_id) x.customer_email = s.clients[x.client_id]?.contacts.find((c) => c.primary)?.email;
+    x.public_code ??= Math.random().toString(36).slice(2, 8).toUpperCase();
+  }
+  return s;
+}
+
+/* ---------------- outbound delivery log (R7) ---------------- */
+
+function logDelivery(s: Store, c: Case, subject: string, body: string) {
+  s.deliveries ??= {};
+  const pref = c.reporter.preferred;
+  const to = pref === "email" ? c.reporter.email : c.reporter.phone ?? c.reporter.email;
+  const channel: MessageDelivery["channel"] = c.reporter.anonymous ? "portal" : pref === "whatsapp" ? "whatsapp" : pref === "sms" || pref === "phone" ? "sms" : "email";
+  const id = `DLV-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+  const failed = channel !== "portal" && !to;
+  s.deliveries[id] = { id, case_ref: c.ref, to: to ?? "Tracking page only", channel, subject, body, status: failed ? "failed" : "sent", at: now(), attempts: 1, error: failed ? `No ${channel === "email" ? "email address" : "phone number"} on file` : undefined };
+}
+
+export async function listDeliveries(f: { case_ref?: string; quote_id?: string } = {}): Promise<MessageDelivery[]> {
+  guard("Delivery log");
+  return structuredClone(Object.values(read().deliveries ?? {}))
+    .filter((d) => (!f.case_ref || d.case_ref === f.case_ref) && (!f.quote_id || d.quote_id === f.quote_id))
+    .sort((a, b) => b.at.localeCompare(a.at));
+}
+
+export async function resendDelivery(id: string, channel?: MessageDelivery["channel"], to?: string): Promise<MessageDelivery> {
+  guard("Resend");
+  return mutate((s) => {
+    const d = s.deliveries?.[id];
+    if (!d) throw new Error("Message not found");
+    if (channel) d.channel = channel;
+    if (to) d.to = to;
+    d.attempts += 1;
+    d.at = now();
+    const ok = d.channel === "portal" || (d.to && d.to !== "Tracking page only");
+    d.status = ok ? "sent" : "failed";
+    d.error = ok ? undefined : "Still no address for this channel";
+    return d;
+  });
+}
+
+/* ---------------- system cases (R-V4 and other automation) ---------------- */
+
+export function openSystemCase(input: { type: CaseType; subject: string; description: string; client_id?: string; priority?: CasePriority; about?: Case["about"] }): Case | null {
+  if (!crmDemoMode()) return null;
+  return mutate((s) => {
+    const ref = nextRef(s, "CS");
+    const at = now();
+    const team = s.config.case_types[input.type].team;
+    const c: Case = {
+      ref,
+      type: input.type,
+      subject: input.subject,
+      description: input.description,
+      state: "Triaged",
+      priority: input.priority ?? "high",
+      channel: "web",
+      team,
+      created_at: at,
+      updated_at: at,
+      acknowledged_at: at,
+      about: input.about,
+      client_id: input.client_id,
+      sector: input.client_id ? s.clients[input.client_id]?.sector : undefined,
+      reporter: { anonymous: false, name: "ESWASA (system)", preferred: "email" },
+      access_code: accessCode(),
+      thread: [],
+      events: [{ at, actor: "System", action: "Opened by automation", to: "Triaged" }],
+      links: [],
+      tags: ["system"],
+      reopen_count: 0,
+      paused_wd: 0,
+    };
+    addMsg(c, { author: "System", role: "system", visibility: "internal", body: input.description });
+    s.cases[ref] = c;
+    syncCaseTasks(c, "System", "Opened by automation");
+    return c;
+  });
+}
+
+/* ---------------- clients & contacts (R4, R5) ---------------- */
+
+export function findClientDuplicates(name: string, regNo?: string, excludeId?: string): Client[] {
+  if (!crmDemoMode()) return [];
+  const norm = (x: string) => x.toLowerCase().replace(/\(pty\)|ltd|limited|co\.|company|[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+  const n = norm(name);
+  if (n.length < 3) return [];
+  return structuredClone(
+    Object.values(read().clients).filter((c) => c.id !== excludeId && !c.merged_into && (norm(c.name) === n || norm(c.name).includes(n) || n.includes(norm(c.name)) || (regNo && c.reg_no && c.reg_no === regNo))),
+  );
+}
+
+export type NewClientInput = { name: string; sector: string; region: Client["region"]; tier: Client["tier"]; employees?: number; exporter: boolean; reg_no?: string; address?: string; website?: string; account_manager?: string; contact?: Omit<Contact, "id"> };
+
+export async function createClient(input: NewClientInput, actor: CrmActor): Promise<Client> {
+  guard("New client");
+  if (!input.name.trim()) throw new Error("Organisation name is required.");
+  return mutate((s) => {
+    const n = Object.keys(s.clients).length + 1;
+    let id = `CL-${String(n).padStart(3, "0")}`;
+    while (s.clients[id]) id = `CL-${String(Number(id.slice(3)) + 1).padStart(3, "0")}`;
+    const c: Client = {
+      id,
+      name: input.name.trim(),
+      sector: input.sector,
+      region: input.region,
+      tier: input.tier,
+      status: input.tier === "prospect" ? "prospect" : "active",
+      reg_no: input.reg_no,
+      since: now(),
+      employees: input.employees,
+      exporter: input.exporter,
+      account_manager: input.account_manager,
+      address: input.address,
+      website: input.website,
+      tags: [],
+      contacts: input.contact ? [{ ...input.contact, id: `${id}-c1`, primary: true, active: true }] : [],
+      certificates: [],
+      applications: [],
+      instruments: [],
+      training: [],
+      orders: [],
+      invoices: [],
+      activity: [{ id: `${id}-a1`, at: now(), kind: "note", by: actor.name, text: "Client record created" }],
+    };
+    s.clients[id] = c;
+    return c;
+  });
+}
+
+export async function updateClientDetails(id: string, patch: Partial<Pick<Client, "name" | "sector" | "region" | "tier" | "status" | "employees" | "exporter" | "reg_no" | "address" | "website" | "account_manager" | "tags">>, actor: CrmActor): Promise<Client> {
+  guard("Client update");
+  return mutate((s) => {
+    const c = s.clients[id];
+    if (!c) throw new Error("Client not found");
+    const changes = Object.entries(patch).filter(([k, v]) => JSON.stringify((c as Record<string, unknown>)[k]) !== JSON.stringify(v));
+    Object.assign(c, patch);
+    if (changes.length) c.activity.unshift({ id: `${id}-a${Date.now() % 100000}`, at: now(), kind: "note", by: actor.name, text: `Updated ${changes.map(([k]) => k).join(", ")}` });
+    return c;
+  });
+}
+
+/** Merge `dropId` into `keepId`: contacts, records and references move; the duplicate is retired. */
+export async function mergeClients(keepId: string, dropId: string, actor: CrmActor): Promise<Client> {
+  guard("Merge");
+  if (keepId === dropId) throw new Error("Pick two different clients.");
+  return mutate((s) => {
+    const keep = s.clients[keepId];
+    const drop = s.clients[dropId];
+    if (!keep || !drop) throw new Error("Client not found");
+    for (const ct of drop.contacts) if (!keep.contacts.some((x) => x.email && x.email === ct.email)) keep.contacts.push({ ...ct, id: `${keepId}-m${ct.id}`, primary: false });
+    keep.certificates.push(...drop.certificates);
+    keep.applications.push(...drop.applications);
+    keep.instruments.push(...drop.instruments);
+    keep.orders.push(...drop.orders);
+    keep.invoices.push(...drop.invoices);
+    keep.activity.unshift({ id: `${keepId}-a${Date.now() % 100000}`, at: now(), kind: "note", by: actor.name, text: `Merged duplicate ${drop.name} (${drop.id}) into this record` });
+    for (const c of Object.values(s.cases)) if (c.client_id === dropId) c.client_id = keepId;
+    for (const o of Object.values(s.opportunities)) if (o.client_id === dropId) o.client_id = keepId;
+    for (const q of Object.values(s.quotes)) if (q.client_id === dropId) q.client_id = keepId;
+    for (const g of Object.values(s.signals)) if (g.client_id === dropId) g.client_id = keepId;
+    delete s.clients[dropId];
+    return keep;
+  });
+}
+
+export async function saveContact(clientId: string, contact: Omit<Contact, "id"> & { id?: string }, actor: CrmActor): Promise<Client> {
+  guard("Contact");
+  if (!contact.name.trim()) throw new Error("Contact name is required.");
+  if (!contact.email?.trim() && !contact.phone?.trim()) throw new Error("Give an email or a phone number.");
+  return mutate((s) => {
+    const c = s.clients[clientId];
+    if (!c) throw new Error("Client not found");
+    if (contact.primary) c.contacts.forEach((x) => (x.primary = false));
+    if (contact.id) {
+      const ct = c.contacts.find((x) => x.id === contact.id);
+      if (!ct) throw new Error("Contact not found");
+      Object.assign(ct, contact);
+    } else c.contacts.push({ ...contact, id: `${clientId}-c${c.contacts.length + 1}-${Date.now() % 1000}`, active: true });
+    c.activity.unshift({ id: `${clientId}-a${Date.now() % 100000}`, at: now(), kind: "note", by: actor.name, text: `${contact.id ? "Updated" : "Added"} contact ${contact.name}` });
+    return c;
+  });
+}
+
+export async function setContactActive(clientId: string, contactId: string, active: boolean, actor: CrmActor): Promise<Client> {
+  guard("Contact");
+  return mutate((s) => {
+    const c = s.clients[clientId];
+    const ct = c?.contacts.find((x) => x.id === contactId);
+    if (!c || !ct) throw new Error("Contact not found");
+    if (!active && ct.primary) throw new Error("Make another contact primary first.");
+    ct.active = active;
+    c.activity.unshift({ id: `${clientId}-a${Date.now() % 100000}`, at: now(), kind: "note", by: actor.name, text: `${active ? "Reactivated" : "Deactivated"} contact ${ct.name}` });
+    return c;
+  });
+}
+
+/** Invite a contact to a Service portal business account linked to this client (R5). */
+export async function inviteContact(clientId: string, contactId: string, actor: CrmActor): Promise<Client> {
+  guard("Invite");
+  const c = mutate((s) => {
+    const c = s.clients[clientId];
+    const ct = c?.contacts.find((x) => x.id === contactId);
+    if (!c || !ct) throw new Error("Contact not found");
+    if (!ct.email) throw new Error("The contact needs an email address to be invited.");
+    ct.portal = { invited_at: now(), status: "invited" };
+    c.activity.unshift({ id: `${clientId}-a${Date.now() % 100000}`, at: now(), kind: "email", by: actor.name, text: `Invited ${ct.name} to the Service portal business account` });
+    return c;
+  });
+  const ct = c.contacts.find((x) => x.id === contactId)!;
+  notifySafe({ audience: "customer", to: ct.email!, kind: "info", title: `You're invited to ${c.name}'s ESWASA account`, body: `${actor.name} invited you to manage ${c.name}'s certificates, quotes, calibration jobs and invoices. Sign in with this email to accept.`, link: "/account", channel: ["email"] });
+  return c;
+}
+
+/** Contact directory / contact-centre lookup by phone, email or name. */
+export async function lookupContacts(q: string): Promise<{ client: Client; contact: Contact; open_cases: Case[] }[]> {
+  guard("Lookup");
+  const t = normalise(q);
+  if (t.length < 3) return [];
+  const s = read();
+  const out: { client: Client; contact: Contact; open_cases: Case[] }[] = [];
+  for (const c of Object.values(s.clients)) {
+    for (const ct of c.contacts) {
+      if ([ct.phone, ct.email, ct.name].some((v) => normalise(v).includes(t))) {
+        out.push({ client: structuredClone(c), contact: structuredClone(ct), open_cases: structuredClone(Object.values(s.cases).filter((x) => x.client_id === c.id && !["Closed", "Resolved"].includes(x.state))) });
+      }
+    }
+  }
+  // Callers who aren't contacts yet but lodged cases with this phone/email.
+  for (const x of Object.values(s.cases)) {
+    if ([x.reporter.phone, x.reporter.email].some((v) => v && normalise(v).includes(t)) && !out.some((o) => o.contact.phone === x.reporter.phone || o.contact.email === x.reporter.email)) {
+      const client = x.client_id ? s.clients[x.client_id] : undefined;
+      out.push({ client: structuredClone(client ?? ({ id: "", name: x.reporter.organisation ?? "Member of the public", contacts: [] } as unknown as Client)), contact: { id: `case-${x.ref}`, name: x.reporter.name ?? "Unknown caller", role: "Case reporter", email: x.reporter.email, phone: x.reporter.phone }, open_cases: structuredClone(Object.values(s.cases).filter((y) => y.reporter.phone === x.reporter.phone && !["Closed"].includes(y.state))) });
+    }
+  }
+  return out.slice(0, 12);
+}
+
+export async function listAllContacts(): Promise<{ client: Pick<Client, "id" | "name" | "tier">; contact: Contact }[]> {
+  guard("Contacts");
+  return structuredClone(Object.values(read().clients).flatMap((c) => c.contacts.map((contact) => ({ client: { id: c.id, name: c.name, tier: c.tier }, contact })))).sort((a, b) => a.contact.name.localeCompare(b.contact.name));
+}
+
+/** Won opportunity for a prospect → client record (pre-filled from the signal). */
+export async function convertProspect(oppId: string, actor: CrmActor, mergeInto?: string): Promise<Client> {
+  guard("Convert prospect");
+  const s0 = read();
+  const o = s0.opportunities[oppId];
+  if (!o) throw new Error("Opportunity not found");
+  if (o.client_id) throw new Error("This opportunity already has a client.");
+  const sig = o.signal_id ? s0.signals[o.signal_id] : undefined;
+  const client = mergeInto
+    ? (structuredClone(s0.clients[mergeInto]) as Client)
+    : await createClient({ name: o.prospect_name ?? sig?.prospect?.name ?? o.title, sector: sig?.prospect?.sector ?? sig?.sector ?? "Other", region: "Manzini", tier: "standard", exporter: false, contact: sig?.prospect?.contact ? { name: sig.prospect.contact, role: "Main contact", email: sig.prospect.email, phone: sig.prospect.phone, primary: true } : undefined }, actor);
+  mutate((s) => {
+    const opp = s.opportunities[oppId];
+    opp.client_id = client.id;
+    opp.prospect_name = undefined;
+    opp.notes.unshift({ at: now(), by: actor.name, text: `Linked to client ${client.name} (${client.id})` });
+    for (const q of Object.values(s.quotes)) if (q.opportunity_id === oppId) q.client_id = client.id;
+  });
+  return client;
+}
+
+/* ---------------- customer quotes (R2) ---------------- */
+
+const quoteVisible = (q: CrmQuote) => ["sent", "accepted", "declined", "expired"].includes(q.status);
+
+export async function listQuotesForCustomer(email?: string): Promise<CrmQuote[]> {
+  guard("Your quotes");
+  const e = normalise(email);
+  return structuredClone(Object.values(read().quotes).filter((q) => quoteVisible(q) && (q.customer_email === "demo" || (e && normalise(q.customer_email) === e)))).sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+/** Customer view of one quote — by signed-in email or by the public code on the link. */
+export async function getQuoteForCustomer(id: string, proof: { email?: string; code?: string }): Promise<CrmQuote | null> {
+  guard("Quote");
+  const q = read().quotes[id];
+  if (!q || !quoteVisible(q)) return null;
+  const ok = q.customer_email === "demo" || (proof.email && normalise(proof.email) === normalise(q.customer_email)) || (proof.code && proof.code.trim().toUpperCase() === q.public_code);
+  if (!ok) return null;
+  const out = structuredClone(q);
+  out.approval = undefined;
+  out.notes = undefined;
+  return out;
+}
+
+export async function customerActOnQuote(id: string, action: "accept" | "decline", sig: { name: string; title: string; reason?: string }): Promise<CrmQuote> {
+  guard("Quote response");
+  if (action === "accept" && (!sig.name.trim() || !sig.title.trim())) throw new Error("Type your full name and position to accept.");
+  if (action === "decline" && !sig.reason?.trim()) throw new Error("Tell us why, so we can improve the offer.");
+  const q = mutate((s) => {
+    const q = s.quotes[id];
+    if (!q) throw new Error("Quote not found");
+    if (q.status !== "sent") throw new Error(`This quote is ${q.status.replace("_", " ")} and can't be changed.`);
+    if (new Date(q.valid_until).getTime() < Date.now()) {
+      q.status = "expired";
+      throw new Error("This quote has expired. Ask ESWASA for a new one.");
+    }
+    q.customer_acceptance = { name: sig.name, title: sig.title, at: now(), reason: sig.reason };
+    const opp = q.opportunity_id ? s.opportunities[q.opportunity_id] : undefined;
+    if (action === "accept") {
+      q.status = "accepted";
+      q.accepted_at = now();
+      if (opp) {
+        opp.stage = "won";
+        opp.probability = 100;
+        opp.notes.unshift({ at: now(), by: `${sig.name} (customer)`, text: "Accepted the quote online" });
+      }
+    } else {
+      q.status = "declined";
+      if (opp) {
+        opp.stage = "lost";
+        opp.lost_reason = `Declined online: ${sig.reason}`;
+      }
+    }
+    if (q.client_id && s.clients[q.client_id]) s.clients[q.client_id].activity.unshift({ id: `${q.client_id}-a${Date.now() % 100000}`, at: now(), kind: "note", by: `${sig.name} (customer)`, text: `${action === "accept" ? "Accepted" : "Declined"} quote ${q.id} online` });
+    return q;
+  });
+  if (action === "accept") {
+    const t = quoteTotals(q);
+    try {
+      const inv = createInvoice({ source: "crm", ref: q.id, title: `Quote ${q.id} — ${q.client_name}`, customer: q.client_name, customer_email: q.customer_email ?? "demo", client_id: q.client_id, lines: q.lines.map((l) => ({ label: l.label, qty: l.qty, unit_price: Math.round(l.unit_price * (1 - q.discount_pct / 100) * 100) / 100 })), due_at: new Date(Date.now() + 30 * 86_400_000).toISOString(), deposit: Math.round(t.total * 0.5 * 100) / 100 });
+      mutate((s) => (s.quotes[id].invoice_id = inv.id));
+      q.invoice_id = inv.id;
+    } catch {
+      /* billing off */
+    }
+    try {
+      openTask({ doctype: "CRM Quote", name: q.id, state: "Accepted", seq: 1, family: "do", verb: "task", role: "Sales Manager", title: `Quote ${q.id} accepted online — create the work orders`, module: "CRM", link: "/crm/quotes", sla_days: 2, facts: { Client: q.client_name, "Signed by": `${sig.name}, ${sig.title}` } });
+    } catch {
+      /* ignore */
+    }
+  }
+  return q;
+}
+
+/* ---------------- knowledge base ---------------- */
+
+export async function listArticles(f: { status?: KbArticle["status"]; q?: string; type?: CaseType } = {}): Promise<KbArticle[]> {
+  guard("Knowledge base");
+  const q = f.q?.trim().toLowerCase();
+  return structuredClone(Object.values(read().kb ?? {}))
+    .filter((a) => !f.status || a.status === f.status)
+    .filter((a) => !f.type || a.types.includes(f.type))
+    .filter((a) => !q || `${a.title} ${a.body} ${a.tags.join(" ")}`.toLowerCase().includes(q))
+    .sort((a, b) => b.helpful - a.helpful);
+}
+
+/** Public search (Service /help and the lodge form). Published only; never throws. */
+export function searchArticles(q: string, type?: CaseType): KbArticle[] {
+  if (!crmDemoMode()) return [];
+  const words = q.toLowerCase().split(/\W+/).filter((w) => w.length > 3);
+  return structuredClone(Object.values(read().kb ?? {}))
+    .filter((a) => a.status === "published")
+    .map((a) => ({ a, score: (type && a.types.includes(type) ? 2 : 0) + words.filter((w) => `${a.title} ${a.body} ${a.tags.join(" ")}`.toLowerCase().includes(w)).length }))
+    .filter((x) => !q.trim() || x.score > 0)
+    .sort((x, y) => y.score - x.score || y.a.helpful - x.a.helpful)
+    .map((x) => x.a)
+    .slice(0, 6);
+}
+
+export async function saveArticle(a: Omit<KbArticle, "id" | "updated_at" | "views" | "helpful"> & { id?: string }, actor: CrmActor): Promise<KbArticle> {
+  guard("Article");
+  if (!a.title.trim() || !a.body.trim()) throw new Error("Title and body are required.");
+  return mutate((s) => {
+    s.kb ??= {};
+    const id = a.id ?? `KB-${String(Object.keys(s.kb).length + 1).padStart(3, "0")}`;
+    const prev = s.kb[id];
+    s.kb[id] = { ...a, views: prev?.views ?? 0, helpful: prev?.helpful ?? 0, id, by: actor.name, updated_at: now() };
+    return s.kb[id];
+  });
+}
+
+export async function articleFromCase(ref: string, actor: CrmActor): Promise<KbArticle> {
+  const c = read().cases[ref];
+  if (!c) throw new Error("Case not found");
+  if (!c.resolution) throw new Error("Only resolved cases can become articles.");
+  return saveArticle({ title: c.subject.endsWith("?") ? c.subject : `${c.subject} — what to do`, body: c.resolution, tags: c.tags, types: [c.type], status: "draft", by: actor.name, from_case: ref }, actor);
+}
+
+export function markArticleHelpful(id: string): void {
+  if (!crmDemoMode()) return;
+  mutate((s) => {
+    const a = s.kb?.[id];
+    if (a) a.helpful += 1;
+  });
+}
+
+/* ---------------- contracts ---------------- */
+
+export async function listContracts(): Promise<ServiceContract[]> {
+  guard("Contracts");
+  return structuredClone(Object.values(read().contracts ?? {})).sort((a, b) => a.end.localeCompare(b.end));
+}
+
+export async function saveContract(c: Omit<ServiceContract, "id"> & { id?: string }): Promise<ServiceContract> {
+  guard("Contract");
+  if (!c.client_id || !c.title.trim()) throw new Error("Client and title are required.");
+  if (new Date(c.end) <= new Date(c.start)) throw new Error("The end date must be after the start date.");
+  return mutate((s) => {
+    s.contracts ??= {};
+    const id = c.id ?? nextRef(s, "CON");
+    s.contracts[id] = { ...c, id };
+    return s.contracts[id];
+  });
+}
+
+export async function contractFromQuote(quoteId: string): Promise<ServiceContract> {
+  const q = read().quotes[quoteId];
+  if (!q) throw new Error("Quote not found");
+  if (q.status !== "accepted") throw new Error("Only accepted quotes become agreements.");
+  const codes = q.lines.map((l) => l.code).join(" ");
+  const kind: ServiceContract["kind"] = codes.includes("CAL") ? "calibration_contract" : codes.includes("TRN") ? "training_agreement" : codes.includes("STD") ? "standards_subscription" : "certification_agreement";
+  return saveContract({ client_id: q.client_id ?? "", client_name: q.client_name, kind, title: `Agreement from ${q.id}`, quote_id: q.id, start: now(), end: new Date(Date.now() + 365 * 86_400_000).toISOString(), value: quoteTotals(q).net, renewal_reminder_days: 60, status: "active" });
+}
+
+/* ---------------- signal rules & generators (R10) ---------------- */
+
+export type SignalCandidate = Omit<Signal, "id" | "created_at" | "status"> & { source_ref: string };
+type SignalGenerator = { key: keyof SignalRules["generators"]; label: string; run: (rules: SignalRules) => SignalCandidate[] };
+const generators: SignalGenerator[] = [];
+
+/** Domain stores register generators (certificates, instruments, …) so CRM never imports them. */
+export function registerSignalGenerator(g: SignalGenerator): void {
+  if (!generators.some((x) => x.key === g.key && x.label === g.label)) generators.push(g);
+}
+
+export function signalGenerators(): { key: string; label: string }[] {
+  return generators.map((g) => ({ key: g.key, label: g.label }));
+}
+
+export async function getSignalRules(): Promise<SignalRules> {
+  guard("Signal rules");
+  return structuredClone(read().signal_rules ?? DEFAULT_SIGNAL_RULES);
+}
+
+export async function saveSignalRules(r: SignalRules): Promise<SignalRules> {
+  guard("Signal rules");
+  return mutate((s) => (s.signal_rules = structuredClone(r)));
+}
+
+export async function runSignalGenerators(): Promise<{ created: number; by: Record<string, number> }> {
+  guard("Signal generators");
+  const rules = read().signal_rules ?? DEFAULT_SIGNAL_RULES;
+  const by: Record<string, number> = {};
+  let created = 0;
+  const found = generators.filter((g) => rules.generators[g.key]).flatMap((g) => g.run(rules).map((c) => ({ g, c })));
+  mutate((s) => {
+    for (const { g, c } of found) {
+      if (Object.values(s.signals).some((x) => x.source_ref === c.source_ref)) continue;
+      const id = `SIG-${String(Date.now() % 100000).padStart(5, "0")}${created}`;
+      s.signals[id] = { ...c, id, created_at: now(), status: "new" };
+      created += 1;
+      by[g.label] = (by[g.label] ?? 0) + 1;
+    }
+  });
+  return { created, by };
+}
+
+/* ---------------- campaigns (R9) ---------------- */
+
+export async function createCampaignDraft(input: { name: string; client_ids: string[]; signal_kind?: Signal["kind"]; message: string }, actor: CrmActor): Promise<CampaignDraft> {
+  guard("Campaign");
+  if (!input.client_ids.length) throw new Error("Select at least one client.");
+  return mutate((s) => {
+    s.campaigns ??= {};
+    const id = nextRef(s, "CMP");
+    const d: CampaignDraft = { ...input, id, created_at: now(), by: actor.name, status: "draft" };
+    s.campaigns[id] = d;
+    for (const cid of input.client_ids) s.clients[cid]?.activity.unshift({ id: `${cid}-a${Date.now() % 100000}${id}`, at: now(), kind: "email", by: actor.name, text: `Added to campaign "${input.name}"` });
+    return d;
+  });
+}
+
+export async function listCampaigns(): Promise<CampaignDraft[]> {
+  guard("Campaigns");
+  return structuredClone(Object.values(read().campaigns ?? {})).sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+export async function markCampaignSent(id: string, actor: CrmActor): Promise<CampaignDraft> {
+  return mutate((s) => {
+    const d = s.campaigns?.[id];
+    if (!d) throw new Error("Campaign not found");
+    d.status = "sent";
+    for (const cid of d.client_ids) s.clients[cid]?.activity.unshift({ id: `${cid}-a${Date.now() % 100000}s`, at: now(), kind: "email", by: actor.name, text: `Outreach sent: "${d.name}"` });
+    return d;
+  });
+}
+
+/* ---------------- bulk actions ---------------- */
+
+export async function bulkAssign(refs: string[], assignee: string, team: string | undefined, actor: CrmActor): Promise<number> {
+  guard("Bulk assign");
+  let n = 0;
+  for (const ref of refs) {
+    try {
+      await assignCase(ref, actor, assignee, team);
+      n += 1;
+    } catch {
+      /* skip impartiality conflicts */
+    }
+  }
+  return n;
+}
+
+/* ---------------- field visits from cases (R6) ---------------- */
+
+export async function requestFieldVisit(ref: string, input: { type: Extract<VisitType, "market_sampling" | "complaint_investigation">; site: string; address: string; date: string; scope: string }, actor: CrmActor): Promise<Case> {
+  guard("Field visit");
+  const c0 = read().cases[ref];
+  if (!c0) throw new Error("Case not found");
+  if (c0.field_visit && !["Closed", "Cancelled"].includes(c0.field_visit.state)) throw new Error(`Visit ${c0.field_visit.id} is already open for this case.`);
+  if (!input.site.trim() || !input.date) throw new Error("Give the location and date.");
+  const v = planVisit({ type: input.type, title: `${input.type === "market_sampling" ? "Market sampling" : "Investigation"} — ${input.site} (${ref})`, parent: { doctype: "Case", name: ref, label: `${ref} · ${c0.subject}`, link: `/crm/cases/${ref}` }, client: c0.about?.label ?? input.site, client_email: "", site: { name: input.site, address: input.address, contact: "On site" }, planned_date: new Date(input.date).toISOString(), scope: input.scope }, { name: actor.name, roles: actor.roles });
+  return mutate((s) => {
+    const c = must(s, ref);
+    c.field_visit = { id: v.id, type: input.type, state: v.state };
+    c.links.push({ kind: "investigation", ref: v.id, label: `Field visit ${v.id}` });
+    c.events.push({ at: now(), actor: actor.name, action: `Requested ${input.type.replace("_", " ")} visit`, note: v.id });
+    addMsg(c, { author: actor.name, role: "staff", visibility: "internal", body: `Field visit ${v.id} planned for ${new Date(input.date).toLocaleDateString()} at ${input.site}. The case waits for the visit outcome.` });
+    if (c.state === "Triaged" || c.state === "Open") {
+      const from = c.state;
+      c.state = "In Progress";
+      c.assignee ??= actor.name;
+      c.events.push({ at: now(), actor: actor.name, action: "Start work", from, to: "In Progress" });
+      syncCaseTasks(c, actor.name, "Field visit requested");
+    }
+    return c;
+  });
+}
+
+function caseNote(ref: string, body: string, patch?: (c: Case) => void) {
+  if (!crmDemoMode()) return;
+  mutate((s) => {
+    const c = s.cases[ref];
+    if (!c) return;
+    addMsg(c, { author: "System", role: "system", visibility: "internal", body });
+    c.events.push({ at: now(), actor: "System", action: body.split(".")[0] });
+    patch?.(c);
+    c.updated_at = now();
+  });
+}
+
+registerVisitParent("Case", {
+  onClosed: (v) => caseNote(v.parent!.name, `Field visit ${v.id} closed. ${v.sample_ids.length ? `${v.sample_ids.length} sample(s) sent to the lab — waiting for results.` : "No samples taken."} ${v.notes ? `Inspector notes: ${v.notes}` : ""}`, (c) => (c.field_visit = { ...(c.field_visit ?? { id: v.id, type: v.type }), state: "Closed" })),
+  onAborted: (v) => caseNote(v.parent!.name, `Field visit ${v.id} aborted: ${v.abort?.reason ?? ""}`, (c) => (c.field_visit = { ...(c.field_visit ?? { id: v.id, type: v.type }), state: "Aborted" })),
+  onSubmitted: (v) => caseNote(v.parent!.name, `Field visit ${v.id} report submitted for review.`, (c) => (c.field_visit = { ...(c.field_visit ?? { id: v.id, type: v.type }), state: "Submitted" })),
+  onCancelled: (v) => caseNote(v.parent!.name, `Field visit ${v.id} cancelled.`, (c) => (c.field_visit = { ...(c.field_visit ?? { id: v.id, type: v.type }), state: "Cancelled" })),
+});
+
+registerSampleParent("Case", {
+  onResult: (smp) => {
+    const ref = smp.parent!.name;
+    caseNote(ref, `Lab result for sample ${smp.seal} (${smp.product}): ${smp.result?.toUpperCase()}. ${smp.result_note ?? ""}`, (c) => {
+      if (c.field_visit) c.field_visit.result = smp.result;
+    });
+    if (smp.result === "fail") {
+      const c = read().cases[ref];
+      try {
+        openTask({ doctype: "Case", name: ref, state: "R-V4", seq: 900, family: "approve", verb: "approve", role: "Certification Manager", title: `R-V4: failed market sample ${smp.seal} — review certification of ${c?.about?.label ?? "the brand"}`, module: "Certification", link: `/crm/cases/${ref}`, sla_days: 2, rule: "R-V4", priority: "urgent" });
+        openTask({ doctype: "Governance Risk", name: `RV4-${smp.id}`, state: "Signal", seq: 1, family: "alert", role: "Eswasa Risk Officer", title: `Failed market sample ${smp.seal}: review the risk register`, module: "Governance", link: "/board/risks", sla_days: 5, rule: "R-V4" });
+      } catch {
+        /* ignore */
+      }
+    }
+  },
+});
+
+/* ---------------- appeals panel (R11) ---------------- */
+
+type AppealExclusion = (c: Case) => { name: string; why: string }[];
+const appealExclusions: AppealExclusion[] = [];
+
+/** Certification registers who touched the contested file (audit team, reviewer, decision-maker). */
+export function registerAppealExclusion(fn: AppealExclusion): void {
+  appealExclusions.push(fn);
+}
+
+export function eligiblePanel(ref: string): { name: string; title: string; ok: boolean; why?: string }[] {
+  const c = read().cases[ref];
+  if (!c) return [];
+  const excluded = new Map<string, string>();
+  if (c.decision_maker) excluded.set(c.decision_maker, "Made the original decision");
+  for (const fn of appealExclusions) for (const e of fn(c)) if (!excluded.has(e.name)) excluded.set(e.name, e.why);
+  return DEMO_STAFF.filter((p) => p.roles.some((r) => ["Eswasa Appeals Panel", "Quality Manager", "Certification Manager", "Technical Reviewer", "Eswasa Board Member", "Company Secretary"].includes(r))).map((p) => ({ name: p.name, title: p.title, ok: !excluded.has(p.name), why: excluded.get(p.name) }));
+}
+
+export async function recordAppealDecision(ref: string, outcome: "uphold" | "overturn" | "partial", note: string, actor: CrmActor): Promise<Case> {
+  guard("Appeal decision");
+  if (!note.trim()) throw new Error("Record the panel's reasons.");
+  const c = mutate((s) => {
+    const c = must(s, ref);
+    if (c.type !== "appeal") throw new Error("Only appeals have a panel decision.");
+    if (!c.panel?.length) throw new Error("Appoint the panel first.");
+    if (c.decision_maker === actor.name) throw new Error("Impartiality: you made the original decision.");
+    const downstream = outcome === "uphold" ? "Original decision stands." : `Certification to implement: ${outcome === "overturn" ? "reverse the decision (e.g. reinstate / restore scope)" : "partly reverse the decision as the panel set out"}.`;
+    c.appeal_outcome = { outcome, at: now(), by: actor.name, note, downstream };
+    c.events.push({ at: now(), actor: actor.name, action: `Panel decision: ${outcome}`, note });
+    addMsg(c, { author: actor.name, role: "staff", visibility: "public", body: `The appeals panel has decided to ${outcome === "uphold" ? "uphold the original decision" : outcome === "overturn" ? "overturn the original decision" : "partly uphold your appeal"}.\n\n${note}` });
+    logDelivery(s, c, `Appeal decision — ${c.ref}`, note);
+    return c;
+  });
+  if (outcome !== "uphold")
+    try {
+      openTask({ doctype: "Case", name: ref, state: "Appeal outcome", seq: 950, family: "do", verb: "task", role: "Certification Manager", title: `Implement appeal outcome (${outcome}) — ${c.subject}`, module: "Certification", link: `/crm/cases/${ref}`, sla_days: 5, facts: { Outcome: outcome, About: c.about?.label ?? "—" } });
+    } catch {
+      /* ignore */
+    }
+  return c;
+}
+
+/** One-off signal from another module (e.g. Standards publishes a compulsory standard). Deduped by source_ref. */
+export function createSignal(c: SignalCandidate): Signal | null {
+  if (!crmDemoMode()) return null;
+  return mutate((s) => {
+    const dup = Object.values(s.signals).find((x) => x.source_ref === c.source_ref);
+    if (dup) return dup;
+    const id = `SIG-${String(Date.now() % 100000).padStart(5, "0")}`;
+    s.signals[id] = { ...c, id, created_at: now(), status: "new" };
+    return s.signals[id];
   });
 }

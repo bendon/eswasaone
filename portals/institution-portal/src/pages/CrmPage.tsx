@@ -37,11 +37,14 @@ export function CrmPage() {
       { to: "cases", label: "Cases", icon: "i-mail", badge: breaching || undefined },
       ...(panel ? [{ to: "appeals", label: "Appeals", icon: "i-lock", badge: appeals || undefined } as SubTab] : []),
       { to: "clients", label: "Clients", icon: "i-building" },
+      { to: "console", label: "Console", icon: "i-phone" },
       { to: "signals", label: "Signals", icon: "i-spark", badge: newSignals || undefined },
       { to: "pipeline", label: "Opportunities", icon: "i-trend" },
       { to: "quotes", label: "Quotes", icon: "i-file" },
       { to: "renewals", label: "Renewals", icon: "i-refresh" },
       { to: "insights", label: "Insights", icon: "i-layers" },
+      { to: "knowledge", label: "Knowledge", icon: "i-book" },
+      { to: "contracts", label: "Contracts", icon: "i-scroll" },
       ...(commercialOnly ? [] : [{ to: "settings", label: "Settings", icon: "i-sliders" } as SubTab]),
     ];
   }, [cases.data, signals.data, actor]);

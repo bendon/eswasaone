@@ -1,3 +1,4 @@
+import { CampaignDraftsPanel } from "../crm/CrmExtras";
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import type { MarketingCampaignsResponse } from "../api/types";
@@ -22,6 +23,7 @@ export function MarketingPage() {
   return (
     <RequireStaff reason="Staff sign-in required for marketing">
       <PageHeader title="Marketing" subtitle="Campaigns, outreach, and public messaging" />
+      <CampaignDraftsPanel />
 
       {campaigns.loading ? (
         <LoadingState label="Loading campaigns…" />

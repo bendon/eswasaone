@@ -1,3 +1,4 @@
+import { AccountSharedCertificates } from "../customer/Certification";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "@eswasaone/shared-ui";
@@ -66,6 +67,7 @@ export function AccountCertificatesPage() {
           </Link>
         </div>
       </div>
+      <AccountSharedCertificates />
 
       <div className="toolbar">
         <label className="toolbar__input">

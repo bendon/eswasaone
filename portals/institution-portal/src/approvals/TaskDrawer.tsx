@@ -34,9 +34,12 @@ export function TaskDrawer({
   /** Keyboard flow: open straight into an action's dialog. */
   autoAction?: string | null;
 }) {
-  const [dialog, setDialog] = useState<"reassign" | "escalate" | null>(null);
+  const [dialog, setDialog] = useState<"reassign" | "escalate" | null>(autoAction === "reassign" || autoAction === "escalate" ? autoAction : null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => setErr(null), [task?.id]);
+  useEffect(() => {
+    if (autoAction === "reassign" || autoAction === "escalate") setDialog(autoAction);
+  }, [autoAction, task?.id]);
   if (!task) return null;
 
   const h = handlerFor(task);
@@ -140,7 +143,7 @@ export function TaskDrawer({
             }}
             empty={<p className="crm-muted">Nothing to act on here — open the record for details.</p>}
           />
-          {autoAction ? <AutoOpen actions={actions} state={state} action={autoAction} onAct={async (a, input) => {
+          {autoAction === "primary" || autoAction === "reject" ? <AutoOpen actions={actions} state={state} action={autoAction} onAct={async (a, input) => {
             await h.act(a.action, { ...actor, on_behalf_of: task.on_behalf_of }, input);
             onDone(`${a.label}: done.`);
           }} preview={msgPreview} /> : null}

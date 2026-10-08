@@ -118,6 +118,10 @@ export type Case = {
   /** Appeals only: the person who made the contested decision — never assignable. */
   decision_maker?: string;
   panel?: string[];
+  /** Field visit requested from this case (product report / mark misuse → market sampling, R6). */
+  field_visit?: { id: string; type: string; state: string; result?: string };
+  /** Appeals: the panel's decision and what it triggered downstream (R11). */
+  appeal_outcome?: { outcome: "uphold" | "overturn" | "partial"; at: string; by: string; note: string; downstream?: string };
 };
 
 export type CaseTypeConfig = {
@@ -157,6 +161,10 @@ export type Contact = {
   email?: string;
   phone?: string;
   primary?: boolean;
+  /** Deactivated contacts stay on record (history) but aren't offered for new work. */
+  active?: boolean;
+  /** Service portal user linked to this contact (R5). */
+  portal?: { invited_at: string; status: "invited" | "active" };
 };
 
 export type ClientCert = {
@@ -209,6 +217,9 @@ export type Client = {
   orders: ClientOrder[];
   invoices: ClientInvoice[];
   activity: ClientActivity[];
+  address?: string;
+  website?: string;
+  merged_into?: string;
 };
 
 export type ClientHealth = {
@@ -301,6 +312,75 @@ export type CrmQuote = {
   approval?: { by: string; at: string; note?: string };
   converted: { kind: "application" | "invoice" | "enrolment" | "calibration_job"; ref: string }[];
   notes?: string;
+  /** Who the quote goes to; "demo" shows in every demo customer account. */
+  customer_email?: string;
+  /** Code for the public link /quotes/:id?code= (no account needed). */
+  public_code?: string;
+  customer_acceptance?: { name: string; title: string; at: string; reason?: string };
+  invoice_id?: string;
+};
+
+/* ---------------- knowledge base, contracts, outbound messages (04 P2, R7, R10) ---------------- */
+
+export type KbArticle = {
+  id: string;
+  title: string;
+  body: string;
+  tags: string[];
+  types: CaseType[];
+  status: "draft" | "published";
+  updated_at: string;
+  by: string;
+  from_case?: string;
+  views: number;
+  helpful: number;
+};
+
+export type ServiceContract = {
+  id: string;
+  client_id: string;
+  client_name: string;
+  kind: "certification_agreement" | "calibration_contract" | "training_agreement" | "standards_subscription";
+  title: string;
+  quote_id?: string;
+  start: string;
+  end: string;
+  value: number;
+  renewal_reminder_days: number;
+  status: "active" | "ended" | "terminated";
+};
+
+export type MessageDelivery = {
+  id: string;
+  case_ref?: string;
+  quote_id?: string;
+  to: string;
+  channel: "email" | "sms" | "whatsapp" | "portal";
+  subject: string;
+  body: string;
+  status: "queued" | "sent" | "failed";
+  at: string;
+  attempts: number;
+  error?: string;
+};
+
+export type SignalRules = {
+  expiry_horizon_days: number;
+  calibration_horizon_days: number;
+  tbt_levels: ("high" | "medium" | "low")[];
+  abandoned_age_days: number;
+  generators: { certificates: boolean; instruments: boolean; estore: boolean; applicability: boolean; nonconformities: boolean };
+};
+
+export type CampaignDraft = {
+  id: string;
+  name: string;
+  client_ids: string[];
+  signal_kind?: SignalKind;
+  message: string;
+  created_at: string;
+  by: string;
+  status: "draft" | "sent";
 };
 
 export type RenewalItem = {

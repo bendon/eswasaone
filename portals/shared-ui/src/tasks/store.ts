@@ -70,7 +70,7 @@ export type Delegation = {
 };
 
 type TaskState = {
-  v: 1;
+  v: 2;
   tasks: Record<string, Task>;
   delegations: Record<string, Delegation>;
 };
@@ -96,24 +96,18 @@ function seedTasks(): Task[] {
     mk({ doctype: "Sales Invoice", name: "SINV-26-0412", state: "Overdue", family: "alert", role: "Accounts Manager", title: "Invoice SINV-26-0412 is 45 days overdue", module: "Finance", link: "/finance/invoices", facts: { Customer: "Lubombo Foods (Pty) Ltd", Amount: "E 12,650" } }, 1, 3),
     mk({ doctype: "Training Event", name: "TRN-ISO9001-OCT", state: "Draft", family: "do", verb: "task", role: "HR Manager", title: "Confirm venue for ISO 9001 internal auditor course", module: "Training", link: "/training", facts: { Dates: "21–23 Oct", Seats: "18 booked of 24" } }, 4, 0),
     mk({ doctype: "Leave Application", name: "HR-LAP-0091", state: "Open", family: "approve", verb: "approve", role: "HR Manager", title: "Leave request — Lindiwe Dube, 5 days", module: "HR", link: "/hr", facts: { From: "20 Oct", To: "24 Oct", Cover: "Bongani Hlophe" } }, 2, 1),
-    mk({ doctype: "Calibration Certificate", name: "CAL-26-0233", state: "Pending Review", family: "approve", verb: "signoff", role: "Eswasa Metrology Reviewer", title: "Sign off calibration certificate CAL-26-0233", module: "Metrology", link: "/metrology", facts: { Instrument: "Balance 0–220 g", Customer: "Royal Swaziland Sugar Corp.", Metrologist: "Musa Khumalo" }, rule: "R-M4" }, 2, 2),
-    mk({ doctype: "Instrument", name: "REF-MASS-01", state: "Due", family: "alert", role: "Lab Manager", title: "Reference mass set REF-MASS-01 due for recalibration", module: "Metrology", link: "/metrology/instruments", facts: { "Due": "in 9 days", Lab: "Mass" } }, 5, 0),
-    mk({ doctype: "Standard Work Item", name: "SZNS 044:2026", state: "Public Comment Closed", family: "do", verb: "review", role: "TC Secretary", title: "Resolve 14 public comments on SZNS 044 (bottled water)", module: "Standards", link: "/standards/comments", facts: { TC: "TC 3 Food", Comments: "14 (3 technical)" } }, 5, 6),
-    mk({ doctype: "Ballot", name: "BAL-26-012", state: "Closed", family: "approve", verb: "approve", role: "Head of Standards", title: "Approve SZNS 061 for publication (ballot passed 9–1)", module: "Standards", link: "/standards/ballots", facts: { Result: "9 for · 1 against · 2 abstain", Quorum: "Met" } }, 3, 1),
     mk({ doctype: "TBT Notification", name: "G/TBT/N/ZAF/301", state: "Received", family: "alert", role: "Eswasa TBT Officer", title: "New WTO TBT notice from South Africa — tyres", module: "WTO/TBT", link: "/tbt", facts: { "Comment by": "in 52 days", Sector: "Automotive" } }, 5, 0),
-    mk({ doctype: "Certification Application", name: "CERT-APP-26-0058", state: "Technical Review", family: "do", verb: "review", role: "Technical Reviewer", title: "Technical review — Mhlume Packaging, ISO 9001", module: "Certification", link: "/certification", facts: { Auditor: "Lindiwe Dube", Findings: "2 minor (closed)", Recommendation: "Grant" } }, 5, 3),
-    mk({ doctype: "Field Visit", name: "FV-26-0140", state: "Submitted", family: "approve", verb: "review", role: "Certification Manager", title: "Review visit report FV-26-0140 (Stage 2 audit)", module: "Field", link: "/certification/audits", facts: { Lead: "Lindiwe Dube", Client: "Mhlume Packaging" } }, 3, 4),
     mk({ doctype: "E-store Order", name: "EST-26-0921", state: "Paid", family: "do", verb: "task", role: "Eswasa Estore Clerk", title: "Fulfil standards order EST-26-0921 (3 PDFs)", module: "E-store", link: "/estore", facts: { Buyer: "Eswatini Water Services Corp." } }, 1, 0),
   ];
 }
 
 export const taskStore = createLocalStore<TaskState>({
   key: "eswasaone.tasks.v1",
-  v: 1,
+  v: 2,
   seed: () => {
     const tasks = seedTasks();
     return {
-      v: 1,
+      v: 2,
       tasks: Object.fromEntries(tasks.map((t) => [t.id, t])),
       delegations: {
         "DLG-1": {

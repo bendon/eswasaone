@@ -8,6 +8,7 @@ export type InstitutionRouteId =
   | "certification"
   | "standards"
   | "metrology"
+  | "field"
   | "lms"
   | "tbt"
   | "finance"
@@ -40,6 +41,7 @@ export const INSTITUTION_NAV: InstitutionNavDef[] = [
   },
   { id: "standards", path: "/standards", label: "Standards Dev", icon: "i-file", title: "Standards Development" },
   { id: "metrology", path: "/metrology", label: "Metrology & LIMS", icon: "i-gauge", title: "Metrology & LIMS" },
+  { id: "field", path: "/field", label: "Field Operations", icon: "i-map", title: "Field Operations" },
   { id: "lms", path: "/lms", label: "LMS & Training", icon: "i-cap", title: "LMS & Training" },
   { id: "tbt", path: "/tbt", label: "WTO/TBT Alerts", icon: "i-globe", title: "WTO/TBT Alerts" },
   { id: "finance", path: "/finance", label: "Finance", icon: "i-dollar", title: "Finance" },

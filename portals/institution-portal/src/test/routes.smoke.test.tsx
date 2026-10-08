@@ -49,8 +49,8 @@ beforeEach(async () => {
 
 describe("module shells render their sub-tabs (C1)", () => {
   it.each([
-    ["/standards", StandardsPage, ["Catalogue", "Drafts", "Work items", "Ballots", "Comments"]],
-    ["/metrology", MetrologyPage, ["Jobs", "Instruments", "Results"]],
+    ["/standards", StandardsPage, ["Programme", "Proposals", "Work items", "Public review", "Ballots", "Catalogue", "Committees", "Periodic review", "Settings"]],
+    ["/metrology", MetrologyPage, ["Overview", "Requests", "Receipt", "Jobs", "Review", "Customer items", "Lab equipment", "LIMS tests", "Capacity", "Settings"]],
   ] as const)("%s", async (path, Page, tabs) => {
     mount(path, [{ path: path.slice(1), element: <Page />, children: [{ index: true, element: <p>index child</p> }] }]);
     for (const t of tabs) expect(await screen.findByRole("link", { name: new RegExp(`^${t}`) })).toBeInTheDocument();

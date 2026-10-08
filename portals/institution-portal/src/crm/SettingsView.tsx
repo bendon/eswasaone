@@ -1,3 +1,4 @@
+import { SignalRulesCard } from "./CrmExtras";
 import { useEffect, useState } from "react";
 import { Icon, ModuleHeader, useDialogs } from "@eswasaone/shared-ui";
 import {
@@ -32,7 +33,14 @@ export function CrmSettingsView() {
   const res = useCrm(() => getCrmConfig());
   return (
     <CrmGate res={res} what="CRM settings">
-      {(cfg) => <SettingsForm initial={cfg} canEdit={isCaseManager(actor)} />}
+      {(cfg) => (
+        <>
+          <SettingsForm initial={cfg} canEdit={isCaseManager(actor)} />
+          <div style={{ marginTop: 16 }}>
+            <SignalRulesCard />
+          </div>
+        </>
+      )}
     </CrmGate>
   );
 }

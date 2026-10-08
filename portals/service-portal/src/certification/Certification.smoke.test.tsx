@@ -109,7 +109,8 @@ describe("certification screens", () => {
 
     it("lists sample applications and quotes", async () => {
       renderAt("/account/applications", "/account/applications", <AccountApplicationsPage />);
-      expect(await screen.findByText("CERT-0051", { exact: false })).toBeInTheDocument();
+      // Demo applications come from the shared certification store (same record staff work on).
+      expect(await screen.findByText("CERT-APP-26-0057", { exact: false })).toBeInTheDocument();
       expect(screen.getByText(/QTE-00342/)).toBeInTheDocument();
     });
   });

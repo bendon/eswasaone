@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useStoreResource } from "@eswasaone/shared-ui/store";
+import { outbox, outboxSummary } from "../lib/outbox";
 import { NavLink, Outlet } from "react-router-dom";
 import { Icon, IconSprite, BrandLogo, hasStaffRole, type IconName } from "@eswasaone/shared-ui";
 import { useAuth } from "../auth/AuthProvider";
@@ -6,8 +8,9 @@ import { StaffGate } from "../auth/StaffGate";
 import { greetingForHour, initialsFromName, primaryRoleLabel } from "../lib/roles";
 
 const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
-  { to: "/", label: "Home", icon: "i-home", end: true },
-  { to: "/audits", label: "Audits", icon: "i-clipboard" },
+  { to: "/", label: "Today", icon: "i-home", end: true },
+  { to: "/visits", label: "Visits", icon: "i-clipboard" },
+  { to: "/samples", label: "Samples", icon: "i-flask" },
   { to: "/me", label: "Me", icon: "i-users" },
   { to: "/more", label: "More", icon: "i-more" },
 ];
@@ -35,6 +38,7 @@ function NonStaffNotice({ onSignOut }: { onSignOut: () => void }) {
 
 export function FieldLayout() {
   const { user, loading, refresh, signOut } = useAuth();
+  const sync = useStoreResource([outbox], () => outboxSummary(), []);
   const [online, setOnline] = useState(
     typeof navigator === "undefined" ? true : navigator.onLine,
   );
@@ -99,14 +103,15 @@ export function FieldLayout() {
           </div>
         </div>
         <div className="field-header__actions">
-          <span
+          <NavLink
+            to="/outbox"
             className={`field-sync${online ? "" : " field-sync--off"}`}
-            title={online ? "Online" : "Offline, using device cache"}
-            aria-label={online ? "Online" : "Offline"}
+            title={sync.data?.label ?? (online ? "Online" : "Offline, using device cache")}
+            aria-label={`Sync: ${sync.data?.label ?? (online ? "online" : "offline")}`}
           >
             <Icon name="i-refresh" />
-            <span className="field-sync__dot" data-state={online ? "ok" : "off"} />
-          </span>
+            <span className="field-sync__dot" data-state={sync.data?.conflict || sync.data?.failed ? "err" : sync.data?.pending || !online ? "idle" : "ok"} />
+          </NavLink>
           <button type="button" className="field-icon-btn" aria-label="Notifications">
             <Icon name="i-bell" />
           </button>

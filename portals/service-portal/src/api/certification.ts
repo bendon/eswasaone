@@ -16,6 +16,10 @@ import {
 } from "../certification/demoStore";
 
 export { NotConnectedError } from "../certification/demoStore";
+import { isShared, sharedDetail, sharedList } from "../certification/sharedAdapter";
+import { createApplication as createSharedApplication, customerCertificateRequest, customerRespondNc, customerUploadDoc, customerWithdraw, schemeOf } from "@eswasaone/shared-ui/certification";
+import { customerConfirmVisit, customerRequestReschedule } from "@eswasaone/shared-ui/field";
+import { lodgeCase } from "@eswasaone/shared-ui/crm";
 
 export type CertificationApplication = {
   id: string;
@@ -741,12 +745,12 @@ export async function listApplications(status?: string): Promise<ApplicationDeta
       `/certification/applications${qs}`,
     );
     // TODO: wire real (GET /account/applications) to scope the list to the signed-in applicant.
-    return (res.items ?? []).map((a) => ({ ...blankDetail(a), ...stripLive(localDetail(a.id)), ...a }));
+    const live = (res.items ?? []).map((a) => ({ ...blankDetail(a), ...stripLive(localDetail(a.id)), ...a }));
+    // Demo: the shared store holds the records staff are working on — show them alongside Core's.
+    return demoMode() ? [...live, ...sharedList().filter((x) => !live.some((l) => l.id === x.id))] : live;
   } catch (err) {
     if (!demoMode()) throw err;
-    return Object.values(store().details as Record<string, ApplicationDetail>).sort((a, b) =>
-      String(b.created_at).localeCompare(String(a.created_at)),
-    );
+    return sharedList();
   }
 }
 
@@ -762,6 +766,7 @@ export async function getApplication(id: string): Promise<CertificationApplicati
 }
 
 export async function getApplicationDetail(id: string): Promise<ApplicationDetail | null> {
+  if (demoMode() && isShared(id)) return sharedDetail(id);
   let live: CertificationApplication | null = null;
   try {
     live = await getApplication(id);
@@ -795,7 +800,7 @@ export async function createApplication(payload: ApplicationPayload): Promise<Ap
     details: payload,
   };
   let created: CertificationApplication;
-  let local = false;
+  const local = false;
   try {
     created = await apiFetch<CertificationApplication>("/certification/applications", {
       method: "POST",
@@ -803,14 +808,25 @@ export async function createApplication(payload: ApplicationPayload): Promise<Ap
     });
   } catch (err) {
     if (!demoMode()) throw err;
-    local = true;
-    created = {
-      id: newRef(payload.flow === "ingelo" ? "ING" : "CERT"),
-      scheme: payload.scheme,
-      applicant: body.applicant_name,
-      status: "Submitted",
-      created_at: now,
-    };
+    // Demo: create the record in the shared store so the Institution pipeline sees it at once.
+    const code = schemeOf(payload.scheme) ? payload.scheme : ({ ms: "iso9001", product: "product", ingelo: "ingelo", combined: "combined" } as const)[payload.flow];
+    const employees = Number(payload.org.employees) || payload.sites.reduce((n, x) => n + (Number(x.employees) || 0), 0) || 1;
+    const shared = createSharedApplication(
+      {
+        scheme: code,
+        org: payload.org.name,
+        contact: payload.contact.name || payload.org.name,
+        customer_email: payload.contact.email || "demo",
+        phone: payload.contact.phone,
+        employees,
+        sites: payload.sites.length ? payload.sites.map((x) => ({ name: x.name || "Site", address: x.address, employees: Number(x.employees) || 0 })) : [{ name: "Main site", address: payload.org.address, employees }],
+        scope: payload.scope || payload.standards.join(", ") || schemeTitle(payload.scheme),
+        channel: "portal",
+        uploaded: payload.documents.map((d) => d.key),
+      },
+      payload.contact.name || "Customer",
+    );
+    return sharedDetail(shared.id)!;
   }
   const flow = payload.flow;
   const uploaded = payload.documents.map((d) => d.key);
@@ -989,6 +1005,10 @@ export async function uploadApplicationDocument(
   key: string,
   file: File,
 ): Promise<ApplicationDetail | null> {
+  if (demoMode() && isShared(id)) {
+    customerUploadDoc(id, key, file.name, "Customer");
+    return sharedDetail(id);
+  }
   try {
     // TODO: wire real (POST /certification/applications/{id}/documents). Needs multipart;
     // apiFetch is JSON-only, so metadata goes up until a file transport exists.
@@ -1014,6 +1034,10 @@ export async function submitCorrectiveAction(
   findingId: string,
   response: NonNullable<Finding["response"]>,
 ): Promise<ApplicationDetail | null> {
+  if (demoMode() && isShared(id)) {
+    customerRespondNc(id, findingId, response, "Customer");
+    return sharedDetail(id);
+  }
   try {
     // TODO: wire real (POST /certification/findings/{id}/corrective-action).
     await apiFetch(`/certification/findings/${encodeURIComponent(findingId)}/corrective-action`, {
@@ -1038,6 +1062,11 @@ export async function respondToAudit(
   auditId: string,
   answer: { confirm: true } | { confirm: false; reason: string; preferred: string },
 ): Promise<ApplicationDetail | null> {
+  if (demoMode() && isShared(id)) {
+    if (answer.confirm) await customerConfirmVisit(auditId, "Customer");
+    else await customerRequestReschedule(auditId, answer.preferred, answer.reason, "Customer");
+    return sharedDetail(id);
+  }
   try {
     // TODO: wire real (applicant-side audit confirmation; staff use PATCH /certification/audits/{id}).
     await apiFetch(`/certification/applications/${encodeURIComponent(id)}/audits/${encodeURIComponent(auditId)}`, {
@@ -1088,6 +1117,22 @@ export async function sendApplicationRequest(
   kind: ApplicationRequest["kind"],
   text: string,
 ): Promise<ApplicationDetail | null> {
+  if (demoMode() && isShared(id)) {
+    const d = sharedDetail(id)!;
+    if (kind === "withdraw") customerWithdraw(id, text, "Customer");
+    else if ((kind === "changes" || kind === "scope") && d.certificate) customerCertificateRequest(d.certificate.id, kind, text, "Customer");
+    else
+      // Appeals and complaints live in CRM cases (one store — gap 04 R1).
+      await lodgeCase({
+        type: kind === "appeal" ? "appeal" : kind === "complaint" ? "service_complaint" : "enquiry",
+        subject: `${kind === "appeal" ? "Appeal" : kind === "complaint" ? "Complaint" : kind === "scope" ? "Scope extension" : "Notice of changes"} — ${d.org} (${id})`,
+        description: text,
+        channel: "account",
+        reporter: { anonymous: false, name: d.applicant, organisation: d.org, preferred: "email" },
+        about: { kind: "application", label: `${id} · ${schemeTitle(d.scheme)}`, ref: id },
+      });
+    return sharedDetail(id);
+  }
   try {
     // TODO: wire real (POST /certification/applications/{id}/{changes|scope-extension|appeal|withdraw}).
     await apiFetch(`/certification/applications/${encodeURIComponent(id)}/${REQUEST_PATH[kind]}`, {
@@ -1210,6 +1255,7 @@ export async function listCertificates(entity = "personal"): Promise<Certificate
     );
     return res.items || [];
   } catch {
+    // Demo: the shared register is listed (with links) by AccountSharedCertificates.
     return [];
   }
 }

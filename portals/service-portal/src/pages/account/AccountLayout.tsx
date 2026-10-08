@@ -9,6 +9,12 @@ const TABS: { to: string; label: string; icon: IconName; end?: boolean; business
   { to: "/account/applications", label: "Applications", icon: "i-steps" },
   { to: "/account/orders", label: "Orders", icon: "i-book" },
   { to: "/account/certificates", label: "Certificates", icon: "i-badge" },
+  { to: "/account/visits", label: "Visits", icon: "i-cal" },
+  { to: "/account/quotes", label: "Quotes", icon: "i-dollar" },
+  { to: "/account/invoices", label: "Invoices", icon: "i-file" },
+  { to: "/account/calibration", label: "Calibration", icon: "i-gauge" },
+  { to: "/account/instruments", label: "Instruments", icon: "i-sliders" },
+  { to: "/account/comments", label: "Standards", icon: "i-book" },
   { to: "/account/training", label: "Training", icon: "i-cap" },
   { to: "/account/cases", label: "Cases", icon: "i-alert-c" },
   { to: "/account/notifications", label: "Notifications", icon: "i-bell" },
@@ -157,8 +163,15 @@ function AccountShell() {
 
 function labelForPath(path: string): string {
   if (path.endsWith("/notifications")) return "Notifications";
+  if (path.includes("/quotes")) return "Quotes";
+  if (path.includes("/invoices")) return "Invoices";
+  if (path.includes("/visits")) return "Visits";
+  if (path.includes("/calibration")) return "Calibration";
+  if (path.includes("/instruments")) return "Instruments";
+  if (path.includes("/comments")) return "Standards";
+  if (path.includes("/subscriptions")) return "Standards alerts";
   if (path.endsWith("/orders")) return "Orders";
-  if (path.endsWith("/certificates")) return "Certificates";
+  if (path.includes("/certificates")) return "Certificates";
   if (path.endsWith("/training")) return "Training";
   if (path.endsWith("/team")) return "Team";
   if (path.endsWith("/settings")) return "Settings";

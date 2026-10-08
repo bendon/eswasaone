@@ -1,3 +1,4 @@
+import { AppealPanelCard, CaseDeliveries, CaseFieldVisitCard } from "./CaseExtras";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Icon, askAgent } from "@eswasaone/shared-ui";
@@ -71,7 +72,6 @@ export function CrmCaseWorkspace() {
   const [draft, setDraft] = useState("");
   const [assistBusy, setAssistBusy] = useState(false);
   const [assignee, setAssignee] = useState("");
-  const [panelInput, setPanelInput] = useState("");
 
   const knownStaff = useMemo(() => {
     const names = new Set<string>([actor.name]);
@@ -427,34 +427,7 @@ export function CrmCaseWorkspace() {
                   </div>
                 </div>
 
-                {c.type === "appeal" ? (
-                  <div className="crm-card">
-                    <div className="crm-card__h">
-                      <h3>Appeal panel</h3>
-                    </div>
-                    <dl className="crm-kv">
-                      <dt>Contested by</dt>
-                      <dd>{c.decision_maker ?? "—"} (excluded)</dd>
-                      <dt>Panel</dt>
-                      <dd>{c.panel?.length ? c.panel.join(", ") : "Not appointed"}</dd>
-                    </dl>
-                    <div className="crm-row" style={{ marginTop: 10, flexWrap: "nowrap" }}>
-                      <input className="crm-input" value={panelInput} onChange={(e) => setPanelInput(e.target.value)} placeholder="Add panel member" aria-label="Add panel member" />
-                      <button
-                        type="button"
-                        className="crm-btn crm-btn--sm"
-                        disabled={!panelInput.trim() || busy}
-                        onClick={() =>
-                          void run(() => updateCase(c.ref, actor, { panel: [...(c.panel ?? []), panelInput.trim()] }), "Panel updated").then(
-                            (ok) => ok && setPanelInput(""),
-                          )
-                        }
-                      >
-                        Add
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
+                {c.type === "appeal" ? <AppealPanelCard c={c} actor={actor} onDone={(m) => (showToast(m), res.reload())} /> : null}
 
                 <div className="crm-card">
                   <div className="crm-card__h">
@@ -553,6 +526,8 @@ export function CrmCaseWorkspace() {
                   ) : null}
                 </div>
 
+                <CaseFieldVisitCard c={c} actor={actor} onDone={(m) => (showToast(m), res.reload())} />
+                <CaseDeliveries c={c} />
                 {dups.length ? (
                   <div className="crm-card">
                     <div className="crm-card__h">

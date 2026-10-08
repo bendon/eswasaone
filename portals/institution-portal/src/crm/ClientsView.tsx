@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon, ModuleHeader } from "@eswasaone/shared-ui";
 import {
   CrmEmpty,
@@ -60,6 +60,12 @@ export function CrmClientsView() {
               ]}
             />
             <div className="crm-toolbar">
+              <Link className="crm-btn crm-btn--pri crm-btn--sm" to="/crm/clients/new">
+                <Icon name="i-plus" /> New client
+              </Link>
+              <Link className="crm-btn crm-btn--sm" to="/crm/contacts">
+                Contacts
+              </Link>
               <div className="crm-search">
                 <Icon name="i-search" />
                 <input className="crm-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, registration or contact" aria-label="Search clients" />

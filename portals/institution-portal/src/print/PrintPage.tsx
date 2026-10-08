@@ -1,16 +1,20 @@
 /**
  * Printable documents (gap 01 C10): /print/:kind/:id with ESWASA letterhead, verify link and
- * signature blocks, styled for @media print. Kinds: minutes, resolution, pack, quote.
+ * signature blocks, styled for @media print. Kinds: minutes, resolution, pack, quote, certificate,
+ * refusal, certquote, auditplan, calcert, invoice.
  * TODO: wire real — server-rendered PDF with a signed QR (GET /documents/{kind}/{id}.pdf) for gate documents.
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { BrandLogo } from "@eswasaone/shared-ui";
 import { listQuotes, quoteTotals, type CrmQuote } from "@eswasaone/shared-ui/crm";
+import { getInvoice } from "@eswasaone/shared-ui/billing";
+import { getApplication, getCertificate } from "@eswasaone/shared-ui/certification";
+import { getJob } from "@eswasaone/shared-ui/metrology";
+import { AuditPlanDoc, CalCertificateDoc, CertificateDoc, CertQuoteDoc, CrmQuoteDoc, InvoiceDoc, RefusalLetterDoc } from "@eswasaone/shared-ui/print";
 import { getMeeting, getResolution, govStore, tally, type MeetingBundle } from "@eswasaone/shared-ui/governance";
 
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) : "—");
-const money = (n: number) => `E ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 function Letterhead({ title, reference, status }: { title: string; reference: string; status?: string }) {
   return (
@@ -147,62 +151,23 @@ export function PrintPage() {
         } else if (kind === "quote") {
           const q: CrmQuote | undefined = (await listQuotes()).find((x) => x.id === id);
           if (!q) throw new Error("Quote not found");
-          const t = quoteTotals(q);
-          set(
-            <>
-              <Letterhead title="Quotation" reference={q.id} status={`Valid until ${fmt(q.valid_until)}`} />
-              <p>
-                To: <b>{q.client_name}</b>
-              </p>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Service</th>
-                    <th>Qty</th>
-                    <th>Unit price</th>
-                    <th>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {q.lines.map((l, i) => (
-                    <tr key={i}>
-                      <td>{l.label}</td>
-                      <td>{l.qty}</td>
-                      <td>{money(l.unit_price)}</td>
-                      <td>{money(l.qty * l.unit_price)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <table style={{ width: 320, marginLeft: "auto" }}>
-                <tbody>
-                  <tr>
-                    <th>Subtotal</th>
-                    <td>{money(t.subtotal)}</td>
-                  </tr>
-                  {t.discount ? (
-                    <tr>
-                      <th>Discount ({q.discount_pct}%)</th>
-                      <td>−{money(t.discount)}</td>
-                    </tr>
-                  ) : null}
-                  <tr>
-                    <th>VAT 15%</th>
-                    <td>{money(t.vat)}</td>
-                  </tr>
-                  <tr>
-                    <th>Total</th>
-                    <td>
-                      <b>{money(t.total)}</b>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              {q.notes ? <p>{q.notes}</p> : null}
-              <p style={{ fontSize: 12, color: "#555" }}>Accept this quote online from your ESWASA account, or sign and return it.</p>
-              <Signatures left={`For ESWASA — ${q.created_by}`} right="Accepted for the client (name, signature, date)" />
-            </>,
-          );
+          set(<CrmQuoteDoc q={q} totals={quoteTotals(q)} acceptUrl={`${window.location.origin}/quotes/${q.id}?code=${q.public_code ?? ""}`} />);
+        } else if (kind === "certificate") {
+          const c = getCertificate(id);
+          if (!c) throw new Error("Certificate not found");
+          set(<CertificateDoc cert={c.cert} />);
+        } else if (kind === "refusal" || kind === "certquote" || kind === "auditplan") {
+          const b = getApplication(id);
+          if (!b) throw new Error("Application not found");
+          set(kind === "refusal" ? <RefusalLetterDoc app={b.app} /> : kind === "certquote" ? <CertQuoteDoc app={b.app} /> : <AuditPlanDoc app={b.app} visits={b.visits} />);
+        } else if (kind === "calcert") {
+          const j = getJob(id);
+          if (!j) throw new Error("Job not found");
+          set(<CalCertificateDoc job={j.job} method={j.method} refs={j.refs} settings={j.settings} />);
+        } else if (kind === "invoice") {
+          const inv = getInvoice(id);
+          if (!inv) throw new Error("Invoice not found");
+          set(<InvoiceDoc inv={inv} />);
         } else set(<p>Unknown document type “{kind}”.</p>);
       } catch (e) {
         set(<p>{e instanceof Error ? e.message : String(e)}</p>);

@@ -1,4 +1,7 @@
+import { Link } from "react-router-dom";
 import { Icon } from "@eswasaone/shared-ui";
+import { useStoreResource } from "@eswasaone/shared-ui/store";
+import { outbox, outboxSummary } from "../lib/outbox";
 import { useAuth } from "../auth/AuthProvider";
 
 /**
@@ -7,9 +10,10 @@ import { useAuth } from "../auth/AuthProvider";
 export function MoreScreen() {
   const { signOut } = useAuth();
 
-  // TODO: wire real — unread count + offline queue pending items
+  // TODO: wire real — unread count from GET /notifications?audience=staff
   const unread = 2;
-  const syncLabel = "All synced · 0 pending";
+  const sync = useStoreResource([outbox], () => outboxSummary(), []);
+  const syncLabel = sync.data?.label ?? "Checking…";
 
   const onSignOut = () => {
     void signOut();
@@ -28,16 +32,16 @@ export function MoreScreen() {
           </div>
           <Icon name="i-cright" className="hm-row__chev" />
         </button>
-        <button type="button" className="hm-row">
-          <span className="hm-row__ic hm-row__ic--ok">
+        <Link to="/outbox" className="hm-row">
+          <span className={`hm-row__ic${sync.data?.conflict || sync.data?.failed ? " hm-row__ic--danger" : " hm-row__ic--ok"}`}>
             <Icon name="i-refresh" />
           </span>
           <div className="hm-row__body">
-            <b>Sync status</b>
+            <b>Sync status · Outbox</b>
             <span>{syncLabel}</span>
           </div>
           <Icon name="i-cright" className="hm-row__chev" />
-        </button>
+        </Link>
       </div>
 
       <div className="hm-card">

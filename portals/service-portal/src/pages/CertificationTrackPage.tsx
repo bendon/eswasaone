@@ -42,6 +42,7 @@ import {
   UploadButton,
 } from "../certification/ui";
 import { safeText } from "../lib/safe";
+import { CertActionCards } from "./customer/Certification";
 import { useToast } from "../ui/Toast";
 
 type SheetKind =
@@ -255,6 +256,7 @@ export function CertificationTrackPage() {
               onClose={() => setNotSent(null)}
             />
           ) : null}
+          <CertActionCards id={detail.id} onChange={load} />
           {/* Where you are */}
           <section className="cf-card cf-now">
             <span className="cf-head__kicker">Where you are</span>

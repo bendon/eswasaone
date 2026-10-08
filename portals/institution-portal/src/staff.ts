@@ -15,6 +15,7 @@ type Access = typeof ANY_STAFF | readonly string[];
 const ROUTE_ACCESS: Record<InstitutionRouteId, Access> = {
   dashboard: ANY_STAFF,
   approvals: ANY_STAFF,
+  field: ANY_STAFF,
   board: [
     "Eswasa Board Secretary",
     "Eswasa Board Member",

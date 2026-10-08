@@ -1,3 +1,4 @@
+import { ContactsManager } from "./CrmExtras";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Icon } from "@eswasaone/shared-ui";
@@ -130,6 +131,9 @@ export function CrmClient360() {
                   {client.account_manager ? <span className="crm-pill">AM: {client.account_manager}</span> : <span className="crm-pill">No account manager</span>}
                 </div>
               </div>
+              <Link className="crm-btn crm-btn--sm" to={`/crm/clients/${client.id}/edit`} style={{ alignSelf: "flex-start" }}>
+                Edit / merge
+              </Link>
               <div className="crm-360__health" title={h.factors.map((f) => `${f.label} (${f.delta > 0 ? "+" : ""}${f.delta})`).join("\n")}>
                 <b>{h.score}</b>
                 <div>
@@ -308,18 +312,7 @@ export function CrmClient360() {
             ) : null}
 
             {tab === "contacts" ? (
-              <Table head={["Name", "Role", "Email", "Phone"]} empty="No contacts.">
-                {client.contacts.map((c) => (
-                  <tr key={c.id}>
-                    <td>
-                      <b>{c.name}</b> {c.primary ? <span className="crm-pill crm-pill--gold">Primary</span> : null}
-                    </td>
-                    <td>{c.role}</td>
-                    <td>{c.email ? <a href={`mailto:${c.email}`}>{c.email}</a> : "—"}</td>
-                    <td>{c.phone ?? "—"}</td>
-                  </tr>
-                ))}
-              </Table>
+              <ContactsManager client={client} />
             ) : null}
 
             {tab === "certificates" ? (

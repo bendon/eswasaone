@@ -22,7 +22,14 @@
     "./notify": "./src/notify/index.ts",
     "./record": "./src/record/index.ts",
     "./store": "./src/store/index.ts",
-    "./governance": "./src/governance/index.ts"
+    "./governance": "./src/governance/index.ts",
+    "./billing": "./src/billing/index.ts",
+    "./field": "./src/field/index.ts",
+    "./metrology": "./src/metrology/index.ts",
+    "./certification": "./src/certification/index.ts",
+    "./standards": "./src/standards/index.ts",
+    "./domains": "./src/domains.ts",
+    "./print": "./src/print/index.tsx"
   },
   "peerDependencies": {
     "react": "^18.3.1",

@@ -36,6 +36,10 @@ import { ErrorPage } from "./pages/ErrorPage";
 import { GoalsPage } from "./goals/GoalsPage";
 import { AdHocGuidePage, GoalGuidePage } from "./goals/GoalGuidePage";
 import { CheckoutPage, OrderStatusPage } from "./estore";
+import { AccountCertificateDetailPage, AccountVisitsPage, RenewPage, TransferPage } from "./pages/customer/Certification";
+import { AccountInvoicesPage, AccountQuoteDetailPage, AccountQuotesPage, CustomerPrintPage, HelpPage, PublicQuotePage } from "./pages/customer/Commercial";
+import { AccountCalibrationDetailPage, AccountCalibrationPage, AccountInstrumentsPage, CalRequestPage, MetrologyServicePage, VerifyCalPage } from "./pages/customer/Metrology";
+import { AccountCommentsPage, AccountSubscriptionsPage, CommitteesPage, DraftDetailPage, DraftsPage, JoinTcPage, ProposePage, TcAreaPage, TcBallotPage } from "./pages/customer/Standards";
 
 function Root() {
   return (
@@ -59,7 +63,24 @@ export const router = createBrowserRouter(
           children: [
             { index: true, element: <HomePage /> },
             { path: "standards", element: <StandardsPage /> },
+            { path: "standards/drafts", element: <DraftsPage /> },
+            { path: "standards/drafts/:id", element: <DraftDetailPage /> },
+            { path: "standards/propose", element: <ProposePage /> },
+            { path: "standards/committees", element: <CommitteesPage /> },
+            { path: "standards/committees/:tc/join", element: <JoinTcPage /> },
             { path: "standards/:id", element: <StandardDetailPage /> },
+            { path: "tc", element: <RequireAuth><TcAreaPage /></RequireAuth> },
+            { path: "tc/ballots/:id", element: <RequireAuth><TcBallotPage /></RequireAuth> },
+            { path: "metrology", element: <MetrologyServicePage /> },
+            { path: "calibration", element: <Navigate to="/metrology" replace /> },
+            { path: "metrology/request", element: <CalRequestPage /> },
+            { path: "verify/cal", element: <VerifyCalPage /> },
+            { path: "verify/cal/:token", element: <VerifyCalPage /> },
+            { path: "quotes/:id", element: <PublicQuotePage /> },
+            { path: "help", element: <HelpPage /> },
+            { path: "print/:kind/:id", element: <CustomerPrintPage /> },
+            { path: "certification/transfer", element: <TransferPage /> },
+            { path: "certification/renew/:certId", element: <RequireAuth><RenewPage /></RequireAuth> },
             { path: "estore/checkout", element: <CheckoutPage /> },
             { path: "estore/orders/:id", element: <OrderStatusPage /> },
             { path: "certification", element: <CertificationPage /> },
@@ -107,6 +128,16 @@ export const router = createBrowserRouter(
                 { path: "applications", element: <AccountApplicationsPage /> },
                 { path: "orders", element: <AccountOrdersPage /> },
                 { path: "certificates", element: <AccountCertificatesPage /> },
+                { path: "certificates/:id", element: <AccountCertificateDetailPage /> },
+                { path: "quotes", element: <AccountQuotesPage /> },
+                { path: "quotes/:id", element: <AccountQuoteDetailPage /> },
+                { path: "invoices", element: <AccountInvoicesPage /> },
+                { path: "visits", element: <AccountVisitsPage /> },
+                { path: "calibration", element: <AccountCalibrationPage /> },
+                { path: "calibration/:id", element: <AccountCalibrationDetailPage /> },
+                { path: "instruments", element: <AccountInstrumentsPage /> },
+                { path: "comments", element: <AccountCommentsPage /> },
+                { path: "subscriptions", element: <AccountSubscriptionsPage /> },
                 { path: "training", element: <AccountTrainingPage /> },
                 { path: "cases", element: <AccountCasesPage /> },
                 { path: "cases/:ref", element: <AccountCaseDetailPage /> },

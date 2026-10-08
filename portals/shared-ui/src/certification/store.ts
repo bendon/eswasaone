@@ -15,8 +15,9 @@
  *   POST /certification/certificates/{id}/scope, GET/POST /certification/marks, POST /certification/marks/{id}/act,
  *   GET/PUT /certification/competence, GET/PUT /certification/settings.
  */
-import { createInvoice, depositPaid, getInvoice, invoiceFor, invoiceTotals, type Invoice } from "../billing/store";
-import { openSystemCase, registerAppealExclusion, registerSignalGenerator } from "../crm/store";
+import { createInvoice, depositPaid, getInvoice, invoiceFor, invoiceTotals, listInvoices, type Invoice } from "../billing/store";
+import { openSystemCase, registerAppealExclusion, registerSignalGenerator, sendNps } from "../crm/store";
+import { registerHealthFactor } from "../crm/derive";
 import { actOnVisit, listSamples, planVisit, registerSampleParent, registerVisitParent, visitsFor } from "../field/store";
 import type { FieldVisit, Sample, VisitType } from "../field/types";
 import { testsFor } from "../metrology/store";
@@ -29,7 +30,7 @@ import { allowedActions, applyTransition, SUPER_ROLES } from "../workflow/engine
 import type { ActInput, ActionOption, Actor } from "../workflow/types";
 import { APP_DEF, MARK_DEF, REG_DEF } from "./defs";
 import { DEFAULT_CERT_SETTINGS, SEED_COMPETENCE, seedApplications, seedCertificates, seedMarks } from "./seed";
-import type { AppDoc, CertApplication, CertificateRec, CertSettings, Competence, FeeLine, MarkRequest, Nonconformity, SchemeDef, TechReview } from "./types";
+import type { AppDoc, AuditReport, CertApplication, CertificateRec, CertSettings, Competence, FeeLine, MarkRequest, Nonconformity, SchemeDef, TechReview } from "./types";
 
 type CertState = {
   v: 1;
@@ -784,6 +785,7 @@ export async function decide(id: string, outcome: "grant" | "grant_conditions" |
       if (!invoiceFor(`${c.id}-fee`)) createInvoice({ source: "certification", ref: `${c.id}-fee`, title: `Certificate fee — ${c.number}`, customer: a.org, customer_email: a.customer_email, client_id: a.client_id, lines: [{ label: "Certificate / permit fee", qty: 1, unit_price: st.certificate_fee }], due_at: isoIn(30) });
     });
     syncCert(c, actor.name);
+    safe(() => sendNps({ trigger: "certificate_issued", ref: c.number, email: a.customer_email, name: a.contact, client_id: a.client_id }));
     notifyApp(a, "Certificate issued", `Congratulations — ${a.org} is certified to ${a.standard}. Download certificate ${c.number} and the mark files from your account.`, "certificate");
   } else {
     safe(() => addGeneratedDoc("Certification Application", id, { family: `${id}-refusal`, name: `Refusal letter ${id}.pdf`, category: "Decision", uploaded_by: actor.name, size: 60_000, gate: true }));
@@ -1111,3 +1113,153 @@ registerAppealExclusion((c) => {
   const why: Record<string, string> = { "Audit team": "On the audit team for this file", "Technical reviewer": "Technical reviewer of this file", "Decision maker": "Made the original decision", "Suspended by": "Suspended this certificate" };
   return Object.entries(duties).flatMap(([step, people]) => (why[step] ? people.map((name) => ({ name, why: why[step] })) : []));
 });
+
+/* ---------------- certification health per client (05 P3) ---------------- */
+
+export type CertHealth = {
+  ncTotal: number;
+  ncOnTime: number;
+  ncOverdue: number;
+  /** On-time NC closure, 0–100 (null when there were no NCs). */
+  ncOnTimePct: number | null;
+  invoices: number;
+  paidOnTimePct: number | null;
+  overdueInvoices: number;
+  score: number;
+  /** Suggested surveillance frequency (risk-based). Proposes only — the Certification Manager decides. */
+  surveillance: { months: 6 | 12; why: string };
+};
+
+const sameOrg = (a: { client_id?: string; org?: string; customer?: string }, clientId: string, org?: string) => a.client_id === clientId || (!!org && (a.org ?? a.customer ?? "").toLowerCase() === org.toLowerCase());
+
+/** NC closure discipline and payment behaviour for one client. Feeds CRM health and surveillance planning. */
+export function clientCertHealth(clientId: string, org?: string): CertHealth {
+  const apps = certStore.view((s) => Object.values(s.apps).filter((a) => sameOrg(a, clientId, org)));
+  const ncs = apps.flatMap((a) => a.findings).filter((n) => n.severity !== "observation");
+  const closedAt = (n: Nonconformity) => n.verified?.at ?? n.review?.at ?? n.response?.at;
+  const done = ncs.filter((n) => n.state === "Accepted" || n.state === "Verified closed");
+  const onTime = done.filter((n) => (closedAt(n) ?? n.due) <= n.due).length;
+  const overdue = ncs.filter((n) => !["Accepted", "Verified closed"].includes(n.state) && n.due < nowIso()).length;
+  const inv = tryOr(() => listInvoices({ source: "certification" }).filter((i) => sameOrg(i, clientId, org) && i.status !== "cancelled"), [] as Invoice[]);
+  const paid = inv.filter((i) => i.status === "paid");
+  const paidOnTime = paid.filter((i) => (i.payments[i.payments.length - 1]?.at ?? i.due_at) <= i.due_at).length;
+  const overdueInv = inv.filter((i) => i.status === "overdue").length;
+  const ncPct = done.length ? Math.round((onTime / done.length) * 100) : null;
+  const payPct = paid.length ? Math.round((paidOnTime / paid.length) * 100) : null;
+  let score = 100;
+  if (ncPct !== null) score -= Math.round((100 - ncPct) * 0.4);
+  score -= overdue * 10;
+  if (payPct !== null) score -= Math.round((100 - payPct) * 0.2);
+  score -= overdueInv * 8;
+  score = Math.max(0, Math.min(100, score));
+  const majors = ncs.filter((n) => n.severity === "major").length;
+  const risky = score < 70 || overdue > 0 || majors >= 2;
+  return {
+    ncTotal: ncs.length,
+    ncOnTime: onTime,
+    ncOverdue: overdue,
+    ncOnTimePct: ncPct,
+    invoices: inv.length,
+    paidOnTimePct: payPct,
+    overdueInvoices: overdueInv,
+    score,
+    surveillance: risky
+      ? { months: 6, why: `${overdue ? `${overdue} NC(s) past due; ` : ""}${majors >= 2 ? `${majors} major NCs; ` : ""}certification health ${score}/100 — consider 6-monthly surveillance.` }
+      : { months: 12, why: `Certification health ${score}/100 — annual surveillance is enough.` },
+  };
+}
+
+registerHealthFactor((c) => {
+  const h = clientCertHealth(c.id, c.name);
+  const out: { label: string; delta: number }[] = [];
+  if (h.ncOverdue) out.push({ label: `${h.ncOverdue} NC(s) past due`, delta: -8 * h.ncOverdue });
+  if (h.ncOnTimePct !== null && h.ncOnTimePct >= 90 && h.ncTotal >= 2) out.push({ label: "Closes NCs on time", delta: +4 });
+  else if (h.ncOnTimePct !== null && h.ncOnTimePct < 60) out.push({ label: `Late NC closure (${h.ncOnTimePct}% on time)`, delta: -6 });
+  if (h.paidOnTimePct !== null && h.paidOnTimePct < 60) out.push({ label: `Pays certification fees late (${h.paidOnTimePct}% on time)`, delta: -5 });
+  return out;
+});
+
+/* ---------------- audit report generator (05 P3) ---------------- */
+
+/**
+ * Builds a draft audit report from the Field record: checklist, findings, evidence photos and sign-offs.
+ * The lead auditor edits it and saves it; nothing is sent until they do.
+ * TODO: wire real — POST /certification/applications/{id}/audit-report/draft {visit} (server-side template).
+ */
+export function draftAuditReport(appId: string, visitId: string): string {
+  const b = getApplication(appId);
+  if (!b) throw new Error("Application not found.");
+  const v = b.visits.find((x) => x.id === visitId);
+  if (!v) throw new Error("Visit not found on this application.");
+  const a = b.app;
+  const ans = (k: "yes" | "no" | "na") => v.checklist.filter((c) => c.answer === k).length;
+  const unanswered = v.checklist.filter((c) => !c.answer).length;
+  const ncs = [...a.findings.filter((n) => n.visit_id === v.id), ...v.findings.filter((f) => !a.findings.some((n) => n.visit_id === v.id && n.statement === f.statement))];
+  const sections = [...new Set(v.checklist.map((c) => c.section))];
+  const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) : "—");
+  const majors = ncs.filter((n) => n.severity === "major").length;
+  const minors = ncs.filter((n) => n.severity === "minor").length;
+  const lines = [
+    `AUDIT REPORT — ${v.title}`,
+    "",
+    `Organisation: ${a.org}`,
+    `Standard: ${a.standard}`,
+    `Scope: ${v.scope ?? a.scope}`,
+    `Site: ${v.site.name}, ${v.site.address}`,
+    `Date(s): ${fmt(v.checkin?.at ?? v.planned_date)} (${v.duration_days} day(s))`,
+    `Audit team: ${[v.lead ? `${v.lead} (lead)` : null, ...v.team.filter((t) => t !== v.lead)].filter(Boolean).join(", ") || "—"}`,
+    `Reference: ${a.id} / ${v.id} · checklist ${v.checklist_version}`,
+    "",
+    "1. Summary",
+    `${v.checklist.length} checklist items assessed across ${sections.length} section(s): ${ans("yes")} conforming, ${ans("no")} not conforming, ${ans("na")} not applicable${unanswered ? `, ${unanswered} not answered` : ""}. ${majors} major and ${minors} minor nonconformit${majors + minors === 1 ? "y" : "ies"} raised.`,
+    "",
+    "2. Results by section",
+    ...sections.map((sec) => {
+      const items = v.checklist.filter((c) => c.section === sec);
+      const no = items.filter((c) => c.answer === "no");
+      return `• ${sec}: ${items.filter((c) => c.answer === "yes").length}/${items.length} conforming${no.length ? ` — gaps: ${no.map((c) => `${c.question}${c.note ? ` (${c.note})` : ""}`).join("; ")}` : ""}`;
+    }),
+    "",
+    "3. Nonconformities",
+    ...(ncs.length ? ncs.map((n, i) => `${i + 1}. [${n.severity.toUpperCase()}] Clause ${n.clause}: ${n.statement}`) : ["None raised."]),
+    "",
+    "4. Evidence",
+    ...(v.photos.length ? v.photos.map((p) => `• ${p.name}${p.caption ? ` — ${p.caption}` : ""} (taken ${fmt(p.at)}, sha ${p.hash.slice(0, 10)})`) : ["No photos attached."]),
+    ...(v.notes.trim() ? ["", "Auditor notes:", v.notes.trim()] : []),
+    "",
+    "5. Conclusion and recommendation",
+    majors
+      ? `The management system is not yet effective for the scope. Certification cannot be recommended until the ${majors} major nonconformit${majors === 1 ? "y is" : "ies are"} closed and verified.`
+      : minors
+        ? `The management system is effectively implemented, subject to acceptable corrective action plans for the ${minors} minor nonconformit${minors === 1 ? "y" : "ies"} within the agreed time.`
+        : "The management system is effectively implemented and maintained for the scope. The audit team recommends certification.",
+    "",
+    "6. Sign-off",
+    ...(v.signatures.length ? v.signatures.map((s) => `• ${s.name}${s.title ? `, ${s.title}` : ""} (${s.role}) — ${fmt(s.at)}`) : ["Not yet signed on site."]),
+  ];
+  return lines.join("\n");
+}
+
+export function auditReportFor(appId: string, visitId: string): AuditReport | null {
+  const b = getApplication(appId);
+  const rows = (b?.app.audit_reports ?? []).filter((r) => r.visit_id === visitId);
+  return rows.sort((x, y) => y.version - x.version)[0] ?? null;
+}
+
+/** Saves a new version of the report and files it on the application (Documents). */
+export function saveAuditReport(appId: string, visitId: string, text: string, actor: Actor): AuditReport {
+  certStore.guard("Audit reports");
+  if (!text.trim()) throw new Error("The report is empty.");
+  // TODO: wire real — PUT /certification/applications/{id}/audit-report {visit, text}
+  const r = certStore.mutate((s) => {
+    const a = s.apps[appId];
+    if (!a) throw new Error("Application not found.");
+    const version = (a.audit_reports ?? []).filter((x) => x.visit_id === visitId).length + 1;
+    const row: AuditReport = { visit_id: visitId, version, text, by: actor.name, at: nowIso() };
+    a.audit_reports = [...(a.audit_reports ?? []), row];
+    a.history.push({ at: row.at, actor: actor.name, action: `Audit report v${version} saved (${visitId})` });
+    return row;
+  });
+  safe(() => addGeneratedDoc("Certification Application", appId, { family: `${appId}-report-${visitId}`, name: `Audit report ${visitId} v${r.version}.pdf`, category: "Audit", uploaded_by: actor.name, size: 90_000, version: r.version }));
+  return r;
+}

@@ -67,8 +67,12 @@ export type WorkItem = WfRecord & {
   catalogue_id?: string;
   proposal_id?: string;
   revises?: string;
+  /** WTO TBT notification of a draft technical regulation (06 P3). */
+  tbt?: TbtOutgoing;
   created_at: string;
 };
+
+export type TbtOutgoing = { symbol: string; notified_at: string; by: string; objective: string; products: string; comment_until: string; imported: number };
 
 export type CommentDisposition = "accepted" | "accepted_in_principle" | "rejected" | "noted";
 

@@ -82,6 +82,8 @@ export type CalJob = WfRecord & {
   certificate?: { id: string; issued_at: string; by: string; token: string; version: number; reason?: string };
   dispatch?: { at: string; method: "collection" | "courier"; name: string; reference?: string; signature?: string };
   visit_id?: string;
+  /** Booked lab-counter drop-off slot (07 P3). */
+  dropoff?: { date: string; time: string };
 };
 
 export type CustomerInstrument = {
@@ -100,6 +102,8 @@ export type CustomerInstrument = {
   last_job?: string;
   last_cert?: string;
   last_result?: "in_tolerance" | "out_of_tolerance";
+  /** As-found error per calibration as a fraction of tolerance (1 = at the limit), oldest first (07 P3). */
+  drift?: { at: string; ratio: number; cert?: string }[];
 };
 
 export type IntermediateCheck = { at: string; by: string; ok: boolean; note?: string };
@@ -159,4 +163,6 @@ export type MetrologySettings = {
   oot_notify: "immediate" | "with_certificate";
   certificate_statement: string;
   default_interval_months: number;
+  /** Lab counter drop-off booking (07 P3): slot start times on working days and bookings per slot. */
+  counter?: { times: string[]; per_slot: number };
 };

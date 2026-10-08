@@ -18,6 +18,8 @@ import {
   listMembers,
   MEETING_DEF,
   memberHome,
+  onboardingStatus,
+  signOnboarding,
   recordDeclaration,
   RESOLUTION_DEF,
   saveMember,
@@ -30,6 +32,7 @@ import {
 } from "@eswasaone/shared-ui/governance";
 import { listNotifications, markNotificationRead } from "@eswasaone/shared-ui/notify";
 import { DeclarationForm } from "./RegisterViews";
+import { BriefingDrawer } from "./Briefing";
 import { fmtDay, fmtDayTime, Gate, useGov, VOTE_LABEL, WfPill } from "./ui";
 
 const MEMBER_KEY = "eswasaone.demo.member";
@@ -90,6 +93,7 @@ export function MemberLayout() {
               <NavLink to="/member/minutes">Minutes</NavLink>
               <NavLink to="/member/declarations">Declarations</NavLink>
               <NavLink to="/member/evaluation">Evaluation</NavLink>
+              <NavLink to="/member/onboarding">Onboarding</NavLink>
               <NavLink to="/member/profile">Profile</NavLink>
             </nav>
           ) : null}
@@ -145,14 +149,19 @@ function Section({ title, children, action }: { title: string; children: ReactNo
 
 export function MemberHome() {
   const { name } = useMember();
-  const res = useGov(async () => ({ home: await memberHome(name), notes: listNotifications("member", { name }) }), [name]);
+  const res = useGov(async () => ({ home: await memberHome(name), notes: listNotifications("member", { name }), onboarding: onboardingStatus(name) }), [name]);
   return (
     <Gate res={res} what="Member area">
-      {({ home, notes }) => {
+      {({ home, notes, onboarding }) => {
         const toVote = home.votes.filter((r) => r.state === "Circulated" && !r.votes[name]);
         return (
           <div className="crm-stack">
             <h2 style={{ margin: 0 }}>Welcome, {name.split(" ").slice(-1)[0]}</h2>
+            {!onboarding.complete ? (
+              <CrmBanner tone="info">
+                Your onboarding pack has {onboarding.docs.filter((d) => !d.signed_at).length} document(s) to read and sign. <Link to="/member/onboarding">Open it</Link>.
+              </CrmBanner>
+            ) : null}
             {home.declarationDue ? (
               <CrmBanner>
                 Your annual declaration of interest for {new Date().getFullYear()} is due. <Link to="/member/declarations">File it now</Link>.
@@ -246,6 +255,7 @@ export function MemberMeeting() {
   const res = useGov(() => getMeeting(id), [id]);
   const [toast, show] = useCrmToast();
   const [conflict, setConflict] = useState<{ item: string; text: string } | null>(null);
+  const [brief, setBrief] = useState(false);
   return (
     <Gate res={res} what="Meeting">
       {(b) => {
@@ -290,15 +300,21 @@ export function MemberMeeting() {
                 ))}
               </ol>
             </Section>
+            {brief && pack ? <BriefingDrawer packId={pack.id} v={snap?.v} onClose={() => setBrief(false)} /> : null}
             {snap ? (
               <div className="crm-card eo-watermark" data-mark={`${name} · CONFIDENTIAL`}>
                 <div className="crm-card__h">
                   <h3>
                     Board pack v{snap.v} <span className="crm-small">issued {fmtDay(snap.assembled_at)}</span>
                   </h3>
-                  <button type="button" className="crm-btn crm-btn--sm" onClick={() => window.print()}>
-                    <Icon name="i-download" /> Print / save PDF (watermarked)
-                  </button>
+                  <span className="crm-row">
+                    <button type="button" className="crm-btn crm-btn--sm" onClick={() => setBrief(true)}>
+                      <Icon name="i-spark" /> Summarise this pack
+                    </button>
+                    <button type="button" className="crm-btn crm-btn--sm" onClick={() => window.print()}>
+                      <Icon name="i-download" /> Print / save PDF (watermarked)
+                    </button>
+                  </span>
                 </div>
                 <div className="eo-reader">
                   <nav className="eo-reader__toc" aria-label="Contents">
@@ -604,5 +620,50 @@ function ProfileForm({ m, onSaved, toast }: { m: GovMember; onSaved: () => void;
         Save
       </button>
     </div>
+  );
+}
+
+/** Member onboarding pack (03 P3): charter, code of conduct, confidentiality — each read and signed off. */
+export function MemberOnboarding() {
+  const { name } = useMember();
+  const res = useGov(() => onboardingStatus(name), [name]);
+  const [toast, show] = useCrmToast();
+  return (
+    <Gate res={res} what="Onboarding pack">
+      {(o) => (
+        <div className="crm-stack" style={{ maxWidth: 760 }}>
+          {toast}
+          <h2 style={{ margin: 0 }}>Onboarding pack</h2>
+          <p className="crm-muted" style={{ margin: 0 }}>
+            Read each document and confirm. Your sign-off date is kept with your member record for governance audits.
+          </p>
+          {o.complete ? <CrmBanner tone="ok">All signed — thank you. Welcome to the Board.</CrmBanner> : null}
+          {o.docs.map((d) => (
+            <div key={d.id} className="crm-card">
+              <div className="crm-card__h">
+                <h3>{d.title}</h3>
+                {d.signed_at ? <span className="crm-pill crm-pill--green">Signed {fmtDay(d.signed_at)}</span> : <span className="crm-pill crm-pill--amber">To sign</span>}
+              </div>
+              <p style={{ marginTop: 0 }}>{d.summary}</p>
+              <div className="crm-row">
+                <span className="crm-pill crm-pill--outline">
+                  <Icon name="i-file" /> {d.file}
+                </span>
+                <span className="crm-spacer" />
+                {!d.signed_at ? (
+                  <button
+                    type="button"
+                    className="crm-btn crm-btn--sm crm-btn--pri"
+                    onClick={() => void signOnboarding(name, d.id).then(() => show(`${d.title} signed.`), (e: Error) => show(e.message))}
+                  >
+                    I have read and accept this
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Gate>
   );
 }

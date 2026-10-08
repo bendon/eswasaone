@@ -21,12 +21,17 @@ import {
   VISIT_TYPES,
   visitActions,
   visitDef,
+  ESWASA_HQ,
+  mapsLink,
+  planRoute,
+  type LatLng,
   type CalPoint,
   type ChecklistItem,
   type FieldVisit,
   type VisitFinding,
 } from "@eswasaone/shared-ui/field";
 import { useStoreResource } from "@eswasaone/shared-ui/store";
+import { verifyCertificateToken } from "@eswasaone/shared-ui/certification";
 import { displayState, stateDef, type Actor } from "@eswasaone/shared-ui/workflow";
 import { useAuth } from "../../auth/AuthProvider";
 import { clearSent, discard, enqueue, isOffline, outbox, outboxSummary, retry, setSimulatedOffline } from "../../lib/outbox";
@@ -136,6 +141,7 @@ export function TodayScreen() {
           ))}
         </>
       ) : null}
+      <RouteCard visits={[...today, ...thisWeek].filter((v) => !["Submitted", "Closed", "Aborted"].includes(v.state))} />
       <h2 className="field-screen__title">Today</h2>
       {today.length ? today.map((v) => <VisitCard key={v.id} v={v} />) : <p className="field-muted">No visits today.</p>}
       <h2 className="field-screen__title">This week</h2>
@@ -478,6 +484,7 @@ function NotesCard({ v, editable, onSave }: { v: FieldVisit; editable: boolean; 
     <div className="fv-card">
       <h3>Notes</h3>
       <textarea className="fv-textarea" disabled={!editable} value={n} onChange={(e) => setN(e.target.value)} placeholder="What you found, who you spoke to, next steps" />
+      {editable ? <Dictate onText={(t) => setN((cur) => `${cur}${cur && !/\s$/.test(cur) ? " " : ""}${t}`)} /> : null}
       {editable ? (
         <button type="button" className="fv-btn fv-btn--sm" style={{ marginTop: 8 }} disabled={n === v.notes} onClick={() => onSave(n)}>
           Save notes
@@ -589,6 +596,7 @@ function FindingSheet({ onClose, onSave }: { onClose: () => void; onSave: (f: Om
         Statement of nonconformity
         <textarea className="fv-textarea" value={f.statement} onChange={(e) => setF({ ...f, statement: e.target.value })} />
       </label>
+      <Dictate onText={(t) => setF((cur) => ({ ...cur, statement: `${cur.statement}${cur.statement && !/\s$/.test(cur.statement) ? " " : ""}${t}` }))} />
       <button type="button" className="fv-btn fv-btn--pri fv-btn--block" disabled={!f.clause.trim() || !f.statement.trim()} onClick={() => onSave(f)}>
         Add finding
       </button>
@@ -865,6 +873,7 @@ export function SamplesScreen() {
           Hand over
         </button>
       </div>
+      <ProductCheck />
       {mine.length ? null : <p className="fv-sub">No samples of yours — showing all (demo).</p>}
       {list.map((s) => (
         <div key={s.id} className="fv-card">
@@ -938,3 +947,166 @@ export function OutboxScreen() {
 }
 
 export const visitCustomerLabel = (v: FieldVisit) => displayState(visitDef(v.type), v.state, "customer");
+
+/* ---------------- route planning (08 P3) ---------------- */
+
+/** Orders the open visits with a GPS pin by nearest neighbour from where you are, with a sketch map. */
+function RouteCard({ visits }: { visits: FieldVisit[] }) {
+  const [open, setOpen] = useState(false);
+  const [here, setHere] = useState<{ at: LatLng; label: string } | null>(null);
+  const stops = visits.filter((v): v is FieldVisit & { site: { gps: LatLng } } => Boolean(v.site.gps)).map((v) => ({ v, gps: v.site.gps! }));
+  useEffect(() => {
+    if (!open || here) return;
+    if (!navigator.geolocation) return setHere({ at: ESWASA_HQ, label: "ESWASA office (no GPS on this device)" });
+    navigator.geolocation.getCurrentPosition(
+      (p) => setHere({ at: { lat: p.coords.latitude, lng: p.coords.longitude }, label: "your location" }),
+      () => setHere({ at: ESWASA_HQ, label: "ESWASA office (location not shared)" }),
+      { timeout: 8000, maximumAge: 300_000 },
+    );
+  }, [open, here]);
+  if (stops.length < 2) return null;
+  if (!open)
+    return (
+      <button type="button" className="fv-btn fv-btn--block" onClick={() => setOpen(true)}>
+        <Icon name="i-map" /> Plan my route ({stops.length} stops)
+      </button>
+    );
+  const start = here?.at ?? ESWASA_HQ;
+  const r = planRoute(start, stops);
+  const pts = [start, ...r.order.map((x) => x.gps)];
+  const lats = pts.map((p) => p.lat);
+  const lngs = pts.map((p) => p.lng);
+  const [minLat, maxLat, minLng, maxLng] = [Math.min(...lats), Math.max(...lats), Math.min(...lngs), Math.max(...lngs)];
+  const W = 300;
+  const H = 180;
+  const pad = 18;
+  const sx = (lng: number) => pad + ((lng - minLng) / Math.max(1e-6, maxLng - minLng)) * (W - 2 * pad);
+  const sy = (lat: number) => pad + ((maxLat - lat) / Math.max(1e-6, maxLat - minLat)) * (H - 2 * pad);
+  return (
+    <div className="fv-card">
+      <div className="fv-row">
+        <h3 className="fv-grow">Route · {r.total_km} km straight-line</h3>
+        <button type="button" className="fv-btn fv-btn--sm" onClick={() => setOpen(false)}>
+          Hide
+        </button>
+      </div>
+      <p className="fv-sub">From {here?.label ?? "…locating"}. Nearest stop first.</p>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Sketch map of the route" style={{ background: "var(--field-surface, #f4f6fb)", borderRadius: 10 }}>
+        <polyline points={pts.map((p) => `${sx(p.lng)},${sy(p.lat)}`).join(" ")} fill="none" stroke="currentColor" strokeOpacity={0.5} strokeWidth={2} strokeDasharray="4 3" />
+        <circle cx={sx(start.lng)} cy={sy(start.lat)} r={6} fill="#1f3a78" />
+        {r.order.map((x, i) => (
+          <g key={x.v.id}>
+            <circle cx={sx(x.gps.lng)} cy={sy(x.gps.lat)} r={9} fill="#d9a800" />
+            <text x={sx(x.gps.lng)} y={sy(x.gps.lat) + 4} textAnchor="middle" fontSize={10} fontWeight={700} fill="#000">
+              {i + 1}
+            </text>
+          </g>
+        ))}
+      </svg>
+      <ol style={{ paddingLeft: 18, margin: "8px 0" }}>
+        {r.order.map((x) => (
+          <li key={x.v.id} style={{ marginBottom: 4 }}>
+            <Link to={`/visits/${x.v.id}`}>{x.v.site.name}</Link> <span className="fv-sub">· {x.leg_km} km · {new Date(x.v.planned_date).toLocaleDateString()}</span>
+          </li>
+        ))}
+      </ol>
+      <a className="fv-btn fv-btn--pri fv-btn--block" href={mapsLink(start, r.order.map((x) => x.gps))} target="_blank" rel="noopener">
+        Open in Maps
+      </a>
+    </div>
+  );
+}
+
+/* ---------------- voice notes (08 P3) ---------------- */
+
+type SpeechRec = { lang: string; interimResults: boolean; continuous: boolean; start: () => void; stop: () => void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> ; resultIndex: number }) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
+
+/** Dictation via the browser's speech recognition; hidden where unsupported. The text is always editable. */
+function Dictate({ onText }: { onText: (t: string) => void }) {
+  const W = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
+  const Ctor = W.SpeechRecognition ?? W.webkitSpeechRecognition;
+  const rec = useRef<SpeechRec | null>(null);
+  const [on, setOn] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => () => rec.current?.stop(), []);
+  if (!Ctor) return null;
+  const toggle = () => {
+    if (on) return rec.current?.stop();
+    setErr(null);
+    const r = new Ctor();
+    r.lang = "en-ZA";
+    r.interimResults = false;
+    r.continuous = true;
+    r.onresult = (e) => {
+      for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) onText(e.results[i][0].transcript.trim());
+    };
+    r.onerror = (e) => setErr(e.error === "not-allowed" ? "Microphone permission is off." : `Dictation stopped (${e.error}).`);
+    r.onend = () => setOn(false);
+    rec.current = r;
+    r.start();
+    setOn(true);
+  };
+  return (
+    <div className="fv-row" style={{ marginTop: 4 }}>
+      <button type="button" className={`fv-btn fv-btn--sm${on ? " fv-btn--pri" : ""}`} onClick={toggle} aria-pressed={on}>
+        <Icon name="i-mic" /> {on ? "Stop dictation" : "Dictate"}
+      </button>
+      <span className="fv-sub">{on ? "Listening… speak the statement; check the text before saving." : err ?? "Voice note → text. Needs a connection on most phones."}</span>
+    </div>
+  );
+}
+
+/* ---------------- product certification check (08 P3) ---------------- */
+
+/** Scan the certificate QR / number on a product label and check the register on the spot. */
+function ProductCheck() {
+  const [code, setCode] = useState("");
+  const [scan, setScan] = useState(false);
+  const [r, setR] = useState<(ReturnType<typeof verifyCertificateToken> & { code: string }) | null>(null);
+  const check = (raw: string) => {
+    const m = raw.trim().match(/\/verify\/(?:cal\/)?([^/?#\s]+)/i);
+    const token = decodeURIComponent(m ? m[1] : raw.trim());
+    try {
+      setR({ ...verifyCertificateToken(token), code: token });
+    } catch {
+      setR({ valid: false, code: token });
+    }
+  };
+  return (
+    <div className="fv-card">
+      <h3>Check a product's certification</h3>
+      <p className="fv-sub">Scan the QR on the label or certificate, or type the certificate number.</p>
+      {scan ? <Scanner onCode={(c) => (setCode(c), setScan(false), check(c))} /> : null}
+      <div className="fv-row">
+        <input className="fv-input fv-grow" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Certificate number or QR text" />
+        <button type="button" className="fv-btn fv-btn--sm" onClick={() => setScan(true)}>
+          Scan
+        </button>
+        <button type="button" className="fv-btn fv-btn--sm fv-btn--pri" disabled={!code.trim()} onClick={() => check(code)}>
+          Check
+        </button>
+      </div>
+      {r ? (
+        <div className={`fv-banner${r.valid ? "" : " fv-banner--err"}`} style={{ marginTop: 8 }} role="status">
+          {r.valid ? (
+            <>
+              <b>Valid — {r.org}</b>
+              <br />
+              {r.standard} · {r.number} · expires {r.expires ? new Date(r.expires).toLocaleDateString() : "—"}
+              <br />
+              <span className="fv-sub">Scope: {r.scope}</span>
+            </>
+          ) : r.state ? (
+            <>
+              <b>Not valid — certificate {r.state.toLowerCase()}</b> ({r.number}, {r.org}). The mark must not be used. Take a sample or raise a finding on your visit.
+            </>
+          ) : (
+            <>
+              <b>Not on the register</b> ({r.code}). Possible false claim: photograph the label, take a sample and report it from your visit.
+            </>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}

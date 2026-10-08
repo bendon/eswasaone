@@ -195,4 +195,6 @@ export type GovSettings = {
   section_templates: { title: string; owner: string; source: SectionSource; module?: PackSection["module"] }[];
 };
 
+export type OnboardingSignoff = { member: string; doc_id: string; at: string };
+
 export type Evaluation = { id: string; member: string; year: string; scores: Record<string, number>; comment?: string; at: string };

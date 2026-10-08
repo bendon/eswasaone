@@ -8,8 +8,25 @@ import type { Case, Client, ClientHealth, CrmConfig, Opportunity, RenewalItem, S
 const DAY = 86_400_000;
 const daysUntil = (iso: string) => Math.round((new Date(iso).getTime() - Date.now()) / DAY);
 
+/**
+ * Extra health factors from other modules (e.g. certification health: NC closure, payment behaviour),
+ * registered on import so CRM never imports the domain stores (avoids cycles).
+ */
+export type HealthFactorSource = (c: Client) => ClientHealth["factors"];
+const healthSources: HealthFactorSource[] = [];
+export function registerHealthFactor(fn: HealthFactorSource): void {
+  healthSources.push(fn);
+}
+
 export function clientHealth(c: Client, cases: Case[]): ClientHealth {
   const factors: ClientHealth["factors"] = [];
+  for (const src of healthSources) {
+    try {
+      factors.push(...src(c));
+    } catch {
+      /* a module that isn't connected never breaks the CRM view */
+    }
+  }
   const overdue = c.invoices.filter((i) => i.status === "overdue");
   if (overdue.length) factors.push({ label: `${overdue.length} overdue invoice(s)`, delta: -15 * overdue.length });
   const suspended = c.certificates.filter((x) => x.status === "suspended");
@@ -274,4 +291,56 @@ export function summarise(c: Case): string {
   const first = c.description.split(/(?<=[.!?])\s/)[0] ?? c.description;
   const turns = c.thread.filter((m) => m.role !== "system").length;
   return `${first.length > 160 ? `${first.slice(0, 157)}…` : first} ${turns > 1 ? `(${turns} messages so far)` : ""}`.trim();
+}
+
+/* ---------------- health over time and churn (04 P3) ---------------- */
+
+/**
+ * Health as it stood at `at`, rebuilt from dated events: invoices past due and unpaid, certificates
+ * expired by then, complaints open at that moment, contact in the 6 months before. Approximate for the
+ * past (paid invoices are assumed paid on time); the last point is always today's `clientHealth`.
+ */
+function healthAt(c: Client, cases: Case[], at: Date): number {
+  const t = at.getTime();
+  let delta = 0;
+  delta -= 15 * c.invoices.filter((i) => i.status !== "paid" && new Date(i.due).getTime() < t).length;
+  if (c.certificates.some((x) => x.status !== "withdrawn" && new Date(x.expires).getTime() < t && new Date(x.issued).getTime() < t)) delta -= 20;
+  const open = cases.filter((x) => x.client_id === c.id && x.type !== "enquiry" && x.type !== "feedback" && new Date(x.created_at).getTime() <= t && (!x.closed_at || new Date(x.closed_at).getTime() > t) && (!x.resolved_at || new Date(x.resolved_at).getTime() > t));
+  delta -= 6 * open.length;
+  const touched = c.activity.some((a) => new Date(a.at).getTime() <= t && new Date(a.at).getTime() > t - 180 * DAY);
+  if (!touched) delta -= 10;
+  if (c.training.some((x) => new Date(x.date).getTime() <= t)) delta += 4;
+  if (c.certificates.filter((x) => new Date(x.issued).getTime() <= t).length >= 2) delta += 4;
+  return Math.max(0, Math.min(100, 80 + delta));
+}
+
+/** Month-end health scores for the last `months` months, ending with today's score. */
+export function healthTrend(c: Client, cases: Case[], months = 6): { at: string; score: number }[] {
+  const out: { at: string; score: number }[] = [];
+  const now = new Date();
+  for (let i = months - 1; i >= 1; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59);
+    out.push({ at: d.toISOString(), score: healthAt(c, cases, d) });
+  }
+  out.push({ at: now.toISOString(), score: clientHealth(c, cases).score });
+  return out;
+}
+
+export type ChurnRisk = { level: "low" | "medium" | "high"; reasons: string[] };
+
+/** Churn prediction from lapsed renewals, overdue calibration, silence and a falling health trend. */
+export function churnRisk(c: Client, cases: Case[]): ChurnRisk {
+  const reasons: string[] = [];
+  let pts = 0;
+  const lapsed = c.certificates.filter((x) => x.status === "expired" && !c.certificates.some((y) => y !== x && y.standard === x.standard && y.status === "valid"));
+  if (lapsed.length) (pts += 3), reasons.push(`${lapsed.length} certificate(s) lapsed without renewal`);
+  const calOverdue = c.instruments.filter((i) => daysUntil(i.next_due) < -30);
+  if (calOverdue.length) (pts += 2), reasons.push(`${calOverdue.length} instrument(s) more than 30 days past calibration`);
+  const lastTouch = c.activity[0]?.at;
+  if (!lastTouch || daysUntil(lastTouch) < -180) (pts += 1), reasons.push("No contact in 6 months");
+  const overdue = c.invoices.filter((i) => i.status === "overdue");
+  if (overdue.length) (pts += 1), reasons.push("Overdue invoices");
+  const trend = healthTrend(c, cases, 4);
+  if (trend.length > 1 && trend[trend.length - 1].score <= trend[0].score - 10) (pts += 2), reasons.push(`Health fell ${trend[0].score} → ${trend[trend.length - 1].score} in ${trend.length - 1} months`);
+  return { level: pts >= 4 ? "high" : pts >= 2 ? "medium" : "low", reasons };
 }

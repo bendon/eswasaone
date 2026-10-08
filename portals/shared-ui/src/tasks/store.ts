@@ -73,7 +73,11 @@ type TaskState = {
   v: 2;
   tasks: Record<string, Task>;
   delegations: Record<string, Delegation>;
+  /** Daily digest subscriptions per staff member (02 P3). Optional so older saved state still loads. */
+  digest?: Record<string, DigestPref>;
 };
+
+export type DigestPref = { email: boolean; push: boolean; updated_at: string };
 
 const taskKey = (t: Pick<Task, "doctype" | "name" | "state" | "seq">) => `${t.doctype}|${t.name}|${t.state}|${t.seq}`;
 
@@ -604,4 +608,21 @@ export function eligibleAssignees(t: Pick<Task, "role" | "facts">, exclude: stri
 
 export async function resetTasksDemo(): Promise<void> {
   taskStore.reset();
+}
+
+/* ---------------- daily digest (02 P3) ---------------- */
+
+export function digestPref(staff: string): DigestPref {
+  return taskStore.read().digest?.[staff] ?? { email: false, push: false, updated_at: "" };
+}
+
+/** Opt in / out of the 07:00 digest of breaching and due tasks. */
+export async function setDigestPref(staff: string, pref: Pick<DigestPref, "email" | "push">): Promise<DigestPref> {
+  taskStore.guard("Changing digest settings");
+  // TODO: wire real — PUT /approvals/digest {email, push} (Frappe scheduler sends at 07:00 on working days)
+  return taskStore.mutate((s) => {
+    const next = { ...pref, updated_at: nowIso() };
+    s.digest = { ...(s.digest ?? {}), [staff]: next };
+    return next;
+  });
 }

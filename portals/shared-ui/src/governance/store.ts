@@ -46,6 +46,7 @@ import type {
   Risk,
   RiskCategory,
   Vote,
+  OnboardingSignoff,
 } from "./types";
 
 type GovState = {
@@ -63,6 +64,8 @@ type GovState = {
   evaluations: Record<string, Evaluation>;
   /** Board member private notes: `${member}|${packId}|${sectionId}` → text (never shared). */
   notes: Record<string, string>;
+  /** Onboarding pack sign-offs `${member}|${docId}` (03 P3). Optional so older saved state still loads. */
+  onboarding?: Record<string, OnboardingSignoff>;
 };
 
 const byId = <T,>(rows: T[], key: (r: T) => string) => Object.fromEntries(rows.map((r) => [key(r), structuredClone(r)]));
@@ -775,13 +778,58 @@ async function liveFigures(s: GovState, sec: PackSection): Promise<{ content: st
         figures: { Open: String(open.length), Overdue: String(overdue.length), Completed: String(acts.length - open.length) },
       };
     }
-    // TODO: wire real — read from the certification / metrology / standards stores once those phases land.
-    case "certification":
-      return { content: `Certification performance as at ${asOf}: 41 certificates issued year to date; 12 applications in progress; average lead time 63 working days; 0 suspensions this quarter. (Demo figures.)`, figures: { Issued: "41", "In progress": "12", "Lead time": "63 wd" } };
-    case "metrology":
-      return { content: `Metrology as at ${asOf}: 318 calibrations completed; 96% on time; 2 reference standards due for recalibration. (Demo figures.)`, figures: { Calibrations: "318", "On time": "96%" } };
-    case "standards":
-      return { content: `Standards as at ${asOf}: 14 work items active; 3 drafts in public comment; 2 standards published this quarter. (Demo figures.)`, figures: { "Work items": "14", "Public comment": "3", Published: "2" } };
+    // Board KPIs straight from the domain stores (03 P3) — frozen into the snapshot at assembly.
+    case "certification": {
+      try {
+        const { listApplications, listCertificates } = await import("../certification/store");
+        const year = String(new Date().getFullYear());
+        const apps = listApplications();
+        const certs = listCertificates();
+        const issuedYtd = certs.filter((c) => c.issued_at.startsWith(year)).length;
+        const open = apps.filter((a) => !["Certified", "Rejected", "Withdrawn"].includes(a.state));
+        const done = apps.filter((a) => a.state === "Certified" && a.decision?.at);
+        const lead = done.length ? Math.round(done.reduce((n, a) => n + daysBetween(a.created_at, a.decision!.at), 0) / done.length) : 0;
+        const suspended = certs.filter((c) => c.state === "Suspended").length;
+        return {
+          content: `Certification as at ${asOf}: ${issuedYtd} certificate(s) issued this year; ${open.length} application(s) in progress; ${certs.filter((c) => c.state === "Active").length} active certificates; average lead time ${lead || "—"} days; ${suspended} suspended.`,
+          figures: { Issued: String(issuedYtd), "In progress": String(open.length), "Lead time": lead ? `${lead} d` : "—", Suspended: String(suspended) },
+        };
+      } catch {
+        return { content: "Certification figures unavailable.", figures: {} };
+      }
+    }
+    case "metrology": {
+      try {
+        const { listJobs, listEquipment } = await import("../metrology/store");
+        const jobs = listJobs();
+        const done = jobs.filter((j) => j.certificate);
+        const onTime = done.filter((j) => !j.due || j.certificate!.issued_at <= j.due).length;
+        const active = jobs.filter((j) => !["Certified", "Dispatched", "Cancelled"].includes(j.state)).length;
+        const refDue = listEquipment().filter((e) => e.kind === "reference" && new Date(e.cal_due).getTime() - Date.now() < 30 * 86_400_000).length;
+        return {
+          content: `Metrology as at ${asOf}: ${done.length} calibration certificate(s) issued; ${done.length ? Math.round((onTime / done.length) * 100) : 0}% on time; ${active} job(s) in the lab; ${refDue} reference standard(s) due for recalibration within 30 days.`,
+          figures: { Calibrations: String(done.length), "On time": done.length ? `${Math.round((onTime / done.length) * 100)}%` : "—", "In lab": String(active), "Ref. due": String(refDue) },
+        };
+      } catch {
+        return { content: "Metrology figures unavailable.", figures: {} };
+      }
+    }
+    case "standards": {
+      try {
+        const { listWorkItems, listCatalogue } = await import("../standards/store");
+        const wis = listWorkItems();
+        const active = wis.filter((w) => !["Published", "Cancelled"].includes(w.state));
+        const review = wis.filter((w) => w.state === "Public Review").length;
+        const q0 = new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3, 1).toISOString();
+        const published = listCatalogue().filter((c) => c.published_at >= q0).length;
+        return {
+          content: `Standards as at ${asOf}: ${active.length} work item(s) active; ${review} draft(s) in public comment; ${published} standard(s) published this quarter.`,
+          figures: { "Work items": String(active.length), "Public comment": String(review), Published: String(published) },
+        };
+      } catch {
+        return { content: "Standards figures unavailable.", figures: {} };
+      }
+    }
     default:
       return { content: sec.content ?? "", figures: {} };
   }
@@ -1397,3 +1445,86 @@ export async function resetGovernanceDemo(): Promise<void> {
 }
 
 export type { RiskCategory };
+
+/* ---------------- member onboarding pack (03 P3) ---------------- */
+
+export const ONBOARDING_DOCS: { id: string; title: string; summary: string; file: string }[] = [
+  { id: "charter", title: "Board charter", summary: "Mandate of the ESWASA Council under the Standards and Quality Act, its committees, delegations and the matters reserved for the Board.", file: "ESWASA-Board-Charter.pdf" },
+  { id: "conduct", title: "Code of conduct", summary: "Duties of care and loyalty, gifts and hospitality, use of information, and how conflicts of interest are declared and managed.", file: "ESWASA-Board-Code-of-Conduct.pdf" },
+  { id: "confidentiality", title: "Confidentiality undertaking", summary: "Board papers, restricted sections and deliberations stay confidential during and after your term.", file: "ESWASA-Confidentiality-Undertaking.pdf" },
+  { id: "calendar", title: "Year planner and how papers work", summary: "Meeting cycle, when packs are issued, how written resolutions are voted, and where minutes are kept.", file: "ESWASA-Board-Year-Planner.pdf" },
+];
+
+export function onboardingStatus(member: string): { docs: (typeof ONBOARDING_DOCS[number] & { signed_at?: string })[]; complete: boolean } {
+  guard("Onboarding pack");
+  return govStore.view((s) => {
+    const docs = ONBOARDING_DOCS.map((d) => ({ ...d, signed_at: s.onboarding?.[`${member}|${d.id}`]?.at }));
+    return { docs, complete: docs.every((d) => d.signed_at) };
+  });
+}
+
+/** The member confirms they have read and accept a document. Kept as evidence for governance audits. */
+export async function signOnboarding(member: string, docId: string): Promise<void> {
+  guard("Onboarding pack");
+  if (!ONBOARDING_DOCS.some((d) => d.id === docId)) throw new Error("Unknown onboarding document.");
+  // TODO: wire real — POST /governance/members/{member}/onboarding/{docId}/sign
+  govStore.mutate((s) => {
+    s.onboarding = { ...(s.onboarding ?? {}), [`${member}|${docId}`]: { member, doc_id: docId, at: nowIso() } };
+  });
+}
+
+/* ---------------- assistant briefing (03 P3) ---------------- */
+
+export type PackBriefing = {
+  meeting: string;
+  version: number;
+  assembled_at: string;
+  previous?: string;
+  changes: { section: string; metric: string; before: string; after: string }[];
+  decisions: string[];
+  text: string;
+};
+
+/**
+ * "Summarise this pack in one page" and "What changed since last quarter?" — built only from the frozen
+ * snapshot figures, so it never drifts from what was issued. Proposes; the Secretary edits before sharing.
+ * TODO: wire real — POST /agent/briefing {pack, version} (Esi, L8) with the same snapshot as input.
+ */
+export function packBriefing(packId: string, v?: number, opts: { includeRestricted?: boolean } = {}): PackBriefing | null {
+  guard("Pack briefing");
+  return govStore.view((s) => {
+    const pack = s.packs[packId];
+    if (!pack?.versions.length) return null;
+    const snap = pack.versions.find((x) => x.v === (v ?? pack.issued_version ?? pack.versions.length)) ?? pack.versions[pack.versions.length - 1];
+    const meeting = s.meetings[pack.meeting_id];
+    const prevMeeting = Object.values(s.meetings)
+      .filter((m) => m.body_id === meeting?.body_id && m.scheduled_at < (meeting?.scheduled_at ?? "") && s.packs[m.pack_id]?.versions.length)
+      .sort((a, b) => b.scheduled_at.localeCompare(a.scheduled_at))[0];
+    const prevPack = prevMeeting ? s.packs[prevMeeting.pack_id] : undefined;
+    const prevSnap = prevPack ? prevPack.versions.find((x) => x.v === prevPack.issued_version) ?? prevPack.versions[prevPack.versions.length - 1] : undefined;
+    const sections = snap.sections.filter((x) => opts.includeRestricted || !x.restricted);
+    const changes: PackBriefing["changes"] = [];
+    for (const sec of sections) {
+      const before = prevSnap?.sections.find((x) => x.title === sec.title)?.figures ?? {};
+      for (const [metric, after] of Object.entries(sec.figures ?? {})) {
+        if (before[metric] !== undefined && before[metric] !== after) changes.push({ section: sec.title, metric, before: before[metric], after });
+      }
+    }
+    const decisions = (meeting?.agenda ?? []).filter((a) => a.kind === "decision").map((a) => a.title);
+    const firstSentence = (t: string) => (t.split(/(?<=\.)\s/)[0] ?? "").trim();
+    const lines = [
+      `Briefing — ${meeting?.title ?? packId}, pack v${snap.v} (frozen ${new Date(snap.assembled_at).toLocaleDateString()})`,
+      "",
+      "In one page",
+      ...sections.map((sec) => `• ${sec.title}: ${firstSentence(sec.content) || "(no text)"}${sec.figures && Object.keys(sec.figures).length ? ` [${Object.entries(sec.figures).map(([k, x]) => `${k} ${x}`).join(", ")}]` : ""}`),
+      "",
+      prevMeeting ? `What changed since ${prevMeeting.title}` : "What changed since last quarter",
+      ...(changes.length ? changes.map((c) => `• ${c.section} — ${c.metric}: ${c.before} → ${c.after}`) : [prevSnap ? "• No headline figure changed." : "• No earlier pack to compare with."]),
+      "",
+      "Decisions asked of the Board",
+      ...(decisions.length ? decisions.map((d) => `• ${d}`) : ["• None on the agenda."]),
+      ...(sections.length < snap.sections.length ? ["", `${snap.sections.length - sections.length} restricted section(s) left out.`] : []),
+    ];
+    return { meeting: meeting?.title ?? packId, version: snap.v, assembled_at: snap.assembled_at, previous: prevMeeting?.title, changes, decisions, text: lines.join("\n") };
+  });
+}

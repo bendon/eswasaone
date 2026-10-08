@@ -416,3 +416,30 @@ export type CrmActor = {
   name: string;
   roles: string[];
 };
+
+/* ---------------- account plans and NPS (04 P3) ---------------- */
+
+export type AccountPlan = {
+  client_id: string;
+  year: number;
+  objectives: { id: string; text: string; status: "open" | "on_track" | "at_risk" | "done" }[];
+  stakeholders: { contact_id: string; influence: "decision" | "influencer" | "user"; note?: string }[];
+  services: { id: string; service: ServiceLine; quarter: 1 | 2 | 3 | 4; value: number; status: "planned" | "quoted" | "won" | "lost"; note?: string }[];
+  updated_at: string;
+  updated_by: string;
+};
+
+export type NpsTrigger = "certificate_issued" | "calibration_delivered";
+
+export type NpsSurvey = {
+  id: string;
+  trigger: NpsTrigger;
+  ref: string;
+  client_id?: string;
+  email: string;
+  name?: string;
+  sent_at: string;
+  score?: number;
+  comment?: string;
+  answered_at?: string;
+};

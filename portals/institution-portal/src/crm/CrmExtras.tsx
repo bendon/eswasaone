@@ -7,6 +7,8 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Icon } from "@eswasaone/shared-ui";
 import {
+  ingestWhatsApp,
+  crmDemoMode,
   articleFromCase,
   contractFromQuote,
   createCampaignDraft,
@@ -391,6 +393,7 @@ export function ContactConsole() {
         <input className="crm-input" style={{ fontSize: 18, padding: 12 }} autoFocus placeholder="Type the caller's phone number, email or name" value={q} onChange={(e) => void search(e.target.value)} />
         <p className="crm-small">{busy ? "Searching…" : hits.length ? `${hits.length} match(es)` : "Matches contacts on client records and people who lodged cases."}</p>
       </div>
+      <WhatsAppInbox />
       {hits.map(({ client, contact, open_cases }) => (
         <div key={`${client.id}-${contact.id}`} className="crm-card">
           <div className="crm-row">
@@ -421,6 +424,68 @@ export function ContactConsole() {
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * WhatsApp channel (04 P3). Inbound messages thread into the sender's open case or open a new one; staff
+ * replies on those cases go back out on WhatsApp. Until the Business API webhook is connected, demo mode
+ * lets you simulate an inbound message here.
+ */
+function WhatsAppInbox() {
+  const [from, setFrom] = useState("+268 7612 3456");
+  const [name, setName] = useState("");
+  const [body, setBody] = useState("");
+  const [msg, setMsg] = useState<{ ref: string; threaded: boolean } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  if (!crmDemoMode()) return null;
+  const send = async () => {
+    setErr(null);
+    try {
+      const r = await ingestWhatsApp({ from, name: name || undefined, body });
+      setMsg({ ref: r.case.ref, threaded: r.threaded });
+      setBody("");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    }
+  };
+  return (
+    <div className="crm-card">
+      <div className="crm-card__h">
+        <h3>
+          <Icon name="i-phone" /> WhatsApp inbox
+        </h3>
+        <span className="crm-pill crm-pill--outline">Demo: simulate an inbound message</span>
+      </div>
+      <div className="crm-form crm-form--2">
+        <label className="crm-field">
+          From (phone)
+          <input className="crm-input" value={from} onChange={(e) => setFrom(e.target.value)} />
+        </label>
+        <label className="crm-field">
+          Profile name (optional)
+          <input className="crm-input" value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+      </div>
+      <label className="crm-field">
+        Message
+        <textarea className="crm-textarea" rows={3} value={body} placeholder="e.g. Hi, my calibration certificate still hasn't arrived" onChange={(e) => setBody(e.target.value)} />
+      </label>
+      {err ? <p className="eo-error">{err}</p> : null}
+      <div className="crm-row" style={{ marginTop: 8 }}>
+        <button type="button" className="crm-btn crm-btn--pri" disabled={!body.trim()} onClick={() => void send()}>
+          Receive message
+        </button>
+        {msg ? (
+          <span className="crm-small">
+            {msg.threaded ? "Threaded into open case" : "Opened new case"}{" "}
+            <Link className="crm-link" to={`/crm/cases/${msg.ref}`}>
+              {msg.ref}
+            </Link>
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }

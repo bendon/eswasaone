@@ -10,6 +10,7 @@ import {
   listCases,
   listClients,
   listOpportunities,
+  npsSummary,
   useCrm,
   type CaseType,
   type Region,
@@ -21,13 +22,13 @@ const REGIONS: Region[] = ["Hhohho", "Manzini", "Lubombo", "Shiselweni"];
 /** Insights — complaint patterns for the Quality Manager and Board, plus commercial performance. */
 export function CrmInsightsView() {
   const res = useCrm(async () => {
-    const [cases, opps, clients, cfg] = await Promise.all([listCases({ includeAppeals: true }), listOpportunities(), listClients(), getCrmConfig()]);
-    return { cases, opps, clients, cfg };
+    const [cases, opps, clients, cfg, nps] = await Promise.all([listCases({ includeAppeals: true }), listOpportunities(), listClients(), getCrmConfig(), npsSummary()]);
+    return { cases, opps, clients, cfg, nps };
   });
 
   return (
     <CrmGate res={res} what="Insights" skeleton="dashboard">
-      {({ cases, opps, clients, cfg }) => {
+      {({ cases, opps, clients, cfg, nps }) => {
         const ins = insights(cases, opps, cfg);
         const resolved = cases.filter((c) => c.resolved_at);
         const slaByType = (Object.keys(cfg.case_types) as CaseType[])
@@ -169,6 +170,42 @@ export function CrmInsightsView() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="crm-card">
+                <div className="crm-card__h">
+                  <h3>Net Promoter Score</h3>
+                  <span className="crm-small" style={{ marginLeft: "auto" }}>
+                    {nps.responses} of {nps.sent} answered
+                  </span>
+                </div>
+                <div className="crm-row" style={{ alignItems: "baseline", gap: 12 }}>
+                  <b style={{ fontSize: 32 }}>{nps.nps ?? "—"}</b>
+                  <span className="crm-small">
+                    Certification {nps.byTrigger.certificate_issued.nps ?? "—"} · Calibration {nps.byTrigger.calibration_delivered.nps ?? "—"}
+                  </span>
+                </div>
+                <div className="crm-bars" style={{ marginTop: 8 }}>
+                  {[
+                    { k: "Promoters (9–10)", n: nps.promoters, c: "var(--green)" },
+                    { k: "Passives (7–8)", n: nps.passives, c: "var(--gold)" },
+                    { k: "Detractors (0–6)", n: nps.detractors, c: "var(--red)" },
+                  ].map((x) => (
+                    <div key={x.k} className="crm-bar">
+                      <span>{x.k}</span>
+                      <div className="crm-bar__track">
+                        <div className="crm-bar__fill" style={{ width: `${nps.responses ? (x.n / nps.responses) * 100 : 0}%`, background: x.c }} />
+                      </div>
+                      <b>{x.n}</b>
+                    </div>
+                  ))}
+                </div>
+                {nps.recent.filter((r) => r.comment).slice(0, 3).map((r) => (
+                  <p key={r.id} className="crm-small" style={{ margin: "6px 0 0" }}>
+                    <b>{r.score}/10</b> “{r.comment}” — {r.ref}
+                  </p>
+                ))}
+                <p className="crm-small" style={{ marginBottom: 0 }}>Sent automatically when a certificate is issued or a calibration is delivered.</p>
               </div>
 
               <div className="crm-card">

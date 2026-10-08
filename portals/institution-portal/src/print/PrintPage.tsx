@@ -9,10 +9,10 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { BrandLogo } from "@eswasaone/shared-ui";
 import { listQuotes, quoteTotals, type CrmQuote } from "@eswasaone/shared-ui/crm";
 import { getInvoice } from "@eswasaone/shared-ui/billing";
-import { getApplication, getCertificate } from "@eswasaone/shared-ui/certification";
-import { getJob } from "@eswasaone/shared-ui/metrology";
-import { AuditPlanDoc, CalCertificateDoc, CertificateDoc, CertQuoteDoc, CrmQuoteDoc, InvoiceDoc, RefusalLetterDoc } from "@eswasaone/shared-ui/print";
-import { getMeeting, getResolution, govStore, tally, type MeetingBundle } from "@eswasaone/shared-ui/governance";
+import { auditReportFor, getApplication, getCertificate } from "@eswasaone/shared-ui/certification";
+import { getJob, getMetSettings, listAllInstruments } from "@eswasaone/shared-ui/metrology";
+import { AuditPlanDoc, CalCertificateDoc, CalLabelsDoc, CertificateDoc, CertQuoteDoc, CrmQuoteDoc, InvoiceDoc, RefusalLetterDoc } from "@eswasaone/shared-ui/print";
+import { getMeeting, getResolution, govStore, packBriefing, tally, type MeetingBundle } from "@eswasaone/shared-ui/governance";
 
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) : "—");
 
@@ -148,6 +148,24 @@ export function PrintPage() {
               ))}
             </>,
           );
+        } else if (kind === "auditreport") {
+          const r = auditReportFor(id, params.get("visit") ?? "");
+          if (!r) throw new Error("No saved audit report for this visit");
+          set(
+            <>
+              <Letterhead title="Audit report" reference={`${id} / ${r.visit_id} v${r.version}`} status={`Saved ${fmt(r.at)} by ${r.by}`} />
+              <p style={{ whiteSpace: "pre-wrap" }}>{r.text}</p>
+            </>,
+          );
+        } else if (kind === "briefing") {
+          const br = packBriefing(id, Number(params.get("v")) || undefined, { includeRestricted: params.get("restricted") === "1" });
+          if (!br) throw new Error("Nothing assembled yet for this pack");
+          set(
+            <>
+              <Letterhead title={`Board briefing — ${br.meeting}`} reference={`${id}-v${br.version}-brief`} status={`Prepared from pack v${br.version}, frozen ${fmt(br.assembled_at)}. Assistant draft — check against the pack.`} />
+              <p style={{ whiteSpace: "pre-wrap" }}>{br.text.split("\n").slice(2).join("\n")}</p>
+            </>,
+          );
         } else if (kind === "quote") {
           const q: CrmQuote | undefined = (await listQuotes()).find((x) => x.id === id);
           if (!q) throw new Error("Quote not found");
@@ -164,6 +182,20 @@ export function PrintPage() {
           const j = getJob(id);
           if (!j) throw new Error("Job not found");
           set(<CalCertificateDoc job={j.job} method={j.method} refs={j.refs} settings={j.settings} />);
+        } else if (kind === "cal-label") {
+          const j = getJob(id);
+          if (!j) throw new Error("Job not found");
+          const regs = listAllInstruments();
+          const due = (itemId: string) => {
+            const it = j.job.items.find((x) => x.id === itemId);
+            const ins = regs.find((r) => r.id === it?.instrument_id || r.serial === it?.serial);
+            if (ins?.next_due) return ins.next_due;
+            if (!j.job.certificate) return undefined;
+            const d = new Date(j.job.certificate.issued_at);
+            d.setMonth(d.getMonth() + getMetSettings().default_interval_months);
+            return d.toISOString();
+          };
+          set(<CalLabelsDoc job={j.job} due={due} />);
         } else if (kind === "invoice") {
           const inv = getInvoice(id);
           if (!inv) throw new Error("Invoice not found");

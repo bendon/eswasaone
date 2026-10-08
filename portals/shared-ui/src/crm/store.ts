@@ -40,6 +40,9 @@ import type {
   SignalRules,
   Contact,
   CasePriority,
+  AccountPlan,
+  NpsSurvey,
+  NpsTrigger,
 } from "./types";
 import { demoDataEnabled } from "../demo";
 import { createInvoice } from "../billing/store";
@@ -84,6 +87,9 @@ type Store = {
   deliveries?: Record<string, MessageDelivery>;
   campaigns?: Record<string, CampaignDraft>;
   signal_rules?: SignalRules;
+  /* 04 P3 */
+  account_plans?: Record<string, AccountPlan>;
+  nps?: Record<string, NpsSurvey>;
 };
 
 const KEY = "eswasaone.crm.v1";
@@ -961,6 +967,22 @@ function ensureExtras(s: Store): Store {
   s.deliveries ??= {};
   s.campaigns ??= {};
   s.signal_rules ??= structuredClone(DEFAULT_SIGNAL_RULES);
+  s.account_plans ??= {};
+  s.nps ??= Object.fromEntries(
+    (
+      [
+        ["certificate_issued", "SZNS-CERT-0412", 9, "Clear process and a helpful auditor."],
+        ["certificate_issued", "SZNS-CERT-0398", 6, "Took longer than the quote said."],
+        ["calibration_delivered", "CAL-26-0211", 10, "Fast turnaround on our balances."],
+        ["calibration_delivered", "CAL-26-0198", 8, undefined],
+        ["certificate_issued", "SZNS-CERT-0377", 10, undefined],
+      ] as const
+    ).map(([trigger, ref, score, comment], i) => {
+      const id = `NPS-SEED-${i + 1}`;
+      const at = new Date(Date.now() - (20 + i * 9) * 86_400_000).toISOString();
+      return [id, { id, trigger, ref, email: "demo", sent_at: at, score, comment, answered_at: at } as NpsSurvey];
+    }).concat([["NPS-SEED-OPEN", { id: "NPS-SEED-OPEN", trigger: "calibration_delivered", ref: "CAL-26-0233", email: "demo", sent_at: new Date(Date.now() - 2 * 86_400_000).toISOString() } as NpsSurvey]]),
+  );
   const q = s.quotes["QT-26-014"];
   if (q && !q.customer_email) {
     q.customer_email = "demo";
@@ -1589,4 +1611,134 @@ export function createSignal(c: SignalCandidate): Signal | null {
     s.signals[id] = { ...c, id, created_at: now(), status: "new" };
     return s.signals[id];
   });
+}
+
+/* ---------------- WhatsApp channel (04 P3) ---------------- */
+
+const digits = (p?: string) => (p ?? "").replace(/\D/g, "").slice(-8);
+
+/**
+ * Inbound WhatsApp message: threads into the sender's most recent open case (matched on phone), or
+ * opens a new enquiry/complaint. Replies on that case then go out on WhatsApp (reporter preference).
+ * TODO: wire real — POST /crm/inbound/whatsapp (WhatsApp Business webhook → Frappe Communication).
+ */
+export async function ingestWhatsApp(input: { from: string; name?: string; body: string; type?: CaseType }): Promise<{ case: Case; threaded: boolean }> {
+  guard("WhatsApp intake");
+  const phone = digits(input.from);
+  if (phone.length < 7) throw new Error("A sender phone number is required.");
+  if (!input.body.trim()) throw new Error("The message is empty.");
+  const existing = Object.values(read().cases)
+    .filter((c) => !["Closed", "Resolved"].includes(c.state) && digits(c.reporter.phone) === phone)
+    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0];
+  if (existing) {
+    const c = mutate((s) => {
+      const x = must(s, existing.ref);
+      addMsg(x, { author: x.reporter.name ?? input.name ?? input.from, role: "customer", visibility: "public", body: `[WhatsApp] ${input.body.trim()}` });
+      x.updated_at = now();
+      return x;
+    });
+    return { case: c, threaded: true };
+  }
+  const c = await lodgeCase({
+    type: input.type ?? "enquiry",
+    subject: input.body.trim().split(/[.!?\n]/)[0].slice(0, 80) || "WhatsApp message",
+    description: input.body.trim(),
+    channel: "whatsapp",
+    reporter: { anonymous: false, name: input.name, phone: input.from, preferred: "whatsapp" },
+    logged_by: "WhatsApp",
+  });
+  return { case: c, threaded: false };
+}
+
+/* ---------------- account plans (04 P3) ---------------- */
+
+export async function getAccountPlan(clientId: string, year = new Date().getFullYear()): Promise<AccountPlan | null> {
+  guard("Account plans");
+  const p = read().account_plans?.[`${clientId}|${year}`];
+  return p ? structuredClone(p) : null;
+}
+
+/** Key-account plan: objectives, stakeholders (from contacts) and a yearly service plan. */
+export async function saveAccountPlan(plan: Omit<AccountPlan, "updated_at" | "updated_by">, actor: CrmActor): Promise<AccountPlan> {
+  guard("Account plans");
+  // TODO: wire real — PUT /crm/clients/{id}/account-plan/{year}
+  return mutate((s) => {
+    const c = s.clients[plan.client_id];
+    if (!c) throw new Error("Client not found");
+    const next: AccountPlan = { ...plan, updated_at: now(), updated_by: actor.name };
+    s.account_plans = { ...(s.account_plans ?? {}), [`${plan.client_id}|${plan.year}`]: next };
+    c.activity.unshift({ id: `ACT-${Date.now().toString(36)}`, at: now(), kind: "note", by: actor.name, text: `Account plan ${plan.year} updated` });
+    return next;
+  });
+}
+
+/* ---------------- Net Promoter Score (04 P3) ---------------- */
+
+/**
+ * Sends one NPS survey after a milestone (certificate issued, calibration delivered). Idempotent per
+ * milestone. Called by the certification and metrology stores; never blocks their transition.
+ * TODO: wire real — POST /crm/nps {trigger, ref, email}
+ */
+export function sendNps(input: { trigger: NpsTrigger; ref: string; email?: string; name?: string; client_id?: string }): NpsSurvey | null {
+  if (!crmDemoMode() || !input.email) return null;
+  try {
+    const id = `NPS-${input.trigger === "certificate_issued" ? "C" : "M"}-${input.ref}`;
+    if (read().nps?.[id]) return null;
+    const row = mutate((s) => {
+      const r: NpsSurvey = { id, trigger: input.trigger, ref: input.ref, email: input.email!, name: input.name, client_id: input.client_id, sent_at: now() };
+      s.nps = { ...(s.nps ?? {}), [id]: r };
+      return r;
+    });
+    const what = input.trigger === "certificate_issued" ? "certification" : "calibration";
+    notifySafe({ audience: "customer", to: input.email, kind: "info", ref: id, title: `How likely are you to recommend ESWASA ${what}?`, body: `${input.ref} is complete. Two clicks: score us 0–10 and tell us why.`, link: "/account/notifications", channel: ["email", "portal"] });
+    return row;
+  } catch {
+    return null;
+  }
+}
+
+export async function listNpsForCustomer(email?: string): Promise<NpsSurvey[]> {
+  guard("Surveys");
+  const e = email?.toLowerCase();
+  return structuredClone(Object.values(read().nps ?? {}).filter((n) => !n.answered_at && (e === "demo" || !e || n.email.toLowerCase() === e || n.email === "demo")));
+}
+
+export async function answerNps(id: string, score: number, comment?: string): Promise<NpsSurvey> {
+  guard("Surveys");
+  if (!Number.isInteger(score) || score < 0 || score > 10) throw new Error("Choose a score from 0 to 10.");
+  // TODO: wire real — POST /crm/nps/{id}/answer {score, comment}
+  return mutate((s) => {
+    const n = s.nps?.[id];
+    if (!n) throw new Error("Survey not found");
+    if (n.answered_at) throw new Error("Thanks — you've already answered this one.");
+    n.score = score;
+    n.comment = comment?.trim() || undefined;
+    n.answered_at = now();
+    if (n.client_id && s.clients[n.client_id]) s.clients[n.client_id].activity.unshift({ id: `ACT-${Date.now().toString(36)}`, at: now(), kind: "note", by: "NPS", text: `NPS ${score}/10 after ${n.ref}${n.comment ? ` — “${n.comment}”` : ""}` });
+    return n;
+  });
+}
+
+export type NpsSummary = { nps: number | null; responses: number; sent: number; promoters: number; passives: number; detractors: number; byTrigger: Record<NpsTrigger, { nps: number | null; responses: number }>; recent: NpsSurvey[] };
+
+export async function npsSummary(): Promise<NpsSummary> {
+  guard("NPS");
+  const all = Object.values(read().nps ?? {});
+  const score = (rows: NpsSurvey[]) => {
+    const a = rows.filter((r) => r.score !== undefined);
+    if (!a.length) return { nps: null, responses: 0 };
+    const p = a.filter((r) => r.score! >= 9).length;
+    const d = a.filter((r) => r.score! <= 6).length;
+    return { nps: Math.round(((p - d) / a.length) * 100), responses: a.length };
+  };
+  const answered = all.filter((r) => r.score !== undefined);
+  return {
+    ...score(all),
+    sent: all.length,
+    promoters: answered.filter((r) => r.score! >= 9).length,
+    passives: answered.filter((r) => r.score! >= 7 && r.score! <= 8).length,
+    detractors: answered.filter((r) => r.score! <= 6).length,
+    byTrigger: { certificate_issued: score(all.filter((r) => r.trigger === "certificate_issued")), calibration_delivered: score(all.filter((r) => r.trigger === "calibration_delivered")) },
+    recent: structuredClone(answered.sort((a, b) => b.answered_at!.localeCompare(a.answered_at!)).slice(0, 8)),
+  };
 }

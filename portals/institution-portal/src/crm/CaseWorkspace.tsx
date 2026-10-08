@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Icon, askAgent } from "@eswasaone/shared-ui";
 import {
+  caseFlags,
   CaseTimeline,
   CrmBanner,
   CrmDrawer,
@@ -114,6 +115,7 @@ export function CrmCaseWorkspace() {
           );
         }
         const sla = caseSla(c, typeCfg);
+        const flags = caseFlags(c);
         const actions = staffActions(c, actor);
         const dups = findDuplicates(c, all);
         const backTo = c.type === "appeal" ? "/crm/appeals" : "/crm/cases";
@@ -208,6 +210,12 @@ export function CrmCaseWorkspace() {
             </div>
 
             {err ? <CrmBanner tone="err">{err}</CrmBanner> : null}
+            {(flags.angry || flags.urgent) && !["Resolved", "Closed", "Escalated"].includes(c.state) ? (
+              <CrmBanner tone={flags.angry ? "err" : "info"}>
+                {flags.angry ? "The customer sounds upset" : "The customer flags urgency"} ({flags.cues.slice(0, 4).join(", ")}).{" "}
+                {flags.angry ? "Consider calling them today and escalating to the team lead." : "Check whether the priority should be raised."} This is a hint only.
+              </CrmBanner>
+            ) : null}
             {sla.status === "breach" && !sla.stopped ? (
               <CrmBanner>
                 This case is {-sla.remaining} working day(s) past its {typeCfg.resolve_days}-day target. Escalate or resolve it today.

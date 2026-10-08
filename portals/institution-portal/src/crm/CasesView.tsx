@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Icon, ModuleHeader } from "@eswasaone/shared-ui";
 import {
+  caseFlags,
   CrmBanner,
   CrmDrawer,
   CrmEmpty,
@@ -227,6 +228,7 @@ export function CrmCasesView({ appeals = false }: { appeals?: boolean }) {
                                   <span className={`crm-prio crm-prio--${c.priority}`}>{c.priority}</span>
                                 ) : null}
                                 <b>{c.subject}</b>
+                                <FlagChips c={c} />
                               </div>
                               <span className="crm-small">
                                 <span className="crm-mono">{c.ref}</span> · {cfg.case_types[c.type].short} · {CHANNEL_LABEL[c.channel]}
@@ -439,4 +441,23 @@ function LogCaseDrawer({
 
 export function CrmAppealsView() {
   return <CrmCasesView appeals />;
+}
+
+/** Sentiment / urgency flags (04 P3) — a hint for triage, never an automatic change. */
+function FlagChips({ c }: { c: Parameters<typeof caseFlags>[0] }) {
+  const f = caseFlags(c);
+  return (
+    <>
+      {f.angry ? (
+        <span className="crm-pill crm-pill--red" title={`Cues: ${f.cues.join(", ")}`}>
+          Upset
+        </span>
+      ) : null}
+      {f.urgent ? (
+        <span className="crm-pill crm-pill--amber" title={`Cues: ${f.cues.join(", ")}`}>
+          Urgent words
+        </span>
+      ) : null}
+    </>
+  );
 }

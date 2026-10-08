@@ -28,6 +28,7 @@ import {
 } from "@eswasaone/shared-ui/certification";
 import { customerConfirmVisit, customerRequestReschedule, listVisits, VISIT_TYPES, visitDef } from "@eswasaone/shared-ui/field";
 import { displayState } from "@eswasaone/shared-ui/workflow";
+import { EmbedBadgePanel } from "./Badge";
 import { fmtD, Loadable, Panel, PayDialog, PublicPage, Toast, useCustomer, useCustomerData, useMsg } from "./ui";
 
 /* ---------------- tracker cards ---------------- */
@@ -286,6 +287,7 @@ export function AccountCertificateDetailPage() {
                   </Link>
                 </div>
               </div>
+              {valid ? <EmbedBadgePanel token={c.token} /> : null}
               {!valid ? <div className="crm-banner crm-banner--err">While the certificate is {c.state.toLowerCase()}, you must not use the ESWASA mark. You may appeal within 90 days (Complaints → Appeal).</div> : null}
               {renewable && valid ? (
                 <div className="crm-banner crm-banner--info">

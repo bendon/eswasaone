@@ -7,18 +7,28 @@
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { BrandLogo } from "../brand/BrandLogo";
+import { QrCode } from "./qr";
 import { invoiceTotals, type Invoice } from "../billing/store";
 import type { CertApplication, CertificateRec } from "../certification/types";
 import type { CrmQuote } from "../crm/types";
 import type { FieldVisit } from "../field/types";
 import type { CalJob, LabEquipment, Method, MetrologySettings } from "../metrology/types";
 
+/** Public Service-portal origin printed in verify QR codes (documents are printed from either portal). */
+export function serviceUrl(path = ""): string {
+  const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
+  const base = (env?.VITE_SERVICE_URL || "https://eswasa.co.sz").replace(/\/$/, "");
+  return path ? `${base}/${path.replace(/^\//, "")}` : base;
+}
+
 export const fmtLong = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) : "—");
 export const money = (n: number) => `E ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export const BANKING = "Standard Bank Eswatini · Account 9110 0034 5521 · Branch Mbabane (661164) · MTN MoMo Pay merchant 77 001 · Reference: your document number";
 
+/** `verify` is the public Service-portal path the QR opens, e.g. "verify/<token>" or "verify/cal/<token>". */
 export function Letterhead({ title, reference, status, verify }: { title: string; reference: string; status?: string; verify?: string }) {
+  const url = serviceUrl(verify ?? `verify/${reference}`);
   return (
     <>
       <div className="eo-print__lh">
@@ -28,10 +38,10 @@ export function Letterhead({ title, reference, status, verify }: { title: string
           <span>Mbabane Business Park, Mbabane · +268 2518 4633 · info@eswasa.co.sz</span>
         </div>
         <div className="eo-print__qr">
-          <QrBox text={verify ?? reference} />
-          <span>Verify</span>
+          <QrCode value={url} size={74} title={`Scan to verify: ${url}`} />
+          <span>Scan to verify</span>
           <br />
-          <b style={{ fontSize: 10, color: "#1f3a78" }}>eswasa.co.sz/verify/{verify ?? reference}</b>
+          <b style={{ fontSize: 10, color: "#1f3a78" }}>{url.replace(/^https?:\/\//, "")}</b>
         </div>
       </div>
       <h1>{title}</h1>
@@ -40,27 +50,6 @@ export function Letterhead({ title, reference, status, verify }: { title: string
         {status ? ` · ${status}` : ""}
       </p>
     </>
-  );
-}
-
-/** Deterministic QR-like block for the demo (the real QR is server-signed). */
-export function QrBox({ text, size = 56 }: { text: string; size?: number }) {
-  const n = 11;
-  let h = 2166136261;
-  const cells: boolean[] = [];
-  for (let i = 0; i < n * n; i++) {
-    h = Math.imul(h ^ text.charCodeAt(i % Math.max(1, text.length)) ^ i, 16777619);
-    const r = Math.floor(i / n);
-    const c = i % n;
-    const finder = (r < 3 && c < 3) || (r < 3 && c > n - 4) || (r > n - 4 && c < 3);
-    cells.push(finder || ((h >>> 0) & 1) === 1);
-  }
-  const s = size / n;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`QR code for ${text}`} style={{ display: "block", marginLeft: "auto" }}>
-      <rect width={size} height={size} fill="#fff" />
-      {cells.map((on, i) => (on ? <rect key={i} x={(i % n) * s} y={Math.floor(i / n) * s} width={s} height={s} fill="#14213d" /> : null))}
-    </svg>
   );
 }
 
@@ -112,7 +101,7 @@ export function CertificateDoc({ cert }: { cert: CertificateRec }) {
   const valid = cert.state === "Active" || cert.state === "Surveillance Due";
   return (
     <>
-      <Letterhead title="Certificate of registration" reference={cert.number} verify={cert.token} status={valid ? `Valid until ${fmtLong(cert.expires_at)}` : cert.state.toUpperCase()} />
+      <Letterhead title="Certificate of registration" reference={cert.number} verify={`verify/${cert.token}`} status={valid ? `Valid until ${fmtLong(cert.expires_at)}` : cert.state.toUpperCase()} />
       {!valid ? <p className="eo-watermark">{cert.state}</p> : null}
       <p style={{ fontSize: 15 }}>This is to certify that</p>
       <h2 style={{ fontSize: 24, margin: "4px 0 10px" }}>{cert.org}</h2>
@@ -258,7 +247,7 @@ export function CalCertificateDoc({ job, method, refs, settings }: { job: CalJob
   if (!c) return <p>No certificate has been issued for this job yet.</p>;
   return (
     <>
-      <Letterhead title="Calibration certificate" reference={c.id} verify={c.token} status={`Issued ${fmtLong(c.issued_at)}${c.version > 1 ? ` · version ${c.version} (supersedes earlier issue: ${c.reason})` : ""}`} />
+      <Letterhead title="Calibration certificate" reference={c.id} verify={`verify/cal/${c.token}`} status={`Issued ${fmtLong(c.issued_at)}${c.version > 1 ? ` · version ${c.version} (supersedes earlier issue: ${c.reason})` : ""}`} />
       <table>
         <tbody>
           <tr>
@@ -403,7 +392,7 @@ function TotalsTable({ net, vat, total, discount, extra = [] }: { net: number; v
 export function CrmQuoteDoc({ q, totals, acceptUrl }: { q: CrmQuote; totals: { subtotal: number; discount: number; net: number; vat: number; total: number }; acceptUrl: string }) {
   return (
     <>
-      <Letterhead title="Quotation" reference={q.id} verify={`quote/${q.id}`} status={`Valid until ${fmtLong(q.valid_until)}`} />
+      <Letterhead title="Quotation" reference={q.id} verify={`quotes/${q.id}`} status={`Valid until ${fmtLong(q.valid_until)}`} />
       <p>
         To: <b>{q.client_name}</b> · Date {fmtLong(q.sent_at ?? q.created_at)}
       </p>
@@ -458,5 +447,39 @@ export function InvoiceDoc({ inv }: { inv: Invoice }) {
       ) : null}
       <p style={{ fontSize: 12 }}>{BANKING}</p>
     </>
+  );
+}
+
+export { QrCode, qrMatrix } from "./qr";
+
+/**
+ * Calibration labels (07 P3): one sticker per item with a QR that opens the public certificate
+ * verification page. `due` is the next calibration date per item (interval or recall suggestion).
+ */
+export function CalLabelsDoc({ job, due }: { job: CalJob; due: (itemId: string) => string | undefined }) {
+  const c = job.certificate;
+  if (!c) return <p>Labels print once the certificate is issued.</p>;
+  const url = serviceUrl(`verify/cal/${c.token}`);
+  return (
+    <div className="eo-labels">
+      {job.items.map((it) => (
+        <div key={it.id} className="eo-label">
+          <QrCode value={url} size={92} title={`Verify ${c.id}`} />
+          <div>
+            <b>ESWASA · CALIBRATED</b>
+            <span>{it.description}</span>
+            <span>S/N {it.serial}</span>
+            <span>
+              Cert <b>{c.id}</b>
+            </span>
+            <span>Cal {new Date(c.issued_at).toLocaleDateString()}</span>
+            <span>
+              Due <b>{due(it.id) ? new Date(due(it.id)!).toLocaleDateString() : "—"}</b>
+            </span>
+            <span className="eo-label__by">By {c.by.split(" ")[0]} · scan to verify</span>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

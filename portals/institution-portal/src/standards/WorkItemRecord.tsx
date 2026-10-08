@@ -13,6 +13,8 @@ import {
   DISPOSITION_LABEL,
   getBallot,
   getWorkItem,
+  importWtoComments,
+  notifyWto,
   publicationProblem,
   replyToCommenters,
   resolutionReport,
@@ -115,6 +117,7 @@ function Wi({ b, actor, show, toast }: { b: WorkItemBundle; actor: Actor; show: 
             ),
           },
           { id: "comments", label: "Comments", badge: pending || b.comments.length, render: () => <CommentsWorkspace b={b} actor={actor} show={show} /> },
+          { id: "tbt", label: "WTO TBT", badge: w.tbt ? w.tbt.imported || undefined : undefined, render: () => <TbtTab b={b} actor={actor} show={show} /> },
           {
             id: "ballot",
             label: "Ballot",
@@ -423,5 +426,87 @@ export function BallotRecordPage() {
         );
       }}
     </Gate>
+  );
+}
+
+/** WTO TBT link (06 P3): notify a draft technical regulation and bring members' comments back in. */
+function TbtTab({ b, actor, show }: { b: WorkItemBundle; actor: Actor; show: (m: string) => void }) {
+  const w = b.wi;
+  const [v, setV] = useState({ objective: "", products: w.scope, days: "60" });
+  const [c, setC] = useState({ member: "", clause: "", comment: "", proposed_change: "" });
+  if (!w.tbt) {
+    const can = ["Committee Draft", "Public Review", "Comment Resolution"].includes(w.state);
+    return (
+      <div className="crm-stack">
+        <p className="crm-muted" style={{ margin: 0 }}>
+          If this standard will be made compulsory (a technical regulation) and may affect trade, Eswatini must notify the WTO TBT Committee while the draft can still change, and allow at least 60 days for comments.
+        </p>
+        {!can ? <p className="crm-small">Available from committee draft until comment resolution.</p> : null}
+        <label className="crm-field">
+          Objective and rationale
+          <textarea className="crm-textarea" rows={2} disabled={!can} value={v.objective} onChange={(e) => setV({ ...v, objective: e.target.value })} placeholder="e.g. Protection of human health; consumer information" />
+        </label>
+        <div className="crm-grid crm-grid--2">
+          <label className="crm-field">
+            Products covered (HS codes if known)
+            <input className="crm-input" disabled={!can} value={v.products} onChange={(e) => setV({ ...v, products: e.target.value })} />
+          </label>
+          <label className="crm-field">
+            Comment period (days, minimum 60)
+            <input className="crm-input" type="number" min={60} disabled={!can} value={v.days} onChange={(e) => setV({ ...v, days: e.target.value })} />
+          </label>
+        </div>
+        <button type="button" className="crm-btn crm-btn--pri" style={{ alignSelf: "flex-start" }} disabled={!can} onClick={() => void run(() => notifyWto(w.id, { objective: v.objective, products: v.products, days: Number(v.days) }, actor), show, "Notification created — the TBT Officer has a task to transmit it.")}>
+          Notify WTO (TBT)
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="crm-stack">
+      <Facts
+        rows={[
+          { label: "Symbol", value: w.tbt.symbol },
+          { label: "Notified", value: `${fmtDate(w.tbt.notified_at)} by ${w.tbt.by}` },
+          { label: "Objective", value: w.tbt.objective },
+          { label: "Products", value: w.tbt.products },
+          { label: "Comments until", value: fmtDate(w.tbt.comment_until) },
+          { label: "Member comments imported", value: String(w.tbt.imported) },
+        ]}
+      />
+      <div className="crm-card">
+        <div className="crm-card__h">
+          <h3>Record a comment received from a WTO member</h3>
+        </div>
+        <div className="crm-grid crm-grid--2">
+          <label className="crm-field">
+            WTO member
+            <input className="crm-input" value={c.member} onChange={(e) => setC({ ...c, member: e.target.value })} placeholder="e.g. South Africa" />
+          </label>
+          <label className="crm-field">
+            Clause
+            <input className="crm-input" value={c.clause} onChange={(e) => setC({ ...c, clause: e.target.value })} placeholder="e.g. 5.2 or General" />
+          </label>
+        </div>
+        <label className="crm-field">
+          Comment
+          <textarea className="crm-textarea" rows={2} value={c.comment} onChange={(e) => setC({ ...c, comment: e.target.value })} />
+        </label>
+        <label className="crm-field">
+          Proposed change (optional)
+          <input className="crm-input" value={c.proposed_change} onChange={(e) => setC({ ...c, proposed_change: e.target.value })} />
+        </label>
+        <button
+          type="button"
+          className="crm-btn crm-btn--sm crm-btn--pri"
+          style={{ marginTop: 8 }}
+          onClick={() =>
+            void run(() => importWtoComments(w.id, [c], actor), show, "Comment added to the Comments tab (source: WTO).").then((ok) => ok && setC({ member: "", clause: "", comment: "", proposed_change: "" }))
+          }
+        >
+          Add to comments
+        </button>
+      </div>
+    </div>
   );
 }

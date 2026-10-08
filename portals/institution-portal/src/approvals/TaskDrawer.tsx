@@ -57,6 +57,27 @@ export function TaskDrawer({
     return r ? { to: task.doctype === "Case" ? "Customer (email + account)" : "Originator", ...r } : null;
   };
 
+  /** Smart triage (02 P3): proposes approve or return with a drafted reason — the user still acts. */
+  const triage = () => {
+    const flags: string[] = [];
+    if (sla.status === "breach") flags.push(`SLA breached (${sla.label}) — act or escalate today.`);
+    if (!task.assignee) flags.push("Nobody has claimed this yet.");
+    if (four.length) flags.push("You were involved in this record — a colleague should take the decision.");
+    if (task.family === "approve" && !(preview?.documents?.length)) flags.push("No documents attached to review.");
+    const legal = actions.filter((a) => !a.disabledReason);
+    const primary = legal.find((a) => a.primary);
+    const ret = legal.find((a) => /return|request_info/.test(a.action));
+    const blocked = flags.some((f) => /documents|involved/.test(f));
+    return {
+      summary: `${task.title}. ${preview?.history?.length ? `Last step: ${preview.history[0].action} by ${preview.history[0].actor}.` : ""} ${task.facts ? Object.entries(task.facts).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(" · ") : ""}`,
+      flags,
+      next: blocked && ret ? `${ret.label} — ask for what's missing. The reason is pre-filled when you open it.` : primary ? `${primary.label}.` : undefined,
+      draft: blocked && ret ? `Please provide the supporting documents for ${task.name} so it can be reviewed. Once they're attached we'll complete the review within the SLA.` : undefined,
+    };
+  };
+  /** Pre-fills the reason of return / reject dialogs with the triage draft. */
+  const suggestReason = (a: ActionOption) => (/return|request_info|reject/.test(a.action) ? triage().draft ?? "" : "");
+
   const run = async (fn: () => Promise<unknown>, msg: string) => {
     setErr(null);
     try {
@@ -137,6 +158,7 @@ export function TaskDrawer({
             actions={actions}
             state={state}
             preview={msgPreview}
+            suggest={suggestReason}
             onAct={async (a, input) => {
               await h.act(a.action, { ...actor, on_behalf_of: task.on_behalf_of }, input);
               onDone(`${a.label}: done.`);
@@ -150,27 +172,7 @@ export function TaskDrawer({
         </div>
       )}
 
-      {!task.closed_at ? (
-        <SuggestButton
-          build={() => {
-            const flags: string[] = [];
-            if (sla.status === "breach") flags.push(`SLA breached (${sla.label}) — act or escalate today.`);
-            if (!task.assignee) flags.push("Nobody has claimed this yet.");
-            if (four.length) flags.push("You were involved in this record — a colleague should take the decision.");
-            if (task.family === "approve" && !(preview?.documents?.length)) flags.push("No documents attached to review.");
-            const legal = actions.filter((a) => !a.disabledReason);
-            const primary = legal.find((a) => a.primary);
-            const ret = legal.find((a) => /return|request_info/.test(a.action));
-            const blocked = flags.some((f) => /documents|involved/.test(f));
-            return {
-              summary: `${task.title}. ${preview?.history?.length ? `Last step: ${preview.history[0].action} by ${preview.history[0].actor}.` : ""} ${task.facts ? Object.entries(task.facts).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(" · ") : ""}`,
-              flags,
-              next: blocked && ret ? `${ret.label} — ask for what's missing.` : primary ? `${primary.label}.` : undefined,
-              draft: blocked && ret ? `Please provide the supporting documents for ${task.name} so it can be reviewed. Once they're attached we'll complete the review within the SLA.` : undefined,
-            };
-          }}
-        />
-      ) : null}
+      {!task.closed_at ? <SuggestButton build={triage} /> : null}
 
       {four.length ? (
         <div className="crm-banner crm-banner--lock">

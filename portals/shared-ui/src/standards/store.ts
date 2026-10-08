@@ -20,7 +20,7 @@ import { allowedActions, applyTransition } from "../workflow/engine";
 import type { ActInput, ActionOption, Actor } from "../workflow/types";
 import { DISPOSITION_LABEL, PROPOSAL_DEF, WI_DEF } from "./defs";
 import { DEFAULT_STD_SETTINGS, SEED_CATALOGUE, SEED_SUBSCRIPTIONS, SEED_TCS, seedBallots, seedComments, seedProposals, seedWorkItems } from "./seed";
-import type { Ballot, CatalogueEntry, CommentDisposition, DraftComment, MemberCategory, Proposal, PublicationChecklist, StandardsSettings, Subscription, TcMember, TechnicalCommittee, Vote, WorkItem } from "./types";
+import type { Ballot, CatalogueEntry, CommentDisposition, DraftComment, MemberCategory, Proposal, PublicationChecklist, StandardsSettings, Subscription, TbtOutgoing, TcMember, TechnicalCommittee, Vote, WorkItem } from "./types";
 
 type StdState = {
   v: 1;
@@ -722,4 +722,67 @@ export function programme() {
     proposalsOpen: Object.values(s.proposals).filter((p) => ["Submitted", "Circulated"].includes(p.state)).length,
     reviewsDue: reviewQueue().length,
   };
+}
+
+/* ---------------- WTO TBT link (06 P3) ---------------- */
+
+const TBT_STATES = ["Committee Draft", "Public Review", "Comment Resolution"];
+
+/**
+ * A draft technical regulation (compulsory standard) is notified to the WTO TBT Committee so trading
+ * partners can comment (normally 60 days). Opens a task for the TBT Enquiry Point to transmit it.
+ * TODO: wire real — POST /standards/work-items/{id}/tbt-notify (TBT Enquiry Point → ePing submission).
+ */
+export function notifyWto(wiId: string, input: { objective: string; products: string; days?: number }, actor: Actor): TbtOutgoing {
+  stdStore.guard("TBT notification");
+  if (!input.objective.trim()) throw new Error("State the objective and rationale (e.g. health, safety, consumer protection).");
+  if (!input.products.trim()) throw new Error("Name the products covered (HS codes if known).");
+  const days = Math.max(60, input.days ?? 60);
+  const t = stdStore.mutate((s) => {
+    const w = s.items[wiId];
+    if (!w) throw new Error("Work item not found.");
+    if (w.tbt) throw new Error(`Already notified as ${w.tbt.symbol}.`);
+    if (!TBT_STATES.includes(w.state)) throw new Error("Notify while the draft can still change — committee draft, public review or comment resolution.");
+    s.seq += 1;
+    const row: TbtOutgoing = { symbol: `G/TBT/N/SWZ/${String(s.seq).padStart(3, "0")}`, notified_at: nowIso(), by: actor.name, objective: input.objective.trim(), products: input.products.trim(), comment_until: isoIn(days), imported: 0 };
+    w.tbt = row;
+    w.history.push({ at: row.notified_at, actor: actor.name, action: `Notified to WTO TBT as ${row.symbol}`, note: `Comments until ${row.comment_until.slice(0, 10)}` });
+    return row;
+  });
+  const w = stdStore.read().items[wiId];
+  safe(() => openTask({ doctype: "TBT Notification", name: t.symbol, state: "To transmit", seq: 1, family: "do", verb: "task", role: "Eswasa TBT Officer", title: `Transmit ${t.symbol} (${w.ref}) to the WTO TBT Committee`, module: "WTO/TBT", link: `/standards/workitems/${wiId}`, sla_days: 3, facts: { "Work item": w.ref, Products: t.products, "Comments until": t.comment_until.slice(0, 10) } }));
+  return t;
+}
+
+/** Comments from WTO members come back into the work item's comment workspace with source "WTO". */
+export function importWtoComments(wiId: string, rows: { member: string; clause: string; comment: string; proposed_change?: string; type?: DraftComment["type"] }[], actor: Actor): DraftComment[] {
+  stdStore.guard("TBT comments");
+  const valid = rows.filter((r) => r.member.trim() && r.comment.trim());
+  if (!valid.length) throw new Error("Each comment needs the WTO member and the comment text.");
+  // TODO: wire real — POST /standards/work-items/{id}/tbt-comments (from the Enquiry Point inbox)
+  return stdStore.mutate((s) => {
+    const w = s.items[wiId];
+    if (!w?.tbt) throw new Error("Notify the draft to the WTO first.");
+    const draft = [...w.drafts].reverse().find((d) => d.locked) ?? w.drafts[w.drafts.length - 1];
+    const out = valid.map((r) => {
+      s.seq += 1;
+      const c: DraftComment = { id: `CMT-${wiId.slice(-3)}-${s.seq}`, work_item_id: wiId, draft_label: draft?.label ?? "CD", by: { name: `WTO member: ${r.member.trim()}`, org: `${r.member.trim()} (via ${w.tbt!.symbol})`, email: "tbt-enquiry-point" }, clause: r.clause.trim() || "General", type: r.type ?? "technical", comment: r.comment.trim(), proposed_change: r.proposed_change?.trim() || undefined, at: nowIso() };
+      s.comments[c.id] = c;
+      return c;
+    });
+    w.tbt.imported += out.length;
+    w.history.push({ at: nowIso(), actor: actor.name, action: `Imported ${out.length} WTO comment(s) via ${w.tbt.symbol}` });
+    return out;
+  });
+}
+
+/** Our outgoing TBT notifications, for the WTO/TBT module. */
+export function listTbtOutgoing(): (TbtOutgoing & { wi_id: string; ref: string; title: string; state: WorkItem["state"] })[] {
+  stdStore.guard("TBT notifications");
+  return stdStore.view((s) =>
+    Object.values(s.items)
+      .filter((w) => w.tbt)
+      .map((w) => ({ ...w.tbt!, wi_id: w.id, ref: w.ref, title: w.title, state: w.state }))
+      .sort((a, b) => b.notified_at.localeCompare(a.notified_at)),
+  );
 }

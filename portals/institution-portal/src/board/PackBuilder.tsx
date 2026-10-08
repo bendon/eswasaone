@@ -22,6 +22,7 @@ import {
   type PackSection,
 } from "@eswasaone/shared-ui/governance";
 import { MessagePreview } from "@eswasaone/shared-ui/notify";
+import { BriefingDrawer } from "./Briefing";
 import { HistoryTimeline } from "@eswasaone/shared-ui/record";
 import { DEMO_STAFF } from "@eswasaone/shared-ui/tasks";
 import { ActionBar, ReasonDialog } from "@eswasaone/shared-ui/workflow";
@@ -72,6 +73,7 @@ function PackBuilder({ meetingId }: { meetingId: string }) {
   const [remind, setRemind] = useState<PackSection | null>(null);
   const [adding, setAdding] = useState(false);
   const [diff, setDiff] = useState<number | null>(null);
+  const [brief, setBrief] = useState<number | null>(null);
   const [view, setView] = useState<number | null>(null);
 
   return (
@@ -215,6 +217,9 @@ function PackBuilder({ meetingId }: { meetingId: string }) {
                               <button type="button" className="crm-link" onClick={() => setView(v.v)}>
                                 Read
                               </button>
+                              <button type="button" className="crm-link" onClick={() => setBrief(v.v)}>
+                                Briefing
+                              </button>
                               {v.v > 1 ? (
                                 <button type="button" className="crm-link" onClick={() => setDiff(v.v)}>
                                   What changed
@@ -270,6 +275,7 @@ function PackBuilder({ meetingId }: { meetingId: string }) {
             ) : null}
             {adding ? <AddSection pack={pack} due={new Date(new Date(meeting.scheduled_at).getTime() - (body.pack_days + 3) * 86_400_000).toISOString()} onClose={() => setAdding(false)} /> : null}
             {diff ? <DiffDrawer pack={pack} v={diff} onClose={() => setDiff(null)} /> : null}
+            {brief ? <BriefingDrawer packId={pack.id} v={brief} includeRestricted onClose={() => setBrief(null)} /> : null}
             {view ? <VersionDrawer pack={pack} v={view} onClose={() => setView(null)} /> : null}
           </div>
         );

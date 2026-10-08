@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
-import { Link, useOutletContext } from "react-router-dom";
+import { Link, useOutletContext, useSearchParams } from "react-router-dom";
 import { Icon, type IconName } from "@eswasaone/shared-ui";
 import { listStandards, slug, type StandardSummary } from "../api/standards";
 import type { LayoutOutletContext } from "../layout/ServiceLayout";
@@ -126,7 +126,7 @@ const COLLECTIONS: Collection[] = [
     tone: "#7C3AED",
   },
   {
-    to: "/standards?collection=subscribe",
+    to: "/account/subscriptions",
     title: "Annual subscription",
     body: "Unlimited access to the full SZNS catalogue for your whole team, with automatic notifications when a standard changes.",
     count: "From SZL 12,500/yr",
@@ -226,10 +226,23 @@ function priceNum(price?: string): number {
 
 const PAGE_SIZE = 6;
 
+const isFree = (s: StandardSummary) => (s.price || "").toLowerCase().includes("free") || priceNum(s.price) === 0;
+
+/** What each curated collection (`?collection=`) shows from the catalogue. */
+const COLLECTION_FILTER: Record<string, { label: string; match: (s: StandardSummary) => boolean }> = {
+  "food-export": { label: "Food export starter pack", match: (s) => s.sector === "Food" },
+  sme: { label: "SME certification toolkit", match: (s) => s.sector === "Management" || /ISO|mark/i.test(`${s.code} ${s.title}`) },
+  free: { label: "Free to download", match: isFree },
+  construction: { label: "Construction & materials", match: (s) => s.sector === "Construction" },
+  new: { label: "New & updated this year", match: (s) => (s.year || 0) >= new Date().getFullYear() - 1 },
+};
+
 export function StandardsPage() {
   const { openDock } = useOutletContext<LayoutOutletContext>();
   const { addToCart, showToast } = useCartToast();
 
+  const [params, setParams] = useSearchParams();
+  const collection = COLLECTION_FILTER[params.get("collection") ?? ""];
   const [q, setQ] = useState("");
   const [draftQ, setDraftQ] = useState("");
   const [sector, setSector] = useState("");
@@ -267,14 +280,18 @@ export function StandardsPage() {
     };
   }, [q, sector]);
 
+  useEffect(() => {
+    if (collection) document.getElementById("catalogueList")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  }, [collection]);
+
   const sorted = useMemo(() => {
-    const list = [...items];
+    const list = collection ? items.filter(collection.match) : [...items];
     if (sort === "newest") list.sort((a, b) => (b.year || 0) - (a.year || 0));
     else if (sort === "code") list.sort((a, b) => a.code.localeCompare(b.code));
     else if (sort === "price-asc") list.sort((a, b) => priceNum(a.price) - priceNum(b.price));
     else if (sort === "price-desc") list.sort((a, b) => priceNum(b.price) - priceNum(a.price));
     return list;
-  }, [items, sort]);
+  }, [items, sort, collection]);
 
   const shown = sorted.slice(0, visible);
   const activeFilterCount = Object.values(checked).filter(Boolean).length;
@@ -475,10 +492,22 @@ export function StandardsPage() {
 
         <div className="std-main">
           <div className="toolbar">
-            <span className="toolbar__count">
+            <span className="toolbar__count" id="catalogueList">
               {busy ? "Loading…" : `${sorted.length} standards`}{" "}
-              <span>· catalogue</span>
+              <span>· {collection ? collection.label : "catalogue"}</span>
             </span>
+            {collection ? (
+              <button
+                type="button"
+                className="hintchip"
+                onClick={() => {
+                  params.delete("collection");
+                  setParams(params);
+                }}
+              >
+                {collection.label} <Icon name="i-x" />
+              </button>
+            ) : null}
             <button
               type="button"
               className="toolbar__mobile-filter"
@@ -612,9 +641,6 @@ export function StandardsPage() {
             <h2 id="featuredTitle">Curated collections</h2>
             <p>Bundled by sector and use case. Save when you buy together.</p>
           </div>
-          <button type="button" className="featured__link" onClick={() => showToast("Collections coming soon")}>
-            All collections <Icon name="i-cright" />
-          </button>
         </div>
         <StaggeredGrid
           label="Curated collections"

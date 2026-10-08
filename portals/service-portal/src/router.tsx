@@ -37,6 +37,8 @@ import { GoalsPage } from "./goals/GoalsPage";
 import { AdHocGuidePage, GoalGuidePage } from "./goals/GoalGuidePage";
 import { CheckoutPage, OrderStatusPage } from "./estore";
 import { AccountCertificateDetailPage, AccountVisitsPage, RenewPage, TransferPage } from "./pages/customer/Certification";
+import { ReadinessPage } from "./pages/customer/Readiness";
+import { BadgePage } from "./pages/customer/Badge";
 import { AccountInvoicesPage, AccountQuoteDetailPage, AccountQuotesPage, CustomerPrintPage, HelpPage, PublicQuotePage } from "./pages/customer/Commercial";
 import { AccountCalibrationDetailPage, AccountCalibrationPage, AccountInstrumentsPage, CalRequestPage, MetrologyServicePage, VerifyCalPage } from "./pages/customer/Metrology";
 import { AccountCommentsPage, AccountSubscriptionsPage, CommitteesPage, DraftDetailPage, DraftsPage, JoinTcPage, ProposePage, TcAreaPage, TcBallotPage } from "./pages/customer/Standards";
@@ -51,6 +53,8 @@ function Root() {
 
 export const router = createBrowserRouter(
   [
+    // Embeddable register badge (05 P3): standalone, no layout, so it fits an iframe on a client's site.
+    { path: "/badge/:token", element: <BadgePage /> },
     {
       path: "/",
       element: <Root />,
@@ -80,6 +84,7 @@ export const router = createBrowserRouter(
             { path: "help", element: <HelpPage /> },
             { path: "print/:kind/:id", element: <CustomerPrintPage /> },
             { path: "certification/transfer", element: <TransferPage /> },
+            { path: "certification/readiness", element: <ReadinessPage /> },
             { path: "certification/renew/:certId", element: <RequireAuth><RenewPage /></RequireAuth> },
             { path: "estore/checkout", element: <CheckoutPage /> },
             { path: "estore/orders/:id", element: <OrderStatusPage /> },

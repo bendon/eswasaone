@@ -462,6 +462,9 @@ export function CertificationPage() {
             <Link className="chip-cta" to="/certification/quote">
               <Icon name="i-dollar" /> Request a quote
             </Link>
+            <Link className="chip-cta" to="/certification/readiness">
+              <Icon name="i-check-c" /> Am I ready?
+            </Link>
             <button type="button" className="chip-cta" onClick={scrollToVerify}>
               <Icon name="i-eye" /> Verify a certificate
             </button>

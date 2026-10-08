@@ -26,6 +26,7 @@ import {
   receiveItems,
   reissueCertificate,
   saveWorksheet,
+  parseReadingsCsv,
   type CalJob,
   type CalPointRow,
   type JobBundle,
@@ -176,6 +177,9 @@ function Job({ b, actor, show, toast }: { b: JobBundle; actor: Actor; show: (m: 
                   <div className="crm-row">
                     <Link className="crm-btn crm-btn--sm" to={`/print/calcert/${j.id}`} target="_blank">
                       Preview / print
+                    </Link>
+                    <Link className="crm-btn crm-btn--sm" to={`/print/cal-label/${j.id}`} target="_blank">
+                      Print QR labels
                     </Link>
                     <button type="button" className="crm-btn crm-btn--sm" onClick={() => setDlg("reissue")}>
                       Amend (new version)
@@ -464,6 +468,10 @@ function WorksheetTab({ b, actor, show }: { b: JobBundle; actor: Actor; show: (m
           <button type="button" className="crm-btn crm-btn--sm crm-btn--ghost" onClick={() => setWs({ ...ws, points: [...ws.points, { id: `P${Date.now() % 100000}`, item_id: j.items[0]?.id ?? "I1", nominal: 0, unit: ws.points[0]?.unit ?? "", as_found: 0, as_left: 0, tolerance: ws.points[0]?.tolerance ?? 0, uncertainty: ws.points[0]?.uncertainty ?? 0 }] })}>
             + Point
           </button>
+          <CsvImport
+            items={j.items.map((i) => ({ id: i.id, label: `${i.id} ${i.description}` }))}
+            onApply={(rows) => setWs({ ...ws, points: [...ws.points, ...rows.map((r, n) => ({ ...r, id: `P${(Date.now() + n) % 1000000}` }))] })}
+          />
           <button type="button" className="crm-btn crm-btn--sm crm-btn--pri" onClick={() => void run(() => saveWorksheet(j.id, ws, actor), show, "Worksheet saved.")}>
             Save worksheet
           </button>
@@ -471,5 +479,94 @@ function WorksheetTab({ b, actor, show }: { b: JobBundle; actor: Actor; show: (m
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** Direct data capture (07 P3): readings exported from a balance / thermometer / logger as CSV. */
+function CsvImport({ items, onApply }: { items: { id: string; label: string }[]; onApply: (rows: Omit<CalPointRow, "id">[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [item, setItem] = useState(items[0]?.id ?? "I1");
+  const parsed = text.trim() ? parseReadingsCsv(text, item) : null;
+  if (!open)
+    return (
+      <button type="button" className="crm-btn crm-btn--sm crm-btn--ghost" onClick={() => setOpen(true)}>
+        Import readings (CSV)
+      </button>
+    );
+  return (
+    <ReasonDialog
+      title="Import readings from CSV"
+      consequence="Adds the rows below to the worksheet. Nothing is saved until you save the worksheet."
+      confirmLabel={parsed?.rows.length ? `Add ${parsed.rows.length} point(s)` : "Add points"}
+      canSubmit={Boolean(parsed?.rows.length)}
+      onClose={() => setOpen(false)}
+      onSubmit={async () => {
+        if (parsed?.rows.length) onApply(parsed.rows);
+        setOpen(false);
+        setText("");
+      }}
+    >
+      <label className="crm-field">
+        Rows without an item column go to
+        <select className="crm-select" value={item} onChange={(e) => setItem(e.target.value)}>
+          {items.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="crm-field">
+        CSV file
+        <input
+          type="file"
+          accept=".csv,text/csv,text/plain"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void f.text().then(setText);
+          }}
+        />
+      </label>
+      <label className="crm-field">
+        …or paste
+        <textarea className="crm-textarea" rows={6} style={{ fontFamily: "ui-monospace, monospace", fontSize: 12 }} placeholder={"nominal,unit,as_found,as_left,tolerance,uncertainty\n100,g,100.0003,100.0001,0.0005,0.0002"} value={text} onChange={(e) => setText(e.target.value)} />
+      </label>
+      {parsed?.errors.length ? (
+        <ul className="eo-error" style={{ margin: 0 }}>
+          {parsed.errors.slice(0, 5).map((e) => (
+            <li key={e}>{e}</li>
+          ))}
+        </ul>
+      ) : null}
+      {parsed?.rows.length ? (
+        <table className="crm-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th className="num">Nominal</th>
+              <th className="num">As found</th>
+              <th className="num">As left</th>
+              <th className="num">Tol.</th>
+              <th className="num">U</th>
+            </tr>
+          </thead>
+          <tbody>
+            {parsed.rows.slice(0, 12).map((r, n) => (
+              <tr key={n}>
+                <td>{r.item_id}</td>
+                <td className="num">
+                  {r.nominal} {r.unit}
+                </td>
+                <td className="num">{r.as_found}</td>
+                <td className="num">{r.as_left}</td>
+                <td className="num">{r.tolerance}</td>
+                <td className="num">{r.uncertainty}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
+    </ReasonDialog>
   );
 }

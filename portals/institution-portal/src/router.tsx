@@ -87,6 +87,18 @@ export const router = createBrowserRouter(
           ),
         },
         {
+          path: "onboarding",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberOnboarding,
+                }))
+              }
+            />
+          ),
+        },
+        {
           path: "meetings/:id",
           element: (
             <L
@@ -350,6 +362,18 @@ export const router = createBrowserRouter(
                         factory={() =>
                           import("./tbt/sub-views").then((m) => ({
                             default: m.TbtAlertsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "outgoing",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./tbt/sub-views").then((m) => ({
+                            default: m.TbtOutgoingView,
                           }))
                         }
                       />

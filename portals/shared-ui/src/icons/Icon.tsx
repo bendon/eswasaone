@@ -52,6 +52,7 @@ export type IconName =
   | "i-mail"
   | "i-map"
   | "i-mega"
+  | "i-mic"
   | "i-monitor"
   | "i-more"
   | "i-pin"
@@ -248,6 +249,12 @@ const PATHS_BASE = {
     <>
       <path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" />
       <path d="M9 4v14M15 6v14" />
+    </>
+  ),
+  "i-mic": (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0014 0M12 18v3M9 21h6" />
     </>
   ),
   "i-mega": (

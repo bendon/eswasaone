@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon, type IconName } from "@eswasaone/shared-ui";
-import { myCaseRefs } from "@eswasaone/shared-ui/crm";
+import { answerNps, listNpsForCustomer, myCaseRefs, useCrm, type NpsSurvey } from "@eswasaone/shared-ui/crm";
 import { listNotifications, markAllNotificationsRead, markNotificationRead, notifyStore, type AppNotification } from "@eswasaone/shared-ui/notify";
 import { useStoreResource } from "@eswasaone/shared-ui/store";
 import { useAuth } from "../../auth/AuthProvider";
@@ -59,6 +59,7 @@ export function AccountNotificationsPage() {
           ) : null}
         </div>
       </div>
+      <NpsCards />
       {res.loading && !res.data ? (
         <Skeleton lines={4} />
       ) : !items.length ? (
@@ -111,5 +112,65 @@ export function CustomerBell() {
       <Icon name="i-bell" />
       {n ? <span className="eo-bell__n">{n > 9 ? "9+" : n}</span> : null}
     </Link>
+  );
+}
+
+/** Net Promoter Score after a milestone (04 P3): certificate issued, calibration delivered. */
+function NpsCards() {
+  const { user } = useAuth();
+  const res = useCrm(() => listNpsForCustomer(user?.email ?? "demo"), [user?.email]);
+  const open = res.data ?? [];
+  if (!open.length) return null;
+  return (
+    <div className="crm-stack" style={{ marginBottom: 14 }}>
+      {open.map((n) => (
+        <NpsCard key={n.id} n={n} />
+      ))}
+    </div>
+  );
+}
+
+function NpsCard({ n }: { n: NpsSurvey }) {
+  const [score, setScore] = useState<number | null>(null);
+  const [comment, setComment] = useState("");
+  const [done, setDone] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  if (done) return <div className="crm-banner crm-banner--ok"><div>{done}</div></div>;
+  return (
+    <div className="crm-card">
+      <b>How likely are you to recommend ESWASA {n.trigger === "certificate_issued" ? "certification" : "calibration"} to a colleague?</b>
+      <p className="crm-small" style={{ margin: "2px 0 8px" }}>
+        About {n.ref}. 0 = not at all likely, 10 = extremely likely.
+      </p>
+      <div className="crm-seg" role="radiogroup" aria-label="Score from 0 to 10" style={{ flexWrap: "wrap" }}>
+        {Array.from({ length: 11 }, (_, i) => (
+          <button key={i} type="button" role="radio" aria-checked={score === i} className={score === i ? "on" : ""} onClick={() => setScore(i)}>
+            {i}
+          </button>
+        ))}
+      </div>
+      {score !== null ? (
+        <>
+          <label className="crm-field" style={{ marginTop: 8 }}>
+            {score >= 9 ? "What did we do well?" : "What should we do better?"} (optional)
+            <textarea className="crm-textarea" rows={2} value={comment} onChange={(e) => setComment(e.target.value)} />
+          </label>
+          {err ? <p className="eo-error">{err}</p> : null}
+          <button
+            type="button"
+            className="abtn"
+            style={{ marginTop: 8 }}
+            onClick={() =>
+              void answerNps(n.id, score, comment).then(
+                () => setDone("Thank you — your feedback goes straight to the team."),
+                (e: Error) => setErr(e.message),
+              )
+            }
+          >
+            Send
+          </button>
+        </>
+      ) : null}
+    </div>
   );
 }

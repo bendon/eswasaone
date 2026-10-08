@@ -15,6 +15,7 @@ import {
   JOB_DEF,
   jobOot,
   listAllInstruments,
+  suggestInterval,
   listEquipment,
   listJobs,
   listMethods,
@@ -143,7 +144,7 @@ export function MetReceipt() {
   const [rec, setRec] = useState<CalJob | null>(null);
   const [seal, setSeal] = useState("");
   const [cond, setCond] = useState<"ok" | "damaged" | "seal_broken" | "mismatch">("ok");
-  const res = useDomain(() => ({ jobs: listJobs({ state: "Accepted" }).filter((j) => j.location === "lab"), samples: listSamples().filter((s) => ["In Transit", "Received", "Collected"].includes(s.state)) }), []);
+  const res = useDomain(() => ({ jobs: listJobs({ state: "Accepted" }).filter((j) => j.location === "lab").sort((a, b) => `${a.dropoff?.date ?? "9"}${a.dropoff?.time ?? ""}`.localeCompare(`${b.dropoff?.date ?? "9"}${b.dropoff?.time ?? ""}`)), samples: listSamples().filter((s) => ["In Transit", "Received", "Collected"].includes(s.state)) }), []);
   return (
     <Gate res={res} what="Receipt">
       {({ jobs, samples }) => (
@@ -165,6 +166,11 @@ export function MetReceipt() {
                     <span className="crm-small" style={{ display: "block" }}>
                       {j.items.map((i) => `${i.description} SN ${i.serial}`).join("; ")}
                     </span>
+                    {j.dropoff ? (
+                      <span className="crm-pill crm-pill--outline">
+                        Drop-off {fmtDate(j.dropoff.date)} {j.dropoff.time}
+                      </span>
+                    ) : null}
                   </span>
                   <button type="button" className="crm-btn crm-btn--sm crm-btn--pri" onClick={() => setRec(j)}>
                     Log receipt
@@ -305,6 +311,7 @@ export function MetItems() {
                 <th>Last</th>
                 <th>Next due</th>
                 <th>Last result</th>
+                <th>Interval</th>
               </tr>
             </thead>
             <tbody>
@@ -323,6 +330,9 @@ export function MetItems() {
                     {i.next_due && new Date(i.next_due) < new Date() ? <span className="crm-pill crm-pill--red">Overdue</span> : null}
                   </td>
                   <td>{i.last_result ? <span className={`crm-pill crm-pill--${i.last_result === "in_tolerance" ? "green" : "red"}`}>{i.last_result.replace(/_/g, " ")}</span> : "—"}</td>
+                  <td>
+                    <IntervalHint id={i.id} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -662,5 +672,17 @@ export function MetSettings() {
         </div>
       )}
     </Gate>
+  );
+}
+
+/** Predictive recall (07 P3): drift-based interval suggestion — the customer decides. */
+function IntervalHint({ id }: { id: string }) {
+  const sg = suggestInterval(id);
+  if (!sg) return <>—</>;
+  return (
+    <span title={sg.why}>
+      {sg.current} mo
+      {sg.direction !== "same" ? <span className={`crm-pill crm-pill--${sg.direction === "shorter" ? "amber" : "green"}`}>suggest {sg.suggested} mo</span> : null}
+    </span>
   );
 }

@@ -58,6 +58,8 @@ export type CertQuote = {
   declined?: { at: string; reason: string };
 };
 
+export type AuditReport = { visit_id: string; version: number; text: string; by: string; at: string };
+
 export type AuditStage = { id: string; label: string; date: string; days: number; visit_id?: string };
 
 export type NcState = "Raised" | "Response submitted" | "Accepted" | "Verified closed";
@@ -125,6 +127,8 @@ export type CertApplication = WfRecord & {
   certificate_id?: string;
   renewal_of?: string;
   transfer_from?: { body: string; certificate: string; expires: string };
+  /** Audit reports per visit (05 P3) — drafted from the field record, edited by the lead auditor. */
+  audit_reports?: AuditReport[];
   /** Customer chases sent while paused (D+7, D+14) and stale flag (D+21) — §5.5. */
   chases?: { at: string; day: number }[];
 };

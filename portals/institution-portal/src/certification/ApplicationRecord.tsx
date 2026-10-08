@@ -12,6 +12,9 @@ import {
   actOnApplication,
   addDocument,
   addStage,
+  auditReportFor,
+  draftAuditReport,
+  saveAuditReport,
   APP_DEF,
   appActions,
   completeTechnicalReview,
@@ -627,6 +630,9 @@ function FindingsTab({ b, actor, show }: { b: AppBundle; actor: Actor; show: (m:
       ) : (
         <p className="crm-muted">No visits yet.</p>
       )}
+      {b.visits.filter((v) => v.type !== "market_sampling").map((v) => (
+        <AuditReportCard key={v.id} appId={a.id} visitId={v.id} title={v.title} actor={actor} show={show} />
+      ))}
       <div className="crm-row">
         <h4 style={{ margin: 0 }}>Nonconformities</h4>
         <span className="crm-spacer" />
@@ -798,6 +804,82 @@ function TechReviewTab({ b, actor, show }: { b: AppBundle; actor: Actor; show: (
       >
         Complete technical review
       </button>
+    </div>
+  );
+}
+
+/** Audit report generator (05 P3): draft from the Field record, edited by the lead auditor, filed as a document. */
+function AuditReportCard({ appId, visitId, title, actor, show }: { appId: string; visitId: string; title: string; actor: Actor; show: (m: string) => void }) {
+  const saved = auditReportFor(appId, visitId);
+  const [text, setText] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <div className="crm-card">
+      <div className="crm-card__h">
+        <h3>Audit report — {title}</h3>
+        {saved ? (
+          <span className="crm-small">
+            v{saved.version} saved {fmtDate(saved.at)} by {saved.by}
+          </span>
+        ) : (
+          <span className="crm-pill crm-pill--amber">Not written</span>
+        )}
+      </div>
+      {text === null ? (
+        <div className="crm-row">
+          <button
+            type="button"
+            className="crm-btn crm-btn--sm crm-btn--pri"
+            onClick={() => {
+              setErr(null);
+              try {
+                setText(saved ? saved.text : draftAuditReport(appId, visitId));
+              } catch (e) {
+                setErr(e instanceof Error ? e.message : String(e));
+              }
+            }}
+          >
+            <Icon name="i-spark" /> {saved ? "Edit report" : "Generate report draft"}
+          </button>
+          {saved ? (
+            <Link className="crm-btn crm-btn--sm" to={`/print/auditreport/${appId}?visit=${visitId}`} target="_blank">
+              Print
+            </Link>
+          ) : null}
+        </div>
+      ) : (
+        <>
+          <p className="crm-small" style={{ marginTop: 0 }}>
+            Drafted from the checklist, findings, photos and sign-offs. Check every statement before you save.
+          </p>
+          <textarea className="crm-textarea" rows={18} style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 12.5 }} value={text} onChange={(e) => setText(e.target.value)} />
+          <div className="crm-row" style={{ marginTop: 8 }}>
+            <button
+              type="button"
+              className="crm-btn crm-btn--sm crm-btn--pri"
+              onClick={() => {
+                setErr(null);
+                try {
+                  const r = saveAuditReport(appId, visitId, text, actor);
+                  setText(null);
+                  show(`Audit report v${r.version} saved to Documents.`);
+                } catch (e) {
+                  setErr(e instanceof Error ? e.message : String(e));
+                }
+              }}
+            >
+              Save report
+            </button>
+            <button type="button" className="crm-btn crm-btn--sm crm-btn--ghost" onClick={() => setText(draftAuditReport(appId, visitId))}>
+              Regenerate from field record
+            </button>
+            <button type="button" className="crm-btn crm-btn--sm crm-btn--ghost" onClick={() => setText(null)}>
+              Cancel
+            </button>
+          </div>
+        </>
+      )}
+      {err ? <p className="eo-error">{err}</p> : null}
     </div>
   );
 }

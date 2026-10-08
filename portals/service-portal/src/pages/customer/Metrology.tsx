@@ -9,6 +9,9 @@ import { Icon } from "@eswasaone/shared-ui";
 import { fmtMoney, invoiceFor } from "@eswasaone/shared-ui/billing";
 import {
   createCalRequest,
+  dropoffSlots,
+  setInstrumentInterval,
+  suggestInterval,
   customerRespondQuote,
   DISCIPLINES,
   getJob,
@@ -112,13 +115,14 @@ export function CalRequestPage() {
   const [step, setStep] = useState(0);
   const [items, setItems] = useState<ItemDraft[]>(preIns ? [{ description: preIns.description, make: preIns.make, model: preIns.model, serial: preIns.serial, range: preIns.range, discipline: preIns.discipline, instrument_id: preIns.id }] : [blank()]);
   const [v, setV] = useState({ customer: preIns?.client ?? "", contact: me.name, phone: "", email: user?.email ?? "", location: "lab" as "lab" | "onsite", site: "", accreditation: true, preferred_date: "", delivery: "collect" as "collect" | "courier", notes: "" });
+  const [slot, setSlot] = useState<{ date: string; time: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const warnings = scopeWarnings(items, v.accreditation);
   const steps = ["Instruments", "Where & when", "Review"];
   const submit = async () => {
     setErr(null);
     try {
-      const j = await createCalRequest({ ...v, customer_email: v.email || "demo", customer: v.customer || me.name, items }, me.name);
+      const j = await createCalRequest({ ...v, preferred_date: v.location === "lab" && slot ? slot.date : v.preferred_date, dropoff: v.location === "lab" ? slot ?? undefined : undefined, customer_email: v.email || "demo", customer: v.customer || me.name, items }, me.name);
       nav(`/account/calibration/${j.id}`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -225,10 +229,14 @@ export function CalRequestPage() {
               </select>
             </label>
           )}
-          <label className="crm-field">
-            Preferred {v.location === "onsite" ? "visit" : "drop-off"} date
-            <input className="crm-input" type="date" value={v.preferred_date} onChange={(e) => setV({ ...v, preferred_date: e.target.value })} />
-          </label>
+          {v.location === "onsite" ? (
+            <label className="crm-field">
+              Preferred visit date
+              <input className="crm-input" type="date" value={v.preferred_date} onChange={(e) => setV({ ...v, preferred_date: e.target.value })} />
+            </label>
+          ) : (
+            <DropoffPicker value={slot} onChange={setSlot} />
+          )}
           <label className="crm-check" style={{ alignSelf: "end" }}>
             <input type="checkbox" checked={v.accreditation} onChange={(e) => setV({ ...v, accreditation: e.target.checked })} /> I need an accredited certificate
           </label>
@@ -460,6 +468,7 @@ export function AccountInstrumentsPage() {
                 <th>Last calibrated</th>
                 <th>Next due</th>
                 <th>Certificate</th>
+                <th>Interval</th>
                 <th />
               </tr>
             </thead>
@@ -482,6 +491,9 @@ export function AccountInstrumentsPage() {
                       {fmtD(i.next_due)} {days !== null ? <span className={`crm-pill crm-pill--${days < 0 ? "red" : days <= 30 ? "amber" : "green"}`}>{days < 0 ? `${-days} d overdue` : `${days} d`}</span> : null}
                     </td>
                     <td>{i.last_job ? <Link to={`/print/calcert/${i.last_job}`} target="_blank">{i.last_cert}</Link> : "—"}</td>
+                    <td>
+                      <IntervalCell id={i.id} who={me.name} />
+                    </td>
                     <td className="num">
                       <Link className="crm-btn crm-btn--sm" to={`/metrology/request?instrument=${i.id}`}>
                         Book recalibration
@@ -524,5 +536,66 @@ export function VerifyCalPage() {
         )
       ) : null}
     </PublicPage>
+  );
+}
+
+/** Lab counter drop-off booking (07 P3): pick a time so the receipt desk expects you. */
+function DropoffPicker({ value, onChange }: { value: { date: string; time: string } | null; onChange: (v: { date: string; time: string } | null) => void }) {
+  const days = dropoffSlots(new Date(), 14);
+  const [day, setDay] = useState(value?.date ?? days.find((d) => d.times.some((t) => t.free > 0))?.date ?? "");
+  const cur = days.find((d) => d.date === day);
+  return (
+    <div className="crm-field" style={{ gridColumn: "1 / -1" }}>
+      Drop-off slot at the lab counter (Mbabane)
+      <div className="crm-row" style={{ gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+        {days.map((d) => (
+          <button key={d.date} type="button" className={`crm-btn crm-btn--sm${d.date === day ? " crm-btn--pri" : ""}`} disabled={!d.times.some((t) => t.free > 0)} onClick={() => setDay(d.date)}>
+            {new Date(`${d.date}T12:00`).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}
+          </button>
+        ))}
+      </div>
+      {cur ? (
+        <div className="crm-row" role="radiogroup" aria-label="Time" style={{ gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+          {cur.times.map((t) => (
+            <button key={t.time} type="button" role="radio" aria-checked={value?.date === cur.date && value.time === t.time} className={`crm-btn crm-btn--sm${value?.date === cur.date && value.time === t.time ? " crm-btn--gold" : " crm-btn--ghost"}`} disabled={t.free <= 0} onClick={() => onChange({ date: cur.date, time: t.time })}>
+              {t.time} {t.free <= 0 ? "(full)" : ""}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <span className="crm-small">{value ? `Booked: ${fmtD(value.date)} at ${value.time}. Bring the items and your reference.` : "Optional — without a slot, come any working day 08:00–16:00."}</span>
+    </div>
+  );
+}
+
+/** Predictive recall (07 P3): the lab's drift-based suggestion; the customer decides the interval. */
+function IntervalCell({ id, who }: { id: string; who: string }) {
+  const [msg, setMsg] = useState<string | null>(null);
+  const sg = suggestInterval(id);
+  if (!sg) return <>—</>;
+  return (
+    <div>
+      <span>{sg.current} months</span>
+      {sg.direction !== "same" ? (
+        <div className="crm-small" style={{ maxWidth: 280 }}>
+          <span className={`crm-pill crm-pill--${sg.direction === "shorter" ? "amber" : "green"}`}>Suggest {sg.suggested} months</span> {sg.why}{" "}
+          <button
+            type="button"
+            className="crm-link"
+            onClick={() => {
+              try {
+                setInstrumentInterval(id, sg.suggested, who);
+                setMsg(`Interval set to ${sg.suggested} months — next due date updated.`);
+              } catch (e) {
+                setMsg(e instanceof Error ? e.message : String(e));
+              }
+            }}
+          >
+            Use {sg.suggested} months
+          </button>
+        </div>
+      ) : null}
+      {msg ? <span className="crm-small">{msg}</span> : null}
+    </div>
   );
 }

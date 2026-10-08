@@ -9,7 +9,9 @@ import {
   SlaChip,
   StatePill,
   caseSla,
+  churnRisk,
   clientHealth,
+  healthTrend,
   daysFromNow,
   fmtDay,
   fmtE,
@@ -30,9 +32,10 @@ import {
   type ClientActivity,
   type ClientTier,
 } from "@eswasaone/shared-ui/crm";
+import { AccountPlanTab, ChurnChip, Sparkline } from "./AccountPlan";
 import { CrmGate, QUOTE_STATUS, SIGNAL_META, STAGE_LABEL, useActor } from "./shared";
 
-type Tab = "overview" | "contacts" | "certificates" | "applications" | "lab" | "training" | "orders" | "invoices" | "cases" | "commercial" | "activity";
+type Tab = "overview" | "plan" | "contacts" | "certificates" | "applications" | "lab" | "training" | "orders" | "invoices" | "cases" | "commercial" | "activity";
 
 /** Client 360 — everything ESWASA knows about one organisation on one page. */
 export function CrmClient360() {
@@ -71,6 +74,8 @@ export function CrmClient360() {
         if (!client) return <CrmEmpty title="Client not found" action={<Link className="crm-btn" to="/crm/clients">Back to clients</Link>} />;
         const cases = allCases.filter((c) => !(firewall && cfg.case_types[c.type].restricted)).filter((c) => c.type !== "appeal" || !firewall);
         const h = clientHealth(client, allCases);
+        const trend = healthTrend(client, allCases);
+        const churn = churnRisk(client, allCases);
         const owed = client.invoices.filter((i) => i.status !== "paid").reduce((s, i) => s + i.amount, 0);
         const primary = client.contacts.find((c) => c.primary) ?? client.contacts[0];
         const counts: Partial<Record<Tab, number>> = {
@@ -86,6 +91,7 @@ export function CrmClient360() {
         };
         const TABS: { id: Tab; label: string }[] = [
           { id: "overview", label: "Overview" },
+          { id: "plan", label: "Account plan" },
           { id: "contacts", label: "Contacts" },
           { id: "certificates", label: "Certificates" },
           { id: "applications", label: "Applications" },
@@ -235,6 +241,22 @@ export function CrmClient360() {
                         {h.score}/100
                       </span>
                     </div>
+                    <div className="crm-row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+                      <span className="crm-small">
+                        Last {trend.length} months: {trend.map((p) => p.score).join(" → ")}
+                      </span>
+                      <Sparkline points={trend} />
+                    </div>
+                    <div className="crm-row" style={{ marginBottom: 8 }}>
+                      <ChurnChip risk={churn} />
+                    </div>
+                    {churn.reasons.length ? (
+                      <ul className="crm-small" style={{ margin: "0 0 8px", paddingLeft: 18 }}>
+                        {churn.reasons.map((r) => (
+                          <li key={r}>{r}</li>
+                        ))}
+                      </ul>
+                    ) : null}
                     <div className="crm-stack" style={{ gap: 6 }}>
                       {h.factors.length === 0 ? <span className="crm-small">No risk factors.</span> : null}
                       {h.factors.map((f) => (
@@ -423,6 +445,8 @@ export function CrmClient360() {
                 ))}
               </Table>
             ) : null}
+
+            {tab === "plan" ? <AccountPlanTab client={client} actor={actor} onSaved={showToast} /> : null}
 
             {tab === "cases" ? (
               <Table head={["Case", "Type", "State", "SLA", "Opened"]} empty="No cases for this client.">

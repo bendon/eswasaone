@@ -8,7 +8,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Icon, Select, useDialogs } from "@eswasaone/shared-ui";
 import { CrmBanner } from "@eswasaone/shared-ui/crm";
 import { MessagePreview } from "@eswasaone/shared-ui/notify";
-import { claimTask, delegatedRoles, isManager, releaseTask, snoozeTask, type TaskQueue } from "@eswasaone/shared-ui/tasks";
+import { claimTask, delegatedRoles, digestPref, isManager, releaseTask, setDigestPref, snoozeTask, taskStore, type TaskQueue } from "@eswasaone/shared-ui/tasks";
+import { useStoreResource } from "@eswasaone/shared-ui/store";
 import { ReasonDialog } from "@eswasaone/shared-ui/workflow";
 import { PageSkeleton } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
@@ -76,6 +77,7 @@ export function InboxView() {
   const [toast, setToast] = useState<string | null>(null);
   const [bulk, setBulk] = useState<"approve" | "reject" | null>(null);
   const [digest, setDigest] = useState(false);
+  const pref = useStoreResource([taskStore], () => digestPref(actor.name), [actor.name]);
   const [conflicts, setConflicts] = useState<Record<string, string>>({});
 
   const inbox = useInbox(actor, view?.queue ?? queue, Boolean(user), sessionKey);
@@ -283,7 +285,7 @@ export function InboxView() {
           <div className="crm-kpi__s">{inbox.liveCount ? `${inbox.liveCount} live from Frappe` : "demo + module tasks"}</div>
         </div>
         <div className="crm-kpi">
-          <div className="crm-kpi__l">Daily digest</div>
+          <div className="crm-kpi__l">Daily digest{pref.data?.email || pref.data?.push ? " · on" : ""}</div>
           <div className="crm-kpi__v" style={{ fontSize: 15, marginTop: 10 }}>
             <button type="button" className="crm-btn crm-btn--sm" onClick={() => setDigest(true)}>
               <Icon name="i-mail" /> Preview
@@ -589,7 +591,19 @@ export function InboxView() {
       ) : null}
 
       {digest ? (
-        <ReasonDialog title="Daily digest (preview)" consequence="Sent at 07:00 on working days by email and PWA push. TODO: wire real — Frappe scheduler + Notification." confirmLabel="Close" onClose={() => setDigest(false)} onSubmit={async () => setDigest(false)}>
+        <ReasonDialog title="Daily digest (preview)" consequence="Sent at 07:00 on working days by email and PWA push." confirmLabel="Close" onClose={() => setDigest(false)} onSubmit={async () => setDigest(false)}>
+          <div className="crm-row">
+            {(["email", "push"] as const).map((ch) => (
+              <label key={ch} className="crm-check crm-small">
+                <input
+                  type="checkbox"
+                  checked={Boolean(pref.data?.[ch])}
+                  onChange={(e) => void setDigestPref(actor.name, { email: Boolean(pref.data?.email), push: Boolean(pref.data?.push), [ch]: e.target.checked })}
+                />{" "}
+                Send me this daily by {ch === "email" ? "email" : "PWA push"}
+              </label>
+            ))}
+          </div>
           <MessagePreview
             title="Your morning digest"
             message={{

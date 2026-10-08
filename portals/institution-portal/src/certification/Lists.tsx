@@ -28,6 +28,7 @@ import {
   saveCertSettings,
   saveCompetence,
   surveillancePlan,
+  clientCertHealth,
   type CertSettings,
   type Competence,
 } from "@eswasaone/shared-ui/certification";
@@ -487,6 +488,7 @@ export function SurveillanceView() {
                 <th>Due</th>
                 <th>Visit</th>
                 <th>Holder</th>
+                <th>Suggested frequency</th>
                 <th>Status</th>
                 <th />
               </tr>
@@ -504,6 +506,9 @@ export function SurveillanceView() {
                       {cert.org}
                     </Link>
                     <span className="crm-small">{cert.number}</span>
+                  </td>
+                  <td>
+                    <FreqHint clientId={cert.client_id ?? ""} org={cert.org} />
                   </td>
                   <td>{visit ? <Link className="crm-link" to={`/field/visits/${visit.id}`}>{visit.id} · {visit.state}</Link> : <WfPill def={REG_DEF} state={cert.state} />}</td>
                   <td className="num">{!visit ? <button type="button" className="crm-btn crm-btn--sm crm-btn--pri" onClick={() => setPlan({ cert: cert.id, item: item.id, date: item.due.slice(0, 10) })}>Plan visit</button> : null}</td>
@@ -777,5 +782,16 @@ export function CertSettingsView() {
         </div>
       )}
     </Gate>
+  );
+}
+
+/** Risk-based surveillance frequency from certification health (05 P3) — a suggestion, not a rule. */
+function FreqHint({ clientId, org }: { clientId: string; org: string }) {
+  const h = clientCertHealth(clientId, org);
+  return (
+    <span title={h.surveillance.why}>
+      <span className={`crm-pill crm-pill--${h.surveillance.months === 6 ? "amber" : "outline"}`}>Every {h.surveillance.months} months</span>
+      <span className="crm-small">Health {h.score}/100</span>
+    </span>
   );
 }

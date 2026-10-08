@@ -11,7 +11,7 @@
  *   POST /lims/test-requests, PUT /lims/test-requests/{id}/results, POST /lims/test-requests/{id}/act.
  */
 import { createInvoice, invoiceFor, type Invoice } from "../billing/store";
-import { registerSignalGenerator } from "../crm/store";
+import { registerSignalGenerator, sendNps } from "../crm/store";
 import { planVisit, recordSampleResult, registerLabRouter, registerVisitParent, peekVisit } from "../field/store";
 import type { FieldVisit, Sample } from "../field/types";
 import { notifySafe } from "../notify/store";
@@ -325,6 +325,7 @@ export function issueCertificate(id: string, actor: Actor, expected?: string): C
   safe(() => {
     if (!invoiceFor(j.id)) createInvoice({ source: "metrology", ref: j.id, title: `Calibration ${j.id}`, customer: j.customer, customer_email: j.customer_email, client_id: j.client_id, lines: j.quote?.lines ?? j.items.map((i) => ({ label: `Calibration — ${i.description}`, qty: 1, unit_price: 650 })), due_at: isoIn(30) });
   });
+  safe(() => sendNps({ trigger: "calibration_delivered", ref: j.certificate!.id, email: j.customer_email, name: j.contact, client_id: j.client_id }));
   notifyCustomer(j, "Calibration certificate ready", `Certificate ${j.certificate!.id} for ${j.items.map((i) => i.description).join(", ")} is ready to download. Your items are ready for ${j.delivery === "courier" ? "dispatch" : "collection"}.`);
   return j;
 }
@@ -343,17 +344,20 @@ export function reissueCertificate(id: string, reason: string, actor: Actor): Ca
 }
 
 function updateRegister(s: MetState, j: CalJob, item: CalItem) {
-  const interval = s.settings.default_interval_months;
-  const next = new Date();
-  next.setMonth(next.getMonth() + interval);
   const oot = j.worksheet.points.some((p) => p.item_id === item.id && pointOot(p));
   let ins = item.instrument_id ? s.instruments[item.instrument_id] : Object.values(s.instruments).find((x) => x.serial === item.serial);
+  // The instrument's own interval wins over the lab default.
+  const interval = ins?.interval_months ?? s.settings.default_interval_months;
+  const next = new Date();
+  next.setMonth(next.getMonth() + interval);
   if (!ins) {
     s.seq += 1;
     ins = { id: `INS-${1000 + s.seq}`, owner_email: j.customer_email, client: j.customer, description: item.description, make: item.make, model: item.model, serial: item.serial, range: item.range, discipline: item.discipline, interval_months: interval };
     s.instruments[ins.id] = ins;
   }
   Object.assign(ins, { last_cal: nowIso(), next_due: next.toISOString(), last_job: j.id, last_cert: j.certificate?.id, last_result: oot ? "out_of_tolerance" : "in_tolerance" });
+  const pts = j.worksheet.points.filter((p) => p.item_id === item.id && p.tolerance > 0);
+  if (pts.length) ins.drift = [...(ins.drift ?? []), { at: nowIso(), ratio: Math.round(Math.max(...pts.map((p) => Math.abs(pointError(p)) / p.tolerance)) * 100) / 100, cert: j.certificate?.id }];
 }
 
 export function dispatchJob(id: string, d: { method: "collection" | "courier"; name: string; reference?: string }, actor: Actor, expected?: string): CalJob {
@@ -381,6 +385,7 @@ export type CalRequestInput = {
   preferred_date: string;
   delivery: "collect" | "courier";
   notes?: string;
+  dropoff?: { date: string; time: string };
 };
 
 export async function createCalRequest(input: CalRequestInput, who: string): Promise<CalJob> {
@@ -391,6 +396,10 @@ export async function createCalRequest(input: CalRequestInput, who: string): Pro
     s.seq += 1;
     const id = `CJ-26-${String(s.seq).padStart(4, "0")}`;
     const items = input.items.map((x, n) => ({ ...x, id: `I${n + 1}` }));
+    if (input.dropoff) {
+      const taken = Object.values(s.jobs).filter((x) => x.dropoff?.date === input.dropoff!.date && x.dropoff.time === input.dropoff!.time && x.state !== "Cancelled").length;
+      if (taken >= (s.settings.counter ?? DEFAULT_COUNTER).per_slot) throw new Error("That drop-off slot has just been taken — choose another.");
+    }
     const j: CalJob = {
       ...input,
       id,
@@ -680,3 +689,106 @@ registerSignalGenerator({
         .map((i) => ({ kind: "calibration_due" as const, title: `${i.description} due ${new Date(i.next_due!).toLocaleDateString()}`, detail: `${i.client} — SN ${i.serial}. Offer a recalibration booking.`, services: ["calibration" as const], value_estimate: 900, due_at: i.next_due, source_ref: `ins-due:${i.id}:${i.next_due?.slice(0, 10)}`, prospect: { name: i.client } })),
     ),
 });
+
+/* ---------------- predictive recall (07 P3) ---------------- */
+
+export type IntervalSuggestion = { current: number; suggested: number; direction: "shorter" | "same" | "longer"; why: string; history: { at: string; ratio: number }[] };
+
+/**
+ * Suggests a shorter or longer calibration interval from as-found drift over past cycles (ILAC G24
+ * "staircase" style). Proposes only: the customer owns the interval; the lab explains the evidence.
+ * TODO: wire real — GET /metrology/instruments/{id}/interval-suggestion
+ */
+export function suggestInterval(instrumentId: string): IntervalSuggestion | null {
+  const ins = metStore.view((s) => s.instruments[instrumentId]);
+  if (!ins) return null;
+  const h = (ins.drift ?? []).slice().sort((a, b) => a.at.localeCompare(b.at));
+  const cur = ins.interval_months;
+  const clamp = (m: number) => Math.max(3, Math.min(36, Math.round(m)));
+  const last = h[h.length - 1];
+  const out = (suggested: number, why: string): IntervalSuggestion => ({ current: cur, suggested, direction: suggested < cur ? "shorter" : suggested > cur ? "longer" : "same", why, history: h });
+  if (!last) return out(cur, "No as-found history yet — keep the current interval and review after the next calibration.");
+  if (last.ratio > 1) return out(clamp(cur / 2), `Found out of tolerance last time (${Math.round(last.ratio * 100)}% of the limit). Halve the interval until two cycles come back in tolerance.`);
+  const trend = h.length >= 2 ? last.ratio - h[h.length - 2].ratio : 0;
+  if (last.ratio > 0.8 || (h.length >= 2 && last.ratio + trend > 1)) return out(clamp(cur * 0.75), `Drifting towards the limit (${h.map((x) => `${Math.round(x.ratio * 100)}%`).join(" → ")}); at this rate it would be out of tolerance before the next due date.`);
+  if (h.length >= 3 && h.slice(-3).every((x) => x.ratio < 0.3)) return out(clamp(cur * 1.5), `Stable well inside tolerance for ${Math.min(h.length, 3)} cycles (${h.slice(-3).map((x) => `${Math.round(x.ratio * 100)}%`).join(", ")} of the limit). A longer interval is reasonable.`);
+  return out(cur, `As-found error ${Math.round(last.ratio * 100)}% of the limit${h.length >= 2 ? `, trend ${trend >= 0 ? "+" : ""}${Math.round(trend * 100)} points` : ""}. Keep the current interval.`);
+}
+
+/** Customer (or lab) accepts a new interval; the next due date moves with it. */
+export function setInstrumentInterval(instrumentId: string, months: number, who: string): CustomerInstrument {
+  metStore.guard("Calibration interval");
+  if (!Number.isInteger(months) || months < 1 || months > 60) throw new Error("Choose an interval between 1 and 60 months.");
+  // TODO: wire real — PUT /account/instruments/{id} {interval_months}
+  return metStore.mutate((s) => {
+    const ins = s.instruments[instrumentId];
+    if (!ins) throw new Error("Instrument not found.");
+    ins.interval_months = months;
+    if (ins.last_cal) {
+      const d = new Date(ins.last_cal);
+      d.setMonth(d.getMonth() + months);
+      ins.next_due = d.toISOString();
+    }
+    void who;
+    return ins;
+  });
+}
+
+/* ---------------- lab counter drop-off booking (07 P3) ---------------- */
+
+export const DEFAULT_COUNTER = { times: ["08:30", "09:30", "10:30", "11:30", "13:30", "14:30", "15:30"], per_slot: 2 };
+
+/** Free drop-off slots on working days from `from` for `days` calendar days. */
+export function dropoffSlots(from = new Date(), days = 14): { date: string; times: { time: string; free: number }[] }[] {
+  // TODO: wire real — GET /metrology/counter-slots?from&days (Eswatini holidays applied server-side)
+  return metStore.view((s) => {
+    const cfg = s.settings.counter ?? DEFAULT_COUNTER;
+    const out: { date: string; times: { time: string; free: number }[] }[] = [];
+    const d = new Date(from);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 1);
+    for (let i = 0; i < days; i++, d.setDate(d.getDate() + 1)) {
+      if (d.getDay() === 0 || d.getDay() === 6) continue;
+      const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      out.push({
+        date,
+        times: cfg.times.map((time) => ({ time, free: cfg.per_slot - Object.values(s.jobs).filter((j) => j.dropoff?.date === date && j.dropoff.time === time && j.state !== "Cancelled").length })),
+      });
+    }
+    return out;
+  });
+}
+
+/* ---------------- worksheet CSV import (07 P3) ---------------- */
+
+export type CsvImport = { rows: Omit<CalPointRow, "id">[]; errors: string[] };
+
+/**
+ * Parses readings exported by balances / thermometers / loggers into worksheet rows. Accepts a header
+ * row with any of: item, nominal, unit, as_found (or reading / found), as_left (or left), tolerance (or
+ * mpe), uncertainty (or u). Comma, semicolon or tab separated. Rows without an item go to `defaultItem`.
+ */
+export function parseReadingsCsv(text: string, defaultItem: string): CsvImport {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const errors: string[] = [];
+  if (lines.length < 2) return { rows: [], errors: ["Need a header row and at least one reading."] };
+  const sep = [";", "\t", ","].find((c) => lines[0].includes(c)) ?? ",";
+  const head = lines[0].split(sep).map((h) => h.trim().toLowerCase().replace(/[^a-z_]/g, ""));
+  const col = (...names: string[]) => head.findIndex((h) => names.includes(h));
+  const ix = { item: col("item", "item_id"), nominal: col("nominal", "nom", "reference", "ref"), unit: col("unit", "units"), found: col("as_found", "asfound", "found", "reading"), left: col("as_left", "asleft", "left"), tol: col("tolerance", "tol", "mpe"), u: col("uncertainty", "u", "unc") };
+  if (ix.nominal < 0 || ix.found < 0) return { rows: [], errors: ["The header must include 'nominal' and 'as_found' (or 'reading')."] };
+  const num = (v: string | undefined) => (v === undefined || v.trim() === "" ? NaN : Number(v.trim().replace(",", ".")));
+  const rows: CsvImport["rows"] = [];
+  lines.slice(1).forEach((line, n) => {
+    const c = line.split(sep);
+    const nominal = num(c[ix.nominal]);
+    const as_found = num(c[ix.found]);
+    if (Number.isNaN(nominal) || Number.isNaN(as_found)) {
+      errors.push(`Line ${n + 2}: nominal and as-found must be numbers.`);
+      return;
+    }
+    const as_left = ix.left >= 0 && !Number.isNaN(num(c[ix.left])) ? num(c[ix.left]) : as_found;
+    rows.push({ item_id: (ix.item >= 0 && c[ix.item]?.trim()) || defaultItem, nominal, unit: (ix.unit >= 0 && c[ix.unit]?.trim()) || "", as_found, as_left, tolerance: ix.tol >= 0 && !Number.isNaN(num(c[ix.tol])) ? num(c[ix.tol]) : 0, uncertainty: ix.u >= 0 && !Number.isNaN(num(c[ix.u])) ? num(c[ix.u]) : 0 });
+  });
+  return { rows, errors };
+}

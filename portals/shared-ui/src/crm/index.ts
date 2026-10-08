@@ -8,3 +8,4 @@ export * from "./useCrm";
 export * from "./ui";
 import "./taskHandler";
 export { syncCaseTasks, CASE_TASK_DEF } from "./caseTasks";
+export * from "./sentiment";

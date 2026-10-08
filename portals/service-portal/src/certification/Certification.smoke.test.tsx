@@ -37,6 +37,10 @@ function renderAt(path: string, routePath: string, el: JSX.Element) {
   );
 }
 
+// jsdom has no scrolling; the wizard scrolls between steps.
+Element.prototype.scrollIntoView = vi.fn();
+window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+
 beforeEach(() => {
   localStorage.clear();
   requireAuth.mockClear();
@@ -91,9 +95,16 @@ describe("certification screens", () => {
   it("asks for sign-in only at quote submission", async () => {
     renderAt("/certification/quote?flow=ingelo", "/certification/quote", <CertificationQuotePage />);
     expect(screen.getByText(/for ingelo: is the product manufactured in eswatini/i)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /submit request for quotation/i }));
-    expect(requireAuth).not.toHaveBeenCalled(); // validation runs first
+    // The quote is a stepped wizard: each step validates before moving on, and sign-in waits for submit.
+    await userEvent.click(screen.getByRole("button", { name: /continue/i }));
+    expect(screen.getByText(/describe what you want certified/i)).toBeInTheDocument();
+    await userEvent.type(screen.getByRole("textbox", { name: /scope of certification/i }), "Honey");
+    await userEvent.click(within(screen.getByRole("radiogroup", { name: /based in eswatini/i })).getByLabelText("Yes"));
+    await userEvent.click(within(screen.getByRole("radiogroup", { name: /manufactured in eswatini/i })).getByLabelText("Yes"));
+    await userEvent.click(screen.getByRole("button", { name: /continue/i }));
+    await userEvent.click(screen.getByRole("button", { name: /continue/i }));
     expect(screen.getByText(/organisation name is required/i)).toBeInTheDocument();
+    expect(requireAuth).not.toHaveBeenCalled();
   });
 
   describe("demo mode (VITE_DEMO_MODE=true)", () => {
@@ -139,12 +150,15 @@ describe("certification screens", () => {
       requireAuth.mockReturnValue(true);
       renderAt("/certification/quote?flow=ms", "/certification/quote", <CertificationQuotePage />);
       const type = (name: RegExp, v: string) => userEvent.type(screen.getByRole("textbox", { name }), v);
+      const next = () => userEvent.click(screen.getByRole("button", { name: /continue/i }));
+      await type(/scope of certification/i, "Packing");
+      await userEvent.click(within(screen.getByRole("radiogroup", { name: /based in eswatini/i })).getByLabelText("Yes"));
+      await next();
       await type(/organisation name/i, "Test Co");
       await type(/contact person/i, "T. Test");
       await type(/email address/i, "t@test.sz");
       await type(/phone number/i, "+26876000000");
-      await type(/scope of certification/i, "Packing");
-      await userEvent.click(within(screen.getByRole("radiogroup", { name: /based in eswatini/i })).getByLabelText("Yes"));
+      await next();
       await userEvent.click(screen.getByRole("button", { name: /submit request for quotation/i }));
       expect(await screen.findByText(/your request was not sent/i)).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /send by email instead/i })).toHaveAttribute(

@@ -6,6 +6,11 @@
  },
  {
   "doctype": "Workflow Action Master",
+  "name": "Issue Quotation",
+  "workflow_action_name": "Issue Quotation"
+ },
+ {
+  "doctype": "Workflow Action Master",
   "name": "Schedule Audit",
   "workflow_action_name": "Schedule Audit"
  },

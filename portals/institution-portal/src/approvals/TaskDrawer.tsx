@@ -140,7 +140,7 @@ export function TaskDrawer({
         {task.rule ? <span className="crm-pill crm-pill--slate crm-mono">{task.rule}</span> : null}
         {task.escalated ? <span className="crm-pill crm-pill--red">Escalated</span> : null}
         {task.on_behalf_of ? <span className="crm-pill crm-pill--purple">On behalf of {task.on_behalf_of}</span> : null}
-        {task.live ? <span className="crm-pill">Live (Frappe)</span> : null}
+        {task.live ? <span className="crm-pill">Live</span> : null}
       </div>
 
       {err ? <p className="eo-error">{err}</p> : null}

@@ -274,6 +274,87 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/CertificationApplication" }
 
+  /certification/quotes:
+    get:
+      tags: [certification]
+      operationId: listCertificationQuotes
+      summary: Quote RFQs + issued ERPNext Quotations linked to applications
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CertificationQuote" }
+    post:
+      tags: [certification]
+      operationId: createCertificationQuote
+      summary: Citizen /certification/quote RFQ — creates a draft Quotation
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateCertificationQuote" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CertificationQuote" }
+
+  /certification/quotes/{id}/issue:
+    post:
+      tags: [certification]
+      operationId: issueCertificationQuote
+      summary: Issue fee lines on an RFQ Quotation, or run issue_quotation on an Application
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IssueCertificationQuote" }
+      responses:
+        "200":
+          description: Issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CertificationQuote" }
+
+  /certification/quotes/{id}/pdf:
+    get:
+      tags: [certification]
+      operationId: getCertificationQuotePdf
+      summary: Ensure quotation PDF is stored in S3 and return a download URL
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  application_id: { type: string }
+                  download_url: { type: string }
+                  media_key: { type: string }
+                  backend: { type: string }
+                  cached: { type: boolean }
+
   /certification/audits/overdue:
     get:
       tags: [certification]
@@ -1160,6 +1241,7 @@ components:
         status: { type: string }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+        quote: { $ref: "#/components/schemas/CertificationQuote" }
 
     CertificationScheme:
       type: object
@@ -1183,6 +1265,74 @@ components:
         applicant_name: { type: string }
         contact_email: { type: string, format: email }
         confirm: { type: boolean }
+
+    CertificationQuoteLine:
+      type: object
+      required: [label, amount]
+      properties:
+        label: { type: string }
+        amount: { type: number }
+
+    CertificationQuote:
+      type: object
+      required: [id, status, flow, org, contact_email, standards, scope, requested_at]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [requested, issued, accepted, declined, expired] }
+        flow: { type: string, enum: [ms, product, ingelo, combined] }
+        org: { type: string }
+        contact: { type: string }
+        contact_email: { type: string }
+        phone: { type: string }
+        standards: { type: string }
+        scope: { type: string }
+        employees: { type: string }
+        sites: { type: string }
+        requested_at: { type: string, format: date-time }
+        issued_at: { type: string, format: date-time }
+        valid_until: { type: string, format: date-time }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/CertificationQuoteLine" }
+        total: { type: number }
+        application_id: { type: string }
+        notes: { type: string }
+        pdf_url: { type: string, description: Citizen-accessible quotation PDF (S3 or /api/media) }
+        pdf_key: { type: string }
+
+    CreateCertificationQuote:
+      type: object
+      required: [org, email, confirm]
+      properties:
+        confirm: { type: boolean }
+        flow: { type: string, enum: [ms, product, ingelo, combined] }
+        org: { type: string }
+        registration_no: { type: string }
+        contact: { type: string }
+        position: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        address: { type: string }
+        standards: { type: string }
+        scope: { type: string }
+        employees: { type: string }
+        sites: { type: string }
+        based_in_eswatini: { type: string }
+        made_in_eswatini: { type: string }
+        existing_certs: { type: string }
+        timeline: { type: string }
+        comments: { type: string }
+
+    IssueCertificationQuote:
+      type: object
+      required: [confirm]
+      properties:
+        confirm: { type: boolean }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/CertificationQuoteLine" }
+        valid_days: { type: integer, default: 30 }
+        notes: { type: string }
 
     AuditSummary:
       type: object

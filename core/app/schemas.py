@@ -53,6 +53,36 @@ class ServiceHome(BaseModel):
     alerts: list[FeedItem]
 
 
+class CertificationQuoteLine(BaseModel):
+    label: str
+    amount: float
+
+
+class CertificationQuote(BaseModel):
+    id: str
+    status: str
+    flow: str = "ms"
+    org: str = ""
+    contact_email: str = ""
+    standards: str = ""
+    scope: str = ""
+    requested_at: str | None = None
+    contact: str | None = None
+    phone: str | None = None
+    employees: str | None = None
+    sites: str | None = None
+    issued_at: str | None = None
+    valid_until: str | None = None
+    lines: list[CertificationQuoteLine] | None = None
+    total: float | None = None
+    application_id: str | None = None
+    notes: str | None = None
+    quotation: str | None = None
+    pdf_url: str | None = None
+    pdf_key: str | None = None
+    due_by: str | None = None
+
+
 class CertificationApplication(BaseModel):
     id: str
     scheme: str
@@ -60,6 +90,7 @@ class CertificationApplication(BaseModel):
     status: str
     created_at: str | None = None
     updated_at: str | None = None
+    quote: CertificationQuote | None = None
 
 
 class CertificationScheme(BaseModel):
@@ -81,6 +112,34 @@ class CreateCertificationApplication(BaseModel):
     applicant_name: str
     contact_email: str | None = None
     confirm: bool
+
+
+class CreateCertificationQuote(BaseModel):
+    confirm: bool
+    org: str
+    email: str
+    flow: str | None = "ms"
+    contact: str | None = None
+    phone: str | None = None
+    standards: str | None = None
+    scope: str | None = None
+    employees: str | None = None
+    sites: str | None = None
+    comments: str | None = None
+    registration_no: str | None = None
+    position: str | None = None
+    address: str | None = None
+    based_in_eswatini: str | None = None
+    made_in_eswatini: str | None = None
+    existing_certs: str | None = None
+    timeline: str | None = None
+
+
+class IssueCertificationQuote(BaseModel):
+    confirm: bool
+    lines: list[CertificationQuoteLine] | None = None
+    valid_days: int = 30
+    notes: str | None = None
 
 
 class AdvanceCertificationBody(BaseModel):

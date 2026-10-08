@@ -22,6 +22,7 @@ import {
   type Task,
 } from "@eswasaone/shared-ui/tasks";
 import { useInstitution } from "../layout/InstitutionLayout";
+import { roleLabel } from "../staff";
 import { actorFrom } from "./live";
 import { ReassignDialog } from "./TaskDrawer";
 
@@ -223,7 +224,7 @@ export function TeamView() {
             <span style={{ flex: 1 }}>
               <b>{t.title}</b>
               <span className="crm-small">
-                {t.module} · {t.role} · {taskSla(t).label}
+                {t.module} · {roleLabel(t.role)} · {taskSla(t).label}
               </span>
             </span>
           </label>

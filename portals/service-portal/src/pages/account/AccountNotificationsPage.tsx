@@ -2,14 +2,14 @@
  * My account → Notifications (gap 01 C5): every customer-audience event — application received, info
  * requested, quote issued, audit date proposed, NC raised, certificate issued, calibration ready,
  * comment acknowledged, case replied — with read / unread state.
- * TODO: wire real — GET /notifications?audience=customer, POST /notifications/{id}/read.
+ * Wired to Core /account/notifications/feed (Frappe Notification Log).
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon, type IconName } from "@eswasaone/shared-ui";
-import { answerNps, listNpsForCustomer, myCaseRefs, useCrm, type NpsSurvey } from "@eswasaone/shared-ui/crm";
-import { listNotifications, markAllNotificationsRead, markNotificationRead, notifyStore, type AppNotification } from "@eswasaone/shared-ui/notify";
-import { useStoreResource } from "@eswasaone/shared-ui/store";
+import { answerNps, listNpsForCustomer, useCrm, type NpsSurvey } from "@eswasaone/shared-ui/crm";
+import { markAllNotificationsRead, markNotificationRead, type AppNotification } from "@eswasaone/shared-ui/notify";
+import { fetchNotificationFeed, type NotificationFeedEntry } from "../../api/misc";
 import { useAuth } from "../../auth/AuthProvider";
 import { Skeleton } from "./Skeleton";
 
@@ -26,9 +26,55 @@ const KIND_ICON: Record<AppNotification["kind"], IconName> = {
   info: "i-bell",
 };
 
+/** Map a Notification Log entry to the AppNotification shape the UI expects. */
+function toAppNotification(e: NotificationFeedEntry): AppNotification {
+  let kind: AppNotification["kind"] = "info";
+  if (e.document_type === "Certification Application") kind = "application";
+  else if (e.document_type === "Audit") kind = "audit";
+  else if (e.document_type === "Certificate") kind = "certificate";
+
+  // subject like "[R-C1] Application submitted: APP-2026-00027" → readable title
+  const title = e.subject?.replace(/^\[.*?\]\s*/, "") || "Notification";
+
+  return {
+    id: e.id,
+    audience: "customer" as const,
+    to: "",
+    kind,
+    title,
+    body: e.body ?? "",
+    at: e.created_at ?? new Date().toISOString(),
+    read: e.read,
+    link: e.link ?? undefined,
+    channel: [],
+  };
+}
+
 export function useCustomerNotifications() {
   const { user } = useAuth();
-  return useStoreResource([notifyStore], () => listNotifications("customer", { email: user?.email, refs: myCaseRefs() }), [user?.email]);
+  const [data, setData] = useState<AppNotification[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      try {
+        const feed = await fetchNotificationFeed(50);
+        if (cancelled) return;
+        const mapped = feed.items.map(toAppNotification);
+        setData(mapped);
+      } catch {
+        if (!cancelled) setData([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [user?.email]);
+
+  return { data, loading };
 }
 
 export function AccountNotificationsPage() {

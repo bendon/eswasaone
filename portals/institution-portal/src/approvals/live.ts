@@ -35,7 +35,7 @@ export function liveToTask(item: ApprovalItem & { family?: Task["family"]; verb?
     seq: 0,
     family: item.family ?? row.fam,
     verb: item.verb ?? row.verb,
-    role: item.role ?? "Desk User",
+    role: item.role ?? "Staff",
     created_at: created,
     due: item.due_at ?? new Date(Date.now() + 5 * 86_400_000).toISOString(),
     title: item.title,
@@ -51,12 +51,12 @@ export function liveToTask(item: ApprovalItem & { family?: Task["family"]; verb?
 export function liveActions(t: InboxTask): ActionOption[] {
   if (t.family === "approve")
     return [
-      { action: "approve", label: t.verb === "signoff" ? "Sign off" : "Approve", primary: true, consequence: "Approves the item in Frappe and moves it to the next step." },
+      { action: "approve", label: t.verb === "signoff" ? "Sign off" : "Approve", primary: true, consequence: "Approves the item and moves it to the next step." },
       { action: "return", label: "Request info", requires: "reason", consequence: "Returns it to the originator with your reason." },
       { action: "reject", label: "Reject", requires: "reason", danger: true, consequence: "Rejects the item. The reason is recorded and shown to the originator." },
     ];
   if (t.family === "alert") return [{ action: "approve", label: "Acknowledge", primary: true, consequence: "Marks the alert as handled." }];
-  return [{ action: "approve", label: "Mark done", primary: true, consequence: "Completes the task in Frappe." }];
+  return [{ action: "approve", label: "Mark done", primary: true, consequence: "Completes the task." }];
 }
 
 /** POST /approvals/{doctype}/{name}/act with reason + expected state (gap 02 A1, A11). */

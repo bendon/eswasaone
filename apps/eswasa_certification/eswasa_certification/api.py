@@ -45,6 +45,60 @@ def _require_confirm(confirm) -> None:
         )
 
 
+_PUBLIC_APPLY_ROLES = frozenset(
+    {
+        "Citizen",
+        "Customer",
+        "Certification Applicant",
+    }
+)
+
+# Service Portal marketing slugs → Certification Scheme.name (scheme_code).
+_SCHEME_ALIASES = {
+    "iso9001": "ISO9001-QMS",
+    "iso-9001": "ISO9001-QMS",
+    "iso9001-qms": "ISO9001-QMS",
+    "iso22000": "ISO22000-FSMS",
+    "iso-22000": "ISO22000-FSMS",
+    "haccp": "HACCP-SZNS",
+    "product": "SZNS-PRODUCT",
+    "szns-product": "SZNS-PRODUCT",
+    "ingelo": "INGELO-MSME",
+    "iso14001": "ISO14001-EMS",
+    "iso-14001": "ISO14001-EMS",
+    "iso45001": "ISO45001-OHS",
+    "iso-45001": "ISO45001-OHS",
+}
+
+
+def _can_create_certification_application() -> bool:
+    """Desk DocPerm create, or signed-in public self-service audience."""
+    if frappe.has_permission("Certification Application", "create"):
+        return True
+    user = frappe.session.user
+    if not user or user in ("Guest",):
+        return False
+    return bool(_PUBLIC_APPLY_ROLES & set(frappe.get_roles(user)))
+
+
+def _resolve_scheme(scheme: str) -> str:
+    """Map portal slug / loose code to Certification Scheme name."""
+    raw = (scheme or "").strip()
+    if not raw:
+        return raw
+    if frappe.db.exists("Certification Scheme", raw):
+        return raw
+    key = raw.lower().replace(" ", "").replace("_", "-")
+    alias = _SCHEME_ALIASES.get(key) or _SCHEME_ALIASES.get(raw.lower())
+    if alias and frappe.db.exists("Certification Scheme", alias):
+        return alias
+    # scheme_code is stored uppercased
+    upper = raw.upper()
+    if frappe.db.exists("Certification Scheme", upper):
+        return upper
+    return raw
+
+
 def _audit_log(action: str, reference_doctype: str, reference_name: str, detail: str = "") -> None:
     """Best-effort audit trail; never blocks the primary write.
 
@@ -384,14 +438,6 @@ def patch_audit(
     return result
 
 
-@frappe.whitelist(allow_guest=True)
-def list_schemes() -> dict:
-    """Active Certification Schemes for the public portal catalogue."""
-    from eswasa_certification.schemes import active_schemes
-
-    return {"items": active_schemes()}
-
-
 @frappe.whitelist()
 def create_application(
     scheme: str | None = None,
@@ -410,12 +456,15 @@ def create_application(
     if not applicant_name:
         frappe.throw(_("applicant_name is required"), frappe.ValidationError)
 
-    if not frappe.has_permission("Certification Application", "create"):
+    # Self-service: Citizen / Certification Applicant may open their own application.
+    # Desk roles keep full DocPerm create. Guest never.
+    if not _can_create_certification_application():
         frappe.throw(
             _("Not permitted to create Certification Application"),
             frappe.PermissionError,
         )
 
+    scheme = _resolve_scheme(scheme)
     if not frappe.db.exists("Certification Scheme", scheme):
         frappe.throw(_("Unknown scheme: {0}").format(scheme), frappe.ValidationError)
 
@@ -438,6 +487,17 @@ def create_application(
     )
     doc = _persist(doc, insert=True)
     _audit_log("create_application", doc.doctype, doc.name, f"scheme={scheme}")
+    frappe.db.commit()
+    doc.reload()
+
+    # _persist uses db_insert which bypasses on_submit / on_update lifecycle.
+    # Fire R-C1 explicitly so ToDos + email + feed are emitted immediately.
+    from eswasa_certification.rules import rc1_application_submitted
+
+    if not getattr(doc, "flags", None):
+        doc.flags = frappe._dict()
+    rc1_application_submitted(doc, "create_application")
+    doc.flags["rc1_done"] = True  # guard so a later on_submit won't double-fire
     frappe.db.commit()
     doc.reload()
     return serialize_application(doc.as_dict())
@@ -481,7 +541,43 @@ def get_application(name: str | None = None) -> dict:
     if not frappe.db.exists("Certification Application", name):
         frappe.throw(_("Application {0} not found").format(name), frappe.DoesNotExistError)
     doc = frappe.get_doc("Certification Application", name)
-    return serialize_application(doc.as_dict())
+    out = serialize_application(doc.as_dict())
+    quote = None
+    if doc.get("quotation") or doc.workflow_state in ("Quoted", "Assessment"):
+        try:
+            quote = _quote_for_app(doc.name)
+        except Exception:
+            quote = None
+    if quote:
+        if doc.get("quotation_pdf_url"):
+            quote["pdf_url"] = doc.quotation_pdf_url
+        if doc.get("quotation_pdf_key"):
+            quote["pdf_key"] = doc.quotation_pdf_key
+        out["quote"] = quote
+    return out
+
+
+@frappe.whitelist()
+def set_quotation_pdf(
+    name: str,
+    media_key: str,
+    pdf_url: str | None = None,
+) -> dict:
+    """Persist S3 media key/URL on the application after Core uploads the PDF."""
+    if not name or not media_key or str(media_key).strip() in ("", "NULL", "None"):
+        frappe.throw(_("name and media_key are required"), frappe.ValidationError)
+    if not frappe.db.exists("Certification Application", name):
+        frappe.throw(_("Application {0} not found").format(name), frappe.DoesNotExistError)
+    updates: dict[str, Any] = {}
+    meta = frappe.get_meta("Certification Application")
+    if meta.has_field("quotation_pdf_key"):
+        updates["quotation_pdf_key"] = media_key
+    if meta.has_field("quotation_pdf_url") and pdf_url:
+        updates["quotation_pdf_url"] = pdf_url
+    if updates:
+        frappe.db.set_value("Certification Application", name, updates, update_modified=False)
+        frappe.db.commit()
+    return {"id": name, **updates}
 
 
 @frappe.whitelist()
@@ -499,6 +595,21 @@ def list_applications(status: str | None = None, limit: int = 20) -> dict:
     filters = {}
     if status:
         filters["workflow_state"] = resolve_workflow_state(status)
+
+    # Scope to the user's own applications when they are a citizen / applicant
+    # and NOT a staff role (Officer, Manager, Auditor, System Manager).
+    user = frappe.session.user
+    if user and user not in ("Guest", "Administrator"):
+        roles = set(frappe.get_roles(user))
+        staff_roles = {
+            "Certification Officer",
+            "Certification Manager",
+            "Certification Auditor",
+            "System Manager",
+        }
+        if not (roles & staff_roles):
+            filters["owner"] = user
+
     rows = frappe.get_all(
         "Certification Application",
         filters=filters,
@@ -527,6 +638,556 @@ def list_applications(status: str | None = None, limit: int = 20) -> dict:
         for r in rows
     ]
     return {"items": items}
+
+
+def _flow_for_scheme(scheme: str | None) -> str:
+    s = (scheme or "").lower()
+    if "ingelo" in s:
+        return "ingelo"
+    if "combined" in s or "+" in s:
+        return "combined"
+    if "product" in s or "mark" in s or "permit" in s or "sans" in s:
+        return "product"
+    return "ms"
+
+
+def _iso(val) -> str | None:
+    if not val:
+        return None
+    try:
+        return str(val)
+    except Exception:
+        return None
+
+
+def _quotation_lines(quot_name: str) -> tuple[list[dict[str, Any]], float]:
+    if not quot_name or not frappe.db.exists("Quotation", quot_name):
+        return [], 0.0
+    rows = frappe.get_all(
+        "Quotation Item",
+        filters={"parent": quot_name},
+        fields=["description", "item_name", "rate", "amount", "qty"],
+        order_by="idx asc",
+    )
+    lines = [
+        {
+            "label": (r.description or r.item_name or "Fee").strip(),
+            "amount": float(r.amount or (float(r.rate or 0) * float(r.qty or 1))),
+        }
+        for r in rows
+    ]
+    total = float(frappe.db.get_value("Quotation", quot_name, "grand_total") or 0)
+    if not total:
+        total = sum(l["amount"] for l in lines)
+    return lines, total
+
+
+def _serialize_desk_quote(
+    *,
+    qid: str,
+    status: str,
+    flow: str,
+    org: str,
+    contact: str,
+    contact_email: str,
+    standards: str,
+    scope: str,
+    requested_at: str | None,
+    phone: str | None = None,
+    employees: str | None = None,
+    sites: str | None = None,
+    issued_at: str | None = None,
+    valid_until: str | None = None,
+    lines: list[dict[str, Any]] | None = None,
+    total: float | None = None,
+    application_id: str | None = None,
+    notes: str | None = None,
+) -> dict[str, Any]:
+    out: dict[str, Any] = {
+        "id": qid,
+        "status": status,
+        "flow": flow if flow in ("ms", "product", "ingelo", "combined") else "ms",
+        "org": org or contact or qid,
+        "contact": contact or org or "",
+        "contact_email": contact_email or "",
+        "standards": standards or "",
+        "scope": scope or "",
+        "requested_at": requested_at or str(nowdate()),
+    }
+    if phone:
+        out["phone"] = phone
+    if employees:
+        out["employees"] = employees
+    if sites:
+        out["sites"] = sites
+    if issued_at:
+        out["issued_at"] = issued_at
+    if valid_until:
+        out["valid_until"] = valid_until
+    if lines is not None:
+        out["lines"] = lines
+    if total is not None:
+        out["total"] = total
+    if application_id:
+        out["application_id"] = application_id
+    if notes:
+        out["notes"] = notes
+    return out
+
+
+@frappe.whitelist()
+def list_quotes(limit: int = 100) -> dict:
+    """Desk Quotes queue: Assessment apps awaiting quote + issued Quotation links + RFQ drafts."""
+    if not frappe.has_permission("Certification Application", "read") and not frappe.has_permission(
+        "Quotation", "read"
+    ):
+        frappe.throw(_("Not permitted to read quotes"), frappe.PermissionError)
+
+    lim = cint(limit) or 100
+    items: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    # Assessment / Quoted (normal path) plus Audit Scheduled with no Quotation yet
+    # (legacy checklist skipped Quote → schedule_audit).
+    app_filters = [
+        ["workflow_state", "in", ["Assessment", "Quoted", "Audit Scheduled"]],
+    ]
+    apps = frappe.get_all(
+        "Certification Application",
+        filters=app_filters,
+        fields=[
+            "name",
+            "scheme",
+            "standard_ref",
+            "applicant_name",
+            "applicant_org",
+            "contact_email",
+            "contact_phone",
+            "site_address",
+            "workflow_state",
+            "quotation",
+            "creation",
+            "modified",
+            "assessment_notes",
+        ],
+        order_by="modified desc",
+        limit_page_length=lim,
+    )
+    # Also surface apps that already have a Quotation but moved past Quoted.
+    extra = frappe.get_all(
+        "Certification Application",
+        filters=[["quotation", "!=", ""]],
+        fields=[
+            "name",
+            "scheme",
+            "standard_ref",
+            "applicant_name",
+            "applicant_org",
+            "contact_email",
+            "contact_phone",
+            "site_address",
+            "workflow_state",
+            "quotation",
+            "creation",
+            "modified",
+            "assessment_notes",
+        ],
+        order_by="modified desc",
+        limit_page_length=lim,
+    )
+    by_name = {a.name: a for a in apps}
+    for a in extra:
+        by_name.setdefault(a.name, a)
+
+    for a in by_name.values():
+        org = a.applicant_org or a.applicant_name or a.name
+        standards = a.standard_ref or a.scheme or ""
+        qname = a.quotation
+        if qname and frappe.db.exists("Quotation", qname):
+            lines, total = _quotation_lines(qname)
+            valid = frappe.db.get_value("Quotation", qname, "valid_till")
+            status = "issued"
+            if a.workflow_state not in ("Assessment", "Quoted", "Application"):
+                status = "accepted"
+            qid = qname
+            item = _serialize_desk_quote(
+                qid=qid,
+                status=status,
+                flow=_flow_for_scheme(a.scheme),
+                org=org,
+                contact=a.applicant_name or org,
+                contact_email=a.contact_email or "",
+                phone=a.contact_phone,
+                standards=standards,
+                scope=a.site_address or "",
+                requested_at=_iso(a.creation),
+                issued_at=_iso(a.modified),
+                valid_until=_iso(valid),
+                lines=lines,
+                total=total,
+                application_id=a.name,
+                notes=a.assessment_notes,
+            )
+            pdf_url = frappe.db.get_value("Certification Application", a.name, "quotation_pdf_url")
+            pdf_key = frappe.db.get_value("Certification Application", a.name, "quotation_pdf_key")
+            if pdf_url:
+                item["pdf_url"] = pdf_url
+            if pdf_key:
+                item["pdf_key"] = pdf_key
+        elif a.workflow_state == "Quoted":
+            item = _serialize_desk_quote(
+                qid=a.name,
+                status="issued",
+                flow=_flow_for_scheme(a.scheme),
+                org=org,
+                contact=a.applicant_name or org,
+                contact_email=a.contact_email or "",
+                phone=a.contact_phone,
+                standards=standards,
+                scope=a.site_address or "",
+                requested_at=_iso(a.creation),
+                issued_at=_iso(a.modified),
+                application_id=a.name,
+            )
+        else:
+            # Assessment — awaiting staff quote
+            item = _serialize_desk_quote(
+                qid=a.name,
+                status="requested",
+                flow=_flow_for_scheme(a.scheme),
+                org=org,
+                contact=a.applicant_name or org,
+                contact_email=a.contact_email or "",
+                phone=a.contact_phone,
+                standards=standards,
+                scope=a.site_address or "",
+                requested_at=_iso(a.creation),
+                application_id=a.name,
+            )
+        if item["id"] not in seen:
+            seen.add(item["id"])
+            items.append(item)
+
+    # Citizen RFQs stored as draft Quotation with title "Cert RFQ …"
+    if frappe.db.exists("DocType", "Quotation") and frappe.has_permission("Quotation", "read"):
+        rfqs = frappe.get_all(
+            "Quotation",
+            filters={"title": ("like", "Cert RFQ%"), "docstatus": ("<", 2)},
+            fields=[
+                "name",
+                "title",
+                "party_name",
+                "customer_name",
+                "transaction_date",
+                "valid_till",
+                "grand_total",
+                "terms",
+                "docstatus",
+                "creation",
+                "modified",
+            ],
+            order_by="modified desc",
+            limit_page_length=lim,
+        )
+        for q in rfqs:
+            if q.name in seen:
+                continue
+            # Prefer public QTE id embedded in title: "Cert RFQ QTE-… — Org"
+            qid = q.name
+            title = q.title or ""
+            for part in title.split():
+                if part.startswith("QTE-"):
+                    qid = part
+                    break
+            lines, total = _quotation_lines(q.name)
+            status = "issued" if cint(q.docstatus) == 1 else "requested"
+            meta: dict[str, Any] = {}
+            if q.terms and q.terms.strip().startswith("{"):
+                try:
+                    meta = json.loads(q.terms)
+                except Exception:
+                    meta = {}
+            item = _serialize_desk_quote(
+                qid=qid,
+                status=status,
+                flow=str(meta.get("flow") or "ms"),
+                org=str(meta.get("org") or q.customer_name or q.party_name or qid),
+                contact=str(meta.get("contact") or meta.get("org") or ""),
+                contact_email=str(meta.get("email") or ""),
+                phone=str(meta.get("phone") or "") or None,
+                standards=str(meta.get("standards") or ""),
+                scope=str(meta.get("scope") or ""),
+                employees=str(meta.get("employees") or "") or None,
+                sites=str(meta.get("sites") or "") or None,
+                requested_at=_iso(q.creation),
+                issued_at=_iso(q.modified) if status == "issued" else None,
+                valid_until=_iso(q.valid_till),
+                lines=lines or None,
+                total=total or float(q.grand_total or 0) or None,
+                notes=str(meta.get("comments") or "") or None,
+            )
+            # Keep ERPNext name discoverable for issue
+            item["quotation"] = q.name
+            seen.add(qid)
+            seen.add(q.name)
+            items.append(item)
+
+    items.sort(key=lambda x: x.get("requested_at") or "", reverse=True)
+    return {"items": items[:lim]}
+
+
+@frappe.whitelist()
+def create_quote_request(
+    org: str,
+    email: str,
+    confirm: bool | int | str = False,
+    flow: str = "ms",
+    contact: str | None = None,
+    phone: str | None = None,
+    standards: str | None = None,
+    scope: str | None = None,
+    employees: str | None = None,
+    sites: str | None = None,
+    comments: str | None = None,
+    **extra: Any,
+) -> dict:
+    """Citizen RFQ from /certification/quote — draft ERPNext Quotation titled Cert RFQ QTE-…"""
+    _require_confirm(confirm)
+    if not org or not email:
+        frappe.throw(_("org and email are required"), frappe.ValidationError)
+    if not frappe.db.exists("DocType", "Quotation"):
+        frappe.throw(_("Quotation DocType missing"), frappe.ValidationError)
+
+    from eswasa_certification.rules import _ensure_customer, _ensure_cert_fee_item
+    from frappe.utils import add_days
+
+    qte_id = f"QTE-{frappe.generate_hash(length=5).upper()}"
+    customer = _ensure_customer(org, email)
+    if not customer:
+        frappe.throw(_("Could not create customer for quote request"), frappe.ValidationError)
+
+    company = frappe.db.get_single_value("Global Defaults", "default_company") or frappe.db.get_value(
+        "Company", {}, "name"
+    )
+    currency = (frappe.db.get_value("Company", company, "default_currency") if company else None) or "SZL"
+    meta = {
+        "flow": flow or "ms",
+        "org": org,
+        "contact": contact or org,
+        "email": email,
+        "phone": phone or "",
+        "standards": standards or "",
+        "scope": scope or "",
+        "employees": employees or "",
+        "sites": sites or "",
+        "comments": comments or "",
+        **{k: v for k, v in extra.items() if isinstance(v, (str, int, float, bool))},
+    }
+    item_code = _ensure_cert_fee_item()
+    payload: dict[str, Any] = {
+        "doctype": "Quotation",
+        "quotation_to": "Customer",
+        "party_name": customer,
+        "company": company,
+        "currency": currency,
+        "transaction_date": nowdate(),
+        "valid_till": add_days(nowdate(), 30),
+        "order_type": "Sales",
+        "title": f"Cert RFQ {qte_id} — {org}"[:140],
+        "terms": json.dumps(meta),
+        "items": [
+            {
+                "item_code": item_code,
+                "qty": 1,
+                "rate": 0,
+                "description": f"RFQ placeholder — {standards or flow}",
+            }
+        ],
+    }
+    price_list = (
+        "Standard Selling"
+        if frappe.db.exists("Price List", "Standard Selling")
+        else frappe.db.get_value("Price List", {"selling": 1}, "name")
+    )
+    if price_list:
+        payload["selling_price_list"] = price_list
+        payload["price_list_currency"] = currency
+        payload["plc_conversion_rate"] = 1
+    quot = frappe.get_doc(payload)
+    quot.flags.ignore_permissions = True
+    quot.insert(ignore_permissions=True)
+
+    return _serialize_desk_quote(
+        qid=qte_id,
+        status="requested",
+        flow=str(flow or "ms"),
+        org=org,
+        contact=contact or org,
+        contact_email=email,
+        phone=phone,
+        standards=standards or "",
+        scope=scope or "",
+        employees=employees,
+        sites=sites,
+        requested_at=_iso(quot.creation),
+        notes=comments,
+    )
+
+
+@frappe.whitelist()
+def issue_quote(
+    name: str,
+    confirm: bool | int | str = False,
+    lines: list | str | None = None,
+    valid_days: int = 30,
+    notes: str | None = None,
+) -> dict:
+    """Issue fees: Application → issue_quotation act, or RFQ Quotation → update lines + submit."""
+    _require_confirm(confirm)
+    from frappe.utils import add_days
+
+    if isinstance(lines, str):
+        try:
+            lines = json.loads(lines)
+        except Exception:
+            lines = []
+    lines = lines or []
+
+    # Resolve QTE-… title back to Quotation name
+    quot_name = None
+    app_name = None
+    if frappe.db.exists("Certification Application", name):
+        app_name = name
+    elif frappe.db.exists("Quotation", name):
+        quot_name = name
+    else:
+        quot_name = frappe.db.get_value("Quotation", {"title": ("like", f"%{name}%")}, "name")
+
+    if app_name:
+        from eswasa_certification.workflow_act import act
+
+        doc = frappe.get_doc("Certification Application", app_name)
+        if doc.workflow_state == "Assessment":
+            act(
+                doctype="Certification Application",
+                name=app_name,
+                action="issue_quotation",
+                expected_state="Assessment",
+                confirm=True,
+            )
+            doc.reload()
+        elif not doc.get("quotation"):
+            from eswasa_certification.rules import rc_issue_quotation
+
+            rc_issue_quotation(doc)
+            doc.reload()
+        # Optionally overlay custom lines onto the Quotation
+        if lines and doc.get("quotation"):
+            _replace_quotation_lines(doc.quotation, lines, valid_days, notes)
+        return _quote_for_app(doc.name)
+
+    if not quot_name:
+        frappe.throw(_("Quote {0} not found").format(name), frappe.DoesNotExistError)
+
+    _replace_quotation_lines(quot_name, lines, valid_days, notes)
+    quot = frappe.get_doc("Quotation", quot_name)
+    if cint(quot.docstatus) == 0:
+        try:
+            quot.flags.ignore_permissions = True
+            quot.submit()
+        except Exception:
+            pass
+    # Re-list single
+    for item in list_quotes(limit=200)["items"]:
+        if item.get("id") == name or item.get("quotation") == quot_name or item.get("id") == quot_name:
+            return item
+    lines_out, total = _quotation_lines(quot_name)
+    return _serialize_desk_quote(
+        qid=name,
+        status="issued",
+        flow="ms",
+        org=quot.customer_name or quot.party_name or name,
+        contact=quot.customer_name or "",
+        contact_email="",
+        standards="",
+        scope="",
+        requested_at=_iso(quot.creation),
+        issued_at=_iso(nowdate()),
+        valid_until=_iso(quot.valid_till),
+        lines=lines_out,
+        total=total,
+        notes=notes,
+    )
+
+
+def _replace_quotation_lines(
+    quot_name: str,
+    lines: list,
+    valid_days: int = 30,
+    notes: str | None = None,
+) -> None:
+    from eswasa_certification.rules import _ensure_cert_fee_item
+    from frappe.utils import add_days
+
+    if not lines:
+        return
+    quot = frappe.get_doc("Quotation", quot_name)
+    if cint(quot.docstatus) == 1:
+        try:
+            quot.cancel()
+            quot = frappe.copy_doc(quot)
+            quot.insert(ignore_permissions=True)
+            quot_name = quot.name
+            quot = frappe.get_doc("Quotation", quot_name)
+        except Exception:
+            return
+    item_code = _ensure_cert_fee_item()
+    quot.set("items", [])
+    for row in lines:
+        label = (row.get("label") if isinstance(row, dict) else "") or "Fee"
+        amount = float((row.get("amount") if isinstance(row, dict) else 0) or 0)
+        quot.append(
+            "items",
+            {
+                "item_code": item_code,
+                "qty": 1,
+                "rate": amount,
+                "description": label,
+            },
+        )
+    quot.valid_till = add_days(nowdate(), cint(valid_days) or 30)
+    if notes:
+        # Preserve RFQ meta JSON in terms if present
+        if quot.terms and quot.terms.strip().startswith("{"):
+            try:
+                meta = json.loads(quot.terms)
+                meta["staff_notes"] = notes
+                quot.terms = json.dumps(meta)
+            except Exception:
+                quot.terms = notes
+        else:
+            quot.terms = notes
+    quot.flags.ignore_permissions = True
+    quot.save(ignore_permissions=True)
+
+
+def _quote_for_app(app_name: str) -> dict:
+    for item in list_quotes(limit=200)["items"]:
+        if item.get("application_id") == app_name:
+            return item
+    doc = frappe.get_doc("Certification Application", app_name)
+    return _serialize_desk_quote(
+        qid=doc.get("quotation") or doc.name,
+        status="issued",
+        flow=_flow_for_scheme(doc.scheme),
+        org=doc.applicant_org or doc.applicant_name or doc.name,
+        contact=doc.applicant_name or "",
+        contact_email=doc.contact_email or "",
+        standards=doc.standard_ref or doc.scheme or "",
+        scope=doc.site_address or "",
+        requested_at=_iso(doc.creation),
+        application_id=doc.name,
+    )
 
 
 def _ensure_planned_audit(application) -> None:

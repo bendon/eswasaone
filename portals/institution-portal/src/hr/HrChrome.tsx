@@ -84,7 +84,7 @@ export function HrChrome() {
           <div className="hr-box__h">
             <div>
               <h3>Invite staff</h3>
-              <p>Creates a Desk user via POST /auth/invite-staff. Link an Employee record in Directory to finish onboarding.</p>
+              <p>Creates a staff account via POST /auth/invite-staff. Link an Employee record in Directory to finish onboarding.</p>
             </div>
           </div>
           <div className="hr-box__b">

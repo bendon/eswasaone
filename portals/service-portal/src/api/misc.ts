@@ -123,3 +123,28 @@ export async function accountActivity(): Promise<ActivityItem[]> {
     return [];
   }
 }
+
+// ---------------------------------------------------------------------------
+// Notification feed — pulls from Core /account/notifications/feed
+// ---------------------------------------------------------------------------
+
+export type NotificationFeedEntry = {
+  id: string;
+  subject: string;
+  body: string | null;
+  document_type: string | null;
+  document_name: string | null;
+  read: boolean;
+  created_at: string | null;
+  link: string | null;
+};
+
+export async function fetchNotificationFeed(limit = 50): Promise<{ items: NotificationFeedEntry[]; unread_count: number }> {
+  try {
+    return await apiFetch<{ items: NotificationFeedEntry[]; unread_count: number }>(
+      `/account/notifications/feed?limit=${limit}`,
+    );
+  } catch {
+    return { items: [], unread_count: 0 };
+  }
+}

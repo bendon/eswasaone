@@ -114,13 +114,30 @@ const ROLE_PRIORITY = [
   "Desk User",
 ] as const;
 
+/** Human-friendly labels for Frappe role names shown in the UI. */
+const ROLE_LABELS: Record<string, string> = {
+  "Desk User": "Staff",
+  "ESWASA Staff": "Staff",
+  "Sales User": "Customer Service",
+  "Sales Manager": "Customer Service Manager",
+  "Accounts User": "Finance Officer",
+  "Accounts Manager": "Finance Manager",
+  "HR User": "HR Officer",
+  "HR Manager": "HR Manager",
+};
+
+/** Map internal Frappe role names to user-facing labels. */
+export function roleLabel(role: string): string {
+  return ROLE_LABELS[role] ?? role;
+}
+
 export function primaryStaffLabel(roles: string[] | null | undefined): string {
   const set = new Set(roles ?? []);
   for (const r of ROLE_PRIORITY) {
-    if (set.has(r)) return r;
+    if (set.has(r)) return roleLabel(r);
   }
   const staffHit = [...set].find((r) => STAFF_ROLES.has(r));
-  return staffHit || "Staff";
+  return staffHit ? roleLabel(staffHit) : "Staff";
 }
 
 export function hasStaffRole(roles: string[] | null | undefined): boolean {

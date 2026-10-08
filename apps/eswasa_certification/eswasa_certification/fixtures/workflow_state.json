@@ -16,6 +16,13 @@
  {
   "doctype": "Workflow State",
   "icon": "",
+  "name": "Quoted",
+  "style": "Info",
+  "workflow_state_name": "Quoted"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
   "name": "Audit Scheduled",
   "style": "Info",
   "workflow_state_name": "Audit Scheduled"

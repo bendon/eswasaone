@@ -282,7 +282,7 @@ export function InboxView() {
         <div className="crm-kpi">
           <div className="crm-kpi__l">In this queue</div>
           <div className="crm-kpi__v">{filtered.length}</div>
-          <div className="crm-kpi__s">{inbox.liveCount ? `${inbox.liveCount} live from Frappe` : "demo + module tasks"}</div>
+          <div className="crm-kpi__s">{inbox.liveCount ? `${inbox.liveCount} live tasks` : "demo + module tasks"}</div>
         </div>
         <div className="crm-kpi">
           <div className="crm-kpi__l">Daily digest{pref.data?.email || pref.data?.push ? " · on" : ""}</div>
@@ -301,7 +301,7 @@ export function InboxView() {
       ) : null}
       {inbox.liveError && !inbox.liveCount ? (
         <p className="crm-small" style={{ margin: 0 }}>
-          Live Frappe queue not reachable — showing module and demo tasks. Everything you do here is saved on this device.
+          Live queue not reachable — showing module and demo tasks. Everything you do here is saved on this device.
         </p>
       ) : null}
 

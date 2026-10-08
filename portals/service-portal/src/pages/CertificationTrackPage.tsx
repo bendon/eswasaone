@@ -287,22 +287,27 @@ export function CertificationTrackPage() {
             ) : null}
           </section>
 
-          {/* Quote, contract & payment */}
-          {detail.quote ? (
-            <section className="cf-card">
+          {/* Quote, contract & payment — roadmap stage + issued Quotation PDF */}
+          {detail.quote || detail.stage === "quote" ? (
+            <section className="cf-card" id="quote-contract-payment">
               <div className="cf-card__h">
                 <div>
                   <h2>Quote, contract &amp; payment</h2>
                   <p>
-                    {detail.quote.id} · issued {fmtDate(detail.quote.issued_at)} · valid until{" "}
-                    {fmtDate(detail.quote.valid_until)}
+                    {detail.quote
+                      ? `${detail.quote.id} · issued ${fmtDate(detail.quote.issued_at)} · valid until ${fmtDate(detail.quote.valid_until)}`
+                      : "Pricing is provided, and the formal agreement and payment are arranged."}
                   </p>
                 </div>
-                <span className={`cf-chip${detail.quote.status === "accepted" ? " cf-chip--green" : detail.quote.status === "issued" ? " cf-chip--gold" : " cf-chip--muted"}`}>
-                  {detail.quote.status}
-                </span>
+                {detail.quote ? (
+                  <span className={`cf-chip${detail.quote.status === "accepted" ? " cf-chip--green" : detail.quote.status === "issued" ? " cf-chip--gold" : " cf-chip--muted"}`}>
+                    {detail.quote.status}
+                  </span>
+                ) : (
+                  <span className="cf-chip cf-chip--muted">Preparing</span>
+                )}
               </div>
-              {detail.quote.lines?.length ? (
+              {detail.quote?.lines?.length ? (
                 <table className="cf-lines">
                   <tbody>
                     {detail.quote.lines.map((l) => (
@@ -318,9 +323,27 @@ export function CertificationTrackPage() {
                   </tbody>
                 </table>
               ) : (
-                <p className="cf-empty">ESWASA is preparing your quote.</p>
+                <p className="cf-empty">
+                  {detail.quote
+                    ? "ESWASA is preparing your quote."
+                    : "Your quotation will appear here once the certification desk issues it."}
+                </p>
               )}
-              {detail.quote.status === "issued" ? (
+              {detail.quote?.pdf_url ? (
+                <div className="cf-item__act" style={{ marginTop: 12 }}>
+                  <a
+                    className="cf-btn cf-btn--ghost"
+                    href={detail.quote.pdf_url.startsWith("http") || detail.quote.pdf_url.startsWith("/")
+                      ? detail.quote.pdf_url
+                      : `/api/media/${detail.quote.pdf_url}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Icon name="i-file" /> Download quotation PDF
+                  </a>
+                </div>
+              ) : null}
+              {detail.quote?.status === "issued" ? (
                 <div className="cf-item__act">
                   <button
                     type="button"
@@ -349,7 +372,7 @@ export function CertificationTrackPage() {
                     Decline
                   </button>
                 </div>
-              ) : detail.quote.status === "accepted" ? (
+              ) : detail.quote?.status === "accepted" ? (
                 <div className="cf-note" style={{ marginTop: 12 }}>
                   <Icon name="i-dollar" />
                   <span>

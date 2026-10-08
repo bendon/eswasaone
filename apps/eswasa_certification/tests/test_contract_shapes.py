@@ -33,6 +33,14 @@ class WorkflowMapTests(unittest.TestCase):
             state = next_state(state, action)
         self.assertEqual(state, "Certified")
 
+    def test_quote_then_schedule(self):
+        state = next_state("Application", "submit_for_assessment")
+        self.assertEqual(state, "Assessment")
+        state = next_state(state, "issue_quotation")
+        self.assertEqual(state, "Quoted")
+        state = next_state(state, "schedule_audit")
+        self.assertEqual(state, "Audit Scheduled")
+
     def test_nc_path(self):
         state = next_state("Audit", "raise_nc")
         self.assertEqual(state, "NC Resolution")
@@ -69,6 +77,7 @@ class DisplayStatusTests(unittest.TestCase):
     def test_portal_labels(self):
         self.assertEqual(display_status("Application"), "Submitted")
         self.assertEqual(display_status("Assessment"), "In Review")
+        self.assertEqual(display_status("Quoted"), "Quote Ready")
         self.assertEqual(display_status("Audit Scheduled"), "Audit Scheduled")
         self.assertEqual(display_status("Withdraw"), "Withdrawn")
 

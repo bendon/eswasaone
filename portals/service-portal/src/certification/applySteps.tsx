@@ -14,7 +14,6 @@ import {
   CHARTER,
   documentsFor,
   fmtSize,
-  FLOW_LABEL,
   fmtDate,
   IAF_CODES,
   INGELO_DISTRIBUTION,
@@ -26,12 +25,36 @@ import {
   REQUIRED_DOCS,
   RFQ_MAX_MB,
 } from "./flows";
+import { uploadMedia } from "@eswasaone/shared-ui";
 import { Choice, FileRow, isoToday, MultiChoice, SelectField, TextField, UploadButton, YesNo } from "./ui";
 import { det, detList, detProducts, type StepProps } from "./wizard";
 import { CERT_EMAIL, demoMode } from "./demoStore";
 import { useSchemes } from "./useSchemes";
+import { useAuth } from "../auth/AuthProvider";
 
 /* ---------------- steps ---------------- */
+
+function schemeAccredited(scheme: ReturnType<typeof schemeById>): boolean {
+  if (!scheme) return false;
+  return (
+    scheme.facts.some((f) => /SADCAS|accredit/i.test(`${f.label} ${f.value}`)) ||
+    /SADCAS|accredit/i.test(scheme.body)
+  );
+}
+
+function applyScheme(set: StepProps["set"], id: string) {
+  set((d) => {
+    const next = schemeById(id);
+    if (!next) return;
+    d.scheme = next.id;
+    d.flow = next.flow;
+    if (next.flow === "ms" || next.flow === "product") {
+      d.standards = [next.code];
+    } else {
+      d.standards = [];
+    }
+  });
+}
 
 export function SchemeStep({
   s,
@@ -41,120 +64,247 @@ export function SchemeStep({
 }: StepProps & { quotes: Quote[] }) {
   const schemes = useSchemes();
   const scheme = schemeById(s.scheme);
+  const [pickerOpen, setPickerOpen] = useState(!scheme);
   const linkable = quotes.filter(
     (q) => (q.status === "issued" || q.status === "accepted") && !q.application_id,
   );
-  const msOptions = schemes.filter((x) => x.flow === "ms").map((x) => x.code);
+  const pickable = schemes.filter((x) => x.flow !== "ingelo" && x.listed !== false);
+  const msSchemes = schemes.filter((x) => x.flow === "ms");
+  const addable =
+    s.flow === "ms" || s.flow === "combined"
+      ? msSchemes.filter((x) => x.id !== s.scheme)
+      : [];
+  const quoteKnown = det(s, "quote_known") || (s.quote_ref ? "yes" : "no");
+  const primaryCode = scheme?.code ?? "";
+  const addonCodes = s.standards.filter((c) => c !== primaryCode);
+  const accredited = schemeAccredited(scheme);
+
   return (
     <>
-      <div className="cf-grid">
-        <SelectField
-          className="span2"
-          label="Certification scheme"
-          required
-          value={s.scheme}
-          onChange={(v) =>
-            set((d) => {
-              const next = schemeById(v);
-              if (!next) return;
-              d.scheme = next.id;
-              d.flow = next.flow;
-              d.standards = next.flow === "ms" || next.flow === "product" ? [next.code] : [];
-            })
-          }
-          options={schemes.filter((x) => x.flow !== "ingelo").map((x) => ({
-            value: x.id,
-            label: `${x.code}: ${x.title}`,
-          }))}
-          error={errors.scheme}
-        />
-        {s.flow === "combined" ? (
-          <MultiChoice
-            className="span2"
-            label="Management-system standard(s) to combine with the product mark"
-            required
-            values={s.standards}
-            onChange={(v) => set((d) => void (d.standards = v))}
-            options={msOptions}
-            error={errors.standards}
-          />
-        ) : null}
-        {s.flow === "ms" ? (
-          <MultiChoice
-            className="span2"
-            label="Integrated audit: add other standards (optional)"
-            hint="Name any other management-system standards you want certified in the same request. ESWASA confirms how they will be audited."
-            values={s.standards.filter((x) => x !== scheme?.code)}
-            onChange={(v) => set((d) => void (d.standards = [scheme?.code ?? "", ...v].filter(Boolean)))}
-            options={msOptions.filter((x) => x !== scheme?.code)}
-          />
-        ) : null}
-      </div>
-      {scheme ? (
-        <div className="cf-note" style={{ marginTop: 16 }}>
-          <Icon name="i-badge" />
-          <span>
-            <b>{FLOW_LABEL[scheme.flow]}.</b> {scheme.body} Fee: by quotation.
-          </span>
+      <div className="cf-q">
+        <h3 className="cf-q__t" id="cf-scheme-q">
+          You&apos;re applying for
+        </h3>
+        <div className="cf-q__body">
+          {scheme && !pickerOpen ? (
+            <div className="cf-picked">
+              <span className="ic" aria-hidden="true">
+                <Icon name="i-badge" />
+              </span>
+              <div className="cf-picked__t">
+                <b>
+                  {scheme.title}
+                  {accredited ? (
+                    <span className="cf-chip cf-chip--green">
+                      <Icon name="i-check" width={11} height={11} />
+                      SADCAS accredited
+                    </span>
+                  ) : null}
+                </b>
+                <span className="mono">{scheme.code}</span>
+                <p>{scheme.body}</p>
+              </div>
+              <button
+                type="button"
+                className="cf-linkbtn"
+                aria-expanded={false}
+                aria-controls="cf-scheme-picker"
+                onClick={() => setPickerOpen(true)}
+              >
+                Change
+              </button>
+            </div>
+          ) : null}
+
+          {pickerOpen || !scheme ? (
+            <div id="cf-scheme-picker">
+              {scheme ? (
+                <div className="cf-picked" style={{ marginBottom: 12 }}>
+                  <span className="ic" aria-hidden="true">
+                    <Icon name="i-badge" />
+                  </span>
+                  <div className="cf-picked__t">
+                    <b>{scheme.title}</b>
+                    <span className="mono">{scheme.code}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="cf-linkbtn"
+                    aria-expanded
+                    onClick={() => setPickerOpen(false)}
+                  >
+                    Keep this one
+                  </button>
+                </div>
+              ) : null}
+              <div className="cf-opts" role="radiogroup" aria-labelledby="cf-scheme-q">
+                {pickable.map((opt) => (
+                  <label className="cf-opt" key={opt.id}>
+                    <input
+                      type="radio"
+                      name="scheme"
+                      value={opt.id}
+                      checked={s.scheme === opt.id}
+                      onChange={() => {
+                        applyScheme(set, opt.id);
+                        setPickerOpen(false);
+                      }}
+                    />
+                    <span>
+                      <b>{opt.title}</b>
+                      <span className="mono">{opt.code}</span>
+                      <span className="d">{opt.body}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <div className="cf-unsure">
+                Not sure which one? <Link to="/certification">Browse certification schemes</Link>
+              </div>
+              {errors.scheme ? <p className="cf-field err" style={{ marginTop: 8 }}>{errors.scheme}</p> : null}
+            </div>
+          ) : null}
         </div>
+      </div>
+
+      {addable.length ? (
+        <fieldset className="cf-q">
+          <legend className="cf-q__t">
+            Certify against anything else at the same time? <small>Optional</small>
+          </legend>
+          <p className="cf-q__hint">
+            Tick any you want in the same application. ESWASA confirms how they will be audited together.
+          </p>
+          <div className="cf-q__body cf-choices">
+            {addable.map((opt) => {
+              const checked = addonCodes.includes(opt.code);
+              return (
+                <label className="cf-choice" key={opt.id}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(ev) =>
+                      set((d) => {
+                        const base = schemeById(d.scheme)?.code ?? "";
+                        const rest = d.standards.filter((c) => c !== base && c !== opt.code);
+                        d.standards = ev.target.checked
+                          ? [base, ...rest, opt.code].filter(Boolean)
+                          : [base, ...rest].filter(Boolean);
+                      })
+                    }
+                  />
+                  <span className="bx" aria-hidden="true">
+                    <Icon name="i-check" width={12} height={12} />
+                  </span>
+                  {opt.title.replace(/:.*$/, "")}{" "}
+                  <span className="mono">{opt.code.replace(/^SZNS\s+/i, "")}</span>
+                </label>
+              );
+            })}
+          </div>
+          {errors.standards ? <p className="cf-field err">{errors.standards}</p> : null}
+        </fieldset>
       ) : null}
 
-      <div className="cf-sec">Quotation</div>
-      {linkable.length ? (
-        <div className="cf-opts" role="radiogroup" aria-label="Link a quote">
-          {linkable.map((q) => (
-            <label className="cf-opt" key={q.id}>
+      <fieldset className="cf-q">
+        <legend className="cf-q__t">Do you have a quote from ESWASA?</legend>
+        <div className="cf-q__body">
+          <div className="cf-seg" role="radiogroup" aria-label="Do you have a quote">
+            <label>
               <input
                 type="radio"
-                name="quote"
-                checked={s.quote_ref === q.id}
-                onChange={() => set((d) => void (d.quote_ref = q.id))}
+                name="quote_known"
+                checked={quoteKnown !== "yes"}
+                onChange={() =>
+                  set((d) => {
+                    d.details.quote_known = "no";
+                    d.quote_ref = "";
+                  })
+                }
               />
-              <span className="ic">
-                <Icon name="i-dollar" />
-              </span>
-              <div>
-                <b>
-                  {q.id} · SZL {q.total?.toLocaleString() ?? "—"}
-                </b>
+              <span className="rd" aria-hidden="true" />
+              Not yet
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="quote_known"
+                checked={quoteKnown === "yes"}
+                onChange={() => set((d) => void (d.details.quote_known = "yes"))}
+              />
+              <span className="rd" aria-hidden="true" />
+              Yes, I have one
+            </label>
+          </div>
+
+          {quoteKnown !== "yes" ? (
+            <div className="cf-after">
+              <div className="cf-note">
+                <Icon name="i-alert-c" />
                 <span>
-                  {q.standards} · {q.status === "issued" ? `valid until ${fmtDate(q.valid_until)}` : "accepted"}
+                  That&apos;s fine. We review your application and send you a quote. Only want a price for
+                  now?{" "}
+                  <Link to={`/certification/quote?scheme=${encodeURIComponent(s.scheme)}`}>
+                    Request a quote instead
+                  </Link>{" "}
+                  (within {CHARTER.quoteDays} working days).
                 </span>
               </div>
-            </label>
-          ))}
-          <label className="cf-opt">
-            <input
-              type="radio"
-              name="quote"
-              checked={!s.quote_ref}
-              onChange={() => set((d) => void (d.quote_ref = ""))}
-            />
-            <span className="ic">
-              <Icon name="i-file" />
-            </span>
-            <div>
-              <b>Continue without a quote</b>
-              <span>ESWASA prices the work after reviewing your application.</span>
             </div>
-          </label>
+          ) : (
+            <div className="cf-after">
+              {linkable.length ? (
+                <div className="cf-opts" role="radiogroup" aria-label="Link a quote" style={{ marginBottom: 12 }}>
+                  {linkable.map((q) => (
+                    <label className="cf-opt" key={q.id}>
+                      <input
+                        type="radio"
+                        name="quote_pick"
+                        checked={s.quote_ref === q.id}
+                        onChange={() => set((d) => void (d.quote_ref = q.id))}
+                      />
+                      <span className="ic">
+                        <Icon name="i-dollar" />
+                      </span>
+                      <div>
+                        <b>
+                          {q.id} · SZL {q.total?.toLocaleString() ?? "—"}
+                        </b>
+                        <span>
+                          {q.standards} ·{" "}
+                          {q.status === "issued" ? `valid until ${fmtDate(q.valid_until)}` : "accepted"}
+                        </span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+              <label className={`cf-field${errors.quote_ref ? " is-invalid" : ""}`}>
+                <span className="lbl">Quote number</span>
+                <input
+                  type="text"
+                  className="mono"
+                  autoComplete="off"
+                  placeholder="e.g. QT-2026-0142"
+                  value={s.quote_ref}
+                  onChange={(ev) => set((d) => void (d.quote_ref = ev.target.value))}
+                  aria-describedby="cf-quote-hint"
+                />
+                <span className="hint" id="cf-quote-hint">
+                  We link this application to your quote, so you don&apos;t answer the same questions twice.
+                </span>
+                {errors.quote_ref ? <span className="err">{errors.quote_ref}</span> : null}
+              </label>
+              {s.quote_ref && linkable.find((q) => q.id === s.quote_ref)?.status === "issued" ? (
+                <div className="cf-note cf-note--warn" style={{ marginTop: 10 }}>
+                  <Icon name="i-warn" />
+                  <span>Submitting this application accepts quote {s.quote_ref}.</span>
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="cf-note">
-          <Icon name="i-dollar" />
-          <span>
-            No quote yet? You can apply now and ESWASA will send a quote after reviewing the application,
-            or <Link to={`/certification/quote?scheme=${s.scheme}`}>request a quote first</Link> (issued
-            within {CHARTER.quoteDays} working days).
-          </span>
-        </div>
-      )}
-      {s.quote_ref && linkable.find((q) => q.id === s.quote_ref)?.status === "issued" ? (
-        <div className="cf-note cf-note--warn" style={{ marginTop: 10 }}>
-          <Icon name="i-warn" />
-          <span>Submitting this application accepts quote {s.quote_ref}.</span>
-        </div>
-      ) : null}
+      </fieldset>
     </>
   );
 }
@@ -880,49 +1030,75 @@ export function RequirementsStep({ s, set, errors }: StepProps) {
 
 export function DocumentsStep({ s, set, errors }: StepProps) {
   const docs = REQUIRED_DOCS[s.flow];
+  const { user, requireAuth } = useAuth();
   const [fileErr, setFileErr] = useState<string | null>(null);
-  function onFile(key: string, f: File, multiple?: boolean) {
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const live = !demoMode();
+
+  async function onFile(key: string, f: File, multiple?: boolean) {
     if (f.size > RFQ_MAX_MB * 1024 * 1024) {
       setFileErr(`${f.name} is larger than ${RFQ_MAX_MB} MB.`);
       return;
     }
     setFileErr(null);
+    if (live) {
+      if (
+        !requireAuth({
+          title: "Sign in to upload",
+          reason: "Documents are stored with ESWASA. Sign in so this file is attached to your account.",
+        })
+      ) {
+        return;
+      }
+      setBusyKey(key);
+      try {
+        const up = await uploadMedia(f, "certification", { allowMock: false });
+        set((d) => {
+          const others = multiple ? d.documents : d.documents.filter((x) => x.key !== key);
+          d.documents = [
+            ...others,
+            {
+              key,
+              name: f.name,
+              size: f.size,
+              media_key: up.key,
+              url: up.url,
+              backend: up.backend,
+            },
+          ];
+        });
+      } catch (err) {
+        setFileErr(
+          err instanceof Error
+            ? err.message
+            : "Upload failed. Try again, or email the file after you submit.",
+        );
+      } finally {
+        setBusyKey(null);
+      }
+      return;
+    }
     set((d) => {
       const others = multiple ? d.documents : d.documents.filter((x) => x.key !== key);
       d.documents = [...others, { key, name: f.name, size: f.size }];
     });
   }
-  if (!demoMode()) {
-    // TODO: wire real (POST /certification/applications/{id}/documents). Until then, be explicit.
-    return (
-      <>
-        <div className="cf-note cf-note--warn">
-          <Icon name="i-warn" />
-          <span>
-            <b>Online document upload isn’t connected to ESWASA yet.</b> After you submit, email your documents
-            to <a href={`mailto:${CERT_EMAIL}`}>{CERT_EMAIL}</a> quoting your application reference.
-          </span>
-        </div>
-        <ul className="cf-bul" style={{ marginTop: 12 }}>
-          {docs.map((d) => (
-            <li key={d.key} className={d.required ? "" : "opt"}>
-              <Icon name={d.required ? "i-check" : "i-file"} />
-              <span>
-                {d.label}
-                {d.required ? "" : " (optional)"}
-                {d.hint ? `: ${d.hint}` : ""}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </>
-    );
-  }
+
   return (
     <>
       <div className="cf-note">
-        <Icon name="i-warn" />
-        <span>Demo mode: files stay on this device and are not sent to ESWASA.</span>
+        <Icon name="i-alert-c" />
+        <span>
+          {live ? (
+            <>
+              Files go to ESWASA&apos;s secure store
+              {user ? "" : " — you&apos;ll be asked to sign in when you upload"}. You can also email extras to{" "}
+              <a href={`mailto:${CERT_EMAIL}`}>{CERT_EMAIL}</a> after you submit.
+            </>
+          ) : (
+            <>Demo mode: files stay on this device and are not sent to ESWASA.</>
+          )}
+        </span>
       </div>
       <div className="cf-files" style={{ marginTop: 12 }}>
         {docs.map((doc) => {
@@ -933,7 +1109,7 @@ export function DocumentsStep({ s, set, errors }: StepProps) {
                 <FileRow
                   key={`${up.name}-${i}`}
                   title={doc.label}
-                  sub={`${up.name} · ${fmtSize(up.size)}`}
+                  sub={`${up.name} · ${fmtSize(up.size)}${up.backend === "s3" ? " · stored" : up.media_key ? " · stored" : ""}`}
                   state="ok"
                   action={
                     <button
@@ -955,13 +1131,17 @@ export function DocumentsStep({ s, set, errors }: StepProps) {
               {!ups.length || doc.multiple ? (
                 <FileRow
                   title={doc.label + (doc.required ? "" : " (optional)")}
-                  sub={doc.hint ?? (doc.required ? "Required" : "Optional")}
+                  sub={
+                    busyKey === doc.key
+                      ? "Uploading…"
+                      : (doc.hint ?? (doc.required ? "Required" : "Optional"))
+                  }
                   state={ups.length ? "ok" : doc.required ? "req" : "idle"}
                   action={
                     <UploadButton
-                      label={ups.length ? "Add another" : "Upload"}
+                      label={busyKey === doc.key ? "Uploading…" : ups.length ? "Add another" : "Upload"}
                       accept={doc.key === "photo" ? "image/*,application/pdf" : "application/pdf,image/*"}
-                      onFile={(f) => onFile(doc.key, f, doc.multiple)}
+                      onFile={(f) => void onFile(doc.key, f, doc.multiple)}
                     />
                   }
                 />

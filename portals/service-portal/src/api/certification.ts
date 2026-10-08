@@ -21,6 +21,28 @@ import { createApplication as createSharedApplication, customerCertificateReques
 import { customerConfirmVisit, customerRequestReschedule } from "@eswasaone/shared-ui/field";
 import { lodgeCase } from "@eswasaone/shared-ui/crm";
 
+export type QuoteStatus = "requested" | "issued" | "accepted" | "declined" | "expired";
+export type QuoteLine = { label: string; amount: number };
+export type Quote = {
+  id: string;
+  status: QuoteStatus;
+  flow: CertFlow;
+  org: string;
+  contact_email: string;
+  standards: string;
+  scope: string;
+  requested_at: string;
+  due_by?: string;
+  issued_at?: string;
+  valid_until?: string;
+  lines?: QuoteLine[];
+  total?: number;
+  application_id?: string;
+  /** S3 / media URL for the formal quotation PDF. */
+  pdf_url?: string;
+  pdf_key?: string;
+};
+
 export type CertificationApplication = {
   id: string;
   scheme: string;
@@ -28,6 +50,8 @@ export type CertificationApplication = {
   status: string;
   created_at?: string;
   updated_at?: string;
+  /** Present when a Quotation has been issued for this application. */
+  quote?: Quote;
 };
 
 /**
@@ -355,7 +379,15 @@ export type Site = { name: string; address: string; employees: string; shifts: s
 
 export type ProductLine = { name: string; brand: string; model: string; standard: string };
 
-export type UploadedFile = { key: string; name: string; size: number };
+export type UploadedFile = {
+  key: string;
+  name: string;
+  size: number;
+  /** Object key in Core media / S3 when uploaded for real. */
+  media_key?: string;
+  url?: string;
+  backend?: "local" | "s3";
+};
 
 export type ApplicationPayload = {
   scheme: string;
@@ -394,27 +426,6 @@ export type ApplicationPayload = {
 };
 
 /* ===================== Application detail (tracker) ===================== */
-
-export type QuoteStatus = "requested" | "issued" | "accepted" | "declined" | "expired";
-
-export type QuoteLine = { label: string; amount: number };
-
-export type Quote = {
-  id: string;
-  status: QuoteStatus;
-  flow: CertFlow;
-  org: string;
-  contact_email: string;
-  standards: string;
-  scope: string;
-  requested_at: string;
-  due_by: string;
-  issued_at?: string;
-  valid_until?: string;
-  lines?: QuoteLine[];
-  total?: number;
-  application_id?: string;
-};
 
 export type AppDocument = {
   key: string;
@@ -745,7 +756,17 @@ export async function listApplications(status?: string): Promise<ApplicationDeta
       `/certification/applications${qs}`,
     );
     // TODO: wire real (GET /account/applications) to scope the list to the signed-in applicant.
-    const live = (res.items ?? []).map((a) => ({ ...blankDetail(a), ...stripLive(localDetail(a.id)), ...a }));
+    const live = (res.items ?? []).map((a) => {
+      const merged: ApplicationDetail = {
+        ...blankDetail(a),
+        ...stripLive(localDetail(a.id)),
+        ...a,
+      };
+      merged.stage = stageFromStatus(merged.flow, a.status);
+      merged.status = a.status;
+      if (a.quote) merged.quote = a.quote;
+      return merged;
+    });
     // Demo: the shared store holds the records staff are working on — show them alongside Core's.
     return demoMode() ? [...live, ...sharedList().filter((x) => !live.some((l) => l.id === x.id))] : live;
   } catch (err) {
@@ -757,7 +778,8 @@ export async function listApplications(status?: string): Promise<ApplicationDeta
 /** Keep locally-held detail (documents, NCs…) but let live fields win. */
 function stripLive(d?: ApplicationDetail): Partial<ApplicationDetail> {
   if (!d) return {};
-  const { id: _id, scheme: _s, applicant: _a, status: _st, ...rest } = d;
+  // Never let device-local stage/status override Frappe workflow_state.
+  const { id: _id, scheme: _s, applicant: _a, status: _st, stage: _sg, ...rest } = d;
   return rest;
 }
 
@@ -777,12 +799,41 @@ export async function getApplicationDetail(id: string): Promise<ApplicationDetai
   // TODO: wire real (GET /certification/applications/{id}/timeline).
   const local = localDetail(id);
   if (live) {
+    // Live workflow status always wins for stage; local only keeps docs/activity extras.
     const merged: ApplicationDetail = { ...blankDetail(live), ...stripLive(local), ...live };
     const flow = merged.flow;
-    if (!local) merged.stage = stageFromStatus(flow, live.status);
+    merged.stage = stageFromStatus(flow, live.status);
+    merged.status = live.status;
+    // Prefer live quote (with PDF); fall back to local demo quote.
+    if (live.quote) merged.quote = live.quote;
+    // If quote exists but stage already moved past, keep the card visible by
+    // not forcing stage — Timeline uses stage; the quote section keys off quote.
+    if (live.quote && !merged.quote.pdf_url) {
+      try {
+        const pdf = await ensureQuotePdf(live.quote.id || id);
+        if (pdf?.download_url) {
+          merged.quote = { ...merged.quote, pdf_url: pdf.download_url, pdf_key: pdf.media_key };
+        }
+      } catch {
+        /* PDF may still be generating */
+      }
+    }
     return merged;
   }
   return local ?? null;
+}
+
+/** Ensure quotation PDF is on S3; returns download URL. */
+export async function ensureQuotePdf(
+  id: string,
+): Promise<{ download_url?: string; media_key?: string } | null> {
+  try {
+    return await apiFetch<{ download_url?: string; media_key?: string }>(
+      `/certification/quotes/${encodeURIComponent(id)}/pdf`,
+    );
+  } catch {
+    return null;
+  }
 }
 
 export async function createApplication(payload: ApplicationPayload): Promise<ApplicationDetail> {

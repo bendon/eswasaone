@@ -85,11 +85,19 @@ describe("certification screens", () => {
     expect(await screen.findByText(/isn’t the right fit yet/i)).toBeInTheDocument();
   });
 
-  it("shows management-system steps in the rail", () => {
+  it("shows grouped stages in the rail", () => {
     renderAt("/certification/apply?scheme=iso9001", "/certification/apply", <CertificationApplyPage />);
     const rail = screen.getByRole("navigation", { name: /application steps/i });
-    expect(within(rail).getByText("Management system")).toBeInTheDocument();
-    expect(within(rail).getByText("Review & submit")).toBeInTheDocument();
+    expect(within(rail).getByText("What you want certified")).toBeInTheDocument();
+    expect(within(rail).getByText("Review and submit")).toBeInTheDocument();
+    expect(within(rail).getByText("Scheme & quote")).toBeInTheDocument();
+  });
+
+  it("confirms the catalogue scheme on step 1 instead of a bare select", () => {
+    renderAt("/certification/apply?scheme=iso9001", "/certification/apply", <CertificationApplyPage />);
+    expect(screen.getByText(/you're applying for/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /change/i })).toBeInTheDocument();
+    expect(screen.getByText(/do you have a quote from eswasa/i)).toBeInTheDocument();
   });
 
   it("asks for sign-in only at quote submission", async () => {

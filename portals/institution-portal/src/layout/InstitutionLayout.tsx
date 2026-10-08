@@ -26,6 +26,7 @@ import { canAccessRoute, hasStaffRole, primaryStaffLabel } from "../staff";
 import { listPendingAccessRequests } from "../hr/accessRequests";
 import { StaffGate } from "../pages/StaffGate";
 import { StaffBell } from "./StaffBell";
+import { DockNudge } from "../components/DockNudge";
 import { listTasks } from "@eswasaone/shared-ui/tasks";
 
 const SIDE_COLLAPSED_KEY = "eswasaone.institution.sideCollapsed";
@@ -72,6 +73,7 @@ export function InstitutionLayout() {
   const [topAskBusy, setTopAskBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
+  const [nudge, setNudge] = useState<{ message: string } | null>(null);
 
   const closeNav = useCallback(() => setNavOpen(false), []);
   const toggleNav = useCallback(() => setNavOpen((v) => !v), []);
@@ -262,6 +264,17 @@ export function InstitutionLayout() {
     window.setTimeout(() => setToast(null), 3200);
   }, []);
 
+  // Listen for "esi-nudge" events dispatched from the dashboard (e.g. when a new
+  // application arrives via the live feed). The EsiFeed component dispatches these.
+  useEffect(() => {
+    function onNudge(e: Event) {
+      const detail = (e as CustomEvent<{ message: string }>).detail;
+      if (detail?.message) setNudge(detail);
+    }
+    window.addEventListener("esi-nudge", onNudge as EventListener);
+    return () => window.removeEventListener("esi-nudge", onNudge as EventListener);
+  }, []);
+
   // Top-bar search — same agent + routing as the dock, but surfaces the answer.
   const onTopAsk = useCallback(
     async (message: string) => {
@@ -384,7 +397,7 @@ export function InstitutionLayout() {
           <TopBar
             title={titleForPath(loc.pathname)}
             center={<TopBarSearch onAsk={onTopAsk} busy={topAskBusy} />}
-            extra={<StaffBell user={user} />}
+            notifications={<StaffBell user={user} />}
             userName={user.full_name || user.username}
             userRole={roleBanner.title}
             userEmail={user.email || user.username}
@@ -407,6 +420,19 @@ export function InstitutionLayout() {
         </div>
         <Toast message={toast} />
       </AppShell>
+      <DockNudge
+        visible={Boolean(nudge)}
+        message={nudge?.message ?? ""}
+        onClaim={() => {
+          setNudge(null);
+          navigate("/approvals");
+        }}
+        onView={() => {
+          setNudge(null);
+          navigate("/");
+        }}
+        onDismiss={() => setNudge(null)}
+      />
       <Dock
         visible
         signedIn

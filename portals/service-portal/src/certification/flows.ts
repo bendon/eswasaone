@@ -242,6 +242,8 @@ export function stageFromStatus(flow: CertFlow, status: string): string {
     return pick({ ms: "stage2", product: "testing", ingelo: "assessment", combined: "stage2" });
   if (s.includes("sched"))
     return pick({ ms: "stage1", product: "assessment", ingelo: "assessment", combined: "stage1" });
+  if (s.includes("quot"))
+    return pick({ ms: "quote", product: "application", ingelo: "application", combined: "application" });
   if (s.includes("review") || s.includes("assess"))
     return pick({ ms: "quote", product: "application", ingelo: "application", combined: "application" });
   return pick({ ms: "application", product: "application", ingelo: "application", combined: "application" });

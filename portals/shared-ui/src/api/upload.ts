@@ -34,7 +34,17 @@ function matchesType(file: File, accept: string): boolean {
   return file.type === accept;
 }
 
-export async function uploadMedia(file: File, prefix = "uploads"): Promise<UploadResult> {
+export type UploadMediaOptions = {
+  /** When false, network/auth failures throw instead of inventing a local mock object. */
+  allowMock?: boolean;
+};
+
+export async function uploadMedia(
+  file: File,
+  prefix = "uploads",
+  opts: UploadMediaOptions = {},
+): Promise<UploadResult> {
+  const allowMock = opts.allowMock !== false;
   const form = new FormData();
   form.append("file", file);
   form.append("prefix", prefix);
@@ -50,11 +60,21 @@ export async function uploadMedia(file: File, prefix = "uploads"): Promise<Uploa
       headers,
       credentials: "include",
     });
-    if (!res.ok) throw new Error(`API ${res.status}: /media/upload`);
+    if (!res.ok) {
+      let detail = `API ${res.status}: /media/upload`;
+      try {
+        const body = (await res.json()) as { detail?: string };
+        if (body?.detail) detail = String(body.detail);
+      } catch {
+        /* ignore */
+      }
+      throw new Error(detail);
+    }
     const data = (await res.json()) as MediaObject;
     return { ...data, name: file.name };
-  } catch {
-    // TODO: wire real — media store unavailable; keep a local object URL so the UI flow continues.
+  } catch (err) {
+    if (!allowMock) throw err;
+    // Soft fallback for offline / demo record UIs — keep a local object URL.
     return {
       key: `${prefix}/${Date.now().toString(36)}-${file.name}`,
       bucket: "local",

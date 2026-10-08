@@ -80,11 +80,11 @@
   --nav-h: 68px;
   --gutter: 32px;
 
-  /* Typography — matches eswasa.co.sz, which renders Arial throughout
-     (system font, no download). */
-  --font-sans: Arial, Helvetica, sans-serif;
-  /* Display headings (h1–h6, service portal, EGov layout) */
-  --font-display: Arial, Helvetica, sans-serif;
-  /* Identifiers: SZNS / ISO codes, refs, order IDs — system mono, no download */
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  /* Typography — EswasaOne product faces (global; do not override in modules).
+     Loaded once per portal via Google Fonts in index.html. */
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  /* Display headings share the same face so we never fork a third stack */
+  --font-display: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  /* Identifiers: SZNS / ISO codes, refs, order IDs */
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }

@@ -16,6 +16,7 @@ Apps import **one** of these from `@eswasaone/shared-ui`:
 3. **Shared chrome** (tokens, reset, dock, modal, footer, staff-gate) → `global.css` / its partials.
 4. **Portal-specific surfaces** → that portal’s barrel only.
 5. **No cross-portal imports** (Field must not import Institution shell CSS).
+6. **Typography is global.** Faces live only in `tokens.css` (`--font-sans`, `--font-display`, `--font-mono`) and the matching `system/brand.ts` exports. Portals load Plus Jakarta Sans + IBM Plex Mono once in `index.html`. Do not hardcode Arial/other stacks in module CSS or Tailwind — use the tokens / `font-sans` / `font-mono` theme keys.
 
 Partials under `styles/` are internal composition units for the barrels.
 

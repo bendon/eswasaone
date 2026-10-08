@@ -1,7 +1,7 @@
 import { AppealPanelCard, CaseDeliveries, CaseFieldVisitCard } from "./CaseExtras";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Icon, askAgent } from "@eswasaone/shared-ui";
+import { askAgent, Icon, Select } from "@eswasaone/shared-ui";
 import {
   caseFlags,
   CaseTimeline,
@@ -276,23 +276,17 @@ export function CrmCaseWorkspace() {
                     <div className="crm-composer__f">
                       {mode === "public" ? (
                         <>
-                          <select
-                            className="crm-select"
-                            style={{ width: "auto", minHeight: 30, fontSize: 12.5, padding: "4px 8px" }}
-                            value=""
-                            onChange={(e) => {
-                              const t = templates.find((x) => x.id === e.target.value);
+                          <Select style={{ width: "auto", minHeight: 30, fontSize: 12.5, padding: "4px 8px" }} value="" onChange={(val) => {
+                              const t = templates.find((x) => x.id === val);
                               if (t) setDraft(fillTemplate(t.body, c, cfg, sla.due));
-                            }}
-                            aria-label="Insert template"
-                          >
+                            }} aria-label="Insert template">
                             <option value="">Insert template…</option>
                             {templates.map((t) => (
                               <option key={t.id} value={t.id}>
                                 {t.name}
                               </option>
                             ))}
-                          </select>
+                          </Select>
                           <button type="button" className="crm-btn crm-btn--sm" onClick={() => setDraft(draftReply(c, cfg, sla.due))}>
                             <Icon name="i-spark" /> Suggest reply
                           </button>
@@ -341,12 +335,7 @@ export function CrmCaseWorkspace() {
                     <div className="crm-form crm-form--2">
                       <label className="crm-field">
                         Type
-                        <select
-                          className="crm-select"
-                          value={c.type}
-                          disabled={c.type === "appeal"}
-                          onChange={(e) => void run(() => updateCase(c.ref, actor, { type: e.target.value as CaseType }), "Type updated")}
-                        >
+                        <Select value={c.type} disabled={c.type === "appeal"} onChange={(val) => void run(() => updateCase(c.ref, actor, { type: val as CaseType }), "Type updated")} block>
                           {(Object.keys(cfg.case_types) as CaseType[])
                             .filter((k) => (c.type === "appeal" ? true : k !== "appeal"))
                             .map((k) => (
@@ -354,37 +343,28 @@ export function CrmCaseWorkspace() {
                                 {cfg.case_types[k].short}
                               </option>
                             ))}
-                        </select>
+                        </Select>
                       </label>
                       <label className="crm-field">
                         Priority
-                        <select
-                          className="crm-select"
-                          value={c.priority}
-                          onChange={(e) => void run(() => updateCase(c.ref, actor, { priority: e.target.value as CasePriority }), "Priority updated")}
-                        >
+                        <Select value={c.priority} onChange={(val) => void run(() => updateCase(c.ref, actor, { priority: val as CasePriority }), "Priority updated")} block>
                           {(["low", "normal", "high", "urgent"] as CasePriority[]).map((p) => (
                             <option key={p} value={p}>
                               {p[0].toUpperCase() + p.slice(1)}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </label>
                     </div>
                     <label className="crm-field">
                       Team
-                      <select
-                        className="crm-select"
-                        value={c.team}
-                        disabled={c.type === "appeal"}
-                        onChange={(e) => void run(() => updateCase(c.ref, actor, { team: e.target.value }), "Team updated")}
-                      >
+                      <Select value={c.team} disabled={c.type === "appeal"} onChange={(val) => void run(() => updateCase(c.ref, actor, { team: val }), "Team updated")} block>
                         {cfg.teams.map((t) => (
                           <option key={t} value={t}>
                             {t}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </label>
                     <div className="crm-field">
                       Owner
@@ -418,18 +398,14 @@ export function CrmCaseWorkspace() {
                     {c.type === "service_complaint" ? (
                       <label className="crm-field">
                         Root cause
-                        <select
-                          className="crm-select"
-                          value={c.root_cause ?? ""}
-                          onChange={(e) => void run(() => updateCase(c.ref, actor, { root_cause: e.target.value || undefined }), "Root cause saved")}
-                        >
+                        <Select value={c.root_cause ?? ""} onChange={(val) => void run(() => updateCase(c.ref, actor, { root_cause: val || undefined }), "Root cause saved")} block>
                           <option value="">Not yet known</option>
                           {ROOT_CAUSES.map((r) => (
                             <option key={r} value={r}>
                               {r}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </label>
                     ) : null}
                   </div>
@@ -598,14 +574,14 @@ export function CrmCaseWorkspace() {
               {pending?.action === "resolve" && c.type === "service_complaint" ? (
                 <label className="crm-field">
                   Root cause
-                  <select className="crm-select" value={rootCause || c.root_cause || ""} onChange={(e) => setRootCause(e.target.value)}>
+                  <Select value={rootCause || c.root_cause || ""} onChange={(val) => setRootCause(val)} block>
                     <option value="">Not recorded</option>
                     {ROOT_CAUSES.map((r) => (
                       <option key={r} value={r}>
                         {r}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   <span className="hint">Feeds the Quality Manager's complaints analysis and the Board complaints KPI.</span>
                 </label>
               ) : null}

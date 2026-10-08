@@ -4,7 +4,7 @@
  */
 import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { CrmBanner, CrmDrawer, useCrmToast } from "@eswasaone/shared-ui/crm";
 import {
   actOnPack,
@@ -41,7 +41,7 @@ export function PackIndex() {
           <div className="crm-stack">
             <div className="crm-row">
               <span className="crm-small">Choose a meeting:</span>
-              <select className="crm-select" style={{ width: "auto" }} defaultValue="" onChange={(e) => e.target.value && nav(`/board/pack/${e.target.value}`)} aria-label="Meeting">
+              <Select value="" onChange={(val) => val && nav(`/board/pack/${val}`)} aria-label="Meeting">
                 <option value="" disabled>
                   Meeting…
                 </option>
@@ -50,7 +50,7 @@ export function PackIndex() {
                     {m.title} — {fmtDay(m.scheduled_at)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             {next ? <PackBuilder meetingId={next.id} /> : <p className="crm-muted">No upcoming meetings.</p>}
           </div>
@@ -324,11 +324,11 @@ function SectionEditor({ pack, section, onClose, onSaved }: { pack: Pack; sectio
           </label>
           <label className="crm-field">
             Owner
-            <select className="crm-select" value={f.owner} onChange={(e) => setF({ ...f, owner: e.target.value })}>
+            <Select value={f.owner} onChange={(val) => setF({ ...f, owner: val })} block>
               {[f.owner, ...DEMO_STAFF.map((s) => s.name).filter((n) => n !== f.owner)].map((n) => (
                 <option key={n}>{n}</option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="crm-field">
             Due
@@ -388,19 +388,19 @@ function AddSection({ pack, due, onClose }: { pack: Pack; due: string; onClose: 
       </label>
       <label className="crm-field">
         Owner
-        <select className="crm-select" value={f.owner} onChange={(e) => setF({ ...f, owner: e.target.value })}>
+        <Select value={f.owner} onChange={(val) => setF({ ...f, owner: val })} block>
           {DEMO_STAFF.map((s) => (
             <option key={s.name}>{s.name}</option>
           ))}
-        </select>
+        </Select>
       </label>
       <div className="crm-form crm-form--2">
         <label className="crm-field">
           Source
-          <select className="crm-select" value={f.source} onChange={(e) => setF({ ...f, source: e.target.value as PackSection["source"] })}>
+          <Select value={f.source} onChange={(val) => setF({ ...f, source: val as PackSection["source"] })} block>
             <option value="upload">Upload</option>
             <option value="written">Written</option>
-          </select>
+          </Select>
         </label>
         <label className="crm-field">
           Due

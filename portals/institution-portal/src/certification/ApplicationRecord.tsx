@@ -6,7 +6,7 @@
  */
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { fmtMoney, invoiceTotals } from "@eswasaone/shared-ui/billing";
 import {
   actOnApplication,
@@ -357,11 +357,11 @@ function DocRow({ d, editable, onSave }: { d: AppDoc; editable: boolean; onSave:
       <td className="crm-small">{d.versions.length ? `${d.versions[d.versions.length - 1].name} · ${fmtDate(d.versions[d.versions.length - 1].at)}${d.versions.length > 1 ? ` (v${d.versions.length})` : ""}` : "—"}</td>
       <td>
         {editable ? (
-          <select className="crm-select" style={{ width: "auto" }} value={d.status} onChange={(e) => onSave(e.target.value as AppDoc["status"], comment)} aria-label={`Verdict for ${d.label}`}>
+          <Select value={d.status} onChange={(val) => onSave(val as AppDoc["status"], comment)} aria-label={`Verdict for ${d.label}`}>
             {DOC_STATUS.map((s) => (
               <option key={s}>{s}</option>
             ))}
-          </select>
+          </Select>
         ) : (
           <span className={`crm-pill crm-pill--${DOC_TONE[d.status]}`}>{d.status}</span>
         )}
@@ -725,11 +725,11 @@ function FindingsTab({ b, actor, show }: { b: AppBundle; actor: Actor; show: (m:
             </label>
             <label className="crm-field">
               Severity
-              <select className="crm-select" value={nc.severity} onChange={(e) => setNc({ ...nc, severity: e.target.value as Nonconformity["severity"] })}>
+              <Select value={nc.severity} onChange={(val) => setNc({ ...nc, severity: val as Nonconformity["severity"] })} block>
                 <option value="major">Major</option>
                 <option value="minor">Minor</option>
                 <option value="observation">Observation</option>
-              </select>
+              </Select>
             </label>
           </div>
         </ReasonDialog>

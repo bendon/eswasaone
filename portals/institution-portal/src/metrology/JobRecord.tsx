@@ -6,7 +6,7 @@
  */
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { fmtMoney, invoiceTotals } from "@eswasaone/shared-ui/billing";
 import {
   actOnJob,
@@ -308,11 +308,11 @@ export function ReceiveDialog({ j, actor, onClose, show }: { j: CalJob; actor: A
       <div className="crm-grid crm-grid--2">
         <label className="crm-field">
           Condition
-          <select className="crm-select" value={r.condition} onChange={(e) => setR({ ...r, condition: e.target.value as typeof r.condition })}>
+          <Select value={r.condition} onChange={(val) => setR({ ...r, condition: val as typeof r.condition })} block>
             <option value="good">Good</option>
             <option value="damaged">Damaged</option>
             <option value="mismatch">Doesn't match the request</option>
-          </select>
+          </Select>
         </label>
         <label className="crm-field">
           Job tag (QR)
@@ -372,14 +372,14 @@ function WorksheetTab({ b, actor, show }: { b: JobBundle; actor: Actor; show: (m
       <div className="crm-grid crm-grid--2">
         <label className="crm-field">
           Method / procedure
-          <select className="crm-select" disabled={!editable} value={ws.method_id ?? ""} onChange={(e) => setWs({ ...ws, method_id: e.target.value })}>
+          <Select disabled={!editable} value={ws.method_id ?? ""} onChange={(val) => setWs({ ...ws, method_id: val })} block>
             <option value="">Choose…</option>
             {methods.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.code} {m.title} {m.accredited ? "(accredited)" : "(not accredited)"}
               </option>
             ))}
-          </select>
+          </Select>
           {method ? <span className="hint">Range {method.range} · CMC {method.cmc}</span> : null}
           {j.accreditation && method && !method.accredited ? <span className="eo-error">Customer asked for an accredited certificate — this method is outside the scope.</span> : null}
         </label>
@@ -426,13 +426,13 @@ function WorksheetTab({ b, actor, show }: { b: JobBundle; actor: Actor; show: (m
             {ws.points.map((p) => (
               <tr key={p.id} style={pointOot(p) ? { background: "var(--red-soft, #fdecec)" } : undefined}>
                 <td>
-                  <select className="crm-select" disabled={!editable} value={p.item_id} onChange={(e) => setPoint(p.id, { item_id: e.target.value })}>
+                  <Select disabled={!editable} value={p.item_id} onChange={(val) => setPoint(p.id, { item_id: val })} block>
                     {j.items.map((i) => (
                       <option key={i.id} value={i.id}>
                         {i.serial}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </td>
                 {(["nominal", "unit", "as_found", "as_left"] as const).map((k) => (
                   <td key={k}>
@@ -509,13 +509,13 @@ function CsvImport({ items, onApply }: { items: { id: string; label: string }[];
     >
       <label className="crm-field">
         Rows without an item column go to
-        <select className="crm-select" value={item} onChange={(e) => setItem(e.target.value)}>
+        <Select value={item} onChange={(val) => setItem(val)} block>
           {items.map((i) => (
             <option key={i.id} value={i.id}>
               {i.label}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="crm-field">
         CSV file

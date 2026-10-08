@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
-import { Icon, validateUpload } from "@eswasaone/shared-ui";
+import { Icon, Select, validateUpload } from "@eswasaone/shared-ui";
 import {
   CrmBanner,
   CrmNotConnected,
@@ -339,12 +339,12 @@ export function LodgeCasePage() {
                 <>
                   <label className="crm-field">
                     Which ESWASA service?
-                    <select className="crm-select" value={service} onChange={(e) => setService(e.target.value)}>
+                    <Select value={service} onChange={(val) => setService(val)} block>
                       <option value="">Choose…</option>
                       {SERVICE_OPTIONS.map((s) => (
                         <option key={s}>{s}</option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                   <label className="crm-field">
                     Reference, if you have one

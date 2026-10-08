@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Icon, ModuleHeader } from "@eswasaone/shared-ui";
+import { Icon, ModuleHeader, Select } from "@eswasaone/shared-ui";
 import {
   CrmBanner,
   CrmDrawer,
@@ -358,15 +358,10 @@ function QuoteDrawer({
       <div className="crm-form crm-form--2">
         <label className="crm-field">
           Client
-          <select
-            className="crm-select"
-            disabled={!editable}
-            value={q.client_id ?? ""}
-            onChange={(e) => {
-              const c = clients.find((x) => x.id === e.target.value);
+          <Select disabled={!editable} value={q.client_id ?? ""} onChange={(val) => {
+              const c = clients.find((x) => x.id === val);
               setQ((x) => ({ ...x, client_id: c?.id, client_name: c?.name ?? "" }));
-            }}
-          >
+            }} block>
             <option value="">Choose…</option>
             {[...clients]
               .sort((a, b) => a.name.localeCompare(b.name))
@@ -375,18 +370,18 @@ function QuoteDrawer({
                   {c.name}
                 </option>
               ))}
-          </select>
+          </Select>
         </label>
         <label className="crm-field">
           Opportunity
-          <select className="crm-select" disabled={!editable} value={q.opportunity_id ?? ""} onChange={(e) => setQ((x) => ({ ...x, opportunity_id: e.target.value || undefined }))}>
+          <Select disabled={!editable} value={q.opportunity_id ?? ""} onChange={(val) => setQ((x) => ({ ...x, opportunity_id: val || undefined }))} block>
             <option value="">— None —</option>
             {clientOpps.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.id} · {o.title}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
 
@@ -447,16 +442,10 @@ function QuoteDrawer({
           </tbody>
         </table>
         {editable ? (
-          <select
-            className="crm-select"
-            style={{ marginTop: 10 }}
-            value=""
-            onChange={(e) => {
-              const p = cfg.price_list.find((x) => x.code === e.target.value);
+          <Select style={{ marginTop: 10 }} value="" onChange={(val) => {
+              const p = cfg.price_list.find((x) => x.code === val);
               if (p) setQ((x) => ({ ...x, lines: [...x.lines, { code: p.code, label: p.label, qty: 1, unit_price: p.amount }] }));
-            }}
-            aria-label="Add a line from the price list"
-          >
+            }} aria-label="Add a line from the price list" block>
             <option value="">+ Add from price list…</option>
             {services.map((s) => (
               <optgroup key={s} label={SERVICE_LABEL[s]}>
@@ -469,7 +458,7 @@ function QuoteDrawer({
                   ))}
               </optgroup>
             ))}
-          </select>
+          </Select>
         ) : null}
         <div className="crm-totals">
           <span>Subtotal</span>

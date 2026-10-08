@@ -2,6 +2,7 @@
  * Key-account plan (04 P3) and the health sparkline / churn chip for Client 360.
  */
 import { useEffect, useState } from "react";
+import { Select } from "@eswasaone/shared-ui";
 import { getAccountPlan, saveAccountPlan, SERVICE_LABEL, fmtE, fmtWhen, type AccountPlan, type ChurnRisk, type Client, type CrmActor, type ServiceLine } from "@eswasaone/shared-ui/crm";
 
 export function Sparkline({ points, width = 120, height = 30 }: { points: { at: string; score: number }[]; width?: number; height?: number }) {
@@ -82,12 +83,12 @@ export function AccountPlanTab({ client, actor, onSaved }: { client: Client; act
         {plan.objectives.map((o, i) => (
           <div key={o.id} className="crm-row" style={{ flexWrap: "nowrap", marginBottom: 6 }}>
             <input className="crm-input" style={{ flex: 1 }} aria-label={`Objective ${i + 1}`} placeholder="e.g. Move both plants to ISO 22000 before export season" value={o.text} onChange={(e) => setPlan({ ...plan, objectives: plan.objectives.map((x) => (x.id === o.id ? { ...x, text: e.target.value } : x)) })} />
-            <select className="crm-select" aria-label="Status" value={o.status} onChange={(e) => setPlan({ ...plan, objectives: plan.objectives.map((x) => (x.id === o.id ? { ...x, status: e.target.value as typeof o.status } : x)) })}>
+            <Select aria-label="Status" value={o.status} onChange={(val) => setPlan({ ...plan, objectives: plan.objectives.map((x) => (x.id === o.id ? { ...x, status: val as typeof o.status } : x)) })} block>
               <option value="open">Open</option>
               <option value="on_track">On track</option>
               <option value="at_risk">At risk</option>
               <option value="done">Done</option>
-            </select>
+            </Select>
             <button type="button" className="crm-link" onClick={() => setPlan({ ...plan, objectives: plan.objectives.filter((x) => x.id !== o.id) })}>
               Remove
             </button>
@@ -109,11 +110,11 @@ export function AccountPlanTab({ client, actor, onSaved }: { client: Client; act
               </label>
               {s ? (
                 <>
-                  <select className="crm-select" aria-label={`Influence of ${c.name}`} value={s.influence} onChange={(e) => setPlan({ ...plan, stakeholders: plan.stakeholders.map((x) => (x.contact_id === c.id ? { ...x, influence: e.target.value as typeof s.influence } : x)) })}>
+                  <Select aria-label={`Influence of ${c.name}`} value={s.influence} onChange={(val) => setPlan({ ...plan, stakeholders: plan.stakeholders.map((x) => (x.contact_id === c.id ? { ...x, influence: val as typeof s.influence } : x)) })} block>
                     <option value="decision">Decision-maker</option>
                     <option value="influencer">Influencer</option>
                     <option value="user">User</option>
-                  </select>
+                  </Select>
                   <input className="crm-input" aria-label={`Note on ${c.name}`} placeholder="Note" value={s.note ?? ""} onChange={(e) => setPlan({ ...plan, stakeholders: plan.stakeholders.map((x) => (x.contact_id === c.id ? { ...x, note: e.target.value } : x)) })} />
                 </>
               ) : null}
@@ -137,27 +138,27 @@ export function AccountPlanTab({ client, actor, onSaved }: { client: Client; act
           const set = (patch: Partial<typeof sv>) => setPlan({ ...plan, services: plan.services.map((x) => (x.id === sv.id ? { ...x, ...patch } : x)) });
           return (
             <div key={sv.id} className="crm-row" style={{ flexWrap: "nowrap", marginBottom: 6 }}>
-              <select className="crm-select" aria-label="Service" value={sv.service} onChange={(e) => set({ service: e.target.value as ServiceLine })}>
+              <Select aria-label="Service" value={sv.service} onChange={(val) => set({ service: val as ServiceLine })} block>
                 {SERVICES.map((k) => (
                   <option key={k} value={k}>
                     {SERVICE_LABEL[k]}
                   </option>
                 ))}
-              </select>
-              <select className="crm-select" aria-label="Quarter" value={sv.quarter} onChange={(e) => set({ quarter: Number(e.target.value) as 1 | 2 | 3 | 4 })}>
+              </Select>
+              <Select aria-label="Quarter" value={String(sv.quarter)} onChange={(val) => set({ quarter: Number(val) as 1 | 2 | 3 | 4 })} block>
                 {[1, 2, 3, 4].map((q) => (
                   <option key={q} value={q}>
                     Q{q}
                   </option>
                 ))}
-              </select>
+              </Select>
               <input className="crm-input" type="number" min={0} aria-label="Value (E)" style={{ width: 120 }} value={sv.value} onChange={(e) => set({ value: Math.max(0, Number(e.target.value) || 0) })} />
-              <select className="crm-select" aria-label="Status" value={sv.status} onChange={(e) => set({ status: e.target.value as typeof sv.status })}>
+              <Select aria-label="Status" value={sv.status} onChange={(val) => set({ status: val as typeof sv.status })} block>
                 <option value="planned">Planned</option>
                 <option value="quoted">Quoted</option>
                 <option value="won">Won</option>
                 <option value="lost">Lost</option>
-              </select>
+              </Select>
               <input className="crm-input" style={{ flex: 1 }} aria-label="Note" placeholder="Note" value={sv.note ?? ""} onChange={(e) => set({ note: e.target.value })} />
               <button type="button" className="crm-link" onClick={() => setPlan({ ...plan, services: plan.services.filter((x) => x.id !== sv.id) })}>
                 Remove

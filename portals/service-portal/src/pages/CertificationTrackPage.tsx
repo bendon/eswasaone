@@ -1,6 +1,6 @@
 import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import {
   actionsRequired,
   bookConsultation,
@@ -1045,11 +1045,11 @@ function ConsultSheet({
         <TextField label="Preferred date" type="date" min={isoToday()} required value={date} onChange={setDate} />
         <label className="cf-field">
           <span className="lbl">How should we meet?</span>
-          <select value={mode} onChange={(e) => setMode(e.target.value)}>
+          <Select value={mode} onChange={(val) => setMode(val)}>
             {["In person (ESWASA, Matsapha)", "At my premises", "Online (video call)", "Group gap-analysis workshop"].map((m) => (
               <option key={m}>{m}</option>
             ))}
-          </select>
+          </Select>
         </label>
         <TextField label="What would you like help with?" multiline value={topic} onChange={setTopic} />
         <div className="cf-nav">

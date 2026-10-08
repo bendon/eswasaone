@@ -3,7 +3,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { CrmBanner, useCrmToast } from "@eswasaone/shared-ui/crm";
 import {
   actOnMeeting,
@@ -245,11 +245,11 @@ function AttendanceTab({ b }: { b: MeetingBundle }) {
               <span className="crm-small">{b.members.find((x) => x.name === name)?.title}</span>
             </td>
             <td>
-              <select className="crm-select" style={{ width: "auto" }} value={a.rsvp} onChange={(e) => void setAttendance(m.id, name, { rsvp: e.target.value as "yes" | "no" | "pending", apology: e.target.value === "no" }, actor)} aria-label={`RSVP for ${name}`}>
+              <Select value={a.rsvp} onChange={(val) => void setAttendance(m.id, name, { rsvp: val as "yes" | "no" | "pending", apology: val === "no" }, actor)} aria-label={`RSVP for ${name}`}>
                 <option value="pending">Pending</option>
                 <option value="yes">Attending</option>
                 <option value="no">Apology</option>
-              </select>
+              </Select>
             </td>
             <td>{m.run?.started_at ? (a.present ? "✓ Present" : a.apology ? "Apology" : "Absent") : "—"}</td>
           </tr>
@@ -409,13 +409,13 @@ export function AgendaBuilderPage() {
                   <div className="crm-form" style={{ gap: 8 }}>
                     <input className="crm-input" value={it.title} disabled={locked} onChange={(e) => set(i, { title: e.target.value })} aria-label="Item title" />
                     <div className="crm-row">
-                      <select className="crm-select" style={{ width: "auto" }} value={it.kind} disabled={locked || Boolean(it.approve_minutes_of)} onChange={(e) => set(i, { kind: e.target.value as AgendaKind })} aria-label="Type">
+                      <Select value={it.kind} disabled={locked || Boolean(it.approve_minutes_of)} onChange={(val) => set(i, { kind: val as AgendaKind })} aria-label="Type">
                         {Object.entries(KIND_LABEL).map(([k, l]) => (
                           <option key={k} value={k}>
                             {l}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                       <input className="crm-input" style={{ width: 200 }} value={it.presenter} disabled={locked} onChange={(e) => set(i, { presenter: e.target.value })} aria-label="Presenter" placeholder="Presenter" />
                       <input className="crm-input" style={{ width: 90 }} type="number" min={1} value={it.minutes} disabled={locked} onChange={(e) => set(i, { minutes: Number(e.target.value) || 0 })} aria-label="Minutes" />
                       <span className="crm-small">min</span>
@@ -624,20 +624,20 @@ function DeclarationsCard({ b, disabled }: { b: MeetingBundle; disabled: boolean
         <p className="crm-small">Ask for declarations at the start. None recorded.</p>
       )}
       <div className="crm-form" style={{ gap: 8 }}>
-        <select className="crm-select" disabled={disabled} value={f.member} onChange={(e) => setF({ ...f, member: e.target.value })} aria-label="Member">
+        <Select disabled={disabled} value={f.member} onChange={(val) => setF({ ...f, member: val })} aria-label="Member" block>
           <option value="">Member…</option>
           {Object.keys(m.attendance).map((n) => (
             <option key={n}>{n}</option>
           ))}
-        </select>
-        <select className="crm-select" disabled={disabled} value={f.item_id} onChange={(e) => setF({ ...f, item_id: e.target.value })} aria-label="Agenda item">
+        </Select>
+        <Select disabled={disabled} value={f.item_id} onChange={(val) => setF({ ...f, item_id: val })} aria-label="Agenda item" block>
           <option value="">General (no specific item)</option>
           {m.agenda.map((a, i) => (
             <option key={a.id} value={a.id}>
               {i + 1}. {a.title}
             </option>
           ))}
-        </select>
+        </Select>
         <input className="crm-input" disabled={disabled} value={f.interest} onChange={(e) => setF({ ...f, interest: e.target.value })} placeholder="Nature of the interest" aria-label="Interest" />
         {err ? <p className="eo-error">{err}</p> : null}
         <button
@@ -758,11 +758,11 @@ function ItemPanel({ b, item, index, active, disabled, onFocus, onDone }: { b: M
               {actions.map((a, i) => (
                 <div key={i} className="crm-row">
                   <input className="crm-input" style={{ flex: 2 }} value={a.description} onChange={(e) => setActions(actions.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} placeholder="Action" />
-                  <select className="crm-select" style={{ flex: 1 }} value={a.owner} onChange={(e) => setActions(actions.map((x, j) => (j === i ? { ...x, owner: e.target.value } : x)))}>
+                  <Select style={{ flex: 1 }} value={a.owner} onChange={(val) => setActions(actions.map((x, j) => (j === i ? { ...x, owner: val } : x)))} block>
                     {DEMO_STAFF.map((s) => (
                       <option key={s.name}>{s.name}</option>
                     ))}
-                  </select>
+                  </Select>
                   <input className="crm-input" style={{ width: 150 }} type="date" value={a.due} onChange={(e) => setActions(actions.map((x, j) => (j === i ? { ...x, due: e.target.value } : x)))} />
                 </div>
               ))}

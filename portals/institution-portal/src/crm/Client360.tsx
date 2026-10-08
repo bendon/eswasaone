@@ -1,7 +1,7 @@
 import { ContactsManager } from "./CrmExtras";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import {
   CrmBanner,
   CrmEmpty,
@@ -277,17 +277,13 @@ export function CrmClient360() {
                     <div className="crm-form">
                       <label className="crm-field">
                         Tier
-                        <select
-                          className="crm-select"
-                          value={client.tier}
-                          onChange={(e) => void updateClient(client.id, { tier: e.target.value as ClientTier }).then(() => showToast("Tier updated"))}
-                        >
+                        <Select value={client.tier} onChange={(val) => void updateClient(client.id, { tier: val as ClientTier }).then(() => showToast("Tier updated"))} block>
                           {cfg.tiers.map((t) => (
                             <option key={t.id} value={t.id}>
                               {t.label}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                         <span className="hint">{cfg.tiers.find((t) => t.id === client.tier)?.rule}</span>
                       </label>
                       <label className="crm-field">
@@ -521,13 +517,13 @@ export function CrmClient360() {
                     <h3>Log activity</h3>
                   </div>
                   <div className="crm-form">
-                    <select className="crm-select" value={actKind} onChange={(e) => setActKind(e.target.value as ClientActivity["kind"])} aria-label="Kind">
+                    <Select value={actKind} onChange={(val) => setActKind(val as ClientActivity["kind"])} aria-label="Kind" block>
                       {(["call", "email", "meeting", "visit", "note"] as const).map((k) => (
                         <option key={k} value={k}>
                           {k[0].toUpperCase() + k.slice(1)}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                     <textarea className="crm-textarea" value={actText} onChange={(e) => setActText(e.target.value)} placeholder="What happened, and what's next?" aria-label="Activity" />
                     <button type="button" className="crm-btn crm-btn--pri" disabled={!actText.trim()} onClick={() => void addActivity()}>
                       Save

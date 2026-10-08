@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Icon, ModuleHeader } from "@eswasaone/shared-ui";
+import { Icon, ModuleHeader, Select } from "@eswasaone/shared-ui";
 import {
   CrmBanner,
   CrmDrawer,
@@ -111,12 +111,12 @@ export function CrmPipelineView() {
                   <Icon name="i-list" size={14} /> List
                 </button>
               </div>
-              <select className="crm-select" style={{ width: "auto" }} value={owner} onChange={(e) => setOwner(e.target.value)} aria-label="Owner">
+              <Select value={owner} onChange={(val) => setOwner(val)} aria-label="Owner">
                 <option value="all">All owners</option>
                 {owners.map((o) => (
                   <option key={o}>{o}</option>
                 ))}
-              </select>
+              </Select>
               <span className="crm-small" style={{ marginLeft: "auto" }}>
                 Drag a card to change its stage
               </span>
@@ -277,7 +277,7 @@ export function CrmPipelineView() {
             >
               <label className="crm-field">
                 Why was it lost?
-                <select className="crm-select" value={lost?.reason ?? ""} onChange={(e) => setLost((l) => (l ? { ...l, reason: e.target.value } : l))}>
+                <Select value={lost?.reason ?? ""} onChange={(val) => setLost((l) => (l ? { ...l, reason: val } : l))} block>
                   <option value="">Choose a reason…</option>
                   <option>Price — chose a private provider</option>
                   <option>Timing — postponed to next year</option>
@@ -285,7 +285,7 @@ export function CrmPipelineView() {
                   <option>Went to a foreign certification body</option>
                   <option>No longer needed</option>
                   <option>No response from client</option>
-                </select>
+                </Select>
               </label>
             </CrmDrawer>
             {toast}
@@ -390,7 +390,7 @@ function OpportunityDrawer({
         <div className="crm-form crm-form--2">
           <label className="crm-field">
             Client
-            <select className="crm-select" value={o.client_id ?? ""} onChange={(e) => set("client_id", e.target.value || undefined)}>
+            <Select value={o.client_id ?? ""} onChange={(val) => set("client_id", val || undefined)} block>
               <option value="">— Prospect (not in register) —</option>
               {[...clients]
                 .sort((a, b) => a.name.localeCompare(b.name))
@@ -399,7 +399,7 @@ function OpportunityDrawer({
                     {c.name}
                   </option>
                 ))}
-            </select>
+            </Select>
           </label>
           {!o.client_id ? (
             <label className="crm-field">
@@ -414,13 +414,13 @@ function OpportunityDrawer({
           )}
           <label className="crm-field">
             Stage
-            <select className="crm-select" value={o.stage} onChange={(e) => set("stage", e.target.value as OpportunityStage)}>
+            <Select value={o.stage} onChange={(val) => set("stage", val as OpportunityStage)} block>
               {STAGES.map((s) => (
                 <option key={s} value={s}>
                   {STAGE_LABEL[s]}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="crm-field">
             Expected close

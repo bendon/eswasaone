@@ -4,6 +4,7 @@
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Select } from "@eswasaone/shared-ui";
 import { eligiblePanel, listDeliveries, recordAppealDecision, requestFieldVisit, resendDelivery, updateCase, useCrm, type Case, type CrmActor } from "@eswasaone/shared-ui/crm";
 import { getVisit, fieldStore } from "@eswasaone/shared-ui/field";
 import { useStoreResource } from "@eswasaone/shared-ui/store";
@@ -127,14 +128,14 @@ export function AppealPanelCard({ c, actor, onDone }: { c: Case; actor: CrmActor
         <dd>{c.panel?.length ? c.panel.join(", ") : "Not appointed"}</dd>
       </dl>
       <div className="crm-row" style={{ marginTop: 10, flexWrap: "nowrap" }}>
-        <select className="crm-select" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="Add panel member">
+        <Select value={pick} onChange={(val) => setPick(val)} aria-label="Add panel member" block>
           <option value="">Add panel member…</option>
           {people.map((p) => (
             <option key={p.name} value={p.name} disabled={!p.ok || c.panel?.includes(p.name)}>
               {p.name} — {p.ok ? p.title : `excluded: ${p.why}`}
             </option>
           ))}
-        </select>
+        </Select>
         <button
           type="button"
           className="crm-btn crm-btn--sm"

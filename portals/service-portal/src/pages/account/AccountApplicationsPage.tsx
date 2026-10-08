@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import {
   actionsRequired,
   listApplications,
@@ -144,18 +144,13 @@ export function AccountApplicationsPage() {
       ) : null}
 
       <div className="toolbar">
-        <select
-          className="toolbar__select"
-          aria-label="Filter applications"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as Filter)}
-        >
+        <Select className="toolbar__select" aria-label="Filter applications" value={filter} onChange={(val) => setFilter(val as Filter)}>
           <option value="all">All applications ({apps.length})</option>
           <option value="action">Needs my action ({actionCount})</option>
           <option value="active">In progress</option>
           <option value="certified">Certified</option>
           <option value="closed">Withdrawn</option>
-        </select>
+        </Select>
       </div>
 
       {answerErr ? (

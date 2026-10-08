@@ -7,6 +7,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "../icons/Icon";
+import { Select } from "../components/Select";
 import { useStoreResource } from "../store/localStore";
 import type { HistoryEvent, Tone } from "../workflow/types";
 import { docsStore, listRecordDocs, removeRecordDoc, uploadRecordDoc, type RecordDoc } from "./docs";
@@ -279,11 +280,11 @@ export function DocumentsPanel({
       ) : null}
       {!readOnly ? (
         <div className="crm-row eo-docs__up">
-          <select className="crm-select" value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Category" style={{ width: "auto" }}>
+          <Select value={cat} onChange={(val) => setCat(val)} aria-label="Category">
             {categories.map((c) => (
               <option key={c}>{c}</option>
             ))}
-          </select>
+          </Select>
           <button type="button" className="crm-btn crm-btn--sm" disabled={busy} onClick={() => input.current?.click()}>
             <Icon name="i-plus" /> {busy ? "Uploading…" : newVersionOf ? `Upload new version of ${newVersionOf.name}` : "Upload document"}
           </button>

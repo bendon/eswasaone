@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AuthError, Icon, useDialogs } from "@eswasaone/shared-ui";
+import { AuthError, Icon, Select, useDialogs } from "@eswasaone/shared-ui";
 import { createExpense } from "./api";
 import { fmtSzl, MOCK_CLAIMS_SEED, statusKind, statusLabel } from "./helpers";
 import type { HrExpense } from "./types";
@@ -117,17 +117,13 @@ export function ClaimsPane({ onAuthRequired }: Props) {
         >
           <label className="me-field">
             <span>Type</span>
-            <select
-              value={expenseType}
-              onChange={(e) => setExpenseType(e.target.value)}
-              disabled={busy}
-            >
+            <Select value={expenseType} onChange={(val) => setExpenseType(val)} disabled={busy}>
               {EXPENSE_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {t}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="me-field">
             <span>Amount (SZL)</span>

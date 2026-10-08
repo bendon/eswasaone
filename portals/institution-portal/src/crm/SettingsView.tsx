@@ -1,6 +1,6 @@
 import { SignalRulesCard } from "./CrmExtras";
 import { useEffect, useState } from "react";
-import { Icon, ModuleHeader, useDialogs } from "@eswasaone/shared-ui";
+import { Icon, ModuleHeader, Select, useDialogs } from "@eswasaone/shared-ui";
 import {
   CrmBanner,
   SERVICE_LABEL,
@@ -147,11 +147,11 @@ function SettingsForm({ initial, canEdit }: { initial: CrmConfig; canEdit: boole
                           <input className="crm-input" type="number" min={1} disabled={dis} value={c.resolve_days} onChange={(e) => edit((n) => void (n.case_types[t].resolve_days = Number(e.target.value)))} aria-label={`${c.short} resolve days`} />
                         </td>
                         <td>
-                          <select className="crm-select" disabled={dis || t === "appeal"} value={c.team} onChange={(e) => edit((n) => void (n.case_types[t].team = e.target.value))} aria-label={`${c.short} team`}>
+                          <Select disabled={dis || t === "appeal"} value={c.team} onChange={(val) => edit((n) => void (n.case_types[t].team = val))} aria-label={`${c.short} team`} block>
                             {cfg.teams.map((tm) => (
                               <option key={tm}>{tm}</option>
                             ))}
-                          </select>
+                          </Select>
                         </td>
                         <td>
                           <input type="checkbox" disabled={dis || t === "appeal"} checked={c.restricted} onChange={(e) => edit((n) => void (n.case_types[t].restricted = e.target.checked))} aria-label={`${c.short} restricted`} />
@@ -190,14 +190,14 @@ function SettingsForm({ initial, canEdit }: { initial: CrmConfig; canEdit: boole
                 </label>
                 <label className="crm-field">
                   When type is
-                  <select className="crm-select" disabled={dis} value={r.when.type ?? ""} onChange={(e) => edit((n) => void (n.routing[i].when.type = (e.target.value || undefined) as CaseType | undefined))}>
+                  <Select disabled={dis} value={r.when.type ?? ""} onChange={(val) => edit((n) => void (n.routing[i].when.type = (val || undefined) as CaseType | undefined))} block>
                     <option value="">Any type</option>
                     {types.map((t) => (
                       <option key={t} value={t}>
                         {cfg.case_types[t].short}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 <label className="crm-field">
                   and text matches
@@ -205,20 +205,20 @@ function SettingsForm({ initial, canEdit }: { initial: CrmConfig; canEdit: boole
                 </label>
                 <label className="crm-field">
                   Route to team
-                  <select className="crm-select" disabled={dis} value={r.team} onChange={(e) => edit((n) => void (n.routing[i].team = e.target.value))}>
+                  <Select disabled={dis} value={r.team} onChange={(val) => edit((n) => void (n.routing[i].team = val))} block>
                     {cfg.teams.map((tm) => (
                       <option key={tm}>{tm}</option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 <label className="crm-field">
                   Set priority
-                  <select className="crm-select" disabled={dis} value={r.priority ?? ""} onChange={(e) => edit((n) => void (n.routing[i].priority = (e.target.value || undefined) as CasePriority | undefined))}>
+                  <Select disabled={dis} value={r.priority ?? ""} onChange={(val) => edit((n) => void (n.routing[i].priority = (val || undefined) as CasePriority | undefined))} block>
                     <option value="">Keep default</option>
                     {(["low", "normal", "high", "urgent"] as CasePriority[]).map((p) => (
                       <option key={p}>{p}</option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
               </div>
               <div className="crm-row" style={{ marginTop: 10 }}>
@@ -319,13 +319,13 @@ function SettingsForm({ initial, canEdit }: { initial: CrmConfig; canEdit: boole
                     <tr key={p.code}>
                       <td className="crm-mono">{p.code}</td>
                       <td>
-                        <select className="crm-select" disabled={dis} value={p.service} onChange={(e) => edit((n) => void (n.price_list[i].service = e.target.value as ServiceLine))} aria-label="Service">
+                        <Select disabled={dis} value={p.service} onChange={(val) => edit((n) => void (n.price_list[i].service = val as ServiceLine))} aria-label="Service" block>
                           {Object.keys(SERVICE_LABEL).map((s) => (
                             <option key={s} value={s}>
                               {SERVICE_LABEL[s]}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </td>
                       <td>
                         <input className="crm-input" disabled={dis} value={p.label} onChange={(e) => edit((n) => void (n.price_list[i].label = e.target.value))} aria-label="Item" />

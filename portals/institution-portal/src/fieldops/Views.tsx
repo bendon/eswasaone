@@ -5,7 +5,7 @@
  */
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import {
   actOnVisit,
   getVisit,
@@ -367,12 +367,12 @@ export function SampleReceiptView() {
               </label>
               <label className="crm-field">
                 Condition
-                <select className="crm-select" value={cond} onChange={(e) => setCond(e.target.value as typeof cond)}>
+                <Select value={cond} onChange={(val) => setCond(val as typeof cond)} block>
                   <option value="ok">Seal intact</option>
                   <option value="seal_broken">Seal broken</option>
                   <option value="damaged">Damaged</option>
                   <option value="mismatch">Doesn't match the label</option>
-                </select>
+                </Select>
               </label>
               <label className="crm-field" style={{ flex: 1 }}>
                 Note

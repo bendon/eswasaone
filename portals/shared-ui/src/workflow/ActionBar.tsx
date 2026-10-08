@@ -4,6 +4,7 @@
  * exact outbound message before confirming. Writes are never disabled for demo mode.
  */
 import { useEffect, useState, type ReactNode } from "react";
+import { Select } from "../components/Select";
 import { MessagePreview, type PreviewMessage } from "../notify/MessagePreview";
 import type { ActInput, ActionOption, FieldSpec } from "./types";
 
@@ -161,14 +162,14 @@ export function ReasonDialog({
               {f.label}
               {f.required ? " *" : ""}
               {f.type === "select" ? (
-                <select className="crm-select" value={payload[f.key] ?? ""} onChange={(e) => setPayload({ ...payload, [f.key]: e.target.value })}>
+                <Select value={payload[f.key] ?? ""} onChange={(val) => setPayload({ ...payload, [f.key]: val })} block>
                   <option value="">Choose…</option>
                   {f.options?.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               ) : f.type === "textarea" ? (
                 <textarea className="crm-textarea" value={payload[f.key] ?? ""} onChange={(e) => setPayload({ ...payload, [f.key]: e.target.value })} />
               ) : (

@@ -5,7 +5,7 @@
  */
 import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { fmtMoney, invoiceFor } from "@eswasaone/shared-ui/billing";
 import {
   createCalRequest,
@@ -157,11 +157,11 @@ export function CalRequestPage() {
               </label>
               <label className="crm-field">
                 Discipline
-                <select className="crm-select" value={it.discipline} onChange={(e) => setItems(items.map((x, k) => (k === n ? { ...x, discipline: e.target.value as Discipline } : x)))}>
+                <Select value={it.discipline} onChange={(val) => setItems(items.map((x, k) => (k === n ? { ...x, discipline: val as Discipline } : x)))} block>
                   {DISCIPLINES.map((d) => (
                     <option key={d}>{d}</option>
                   ))}
-                </select>
+                </Select>
               </label>
               <label className="crm-field">
                 Serial number *
@@ -210,10 +210,10 @@ export function CalRequestPage() {
           </label>
           <label className="crm-field">
             Where
-            <select className="crm-select" value={v.location} onChange={(e) => setV({ ...v, location: e.target.value as "lab" | "onsite" })}>
+            <Select value={v.location} onChange={(val) => setV({ ...v, location: val as "lab" | "onsite" })} block>
               <option value="lab">I'll bring the items to the lab</option>
               <option value="onsite">On site (weighbridges, fixed equipment)</option>
-            </select>
+            </Select>
           </label>
           {v.location === "onsite" ? (
             <label className="crm-field">
@@ -223,10 +223,10 @@ export function CalRequestPage() {
           ) : (
             <label className="crm-field">
               Return
-              <select className="crm-select" value={v.delivery} onChange={(e) => setV({ ...v, delivery: e.target.value as "collect" | "courier" })}>
+              <Select value={v.delivery} onChange={(val) => setV({ ...v, delivery: val as "collect" | "courier" })} block>
                 <option value="collect">I'll collect</option>
                 <option value="courier">Courier back to me</option>
-              </select>
+              </Select>
             </label>
           )}
           {v.location === "onsite" ? (

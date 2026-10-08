@@ -1,16 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import {
-  AuthError,
-  BrandLogo,
-  login,
-  requestOtp,
-  logout,
-  isLoginChallenge,
-  demoDataEnabled,
-  DEMO_PERSONAS,
-  setDemoPersona,
-  type SessionUser,
-} from "@eswasaone/shared-ui";
+import { AuthError, BrandLogo, DEMO_PERSONAS, demoDataEnabled, isLoginChallenge, login, logout, requestOtp, Select, setDemoPersona, type SessionUser } from "@eswasaone/shared-ui";
 import { hasStaffRole } from "../staff";
 
 type Props = {
@@ -215,17 +204,12 @@ export function StaffGate({ onStaffSession, deniedMessage }: Props) {
             <p className="staff-gate__lead" style={{ margin: "18px 0 8px", fontWeight: 700 }}>
               No staff account yet? Continue as a demo user
             </p>
-            <select
-              className="crm-select"
-              aria-label="Demo staff account"
-              defaultValue=""
-              onChange={(e) => {
-                const p = DEMO_PERSONAS.find((x) => x.username === e.target.value);
+            <Select aria-label="Demo staff account" value="" onChange={(val) => {
+                const p = DEMO_PERSONAS.find((x) => x.username === val);
                 if (!p) return;
                 setDemoPersona(p);
                 onStaffSession({ username: p.username, full_name: p.full_name, email: p.email, roles: p.roles });
-              }}
-            >
+              }} block>
               <option value="" disabled>
                 Choose a role to try…
               </option>
@@ -234,7 +218,7 @@ export function StaffGate({ onStaffSession, deniedMessage }: Props) {
                   {p.full_name} — {p.title}
                 </option>
               ))}
-            </select>
+            </Select>
             <p className="crm-small" style={{ marginTop: 6 }}>
               Demo data is saved in this browser only. Sign out to switch roles.
             </p>

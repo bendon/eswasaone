@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { CrmBanner, CrmDrawer, useCrmToast } from "@eswasaone/shared-ui/crm";
 import {
   actOnRisk,
@@ -228,19 +228,19 @@ function RiskForm({ risk, onClose }: { risk: Risk | null; onClose: () => void })
           <div className="crm-form crm-form--2">
             <label className="crm-field">
               Category
-              <select className="crm-select" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as RiskCategory })}>
+              <Select value={f.category} onChange={(val) => setF({ ...f, category: val as RiskCategory })} block>
                 {CATS.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="crm-field">
               Owner
-              <select className="crm-select" value={f.owner} onChange={(e) => setF({ ...f, owner: e.target.value })}>
+              <Select value={f.owner} onChange={(val) => setF({ ...f, owner: val })} block>
                 {DEMO_STAFF.map((s) => (
                   <option key={s.name}>{s.name}</option>
                 ))}
-              </select>
+              </Select>
             </label>
           </div>
           <b style={{ fontSize: 13 }}>Inherent (before controls) — {f.inherent.l * f.inherent.i}</b>
@@ -364,11 +364,11 @@ export function RiskRecordPage() {
                         ))}
                         <div className="crm-row">
                           <input className="crm-input" style={{ flex: 2 }} value={m.action} onChange={(e) => setM({ ...m, action: e.target.value })} placeholder="Mitigation action" />
-                          <select className="crm-select" style={{ flex: 1 }} value={m.owner} onChange={(e) => setM({ ...m, owner: e.target.value })}>
+                          <Select style={{ flex: 1 }} value={m.owner} onChange={(val) => setM({ ...m, owner: val })} block>
                             {DEMO_STAFF.map((s) => (
                               <option key={s.name}>{s.name}</option>
                             ))}
-                          </select>
+                          </Select>
                           <input className="crm-input" style={{ width: 150 }} type="date" value={m.due} onChange={(e) => setM({ ...m, due: e.target.value })} />
                           <button type="button" className="crm-btn crm-btn--sm" disabled={!m.action.trim()} onClick={() => void addMitigation(r.id, m, actor).then(() => setM({ ...m, action: "" }))}>
                             Add
@@ -413,11 +413,11 @@ export function RiskRecordPage() {
                         </p>
                       ))}
                       <div className="crm-row">
-                        <select className="crm-select" style={{ width: "auto" }} value={lnk.kind} onChange={(e) => setLnk({ ...lnk, kind: e.target.value as typeof lnk.kind })}>
+                        <Select value={lnk.kind} onChange={(val) => setLnk({ ...lnk, kind: val as typeof lnk.kind })}>
                           {["case", "tbt", "sample", "audit", "incident"].map((k) => (
                             <option key={k}>{k}</option>
                           ))}
-                        </select>
+                        </Select>
                         <input className="crm-input" style={{ width: 140 }} value={lnk.ref} onChange={(e) => setLnk({ ...lnk, ref: e.target.value })} placeholder="Reference" />
                         <input className="crm-input" style={{ flex: 1 }} value={lnk.label} onChange={(e) => setLnk({ ...lnk, label: e.target.value })} placeholder="What happened" />
                         <button type="button" className="crm-btn crm-btn--sm" disabled={!lnk.ref.trim()} onClick={() => void linkIncident(r.id, lnk, actor).then(() => setLnk({ ...lnk, ref: "", label: "" }))}>

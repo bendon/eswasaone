@@ -5,7 +5,7 @@
  */
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { getListedSchemes, schemeById } from "../../api/certification";
 import { saveDraft } from "../../certification/demoStore";
 import type { CertFlow } from "../../certification/flows";
@@ -88,13 +88,13 @@ export function ReadinessPage() {
       <div className="cf-card crm-stack">
         <label className="crm-field">
           Which certification?
-          <select className="crm-select" value={schemeId} onChange={(e) => (setSchemeId(e.target.value), setAns({}))}>
+          <Select value={schemeId} onChange={(val) => (setSchemeId(val), setAns({}))} block>
             {schemes.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.title}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         {questions.map((q, i) => (
           <div key={q.id} className="crm-row" style={{ justifyContent: "space-between", alignItems: "flex-start", borderTop: "1px solid var(--line-2)", paddingTop: 10 }}>

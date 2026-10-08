@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Icon, ModuleHeader } from "@eswasaone/shared-ui";
+import { Icon, ModuleHeader, Select } from "@eswasaone/shared-ui";
 import {
   caseFlags,
   CrmBanner,
@@ -180,7 +180,7 @@ export function CrmCasesView({ appeals = false }: { appeals?: boolean }) {
                 <input className="crm-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search ref, subject, person or company" aria-label="Search cases" />
               </div>
               {!appeals ? (
-                <select className="crm-select" style={{ width: "auto" }} value={type} onChange={(e) => setType(e.target.value as CaseType | "all")} aria-label="Type">
+                <Select value={type} onChange={(val) => setType(val as CaseType | "all")} aria-label="Type">
                   <option value="all">All types</option>
                   {types
                     .filter((k) => !(firewall && cfg.case_types[k].restricted))
@@ -189,16 +189,16 @@ export function CrmCasesView({ appeals = false }: { appeals?: boolean }) {
                         {cfg.case_types[k].short}
                       </option>
                     ))}
-                </select>
+                </Select>
               ) : null}
-              <select className="crm-select" style={{ width: "auto" }} value={team} onChange={(e) => setTeam(e.target.value)} aria-label="Team">
+              <Select value={team} onChange={(val) => setTeam(val)} aria-label="Team">
                 <option value="all">All teams</option>
                 {cfg.teams.map((tm) => (
                   <option key={tm} value={tm}>
                     {tm}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             {rows.length === 0 ? (
@@ -372,7 +372,7 @@ function LogCaseDrawer({
         <div className="crm-form crm-form--2">
           <label className="crm-field">
             Type
-            <select className="crm-select" value={type} onChange={(e) => setType(e.target.value as CaseType)}>
+            <Select value={type} onChange={(val) => setType(val as CaseType)} block>
               {(Object.keys(cfg.case_types) as CaseType[])
                 .filter((k) => k !== "appeal")
                 .map((k) => (
@@ -380,17 +380,17 @@ function LogCaseDrawer({
                     {cfg.case_types[k].label}
                   </option>
                 ))}
-            </select>
+            </Select>
           </label>
           <label className="crm-field">
             Channel
-            <select className="crm-select" value={channel} onChange={(e) => setChannel(e.target.value as CaseChannel)}>
+            <Select value={channel} onChange={(val) => setChannel(val as CaseChannel)} block>
               {(["phone", "walk_in", "email", "whatsapp"] as CaseChannel[]).map((ch) => (
                 <option key={ch} value={ch}>
                   {CHANNEL_LABEL[ch]}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
         <label className="crm-field">
@@ -403,14 +403,14 @@ function LogCaseDrawer({
         </label>
         <label className="crm-field">
           Company (client register)
-          <select className="crm-select" value={clientId} onChange={(e) => setClientId(e.target.value)}>
+          <Select value={clientId} onChange={(val) => setClientId(val)} block>
             <option value="">— Not a registered client —</option>
             {sorted.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="crm-check">
           <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />

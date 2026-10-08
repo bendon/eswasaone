@@ -4,7 +4,7 @@
  */
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { Facts, HistoryTimeline, RailCard, RecordPage, fmtDate } from "@eswasaone/shared-ui/record";
 import {
   actOnWorkItem,
@@ -192,13 +192,13 @@ function CommentsWorkspace({ b, actor, show }: { b: WorkItemBundle; actor: Actor
         <div className="crm-row" style={{ alignItems: "flex-end" }}>
           <label className="crm-field">
             Disposition for {sel.length} selected
-            <select className="crm-select" value={disp} onChange={(e) => setDisp(e.target.value as CommentDisposition)}>
+            <Select value={disp} onChange={(val) => setDisp(val as CommentDisposition)} block>
               {Object.entries(DISPOSITION_LABEL).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="crm-field" style={{ flex: 1 }}>
             TC response

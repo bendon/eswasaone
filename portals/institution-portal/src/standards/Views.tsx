@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { Facts, HistoryTimeline, ModuleSettings, RecordPage, fmtDate } from "@eswasaone/shared-ui/record";
 import {
   actOnProposal,
@@ -495,11 +495,11 @@ function CatalogueEditor({ c, actor, show, toast }: { c: CatalogueEntry; actor: 
                 </label>
                 <label className="crm-field">
                   Status
-                  <select className="crm-select" value={v.status} onChange={(e) => set("status", e.target.value as CatalogueEntry["status"])}>
+                  <Select value={v.status} onChange={(val) => set("status", val as CatalogueEntry["status"])} block>
                     {["current", "draft", "superseded", "withdrawn"].map((s) => (
                       <option key={s}>{s}</option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 <label className="crm-field">
                   Supersedes

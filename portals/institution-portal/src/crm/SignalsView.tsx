@@ -1,7 +1,7 @@
 import { CampaignButton } from "./CrmExtras";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Icon, ModuleHeader } from "@eswasaone/shared-ui";
+import { Icon, ModuleHeader, Select } from "@eswasaone/shared-ui";
 import {
   CrmBanner,
   CrmEmpty,
@@ -87,14 +87,14 @@ export function CrmSignalsView() {
                   </button>
                 ))}
               </div>
-              <select className="crm-select" style={{ width: "auto" }} value={kind} onChange={(e) => setKind(e.target.value as SignalKind | "all")} aria-label="Signal type">
+              <Select value={kind} onChange={(val) => setKind(val as SignalKind | "all")} aria-label="Signal type">
                 <option value="all">All signal types</option>
                 {kinds.map((k) => (
                   <option key={k} value={k}>
                     {SIGNAL_META[k].label}
                   </option>
                 ))}
-              </select>
+              </Select>
               {selected.size ? (
                 <div className="crm-row" style={{ marginLeft: "auto" }}>
                   <span className="crm-small">{selected.size} selected</span>

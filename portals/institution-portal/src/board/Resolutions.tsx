@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { CrmBanner, useCrmToast } from "@eswasaone/shared-ui/crm";
 import {
   ACTION_DEF,
@@ -366,11 +366,11 @@ function AddActionDialog({ resolutionId, onClose, onDone }: { resolutionId: stri
       <div className="crm-form crm-form--2">
         <label className="crm-field">
           Owner
-          <select className="crm-select" value={f.owner} onChange={(e) => setF({ ...f, owner: e.target.value })}>
+          <Select value={f.owner} onChange={(val) => setF({ ...f, owner: val })} block>
             {DEMO_STAFF.map((s) => (
               <option key={s.name}>{s.name}</option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="crm-field">
           Due
@@ -402,13 +402,13 @@ export function WrittenResolutionNewPage() {
               <div className="crm-form">
                 <label className="crm-field">
                   Body
-                  <select className="crm-select" value={f.body_id} onChange={(e) => setF({ ...f, body_id: e.target.value, eligible: [] })}>
+                  <Select value={f.body_id} onChange={(val) => setF({ ...f, body_id: val, eligible: [] })} block>
                     {bodies.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 <label className="crm-field">
                   Title
@@ -429,11 +429,11 @@ export function WrittenResolutionNewPage() {
                   </label>
                   <label className="crm-field">
                     Pass threshold
-                    <select className="crm-select" value={f.threshold} onChange={(e) => setF({ ...f, threshold: e.target.value as typeof f.threshold })}>
+                    <Select value={f.threshold} onChange={(val) => setF({ ...f, threshold: val as typeof f.threshold })} block>
                       <option value="simple">Simple majority</option>
                       <option value="two_thirds">Two-thirds</option>
                       <option value="unanimous">Unanimous</option>
-                    </select>
+                    </Select>
                   </label>
                   <label className="crm-field">
                     Minimum votes cast

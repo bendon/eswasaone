@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AuthError, Icon, newIdempotencyKey, uploadMedia, useDialogs } from "@eswasaone/shared-ui";
+import { AuthError, Icon, newIdempotencyKey, Select, uploadMedia, useDialogs } from "@eswasaone/shared-ui";
 import { useAuth } from "../../auth/AuthProvider";
 import type {
   AuditDraft,
@@ -475,11 +475,11 @@ function SamplesSection({
             </label>
             <label className="aud-fld">
               Laboratory
-              <select value={s.lab} onChange={(e) => setS({ ...s, lab: e.target.value })}>
+              <Select value={s.lab} onChange={(val) => setS({ ...s, lab: val })}>
                 {LABS.map((l) => (
                   <option key={l}>{l}</option>
                 ))}
-              </select>
+              </Select>
             </label>
             <button
               type="button"

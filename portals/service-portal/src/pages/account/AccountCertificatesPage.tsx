@@ -1,7 +1,7 @@
 import { AccountSharedCertificates } from "../customer/Certification";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { useAccount } from "./AccountContext";
 import { listCertificates, type Certificate } from "../../api/certification";
 import { useToast } from "../../ui/Toast";
@@ -80,18 +80,13 @@ export function AccountCertificatesPage() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
-        <select
-          className="toolbar__select"
-          aria-label="Scheme"
-          value={schemeFilter}
-          onChange={(e) => setSchemeFilter(e.target.value)}
-        >
+        <Select className="toolbar__select" aria-label="Scheme" value={schemeFilter} onChange={(val) => setSchemeFilter(val)}>
           <option value="all">All schemes</option>
           <option value="training">Training</option>
           <option value="management system">Management system</option>
           <option value="food safety">Food safety</option>
           <option value="product">Product</option>
-        </select>
+        </Select>
       </div>
 
       {loading ? (

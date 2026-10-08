@@ -3,7 +3,7 @@
  */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { CrmDrawer, useCrmToast } from "@eswasaone/shared-ui/crm";
 import {
   governanceOverview,
@@ -242,14 +242,14 @@ export function MeetingsList() {
       {({ meetings, bodies }) => (
         <div className="crm-stack">
           <div className="crm-row">
-            <select className="crm-select" style={{ width: "auto" }} value={body} onChange={(e) => setBody(e.target.value)} aria-label="Body">
+            <Select value={body} onChange={(val) => setBody(val)} aria-label="Body">
               <option value="">All bodies</option>
               {bodies.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
                 </option>
               ))}
-            </select>
+            </Select>
             <span className="crm-spacer" />
             <Link to="/board/calendar" className="crm-btn crm-btn--sm">
               <Icon name="i-cal" /> Calendar
@@ -355,13 +355,13 @@ export function ScheduleDrawer({ open, onClose, bodies }: { open: boolean; onClo
         <div className="crm-form">
           <label className="crm-field">
             Body
-            <select className="crm-select" value={f.body_id} onChange={(e) => setF({ ...f, body_id: e.target.value })}>
+            <Select value={f.body_id} onChange={(val) => setF({ ...f, body_id: val })} block>
               {bodies.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="crm-field">
             Title

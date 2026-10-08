@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Icon, type TeamMember } from "@eswasaone/shared-ui";
+import { Icon, Select, type TeamMember } from "@eswasaone/shared-ui";
 import { useAccount } from "./AccountContext";
 import { inviteMember, listTeam } from "../../api/account";
 import { useToast } from "../../ui/Toast";
@@ -103,16 +103,11 @@ export function AccountTeamPage() {
             </div>
             <div className="field">
               <label htmlFor="team-invite-role">Role</label>
-              <select
-                id="team-invite-role"
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value as InviteRole)}
-                disabled={submitting}
-              >
+              <Select id="team-invite-role" value={inviteRole} onChange={(val) => setInviteRole(val as InviteRole)} disabled={submitting}>
                 <option value="admin">Admin</option>
                 <option value="member">Member</option>
                 <option value="viewer">Viewer</option>
-              </select>
+              </Select>
             </div>
           </div>
           <div className="teaminvite__actions">

@@ -13,6 +13,11 @@
   },
   "dependencies": {
     "@eswasaone/shared-ui": "file:../shared-ui",
+    "@fullcalendar/core": "^6.1.21",
+    "@fullcalendar/daygrid": "^6.1.21",
+    "@fullcalendar/list": "^6.1.21",
+    "@fullcalendar/react": "^6.1.21",
+    "@fullcalendar/timegrid": "^6.1.21",
     "chart.js": "^4.4.1",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",

@@ -5,7 +5,7 @@
  */
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { fmtMoney, getInvoice, invoiceTotals } from "@eswasaone/shared-ui/billing";
 import {
   confirmDeposit,
@@ -358,11 +358,11 @@ export function AccountCertificateDetailPage() {
                 ))}
                 {mark ? (
                   <div className="crm-stack" style={{ marginTop: 10 }}>
-                    <select className="crm-select" value={mark.usage} onChange={(e) => setMark({ ...mark, usage: e.target.value as MarkRequest["usage"] })}>
+                    <Select value={mark.usage} onChange={(val) => setMark({ ...mark, usage: val as MarkRequest["usage"] })} block>
                       {["packaging", "advertising", "website", "vehicle", "other"].map((u) => (
                         <option key={u}>{u}</option>
                       ))}
-                    </select>
+                    </Select>
                     <textarea className="crm-textarea" placeholder="Where and how the mark will appear" value={mark.description} onChange={(e) => setMark({ ...mark, description: e.target.value })} />
                     <input
                       type="file"
@@ -490,13 +490,13 @@ export function TransferPage() {
       <div className="cf-card crm-form crm-grid crm-grid--2">
         <label className="crm-field">
           Standard
-          <select className="crm-select" value={v.scheme} onChange={set("scheme")}>
+          <Select value={v.scheme} onChange={(val) => setV({ ...v, scheme: val })} block>
             {schemes.map((s) => (
               <option key={s.code} value={s.code}>
                 {s.title}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="crm-field">
           Organisation

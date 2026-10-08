@@ -1,11 +1,11 @@
 /**
- * Certification pipeline (gap 05 C1): columns follow the workflow map states; cards show owner,
- * SLA (paused while waiting on the customer) and links to the record page. Desk intake for paper
+ * Certification pipeline (gap 05 C1): a table (default) or a board whose columns follow the workflow
+ * map states; rows/cards show owner, SLA (paused while waiting on the customer) and link to the record page. Desk intake for paper
  * applications; filters by officer, scheme, flow and SLA; CSV export.
  */
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Link, useNavigate } from "react-router-dom";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { APP_DEF, createApplication, getCertSettings, listApplications, type CertApplication } from "@eswasaone/shared-ui/certification";
 import { taskSla, tasksForRecord } from "@eswasaone/shared-ui/tasks";
 import { ReasonDialog } from "@eswasaone/shared-ui/workflow";
@@ -25,6 +25,8 @@ export function PipelineView() {
   const [toast, show] = useToast();
   const [f, setF] = useState({ officer: "", scheme: "", flow: "", sla: "", mine: false, q: "" });
   const [intake, setIntake] = useState(false);
+  const [layout, setLayout] = useState<"table" | "board">("table");
+  const nav = useNavigate();
   const res = useDomain(() => listApplications({ q: f.q }), [f.q]);
   const settings = getCertSettings();
 
@@ -41,6 +43,8 @@ export function PipelineView() {
   const officers = [...new Set((res.data ?? []).map((a) => a.officer).filter(Boolean))] as string[];
   const open = rows.filter((a) => !["Certified", "Rejected", "Withdrawn"].includes(a.state));
   const breach = open.filter((a) => slaOf(a)?.status === "breach").length;
+  const order = (a: CertApplication) => APP_DEF.states.findIndex((s) => s.id === a.state);
+  const sorted = [...rows].sort((a, b) => order(a) - order(b) || b.created_at.localeCompare(a.created_at));
   const waiting = open.filter((a) => ["Awaiting Customer", "Quoted", "NC Resolution"].includes(a.state)).length;
 
   return (
@@ -70,70 +74,138 @@ export function PipelineView() {
           </div>
           <div className="crm-toolbar">
             <input className="crm-input" style={{ maxWidth: 240 }} placeholder="Search organisation, id, scope…" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} />
-            <select className="crm-select" style={{ width: "auto" }} value={f.officer} onChange={(e) => setF({ ...f, officer: e.target.value })} aria-label="Officer">
+            <Select value={f.officer} onChange={(val) => setF({ ...f, officer: val })} aria-label="Officer">
               <option value="">All officers</option>
               {officers.map((o) => (
                 <option key={o}>{o}</option>
               ))}
-            </select>
-            <select className="crm-select" style={{ width: "auto" }} value={f.scheme} onChange={(e) => setF({ ...f, scheme: e.target.value })} aria-label="Scheme">
+            </Select>
+            <Select value={f.scheme} onChange={(val) => setF({ ...f, scheme: val })} aria-label="Scheme">
               <option value="">All schemes</option>
               {settings.schemes.map((s) => (
                 <option key={s.code} value={s.code}>
                   {s.standard}
                 </option>
               ))}
-            </select>
-            <select className="crm-select" style={{ width: "auto" }} value={f.flow} onChange={(e) => setF({ ...f, flow: e.target.value })} aria-label="Flow">
+            </Select>
+            <Select value={f.flow} onChange={(val) => setF({ ...f, flow: val })} aria-label="Flow">
               <option value="">All flows</option>
               {Object.entries(FLOW_LABEL).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v}
                 </option>
               ))}
-            </select>
-            <select className="crm-select" style={{ width: "auto" }} value={f.sla} onChange={(e) => setF({ ...f, sla: e.target.value })} aria-label="SLA">
+            </Select>
+            <Select value={f.sla} onChange={(val) => setF({ ...f, sla: val })} aria-label="SLA">
               <option value="">Any SLA</option>
               <option value="breach">Breached</option>
               <option value="due">Due soon</option>
               <option value="ok">On track</option>
               <option value="paused">Paused</option>
-            </select>
+            </Select>
             <label className="crm-check">
               <input type="checkbox" checked={f.mine} onChange={(e) => setF({ ...f, mine: e.target.checked })} /> Mine
             </label>
+            <span className="crm-spacer" />
+            <div className="crm-seg" role="group" aria-label="Layout">
+              <button type="button" className={layout === "table" ? "on" : ""} onClick={() => setLayout("table")}>
+                Table
+              </button>
+              <button type="button" className={layout === "board" ? "on" : ""} onClick={() => setLayout("board")}>
+                Board
+              </button>
+            </div>
           </div>
-          <div className="crm-kanban" style={{ gridAutoColumns: "minmax(230px, 1fr)" }}>
-            {APP_DEF.states.map((st) => {
-              const col = rows.filter((a) => a.state === st.id);
-              return (
-                <div key={st.id} className="crm-col">
-                  <div className="crm-col__h">
-                    <span className={`crm-pill crm-pill--${st.tone}`}>{st.label}</span>
-                    <b>{col.length}</b>
-                  </div>
-                  {col.map((a) => {
+          {layout === "table" ? (
+            <div className="crm-table-wrap">
+              <table className="crm-table">
+                <thead>
+                  <tr>
+                    <th>Application</th>
+                    <th>Scheme</th>
+                    <th>State</th>
+                    <th>Officer</th>
+                    <th>SLA</th>
+                    <th>Flags</th>
+                    <th className="num">Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((a) => {
                     const sla = slaOf(a);
+                    const st = APP_DEF.states.find((s) => s.id === a.state);
+                    const ncs = a.findings.some((n) => n.state === "Raised" || n.state === "Response submitted");
                     return (
-                      <Link key={a.id} to={`/certification/applications/${a.id}`} className="crm-opp" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-                        <span className="crm-mono crm-small">{a.id}</span>
-                        <b style={{ display: "block" }}>{a.org}</b>
-                        <span className="crm-small">
-                          {a.standard} · {FLOW_LABEL[a.flow]}
-                        </span>
-                        <div className="crm-row" style={{ marginTop: 6, gap: 6 }}>
-                          {sla ? <span className={`crm-sla crm-sla--${sla.status}`}>{sla.label}</span> : null}
-                          <span className="crm-small">{a.officer ?? "Unclaimed"}</span>
-                          {a.findings.some((n) => n.state === "Raised" || n.state === "Response submitted") ? <span className="crm-pill crm-pill--red">NCs</span> : null}
-                          {a.channel !== "portal" ? <span className="crm-pill crm-pill--outline">{a.channel}</span> : null}
-                        </div>
-                      </Link>
+                      <tr key={a.id} className="is-click" onClick={() => nav(`/certification/applications/${a.id}`)}>
+                        <td>
+                          <Link to={`/certification/applications/${a.id}`} onClick={(e) => e.stopPropagation()} style={{ color: "inherit", textDecoration: "none" }}>
+                            <b>{a.org}</b>
+                          </Link>
+                          <span className="crm-mono crm-small">{a.id}</span>
+                        </td>
+                        <td>
+                          {a.standard}
+                          <span className="crm-small">{FLOW_LABEL[a.flow]}</span>
+                        </td>
+                        <td>
+                          <span className={`crm-pill crm-pill--${st?.tone ?? "outline"}`}>{st?.label ?? a.state}</span>
+                        </td>
+                        <td className="crm-small">{a.officer ?? "Unclaimed"}</td>
+                        <td>{sla ? <span className={`crm-sla crm-sla--${sla.status}`}>{sla.label}</span> : "—"}</td>
+                        <td>
+                          <div className="crm-row" style={{ gap: 6 }}>
+                            {ncs ? <span className="crm-pill crm-pill--red">NCs</span> : null}
+                            {a.channel !== "portal" ? <span className="crm-pill crm-pill--outline">{a.channel}</span> : null}
+                            {!ncs && a.channel === "portal" ? "—" : null}
+                          </div>
+                        </td>
+                        <td className="num crm-small">{a.created_at.slice(0, 10)}</td>
+                      </tr>
                     );
                   })}
-                </div>
-              );
-            })}
-          </div>
+                  {sorted.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="crm-small" style={{ textAlign: "center", padding: 28 }}>
+                        No applications match these filters.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="crm-kanban" style={{ gridAutoColumns: "minmax(230px, 1fr)" }}>
+              {APP_DEF.states.map((st) => {
+                const col = rows.filter((a) => a.state === st.id);
+                return (
+                  <div key={st.id} className="crm-col">
+                    <div className="crm-col__h">
+                      <span className={`crm-pill crm-pill--${st.tone}`}>{st.label}</span>
+                      <b>{col.length}</b>
+                    </div>
+                    {col.map((a) => {
+                      const sla = slaOf(a);
+                      return (
+                        <Link key={a.id} to={`/certification/applications/${a.id}`} className="crm-opp" style={{ display: "block", textDecoration: "none", color: "inherit" }}>
+                          <span className="crm-mono crm-small">{a.id}</span>
+                          <b style={{ display: "block" }}>{a.org}</b>
+                          <span className="crm-small">
+                            {a.standard} · {FLOW_LABEL[a.flow]}
+                          </span>
+                          <div className="crm-row" style={{ marginTop: 6, gap: 6 }}>
+                            {sla ? <span className={`crm-sla crm-sla--${sla.status}`}>{sla.label}</span> : null}
+                            <span className="crm-small">{a.officer ?? "Unclaimed"}</span>
+                            {a.findings.some((n) => n.state === "Raised" || n.state === "Response submitted") ? <span className="crm-pill crm-pill--red">NCs</span> : null}
+                            {a.channel !== "portal" ? <span className="crm-pill crm-pill--outline">{a.channel}</span> : null}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {intake ? (
             <IntakeDialog
               onClose={() => setIntake(false)}
@@ -184,21 +256,21 @@ function IntakeDialog({ onClose, onDone, by }: { onClose: () => void; onDone: (i
       <div className="crm-form crm-grid crm-grid--2">
         <label className="crm-field">
           Scheme
-          <select className="crm-select" value={v.scheme} onChange={set("scheme")}>
+          <Select value={v.scheme} onChange={(val) => setV({ ...v, scheme: val })} block>
             {schemes.map((s) => (
               <option key={s.code} value={s.code}>
                 {s.title}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="crm-field">
           Received by
-          <select className="crm-select" value={v.channel} onChange={set("channel")}>
+          <Select value={v.channel} onChange={(val) => setV({ ...v, channel: val as typeof v.channel })} block>
             <option value="desk">Walk-in / paper</option>
             <option value="email">Email</option>
             <option value="transfer">Transfer from another body</option>
-          </select>
+          </Select>
         </label>
         <label className="crm-field">
           Organisation *

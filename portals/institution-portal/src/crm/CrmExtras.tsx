@@ -5,7 +5,7 @@
  */
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import {
   ingestWhatsApp,
   crmDemoMode,
@@ -145,19 +145,19 @@ function ClientForm({ client, actor, onSaved }: { client: Client | null; actor: 
         </label>
         <label className="crm-field">
           Region
-          <select className="crm-select" value={v.region} onChange={set("region")}>
+          <Select value={v.region} onChange={(val) => setV({ ...v, region: val as typeof v.region })} block>
             {REGIONS.map((r) => (
               <option key={r}>{r}</option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="crm-field">
           Tier
-          <select className="crm-select" value={v.tier} onChange={set("tier")}>
+          <Select value={v.tier} onChange={(val) => setV({ ...v, tier: val as typeof v.tier })} block>
             {["key", "growth", "standard", "prospect"].map((t) => (
               <option key={t}>{t}</option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="crm-field">
           Employees
@@ -509,14 +509,14 @@ export function KnowledgeView() {
             <span className="crm-small" style={{ flex: 1 }}>
               Published articles appear on the Service portal's Help page and as suggestions in the complaint form.
             </span>
-            <select className="crm-select" style={{ width: "auto" }} value={fromCase} onChange={(e) => setFromCase(e.target.value)} aria-label="Resolved case">
+            <Select value={fromCase} onChange={(val) => setFromCase(val)} aria-label="Resolved case">
               <option value="">From a resolved case…</option>
               {resolved.map((c) => (
                 <option key={c.ref} value={c.ref}>
                   {c.ref} {c.subject}
                 </option>
               ))}
-            </select>
+            </Select>
             <button type="button" className="crm-btn crm-btn--sm" disabled={!fromCase} onClick={() => void articleFromCase(fromCase, actor).then((a) => (setEdit(a), setFromCase("")), (e: Error) => flash(e.message))}>
               Create draft
             </button>

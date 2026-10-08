@@ -5,7 +5,7 @@
  */
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import {
   applyToTc,
   castVote,
@@ -137,11 +137,11 @@ export function DraftDetailPage() {
                           </label>
                           <label className="crm-field">
                             Type
-                            <select className="crm-select" value={r.type} onChange={(e) => setRows(rows.map((x, k) => (k === n ? { ...x, type: e.target.value as Row["type"] } : x)))}>
+                            <Select value={r.type} onChange={(val) => setRows(rows.map((x, k) => (k === n ? { ...x, type: val as Row["type"] } : x)))} block>
                               <option value="technical">Technical</option>
                               <option value="editorial">Editorial</option>
                               <option value="general">General</option>
-                            </select>
+                            </Select>
                           </label>
                         </div>
                         <textarea className="crm-textarea" placeholder="Comment *" value={r.comment} onChange={(e) => setRows(rows.map((x, k) => (k === n ? { ...x, comment: e.target.value } : x)))} />
@@ -229,21 +229,21 @@ export function ProposePage() {
           </label>
           <label className="crm-field">
             Suggested committee
-            <select className="crm-select" value={v.tc_id} onChange={set("tc_id")}>
+            <Select value={v.tc_id} onChange={(val) => setV({ ...v, tc_id: val })} block>
               <option value="">Not sure</option>
               {(tcs.data ?? []).map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.number} {t.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="crm-field">
             Urgency
-            <select className="crm-select" value={v.urgency} onChange={set("urgency")}>
+            <Select value={v.urgency} onChange={(val) => setV({ ...v, urgency: val as typeof v.urgency })} block>
               <option value="normal">Normal</option>
               <option value="high">High (regulation, safety, trade)</option>
-            </select>
+            </Select>
           </label>
           <label className="crm-field">
             Your name *
@@ -335,11 +335,11 @@ export function JoinTcPage() {
               </label>
               <label className="crm-field">
                 Interest category
-                <select className="crm-select" value={v.category} onChange={(e) => setV({ ...v, category: e.target.value as MemberCategory })}>
+                <Select value={v.category} onChange={(val) => setV({ ...v, category: val as MemberCategory })} block>
                   {["industry", "government", "academia", "consumer", "other"].map((c) => (
                     <option key={c}>{c}</option>
                   ))}
-                </select>
+                </Select>
               </label>
               <label className="crm-field" style={{ gridColumn: "1 / -1" }}>
                 Why do you want to join? What expertise do you bring?
@@ -446,13 +446,13 @@ export function AccountSubscriptionsPage() {
             ))}
             <div className="crm-card">
               <div className="crm-row">
-                <select className="crm-select" style={{ width: "auto" }} value={v.kind} onChange={(e) => setV({ ...v, kind: e.target.value as Subscription["kind"], value: e.target.value === "tc" ? tcs[0]?.id ?? "" : "Food" })}>
+                <Select value={v.kind} onChange={(val) => setV({ ...v, kind: val as Subscription["kind"], value: val === "tc" ? tcs[0]?.id ?? "" : "Food" })}>
                   <option value="sector">Sector</option>
                   <option value="tc">Committee</option>
-                </select>
-                <select className="crm-select" style={{ width: "auto" }} value={v.value} onChange={(e) => setV({ ...v, value: e.target.value })}>
+                </Select>
+                <Select value={v.value} onChange={(val) => setV({ ...v, value: val })}>
                   {v.kind === "sector" ? sectors.map((x) => <option key={x}>{x}</option>) : tcs.map((t) => <option key={t.id} value={t.id}>{t.number} {t.name}</option>)}
-                </select>
+                </Select>
                 {(["drafts", "publications", "withdrawals"] as const).map((ev) => (
                   <label key={ev} className="crm-check">
                     <input type="checkbox" checked={v.events.includes(ev)} onChange={(e) => setV({ ...v, events: e.target.checked ? [...v.events, ev] : v.events.filter((x) => x !== ev) })} /> {ev}

@@ -5,7 +5,7 @@
  */
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import {
   actOnCertificate,
   actOnMark,
@@ -700,11 +700,11 @@ export function AuditorsView() {
               <div className="crm-grid crm-grid--2">
                 <label className="crm-field">
                   Role
-                  <select className="crm-select" value={edit.role} onChange={(e) => setEdit({ ...edit, role: e.target.value as Competence["role"] })}>
+                  <Select value={edit.role} onChange={(val) => setEdit({ ...edit, role: val as Competence["role"] })} block>
                     {["lead", "auditor", "technical_expert", "trainee"].map((r) => (
                       <option key={r}>{r}</option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 <label className="crm-field">
                   Qualified until

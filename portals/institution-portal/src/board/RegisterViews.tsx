@@ -4,8 +4,12 @@
  * section templates, reset demo).
  */
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Link, useNavigate } from "react-router-dom";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import listPlugin from "@fullcalendar/list";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import { CrmBanner, CrmDrawer, useCrmToast } from "@eswasaone/shared-ui/crm";
 import {
   attendanceStats,
@@ -21,6 +25,7 @@ import {
   resetGovernanceDemo,
   saveBody,
   saveSettings,
+  type CalendarEntry,
   type Declaration,
   type GovBody,
   type GovSettings,
@@ -134,19 +139,19 @@ export function DeclarationForm({ members, by, onClose, fixedMember }: { members
         {!fixedMember ? (
           <label className="crm-field">
             Member
-            <select className="crm-select" value={f.member} onChange={(e) => setF({ ...f, member: e.target.value })}>
+            <Select value={f.member} onChange={(val) => setF({ ...f, member: val })} block>
               {members.map((m) => (
                 <option key={m}>{m}</option>
               ))}
-            </select>
+            </Select>
           </label>
         ) : null}
         <label className="crm-field">
           Type
-          <select className="crm-select" value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value as Declaration["kind"] })}>
+          <Select value={f.kind} onChange={(val) => setF({ ...f, kind: val as Declaration["kind"] })} block>
             <option value="annual">Annual declaration ({new Date().getFullYear()})</option>
             <option value="gift">Gift or hospitality</option>
-          </select>
+          </Select>
         </label>
         <label className="crm-field">
           Interests
@@ -258,74 +263,68 @@ export function MembersView() {
   );
 }
 
+const KIND_LABEL: Record<CalendarEntry["kind"], string> = { meeting: "Meeting", pack: "Pack due", action: "Action due", statutory: "Statutory" };
+
 export function CalendarView() {
   const res = useGov(() => governanceCalendar());
-  const [year, setYear] = useState(new Date().getFullYear());
+  const nav = useNavigate();
   return (
     <Gate res={res} what="Calendar">
-      {(entries) => {
-        const months = Array.from({ length: 12 }, (_, i) => i);
-        const now = new Date();
-        return (
-          <div className="crm-stack">
-            <div className="crm-row">
-              <button type="button" className="crm-btn crm-btn--sm" onClick={() => setYear(year - 1)}>
-                ←
-              </button>
-              <b>{year}</b>
-              <button type="button" className="crm-btn crm-btn--sm" onClick={() => setYear(year + 1)}>
-                →
-              </button>
-              <span className="crm-spacer" />
-              <span className="crm-small">
-                <span className="eo-cal__e" style={{ display: "inline" }}>
-                  Meeting
-                </span>{" "}
-                <span className="eo-cal__e statutory" style={{ display: "inline" }}>
-                  Statutory
+      {(entries) => (
+        <div className="crm-stack">
+          <div className="crm-row">
+            <span className="eo-fc-legend">
+              {(Object.keys(KIND_LABEL) as CalendarEntry["kind"][]).map((k) => (
+                <span key={k} className={`eo-fc-ev--${k}`}>
+                  <i />
+                  {KIND_LABEL[k]}
                 </span>
-              </span>
-              <button
-                type="button"
-                className="crm-btn crm-btn--sm"
-                onClick={() => {
-                  const blob = new Blob([calendarIcs(entries)], { type: "text/calendar" });
-                  const a = document.createElement("a");
-                  a.href = URL.createObjectURL(blob);
-                  a.download = `eswasa-governance-${year}.ics`;
-                  a.click();
-                }}
-              >
-                <Icon name="i-download" /> Export .ics
-              </button>
-            </div>
-            <div className="eo-cal">
-              {months.map((mo) => {
-                const rows = entries.filter((e) => {
-                  const d = new Date(e.at);
-                  return d.getFullYear() === year && d.getMonth() === mo;
-                });
-                return (
-                  <div key={mo} className={`eo-cal__m${now.getFullYear() === year && now.getMonth() === mo ? " now" : ""}`}>
-                    <h4>{new Date(year, mo, 1).toLocaleDateString(undefined, { month: "long" })}</h4>
-                    {rows.map((e) =>
-                      e.link ? (
-                        <Link key={e.id} to={e.link} className={`eo-cal__e ${e.kind}${new Date(e.at) < now ? " past" : ""}`}>
-                          {new Date(e.at).getDate()} · {e.title}
-                        </Link>
-                      ) : (
-                        <span key={e.id} className={`eo-cal__e ${e.kind}${new Date(e.at) < now ? " past" : ""}`}>
-                          {new Date(e.at).getDate()} · {e.title}
-                        </span>
-                      ),
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+              ))}
+            </span>
+            <span className="crm-spacer" />
+            <button
+              type="button"
+              className="crm-btn crm-btn--sm"
+              onClick={() => {
+                const blob = new Blob([calendarIcs(entries)], { type: "text/calendar" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = `eswasa-governance-${new Date().getFullYear()}.ics`;
+                a.click();
+              }}
+            >
+              <Icon name="i-download" /> Export .ics
+            </button>
           </div>
-        );
-      }}
+          <div className="crm-card eo-fc">
+            <FullCalendar
+              plugins={[dayGridPlugin, timeGridPlugin, listPlugin]}
+              initialView="dayGridMonth"
+              headerToolbar={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,listMonth" }}
+              buttonText={{ today: "Today", month: "Month", week: "Week", list: "Agenda" }}
+              firstDay={1}
+              height="auto"
+              dayMaxEvents={3}
+              nowIndicator
+              eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+              events={entries.map((e) => ({
+                id: e.id,
+                title: e.title,
+                start: e.at,
+                // Only meetings carry a real time; deadlines sit on the day.
+                allDay: e.kind !== "meeting",
+                classNames: [`eo-fc-ev--${e.kind}`],
+                extendedProps: { link: e.link },
+              }))}
+              eventClick={(info) => {
+                info.jsEvent.preventDefault();
+                const link = info.event.extendedProps.link as string | undefined;
+                if (link) nav(link);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </Gate>
   );
 }
@@ -509,11 +508,11 @@ export function GovSettingsView() {
                   <div className="crm-form crm-form--2">
                     <label className="crm-field">
                       Chair
-                      <select className="crm-select" value={body.chair} onChange={(e) => setBody({ ...body, chair: e.target.value })}>
+                      <Select value={body.chair} onChange={(val) => setBody({ ...body, chair: val })} block>
                         {body.members.map((m) => (
                           <option key={m}>{m}</option>
                         ))}
-                      </select>
+                      </Select>
                     </label>
                     <label className="crm-field">
                       Secretary
@@ -525,11 +524,11 @@ export function GovSettingsView() {
                     </label>
                     <label className="crm-field">
                       Frequency
-                      <select className="crm-select" value={body.frequency} onChange={(e) => setBody({ ...body, frequency: e.target.value as GovBody["frequency"] })}>
+                      <Select value={body.frequency} onChange={(val) => setBody({ ...body, frequency: val as GovBody["frequency"] })} block>
                         {["Monthly", "Quarterly", "Bi-annual", "Annual", "As needed"].map((f) => (
                           <option key={f}>{f}</option>
                         ))}
-                      </select>
+                      </Select>
                     </label>
                     <label className="crm-field">
                       Notice (days)

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import {
   CrmBanner,
   CrmNotConnected,
@@ -128,12 +128,12 @@ export function ContactSalesPage() {
           </label>
           <label className="crm-field">
             Sector
-            <select className="crm-select" value={sector} onChange={(e) => setSector(e.target.value)}>
+            <Select value={sector} onChange={(val) => setSector(val)} block>
               <option value="">Choose…</option>
               {SECTORS.map((s) => (
                 <option key={s}>{s}</option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="crm-field">
             Your name

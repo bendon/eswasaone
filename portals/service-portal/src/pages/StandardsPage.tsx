@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { Link, useOutletContext, useSearchParams } from "react-router-dom";
-import { Icon, type IconName } from "@eswasaone/shared-ui";
+import { Icon, Select, type IconName } from "@eswasaone/shared-ui";
 import { listStandards, slug, type StandardSummary } from "../api/standards";
 import type { LayoutOutletContext } from "../layout/ServiceLayout";
 import { Breadcrumbs } from "../components/Breadcrumbs";
@@ -450,19 +450,14 @@ export function StandardsPage() {
           <label className="sr-only" htmlFor="sectorSelect">
             Sector
           </label>
-          <select
-            className="searchform__sector"
-            id="sectorSelect"
-            value={sector}
-            onChange={(e) => setSector(e.target.value)}
-          >
+          <Select className="searchform__sector" id="sectorSelect" value={sector} onChange={(val) => setSector(val)}>
             <option value="">All sectors</option>
             {SECTORS.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
               </option>
             ))}
-          </select>
+          </Select>
           <button type="submit" className="searchform__submit">
             Search
           </button>
@@ -519,17 +514,13 @@ export function StandardsPage() {
             <div className="toolbar__spacer" />
             <div className="toolbar__sort">
               <label htmlFor="sortSelect">Sort</label>
-              <select
-                id="sortSelect"
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-              >
+              <Select id="sortSelect" value={sort} onChange={(val) => setSort(val)}>
                 <option value="relevant">Most relevant</option>
                 <option value="newest">Newest first</option>
                 <option value="code">Code A–Z</option>
                 <option value="price-asc">Price: low to high</option>
                 <option value="price-desc">Price: high to low</option>
-              </select>
+              </Select>
             </div>
           </div>
 

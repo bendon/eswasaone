@@ -53,3 +53,9 @@
 @keyframes xsel-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.xsel-pop{animation:none}.xsel__btn svg{transition:none}}
 @media (max-width:640px){.xsel__btn{height:42px;font-size:14px}.xsel__opt{padding:11px 10px;font-size:14px}}
+
+/* Form contexts that used to style a bare <select>: stretch and match their input heights. */
+.field .xsel,.cf-field .xsel,.aud-fld .xsel,.me-field .xsel,.form .xsel,.hr-invite .xsel{display:flex;width:100%}
+.cf-field .xsel__btn,.filters .xsel__btn,.form .xsel__btn{height:44px;border-radius:10px;font-size:14px}
+.cf-field.is-invalid .xsel__btn{border-color:var(--red)}
+.toolbar__sort .xsel__btn{height:36px;font-size:12.5px}

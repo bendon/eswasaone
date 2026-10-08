@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Icon, ModuleHeader } from "@eswasaone/shared-ui";
+import { Icon, ModuleHeader, Select } from "@eswasaone/shared-ui";
 import {
   CrmEmpty,
   clientHealth,
@@ -70,37 +70,37 @@ export function CrmClientsView() {
                 <Icon name="i-search" />
                 <input className="crm-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, registration or contact" aria-label="Search clients" />
               </div>
-              <select className="crm-select" style={{ width: "auto" }} value={sector} onChange={(e) => setSector(e.target.value)} aria-label="Sector">
+              <Select value={sector} onChange={(val) => setSector(val)} aria-label="Sector">
                 <option value="all">All sectors</option>
                 {sectors.map((s) => (
                   <option key={s}>{s}</option>
                 ))}
-              </select>
-              <select className="crm-select" style={{ width: "auto" }} value={region} onChange={(e) => setRegion(e.target.value)} aria-label="Region">
+              </Select>
+              <Select value={region} onChange={(val) => setRegion(val)} aria-label="Region">
                 <option value="all">All regions</option>
                 {REGIONS.map((r) => (
                   <option key={r}>{r}</option>
                 ))}
-              </select>
-              <select className="crm-select" style={{ width: "auto" }} value={tier} onChange={(e) => setTier(e.target.value)} aria-label="Tier">
+              </Select>
+              <Select value={tier} onChange={(val) => setTier(val)} aria-label="Tier">
                 <option value="all">All tiers</option>
                 {(Object.keys(TIER_LABEL) as ClientTier[]).map((t) => (
                   <option key={t} value={t}>
                     {TIER_LABEL[t]}
                   </option>
                 ))}
-              </select>
-              <select className="crm-select" style={{ width: "auto" }} value={health} onChange={(e) => setHealth(e.target.value)} aria-label="Health">
+              </Select>
+              <Select value={health} onChange={(val) => setHealth(val)} aria-label="Health">
                 <option value="all">Any health</option>
                 <option value="good">Healthy</option>
                 <option value="watch">Watch</option>
                 <option value="risk">At risk</option>
-              </select>
-              <select className="crm-select" style={{ width: "auto" }} value={certified} onChange={(e) => setCertified(e.target.value)} aria-label="Certified">
+              </Select>
+              <Select value={certified} onChange={(val) => setCertified(val)} aria-label="Certified">
                 <option value="all">Certified or not</option>
                 <option value="yes">Holds a valid certificate</option>
                 <option value="no">No valid certificate</option>
-              </select>
+              </Select>
             </div>
 
             {rows.length === 0 ? (

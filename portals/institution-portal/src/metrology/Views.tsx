@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import {
   actOnTest,
   capacity,
@@ -185,12 +185,12 @@ export function MetReceipt() {
               </div>
               <div className="crm-row">
                 <input className="crm-input" placeholder="Scan or type seal number" value={seal} onChange={(e) => setSeal(e.target.value)} />
-                <select className="crm-select" style={{ width: "auto" }} value={cond} onChange={(e) => setCond(e.target.value as typeof cond)}>
+                <Select value={cond} onChange={(val) => setCond(val as typeof cond)}>
                   <option value="ok">Seal intact</option>
                   <option value="seal_broken">Seal broken</option>
                   <option value="damaged">Damaged</option>
                   <option value="mismatch">Doesn't match label</option>
-                </select>
+                </Select>
                 <button type="button" className="crm-btn crm-btn--sm crm-btn--pri" disabled={!seal.trim()} onClick={() => void run(() => receiveSample(seal, cond, actor), show, cond === "ok" ? "Received — seal intact." : "Rejected at receipt — Quality Manager alerted.").then((ok) => ok && setSeal(""))}>
                   Receive
                 </button>
@@ -241,20 +241,20 @@ export function MetJobs() {
         <div className="crm-stack">
           <PageHead title="Calibration jobs" actions={<button type="button" className="crm-btn crm-btn--sm" onClick={() => downloadCsv("calibration-jobs.csv", jobs.map((j) => ({ id: j.id, customer: j.customer, state: j.state, discipline: j.discipline, metrologist: j.metrologist ?? "", certificate: j.certificate?.id ?? "" })))}><Icon name="i-download" /> Export</button>} />
           <div className="crm-toolbar">
-            <select className="crm-select" style={{ width: "auto" }} value={state} onChange={(e) => setState(e.target.value)} aria-label="State">
+            <Select value={state} onChange={(val) => setState(val)} aria-label="State">
               <option value="">All states</option>
               {JOB_DEF.states.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.label}
                 </option>
               ))}
-            </select>
-            <select className="crm-select" style={{ width: "auto" }} value={discipline} onChange={(e) => setDiscipline(e.target.value)} aria-label="Discipline">
+            </Select>
+            <Select value={discipline} onChange={(val) => setDiscipline(val)} aria-label="Discipline">
               <option value="">All disciplines</option>
               {["Mass", "Temperature", "Pressure", "Volume", "Length", "Electrical"].map((d) => (
                 <option key={d}>{d}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <JobTable jobs={jobs} />
         </div>
@@ -570,11 +570,11 @@ function ResultsEditor({ t, actor, show }: { t: NonNullable<ReturnType<typeof ge
           <div className="crm-row">
             <label className="crm-field">
               Conclusion
-              <select className="crm-select" value={conclusion} onChange={(e) => setConclusion(e.target.value as typeof conclusion)}>
+              <Select value={conclusion} onChange={(val) => setConclusion(val as typeof conclusion)} block>
                 <option value="">Choose…</option>
                 <option value="pass">Conforms (pass)</option>
                 <option value="fail">Does not conform (fail)</option>
-              </select>
+              </Select>
             </label>
             <label className="crm-field" style={{ flex: 1 }}>
               Remarks

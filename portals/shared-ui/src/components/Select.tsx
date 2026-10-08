@@ -1,4 +1,6 @@
 import {
+  Children,
+  isValidElement,
   useCallback,
   useEffect,
   useId,
@@ -7,6 +9,7 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type ReactNode,
   type SyntheticEvent,
 } from "react";
 import { createPortal } from "react-dom";
@@ -26,7 +29,9 @@ export type SelectProps = {
   value: string;
   onChange: (value: string) => void;
   /** Plain strings are used as both value and label. */
-  options: readonly (SelectOption | string)[];
+  options?: readonly (SelectOption | string)[];
+  /** Alternative to `options`: native-style <option> / <optgroup> children. */
+  children?: ReactNode;
   /** Shown when `value` matches no option. */
   placeholder?: string;
   "aria-label"?: string;
@@ -38,10 +43,28 @@ export type SelectProps = {
   required?: boolean;
   /** Stretch to the container width (form fields). */
   block?: boolean;
+  style?: CSSProperties;
 };
 
 const norm = (o: SelectOption | string): SelectOption => (typeof o === "string" ? { value: o, label: o } : o);
 const stop = (e: SyntheticEvent) => e.stopPropagation();
+
+const textOf = (n: ReactNode): string =>
+  Children.toArray(n)
+    .map((c) => (typeof c === "string" || typeof c === "number" ? String(c) : isValidElement<{ children?: ReactNode }>(c) ? textOf(c.props.children) : ""))
+    .join("");
+
+/** Reads native <option> / <optgroup> children into SelectOptions. */
+function optionsFromChildren(children: ReactNode, group?: string): SelectOption[] {
+  return Children.toArray(children).flatMap((c) => {
+    if (!isValidElement<{ value?: string | number; label?: string; disabled?: boolean; title?: string; children?: ReactNode }>(c)) return [];
+    const p = c.props;
+    if (c.type === "optgroup") return optionsFromChildren(p.children, p.label);
+    if (c.type !== "option") return [];
+    const label = textOf(p.children);
+    return [{ value: p.value === undefined ? label : String(p.value), label, disabled: p.disabled, title: p.title, group }];
+  });
+}
 
 /**
  * Styled drop-in for a native <select>: button + listbox, portalled to <body> so it
@@ -52,6 +75,7 @@ export function Select({
   value,
   onChange,
   options: rawOptions,
+  children,
   placeholder,
   "aria-label": ariaLabel,
   id,
@@ -60,9 +84,10 @@ export function Select({
   disabled,
   required,
   block,
+  style: rootStyle,
 }: SelectProps) {
   const uid = useId();
-  const options = rawOptions.map(norm);
+  const options = rawOptions ? rawOptions.map(norm) : optionsFromChildren(children);
   const btnRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
@@ -238,7 +263,7 @@ export function Select({
     .join(" ");
 
   return (
-    <span className={rootCls}>
+    <span className={rootCls} style={rootStyle}>
       <button
         ref={btnRef}
         id={id}
@@ -259,8 +284,8 @@ export function Select({
         <span className="xsel__val">
           <span className={current ? undefined : "is-ph"}>{current ? current.label : placeholder ?? "Select…"}</span>
           {/* Invisible sizers keep the width steady across selections, like a native select. */}
-          {options.map((o) => (
-            <span key={o.value} className="xsel__sizer" aria-hidden="true">
+          {options.map((o, i) => (
+            <span key={i} className="xsel__sizer" aria-hidden="true">
               {o.label}
             </span>
           ))}

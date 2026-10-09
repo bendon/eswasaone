@@ -1,12 +1,20 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { apiFetch, AuthError, Icon, RecordDrawer, useDialogs, type DrawerSection, Select } from "@eswasaone/shared-ui";
+import { useEffect, useMemo, useState } from "react";
+import {
+  apiFetch,
+  AuthError,
+  Icon,
+  NotConnectedPanel,
+  RecordDrawer,
+  useDialogs,
+  type DrawerSection,
+  Select,
+} from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
 import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrLeaveResponse, HrLeaveSummary } from "../api/types";
 import { initialsFromName } from "./helpers";
-import { CAL_DAYS, CAL_KIND, CAL_ROWS } from "./overviewMock";
 
 /** Time off — live leave queue + balances + holidays from HRMS. */
 
@@ -180,84 +188,19 @@ export function LeaveView() {
 
           <div className="kpis" role="group" aria-label="Time off KPIs">
             <div className="kpi">
-              <span className="l">Away today</span>
-              <span className="v">5</span>
-              <span className="d">3 on leave, 2 on field work</span>
-            </div>
-            <div className="kpi">
               <span className="l">Requests waiting</span>
               <span className="v">{pending.length}</span>
               <span className={`d ${pending.length ? "warn" : ""}`}>
                 {pending.length ? "Line managers decide in Approvals" : "Queue clear"}
               </span>
             </div>
-            <div className="kpi">
-              <span className="l">Leave owed</span>
-              <span className="v">
-                1,142 <small>days</small>
-              </span>
-              <span className="d">13.3 days a person on average</span>
-            </div>
-            <div className="kpi">
-              <span className="l">Above carry-over limit</span>
-              <span className="v">4</span>
-              <span className="d warn">Will forfeit days on 31 Mar</span>
-            </div>
           </div>
 
-          {/* // TODO: wire real — calendar from leave applications + field assignments */}
-          <div className="hr-box" style={{ marginBottom: 16 }}>
-            <div className="hr-box__h">
-              <div>
-                <h3>Certification, Field Operations and Metrology</h3>
-                <p>12 to 23 October</p>
-              </div>
-            </div>
-            <div className="hr-box__b">
-              <div className="hr-scroll">
-                <div className="hr-cal" role="grid" aria-label="Team leave calendar">
-                  <div className="h" />
-                  {CAL_DAYS.map((d, i) => (
-                    <div key={`${d.dow}-${d.day}`} className={`h${i === 5 ? " w2" : ""}`}>
-                      {d.dow}
-                      <b>{d.day}</b>
-                    </div>
-                  ))}
-                  {CAL_ROWS.map((row) => (
-                    <Fragment key={row.name}>
-                      <div className="n">{row.name}</div>
-                      {row.cells.split("").map((ch, i) => {
-                        const cls =
-                          "c" +
-                          (i === 5 ? " w2" : "") +
-                          (ch === "." ? "" : ch === "a" ? " pend" : " on");
-                        const title =
-                          ch === "."
-                            ? undefined
-                            : `${row.name}, ${CAL_DAYS[i].dow} ${CAL_DAYS[i].day} Oct: ${CAL_KIND[ch] ?? ch}`;
-                        return (
-                          <div key={`${row.name}-${i}`} className={cls} title={title} role="gridcell">
-                            {ch === "." ? "" : ch.toUpperCase()}
-                          </div>
-                        );
-                      })}
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-              <div className="hr-key">
-                <span>
-                  <b>A</b> Annual
-                </span>
-                <span>
-                  <b>S</b> Sick
-                </span>
-                <span>
-                  <b>F</b> Field work, not leave
-                </span>
-                <span>Dashed: requested, not yet approved</span>
-              </div>
-            </div>
+          <div style={{ marginBottom: 16 }}>
+            <NotConnectedPanel
+              what="Leave calendar"
+              detail="Team calendar (approved leave, open requests, Field Visits as F) needs GET /hr/leave/calendar. Requests and balances below are live from HRMS."
+            />
           </div>
 
           <div className="hr-box" style={{ marginBottom: 16 }}>

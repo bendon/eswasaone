@@ -1705,7 +1705,42 @@ async def get_hr_overview(
 # --- HR organisation / structure --------------------------------------------
 
 _EMPLOYEE_GRADE_DOCTYPE = "Employee Grade"
-_DEPT_HEAD_FIELD_CANDIDATES = ("department_head", "custom_department_head")
+# Prefer brief §1 custom_head; keep legacy candidates for older sites.
+_DEPT_HEAD_FIELD_CANDIDATES = ("custom_head", "department_head", "custom_department_head")
+
+# ERPNext install fixtures — never list as live ESWASA departments (brief §14.1).
+_ERPNEXT_DEPT_STEMS = frozenset(
+    {
+        "Accounts",
+        "Marketing",
+        "Sales",
+        "Purchase",
+        "Operations",
+        "Production",
+        "Dispatch",
+        "Customer Service",
+        "Human Resources",
+        "Management",
+        "Quality Management",
+        "Research & Development",
+        "Legal",
+        "All Departments",
+    }
+)
+
+
+def _dept_stem(row: dict[str, Any]) -> str:
+    name = str(row.get("department_name") or row.get("name") or "")
+    return name.split(" - ")[0].strip()
+
+
+def _is_live_department(row: dict[str, Any]) -> bool:
+    """Leaf, enabled, and not an ERPNext install fixture / tree root."""
+    if row.get("is_group") in (1, True, "1"):
+        return False
+    if row.get("disabled") in (1, True, "1"):
+        return False
+    return _dept_stem(row) not in _ERPNEXT_DEPT_STEMS
 
 
 def _empty_org_overview() -> HrOrganisationOverview:
@@ -2035,12 +2070,16 @@ async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOvervi
             "parent_department",
             "company",
             "disabled",
+            "is_group",
             "payroll_cost_center",
+            "custom_head",
         ],
+        filters=[["is_group", "=", 0], ["disabled", "=", 0]],
         limit=200,
         order_by="department_name asc",
         soft=True,
     )
+    dept_rows = [r for r in dept_rows if _is_live_department(r)]
     desig_rows = await _frappe_get_list(
         session,
         "Designation",
@@ -2345,12 +2384,16 @@ async def list_hr_departments(
                 "parent_department",
                 "company",
                 "disabled",
+                "is_group",
                 "payroll_cost_center",
+                "custom_head",
             ],
+            filters=[["is_group", "=", 0], ["disabled", "=", 0]],
             limit=limit,
             order_by="department_name asc",
             soft=True,
         )
+        rows = [r for r in rows if _is_live_department(r)]
         employees = await _frappe_get_list(
             session,
             "Employee",

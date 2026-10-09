@@ -1,0 +1,69 @@
+[
+  {
+    "doctype": "Custom Field",
+    "dt": "Department",
+    "fieldname": "custom_head",
+    "label": "Head",
+    "fieldtype": "Link",
+    "options": "Employee",
+    "insert_after": "payroll_cost_center",
+    "name": "Department-custom_head"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Staffing Plan Detail",
+    "fieldname": "custom_frozen_positions",
+    "label": "Frozen Positions",
+    "fieldtype": "Int",
+    "default": "0",
+    "insert_after": "vacancies",
+    "name": "Staffing Plan Detail-custom_frozen_positions"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Skill",
+    "fieldname": "custom_kind",
+    "label": "Kind",
+    "fieldtype": "Select",
+    "options": "Audit\nTechnical review\nCalibration\nInspection",
+    "insert_after": "description",
+    "name": "Skill-custom_kind"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Skill",
+    "fieldname": "custom_scheme",
+    "label": "Scheme / Discipline",
+    "fieldtype": "Data",
+    "insert_after": "custom_kind",
+    "name": "Skill-custom_scheme"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Skill",
+    "fieldname": "custom_validity_months",
+    "label": "Validity (months)",
+    "fieldtype": "Int",
+    "insert_after": "custom_scheme",
+    "name": "Skill-custom_validity_months"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Employee",
+    "fieldname": "custom_is_demo",
+    "label": "Demo Record",
+    "fieldtype": "Check",
+    "default": "0",
+    "insert_after": "status",
+    "name": "Employee-custom_is_demo"
+  },
+  {
+    "doctype": "Custom Field",
+    "dt": "Goal",
+    "fieldname": "custom_strategic_goal",
+    "label": "Strategic Goal",
+    "fieldtype": "Data",
+    "insert_after": "kra",
+    "name": "Goal-custom_strategic_goal"
+  }
+]

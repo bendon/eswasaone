@@ -1,0 +1,32 @@
+# Impartiality Declaration — one per employee per year (brief §6.3).
+
+doctype: Impartiality Declaration
+module: hr
+workflow_name: Impartiality Declaration
+submit_gate: null
+emit: true
+phase: declare
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: hr.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  R-H5 opens a do ToDo for each employee annually. Guard has_conflict
+  fails when no signed declaration for the current year.
+
+display:
+  customer: {}
+  staff:
+    Draft: Outstanding
+    Approved: Signed
+
+states:
+  - {name: Draft, owner_role: Employee, allow_edit: Employee}
+  - {name: Approved, owner_role: Employee, allow_edit: HR Manager, style: Success}
+
+transitions:
+  - action: Submit
+    from: Draft
+    to: Approved
+    actor: Employee
+    approvals_family: do

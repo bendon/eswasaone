@@ -36,6 +36,7 @@ type TabId =
   | "overview"
   | "updates"
   | "company"
+  | "hr-setup"
   | "settings"
   | "access"
   | "users"
@@ -48,6 +49,7 @@ const TABS: { id: TabId; label: string; icon: IconName }[] = [
   { id: "overview", label: "Overview", icon: "i-monitor" },
   { id: "updates", label: "Updates", icon: "i-refresh" },
   { id: "company", label: "Company", icon: "i-building" },
+  { id: "hr-setup", label: "HR setup", icon: "i-users" },
   { id: "settings", label: "Settings", icon: "i-sliders" },
   { id: "access", label: "Access Security", icon: "i-lock" },
   { id: "users", label: "Users & Roles", icon: "i-users" },
@@ -620,6 +622,8 @@ export function SystemAdminPage() {
         <CompanyProfilePanel enabled={enabled} refreshKey={sessionKey} />
       ) : null}
 
+      {tab === "hr-setup" ? <HrSetupTab /> : null}
+
       {tab === "settings" ? (
         <SettingsTab
           system={systemSettings}
@@ -865,6 +869,64 @@ export function SystemAdminPage() {
 
       {tab === "integrations" ? <IntegrationsTab integrations={integrations} /> : null}
     </RequireStaff>
+  );
+}
+
+/** Brief §12.3 — setup checklist moved off HR Overview. */
+function HrSetupTab() {
+  const steps = [
+    {
+      title: "1. Master data fixtures",
+      detail:
+        "Holiday List, ESWASA Department tree (disable ERPNext fixtures), Branch, Employment Type, Employee Grade, Designation skills, HR Settings flags. Install eswasa_hr and migrate.",
+    },
+    {
+      title: "2. Employee load",
+      detail:
+        "Data Import pass 1 (identity + post), pass 2 (reports_to, leave_approver, expense_approver). Link user_id. Roles. Integrity check.",
+    },
+    {
+      title: "3. Leave policy & balances",
+      detail: "Leave Period, Types, Policy per grade, opening Leave Allocations — wait for §0.5 leave policy.",
+    },
+    {
+      title: "4. Establishment",
+      detail: "Staffing Plan per department per FY with custom_frozen_positions.",
+    },
+    {
+      title: "5. Competence & impartiality",
+      detail: "Skill catalogue + Staff Authorisation + Impartiality Declaration; wire Field Visit to eswasa_hr.competence.is_authorised.",
+    },
+    {
+      title: "§0.5 inputs still required",
+      detail:
+        "Org structure, establishment, staff list, leave policy, opening balances, payroll scope, tax tables, competence list, probation rules, privacy roles. Do not invent these.",
+    },
+  ];
+  return (
+    <div className="panel" style={{ padding: "18px 20px" }}>
+      <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 800 }}>HR setup</h3>
+      <p style={{ margin: "0 0 16px", color: "var(--muted)", fontSize: 13 }}>
+        Moved from HR Overview. See{" "}
+        <code style={{ fontSize: 12 }}>docs/EswasaOne_HR_PEOPLE_BUILD_BRIEF.md</code> and the DocType
+        audit. Greenfield sites start with zero employees — Approvals routing waits on step 2.
+      </p>
+      <ol className="hr-next-steps" style={{ margin: 0, paddingLeft: 18 }}>
+        {steps.map((s) => (
+          <li key={s.title} style={{ marginBottom: 12 }}>
+            <b style={{ display: "block", fontSize: 13.5 }}>{s.title}</b>
+            <span style={{ display: "block", color: "var(--muted)", fontSize: 12.5, marginTop: 2 }}>
+              {s.detail}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <div className="btn-row" style={{ marginTop: 16 }}>
+        <a className="btn-ghost" href="/institution/hr" style={{ minHeight: 32, padding: "0 12px", fontSize: 12 }}>
+          Open HR &amp; People
+        </a>
+      </div>
+    </div>
   );
 }
 

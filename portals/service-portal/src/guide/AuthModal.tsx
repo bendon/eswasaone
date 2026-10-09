@@ -63,7 +63,7 @@ export function AuthModal({ open, title, reason, onClose, onSuccess }: Props) {
         </div>
         <h3 id={titleId}>{title}</h3>
         <p>
-          Browsing and guides are free. Sign in only to buy, apply, or track — one account works
+          Browsing and guides are free. Sign in only to buy, apply, or track. One account works
           across standards, certification and training.
         </p>
         {reason ? (

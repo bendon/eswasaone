@@ -9,6 +9,7 @@ import {
   useDialogs,
   type IconName,
   type InviteStaffRequest,
+  Select,
 } from "@eswasaone/shared-ui";
 import type {
   AdminBackupsResponse,
@@ -557,7 +558,7 @@ export function SystemAdminPage() {
     <RequireStaff reason="Staff sign-in required for system administration">
       <PageHeader
         title="System Administration"
-        subtitle="Update the platform, configure settings, and manage users. These actions change the live system — handle with care."
+        subtitle="Update the platform, configure settings, and manage users. These actions change the live system, so handle with care."
       />
 
       <div className="admin-tabs" role="tablist" aria-label="System administration">
@@ -719,39 +720,33 @@ export function SystemAdminPage() {
               <div className="role-mgmt">
                 <div className="kv" style={{ width: "100%" }}>
                   <b>Current</b>
-                  <span>{userDetail?.user.role_profile_name || "— none —"}</span>
+                  <span>{userDetail?.user.role_profile_name || "None"}</span>
                 </div>
                 <p style={{ color: "var(--muted-2)", fontSize: 12.5, margin: "0 0 8px", width: "100%" }}>
                   Apply an Institution (or Board/TC) job pack. Citizen / Business packs belong on the
                   Service Portal, not here.
                 </p>
                 <div className="role-add">
-                  <select
-                    className="admin-in"
-                    defaultValue=""
+                  <Select
+                    block
+                    aria-label="Apply job profile"
+                    value=""
+                    placeholder="+ Apply job profile…"
                     disabled={roleBusy !== null}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value && editUser) void assignProfile(editUser, value);
-                      e.target.value = "";
+                    onChange={(v) => {
+                      if (v && editUser) void assignProfile(editUser, v);
                     }}
-                  >
-                    <option value="">+ Apply job profile…</option>
-                    {(["institution", "external"] as const).map((aud) => (
-                      <optgroup
-                        key={aud}
-                        label={aud === "external" ? "External (Board / TC)" : "Institution staff"}
-                      >
-                        {roleProfiles
-                          .filter((p) => p.audience === aud)
-                          .map((p) => (
-                            <option key={p.name} value={p.name} title={p.summary}>
-                              {p.name}
-                            </option>
-                          ))}
-                      </optgroup>
-                    ))}
-                  </select>
+                    options={(["institution", "external"] as const).flatMap((aud) =>
+                      roleProfiles
+                        .filter((p) => p.audience === aud)
+                        .map((p) => ({
+                          value: p.name,
+                          label: p.name,
+                          title: p.summary,
+                          group: aud === "external" ? "External (Board / TC)" : "Institution staff",
+                        })),
+                    )}
+                  />
                 </div>
               </div>
             ),
@@ -780,25 +775,17 @@ export function SystemAdminPage() {
                   <p style={{ color: "var(--muted-2)", margin: "8px 0 0" }}>Loading roles…</p>
                 ) : null}
                 <div className="role-add">
-                  <select
-                    className="admin-in"
-                    defaultValue=""
+                  <Select
+                    block
+                    aria-label="Add curated role"
+                    value=""
+                    placeholder="+ Add curated role…"
                     disabled={roleBusy !== null}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value && editUser) void addRole(editUser, value);
-                      e.target.value = "";
+                    onChange={(v) => {
+                      if (v && editUser) void addRole(editUser, v);
                     }}
-                  >
-                    <option value="">+ Add curated role…</option>
-                    {availableRoles
-                      .filter((r) => !(userDetail?.roles ?? []).includes(r))
-                      .map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                  </select>
+                    options={availableRoles.filter((r) => !(userDetail?.roles ?? []).includes(r))}
+                  />
                 </div>
               </div>
             ),
@@ -1180,14 +1167,12 @@ function UpdatesTab({
               <div className="admin-kv">
                 <span className="admin-kv__k">Update channel</span>
                 <span className="admin-kv__r">
-                  <select
-                    className="admin-in"
+                  <Select
+                    aria-label="Update channel"
                     value={updateOpts.channel}
-                    onChange={(e) => setUpdateOpts((o) => ({ ...o, channel: e.target.value }))}
-                  >
-                    <option value="stable">stable</option>
-                    <option value="hotfix">hotfix</option>
-                  </select>
+                    onChange={(v) => setUpdateOpts((o) => ({ ...o, channel: v }))}
+                    options={["stable", "hotfix"]}
+                  />
                 </span>
               </div>
               {(
@@ -1285,7 +1270,7 @@ function SettingsTab({
           <span className="admin-ic">
             <Icon name="i-sliders" />
           </span>
-          <b>General — System Settings</b>
+          <b>General: System Settings</b>
           <span style={{ marginLeft: "auto" }}>
             <button
               type="button"
@@ -1351,7 +1336,7 @@ function SettingsTab({
           <span className="admin-ic">
             <Icon name="i-mail" />
           </span>
-          <b>Email — SMTP / Email Account</b>
+          <b>Email: SMTP / Email Account</b>
           <span style={{ marginLeft: "auto" }}>
             {em ? (
               <StatusPill status={em.outgoing_ok ? "ok" : "warn"} label={em.outgoing_ok ? "outgoing OK" : "not OK"} />
@@ -1488,17 +1473,7 @@ function UsersTab({
             </label>
             <label style={{ display: "grid", gap: 6, fontWeight: 600, fontSize: 13 }}>
               Role
-              <select
-                className="admin-in"
-                value={invite.role}
-                onChange={(e) => invite.setRole(e.target.value)}
-              >
-                {INVITE_ROLE_OPTIONS.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
+              <Select block value={invite.role} onChange={invite.setRole} options={INVITE_ROLE_OPTIONS} />
             </label>
             {invite.err ? <p style={{ color: "var(--red)", margin: 0 }}>{invite.err}</p> : null}
             {invite.msg ? <p style={{ color: "var(--navy)", margin: 0 }}>{invite.msg}</p> : null}

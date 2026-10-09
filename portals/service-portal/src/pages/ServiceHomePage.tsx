@@ -210,11 +210,11 @@ export function ServiceHomePage() {
       setDone({});
       setNote(null);
       try {
-        const res = await buildGuide({ goal: value });
+        const { guide: res } = await buildGuide({ goal: value });
         setGuide(res);
       } catch (err) {
         console.error(err);
-        setNote("Guide service unavailable — try again shortly.");
+        setNote("Guide service unavailable. Try again shortly.");
       } finally {
         setBusy(false);
       }
@@ -254,7 +254,7 @@ export function ServiceHomePage() {
     setMoreOpen(false);
     if (id !== "home") {
       // Destinations only for now — Home is the assistant surface
-      setNote(`“${id}” screen coming soon — stay on Home for guides.`);
+      setNote(`“${id}” screen coming soon. Stay on Home for guides.`);
     }
   }
 
@@ -329,7 +329,7 @@ export function ServiceHomePage() {
             <h2>What can we help you with today?</h2>
             <p>
               Ask the EswasaOne assistant about standards, certification, exports and training,
-              and it will build the exact steps — which standards apply, what to prepare, and what
+              and it will build the exact steps: which standards apply, what to prepare, and what
               it costs.
             </p>
             <form className="ask" onSubmit={onAskSubmit}>

@@ -35,21 +35,21 @@ _DEFAULT_POLICY = AdminAccessPolicy(
     enforce_off_lan=False,
     fail_closed=True,
     redirect_path="/",
-    notes="Scaffold — enable enforce_off_lan after registering Eswasa LAN CIDRs and devices.",
+    notes="Scaffold: enable enforce_off_lan after registering Eswasa LAN CIDRs and devices.",
 )
 
 # Sensible starter CIDRs (private RFC1918) — admin should replace with real Eswasa ranges.
 _DEFAULT_NETWORKS: list[AdminAccessNetwork] = [
     AdminAccessNetwork(
         id="net-eswasa-lan-placeholder",
-        label="Eswasa LAN (placeholder — replace)",
+        label="Eswasa LAN (placeholder, replace)",
         cidr="10.0.0.0/8",
         enabled=False,
         notes="Disabled until System Manager confirms real LAN CIDR.",
     ),
     AdminAccessNetwork(
         id="net-eswasa-wan-placeholder",
-        label="Eswasa WAN (placeholder — replace)",
+        label="Eswasa WAN (placeholder, replace)",
         cidr="172.16.0.0/12",
         enabled=False,
         notes="Disabled until System Manager confirms real WAN CIDR.",

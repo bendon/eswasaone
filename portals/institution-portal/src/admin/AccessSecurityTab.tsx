@@ -258,7 +258,7 @@ export function AccessSecurityTab({ enabled, refreshKey, onFlash, onAuthRequired
       <p className="admin-note" style={{ marginBottom: 16 }}>
         Controls who may open <code>/institution</code> from outside Eswasa LAN/WAN. Trusted
         networks skip the device check; off-LAN clients need an approved device. Enforcement is
-        configured here — wire nginx <code>auth_request</code> to{" "}
+        configured here; wire nginx <code>auth_request</code> to{" "}
         <code>GET /api/auth/institution-access</code> before turning on{" "}
         <strong>Enforce off-LAN</strong>.
       </p>

@@ -23,6 +23,13 @@ type Props = {
   avatarInitial?: string;
   avatarGradient?: string;
   extra?: ReactNode;
+  /** Notification bell / dropdown — replaces the dummy bell in `.top__r`. */
+  notifications?: ReactNode;
+  /** Centred slot between the title and the account cluster (e.g. global search). */
+  center?: ReactNode;
+  /** Mobile nav drawer toggle — renders the hamburger when set. */
+  onMenuClick?: () => void;
+  menuOpen?: boolean;
   /** Extra links above Sign out. */
   menuItems?: TopBarMenuItem[];
   /** Opens the account menu — preferred over a bare click handler. */
@@ -40,6 +47,10 @@ export function TopBar({
   avatarInitial,
   avatarGradient = "linear-gradient(140deg,#4A52B0,#313391)",
   extra,
+  notifications,
+  center,
+  onMenuClick,
+  menuOpen = false,
   menuItems,
   onSignOut,
   onUserClick,
@@ -80,17 +91,31 @@ export function TopBar({
   }
 
   return (
-    <header className="top">
+    <header className={center ? "top top--center" : "top"}>
+      {onMenuClick ? (
+        <button
+          type="button"
+          className="ibtn top__menu-btn"
+          aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+          aria-expanded={menuOpen}
+          onClick={onMenuClick}
+        >
+          <Icon name="i-list" />
+        </button>
+      ) : null}
       <h1>{title}</h1>
       {pill ? <span className="pill">{pill}</span> : null}
       {extra}
+      {center ? <div className="top__center">{center}</div> : null}
       <div className="top__r">
         <button type="button" className="ibtn" aria-label="Theme">
           <Icon name="i-sun" />
         </button>
-        <button type="button" className="ibtn" aria-label="Notifications">
-          <Icon name="i-bell" />
-        </button>
+        {notifications ?? (
+          <button type="button" className="ibtn" aria-label="Notifications">
+            <Icon name="i-bell" />
+          </button>
+        )}
         <div className="top__div" />
         <div className={`top__user-wrap${open ? " is-open" : ""}`} ref={wrapRef}>
           <button

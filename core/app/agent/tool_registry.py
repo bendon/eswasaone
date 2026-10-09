@@ -198,10 +198,10 @@ async def _ask_analytics(args: dict[str, Any], ctx: dict[str, Any]) -> dict[str,
     if not question:
         return {"error": "question is required"}
     if ctx.get("mock") or ctx.get("is_guest"):
-        return {"error": "Frappe unavailable — analytics requires an authenticated live session"}
+        return {"error": "Frappe unavailable: analytics requires an authenticated live session"}
     client = _client_from_ctx(ctx)
     if not await client.health():
-        return {"error": "Frappe unavailable — analytics requires live data"}
+        return {"error": "Frappe unavailable: analytics requires live data"}
     try:
         return await analytics_bridge.ask_analytics(client, question)
     except FrappeError as exc:
@@ -304,7 +304,7 @@ def bootstrap_tools() -> None:
             name="ask_analytics",
             description=(
                 "Institution analytics: revenue, certificates, audits, headcount, "
-                "budget, plan traffic lights — live Frappe metrics only."
+                "budget, plan traffic lights (live Frappe metrics only)."
             ),
             parameters={
                 "type": "object",

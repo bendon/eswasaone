@@ -106,7 +106,7 @@ def publish_feed(
     _comment(
         reference_doctype,
         reference_name,
-        f"[feed:{event}] {subject}" + (f" — {detail}" if detail else ""),
+        f"[feed:{event}] {subject}" + (f": {detail}" if detail else ""),
     )
 
 
@@ -402,7 +402,7 @@ def re1_fulfil_purchase(
     items = _parse_items(order.items_json)
     if not items:
         order.db_set("fulfilment_status", "Skipped", update_modified=False)
-        _comment(order.doctype, order.name, "[R-E1] No line items — fulfilment skipped")
+        _comment(order.doctype, order.name, "[R-E1] No line items; fulfilment skipped")
         return {"ok": False, "reason": "no_items"}
 
     entitlements: list[str] = []
@@ -466,13 +466,13 @@ def re1_fulfil_purchase(
     links_block = "\n".join(f"- {u}" for u in download_links) or "(no download links)"
     msg = (
         f"<p>Your EswasaOne standards purchase <b>{order.order_id}</b> is ready.</p>"
-        f"<p>Licensed download links (watermarked; personal use only — no public redistribution):</p>"
+        f"<p>Licensed download links (watermarked; personal use only, no public redistribution):</p>"
         f"<pre>{links_block}</pre>"
         f"<p>Full standard text is not included in this email. Use the secure link to download.</p>"
     )
     notify_email(
         [order.user_email] if order.user_email else [],
-        f"EswasaOne download ready — {order.order_id}",
+        f"EswasaOne download ready: {order.order_id}",
         msg,
     )
 
@@ -513,7 +513,7 @@ def _ensure_standard_product(code: str, item: dict[str, Any]) -> str | None:
                 "sector": item.get("sector") or "General",
                 "rights": "licensed",
                 "is_published": 1,
-                "description": f"<p>Catalogue stub for {code} — licensed; no full text.</p>",
+                "description": f"<p>Catalogue stub for {code}: licensed; no full text.</p>",
             }
         )
         doc.insert(ignore_permissions=True)
@@ -654,7 +654,7 @@ def re2_mark_paid_and_fulfil(
 
         publish_feed(
             event="payment.settled",
-            subject=f"MoMo paid — {order.order_id}",
+            subject=f"MoMo paid: {order.order_id}",
             reference_doctype="Estore Order",
             reference_name=order.name,
             detail=f"source={source} pe={order.payment_entry or 'stub'}",
@@ -706,7 +706,7 @@ def _order_purpose(order) -> str | None:
 def _fulfil_cert_fee(order) -> dict[str, Any]:
     """Cert fee payment — leave marking to certification; comment + feed only."""
     # TODO: wire real — notify eswasa_certification when fee Sales Invoice settles
-    _comment(order.doctype, order.name, "[R-E2] cert_fee fulfilment stub — invoice settle")
+    _comment(order.doctype, order.name, "[R-E2] cert_fee fulfilment stub (invoice settle)")
     order.db_set("fulfilment_status", "Fulfilled", update_modified=False)
     return {"ok": True, "kind": "cert_fee", "stub": True}
 
@@ -714,7 +714,7 @@ def _fulfil_cert_fee(order) -> dict[str, Any]:
 def _fulfil_enrolment(order) -> dict[str, Any]:
     """Training enrolment payment stub."""
     # TODO: wire real — LMS enrolment on paid training fee
-    _comment(order.doctype, order.name, "[R-E2] enrolment fulfilment stub — LMS enrol")
+    _comment(order.doctype, order.name, "[R-E2] enrolment fulfilment stub (LMS enrol)")
     order.db_set("fulfilment_status", "Fulfilled", update_modified=False)
     return {"ok": True, "kind": "enrolment", "stub": True}
 
@@ -731,7 +731,7 @@ def _create_payment_entry(
         return order.payment_entry
 
     if not frappe.db.exists("DocType", "Payment Entry"):
-        _comment(order.doctype, order.name, "[R-E2] Payment Entry DocType missing — stub")
+        _comment(order.doctype, order.name, "[R-E2] Payment Entry DocType missing; stub")
         return None
 
     company = _default_company()
@@ -746,7 +746,7 @@ def _create_payment_entry(
     customer_name = order.customer or "EswasaOne Buyer"
     party = _ensure_customer(customer_name, order.user_email)
     if not party:
-        _comment(order.doctype, order.name, "[R-E2] Customer missing — Payment Entry stubbed")
+        _comment(order.doctype, order.name, "[R-E2] Customer missing; Payment Entry stubbed")
         return None
 
     mop = _mode_of_payment()
@@ -756,7 +756,7 @@ def _create_payment_entry(
         _comment(
             order.doctype,
             order.name,
-            f"[R-E2] MoP/account missing (mop={mop}, from={paid_from}, to={paid_to}) — PE stubbed",
+            f"[R-E2] MoP/account missing (mop={mop}, from={paid_from}, to={paid_to}); PE stubbed",
         )
         return None
 
@@ -864,7 +864,7 @@ def re3_momo_fail(
     )
     notify_email(
         [order.user_email] if order.user_email else [],
-        f"EswasaOne payment failed — retry {order.order_id}",
+        f"EswasaOne payment failed: retry {order.order_id}",
         msg,
     )
     # TODO: wire real — SMS / WhatsApp via Core messaging adapter
@@ -875,7 +875,7 @@ def re3_momo_fail(
 
     publish_feed(
         event="payment.failed",
-        subject=f"MoMo failed — {order.order_id}",
+        subject=f"MoMo failed: {order.order_id}",
         reference_doctype="Estore Order",
         reference_name=order.name,
         detail=fail_reason,

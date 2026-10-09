@@ -52,7 +52,7 @@ export function PwaUpdateBanner() {
           </button>
         </>
       ) : (
-        <span>Ready offline — shell cached on this device</span>
+        <span>Ready offline: shell cached on this device</span>
       )}
     </div>
   );

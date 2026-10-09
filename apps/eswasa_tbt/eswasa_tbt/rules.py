@@ -104,7 +104,7 @@ def publish_feed(
     _comment(
         reference_doctype,
         reference_name,
-        f"[feed:{event}] {subject}" + (f" — {detail}" if detail else ""),
+        f"[feed:{event}] {subject}" + (f": {detail}" if detail else ""),
     )
 
 
@@ -325,7 +325,7 @@ def match_subscriptions(classification: dict[str, Any]) -> list[dict[str, Any]]:
 def _add_export_guidance(doc, classification: dict[str, Any]) -> str | None:
     """Create Draft Market Requirement linked as Export guidance (R-T1)."""
     if not frappe.db.exists("DocType", "Market Requirement"):
-        _comment(doc.doctype, doc.name, "[R-T1] Market Requirement DocType missing — guidance stub")
+        _comment(doc.doctype, doc.name, "[R-T1] Market Requirement DocType missing; guidance stub")
         return None
 
     title = f"TBT Export: {doc.get('symbol') or doc.name}"[:140]
@@ -543,7 +543,7 @@ def rt2_high_impact_alert(
             doctype=doc.doctype,
             name=doc.name,
             role=role,
-            description=f"R-T2 HIGH impact TBT {symbol} — sectors: {', '.join(sectors)}",
+            description=f"R-T2 HIGH impact TBT {symbol}, sectors: {', '.join(sectors)}",
             priority="High",
         )
 

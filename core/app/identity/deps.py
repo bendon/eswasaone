@@ -248,7 +248,7 @@ async def require_auth(
     if auth.locked:
         raise AuthRequired(
             reason="session_locked",
-            detail="Session locked due to inactivity — unlock with password",
+            detail="Session locked due to inactivity. Unlock with password",
         )
     return auth
 

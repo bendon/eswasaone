@@ -56,7 +56,7 @@ async def momo_callback(
             "financial_transaction_id": event.financial_transaction_id,
         },
         title=title,
-        body=f"{event.reference_id or 'n/a'} — {event.status.value}",
+        body=f"{event.reference_id or 'n/a'}: {event.status.value}",
         severity=severity,  # type: ignore[arg-type]
     )
     audit_log(
@@ -166,7 +166,7 @@ async def sla_sweep(
     if auth.mock or not await frappe.health():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Frappe unavailable — SLA sweep requires live approvals queue",
+            detail="Frappe unavailable: SLA sweep requires live approvals queue",
         )
 
     session = auth.frappe(frappe)

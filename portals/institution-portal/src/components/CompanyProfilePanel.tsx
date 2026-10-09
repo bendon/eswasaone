@@ -139,7 +139,7 @@ export function CompanyProfilePanel({
         <div>
           <h3 style={{ margin: 0 }}>Company profile</h3>
           <p style={{ margin: "4px 0 0", color: "var(--muted)" }}>
-            The Frappe Company used by HR structure, payroll, and Finance. Create once, then edit
+            The organisation used by HR structure, payroll, and Finance. Create once, then edit
             details here.
           </p>
         </div>
@@ -267,7 +267,7 @@ function CompanyFields({
               value={abbr}
               onChange={(e) => setAbbr(e.target.value)}
               style={inputStyle}
-              placeholder="ESW (optional — auto from name)"
+              placeholder="ESW (optional, auto from name)"
             />
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

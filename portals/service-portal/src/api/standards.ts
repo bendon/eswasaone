@@ -1,4 +1,5 @@
-import { apiFetch } from "@eswasaone/shared-ui";
+import { apiFetch, demoDataEnabled } from "@eswasaone/shared-ui";
+import { publicCatalogue } from "@eswasaone/shared-ui/standards";
 
 export type StandardSummary = {
   code: string;
@@ -14,7 +15,7 @@ export type StandardSummary = {
 const FALLBACK: StandardSummary[] = [
   {
     code: "SZNS 060",
-    title: "Honey — Specification",
+    title: "Honey: Specification",
     sector: "Food",
     status: "Current",
     year: 2021,
@@ -25,7 +26,7 @@ const FALLBACK: StandardSummary[] = [
   },
   {
     code: "SZNS ISO 9001",
-    title: "Quality management systems — Requirements",
+    title: "Quality management systems: Requirements",
     sector: "Management",
     status: "Current",
     year: 2015,
@@ -53,12 +54,12 @@ const FALLBACK: StandardSummary[] = [
     year: 2018,
     price: "SZL 180",
     abstract:
-      "Requirements for the labelling of pre-packaged goods — including mandatory information, allergen declaration, and language requirements for products sold in Eswatini.",
+      "Requirements for the labelling of pre-packaged goods, including mandatory information, allergen declaration, and language requirements for products sold in Eswatini.",
     buy_url: "/estore/SZNS-001",
   },
   {
     code: "SZNS ISO 22000",
-    title: "Food safety management systems — Requirements",
+    title: "Food safety management systems: Requirements",
     sector: "Management",
     status: "Current",
     year: 2018,
@@ -69,7 +70,7 @@ const FALLBACK: StandardSummary[] = [
   },
   {
     code: "SZNS 187",
-    title: "Bottled drinking water — Specification",
+    title: "Bottled drinking water: Specification",
     sector: "Environment",
     status: "Current",
     year: 2020,
@@ -113,6 +114,13 @@ export async function listStandards(q?: string, sector?: string): Promise<Standa
     const key = slug(f.code).toLowerCase();
     if (!bySlug.has(key)) bySlug.set(key, f);
   }
+  // Demo: the shared catalogue (what staff publish in Standards → Publication) is listed too.
+  if (demoDataEnabled())
+    for (const c of publicCatalogue()) {
+      const key = slug(c.ref.split(":")[0]).toLowerCase();
+      const row: StandardSummary = { code: c.ref, title: c.title, sector: c.sector, status: c.status === "current" ? (c.compulsory ? "Compulsory" : "Current") : c.status === "draft" ? "Draft for comment" : c.status === "superseded" ? `Superseded by ${c.superseded_by ?? ""}` : "Withdrawn", year: new Date(c.published_at).getFullYear(), price: c.price ? `SZL ${c.price}` : undefined, abstract: c.abstract, buy_url: c.status === "current" ? `/estore/${slug(c.ref)}` : undefined };
+      bySlug.set(key, { ...bySlug.get(key), ...row });
+    }
   items = [...bySlug.values()];
   if (q) {
     const ql = q.toLowerCase();

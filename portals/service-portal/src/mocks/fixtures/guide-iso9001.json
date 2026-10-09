@@ -10,7 +10,7 @@
   "steps": [
     {
       "title": "Define your QMS scope",
-      "detail": "Decide which sites and processes the certification will cover — this sets the audit scope and fee band.",
+      "detail": "Decide which sites and processes the certification will cover. This sets the audit scope and fee band.",
       "citations": [{ "label": "ISO 9001 scheme", "url": "#", "rights": "public" }],
       "action": null
     },

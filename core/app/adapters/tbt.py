@@ -149,11 +149,11 @@ def mock_recent_notifications(*, limit: int = 3) -> list[TbtNotification]:
             "sectors": ["food", "labelling"],
             "distributionDate": "2026-01-15T00:00:00Z",
             "url": "https://epingalert.org/",
-            "summary": "Open WTO/TBT notice — paraphrase only; cite source.",
+            "summary": "Open WTO/TBT notice: paraphrase only; cite source.",
         },
         {
             "id": "G/TBT/N/ZAF/280",
-            "title": "Electrotechnical products — safety marking requirements",
+            "title": "Electrotechnical products: safety marking requirements",
             "country": "ZAF",
             "hsCodes": ["8501"],
             "sectors": ["electrotechnical"],
@@ -162,7 +162,7 @@ def mock_recent_notifications(*, limit: int = 3) -> list[TbtNotification]:
         },
         {
             "id": "G/TBT/N/KEN/145",
-            "title": "Cosmetics — ingredient disclosure",
+            "title": "Cosmetics: ingredient disclosure",
             "country": "KEN",
             "products": ["cosmetics"],
             "sectors": ["chemicals"],
@@ -207,7 +207,7 @@ class TbtAdapter:
             return TbtHandoffResult(
                 accepted=len(payload.notifications),
                 stubbed=True,
-                detail="TBT_HANDOFF_URL empty — stubbed handoff for eswasa_tbt/ingest",
+                detail="TBT_HANDOFF_URL empty; stubbed handoff for eswasa_tbt/ingest",
                 payload=payload,
             )
 

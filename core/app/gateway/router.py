@@ -31,7 +31,10 @@ from app.schemas import (
     ApprovalsResponse,
     AuditSummary,
     CertificationApplication,
+    CertificationScheme,
     CheckoutRequest,
+    CreateCertificationQuote,
+    IssueCertificationQuote,
     CheckoutResult,
     Citation,
     CreateCertificationApplication,
@@ -142,6 +145,15 @@ def _as_app(raw: Any) -> CertificationApplication:
     if isinstance(raw, CertificationApplication):
         return raw
     data = raw if isinstance(raw, dict) else {}
+    quote = None
+    quote_raw = data.get("quote")
+    if isinstance(quote_raw, dict) and quote_raw.get("id"):
+        try:
+            from app.schemas import CertificationQuote
+
+            quote = CertificationQuote.model_validate(quote_raw)
+        except Exception:
+            quote = None
     return CertificationApplication(
         id=str(data.get("id") or data.get("name") or ""),
         scheme=str(data.get("scheme") or ""),
@@ -149,7 +161,40 @@ def _as_app(raw: Any) -> CertificationApplication:
         status=str(data.get("status") or data.get("workflow_state") or ""),
         created_at=data.get("created_at") or data.get("creation"),
         updated_at=data.get("updated_at") or data.get("modified"),
+        quote=quote,
     )
+
+
+async def _ensure_quote_pdf(
+    *,
+    session: Any,
+    quote: dict[str, Any],
+) -> dict[str, Any]:
+    """Render quotation PDF → S3; persist key/url on the Certification Application."""
+    from app.gateway.quote_pdf import store_quote_pdf
+    from app.media.store import get_media_store
+
+    app_id = quote.get("application_id")
+    existing_url = quote.get("pdf_url")
+    existing_key = quote.get("pdf_key")
+    if existing_url and existing_key:
+        return {"pdf_url": existing_url, "pdf_key": existing_key, "cached": True}
+
+    stored = store_quote_pdf(quote, store=get_media_store(), application_id=app_id)
+    if app_id:
+        try:
+            await session.method(
+                "eswasa_certification.api.set_quotation_pdf",
+                params={
+                    "name": app_id,
+                    "media_key": stored["media_key"],
+                    "pdf_url": stored["pdf_url"],
+                },
+            )
+        except Exception:
+            logging.getLogger(__name__).exception("set_quotation_pdf failed for %s", app_id)
+    quote = {**quote, "pdf_url": stored["pdf_url"], "pdf_key": stored["media_key"]}
+    return {**stored, "quote": quote, "cached": False}
 
 
 def _as_audits(raw: Any) -> list[AuditSummary]:
@@ -188,7 +233,7 @@ async def get_institution_home(
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> InstitutionHome:
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable — Institution home requires live seed")
+        raise HTTPException(status_code=503, detail="Frappe unavailable: Institution home requires live seed")
     try:
         raw = await auth.frappe(frappe).method("eswasa_governance.api.institution_home")
         return InstitutionHome.model_validate(raw)
@@ -214,6 +259,23 @@ async def get_service_home(
 
 
 # --- Certification (WS2) ----------------------------------------------------
+
+
+@router.get("/certification/schemes", tags=["certification"])
+async def list_certification_schemes(
+    auth: Annotated[AuthContext, Depends(get_actor)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, list[CertificationScheme]]:
+    """Public catalogue: active Certification Schemes (codes accepted by POST /applications)."""
+    if auth.mock or not await frappe.health():
+        return {"items": mocks.mock_schemes()}
+    try:
+        raw = await auth.frappe(frappe).method("eswasa_certification.api.list_schemes")
+        items_raw = raw.get("items", raw) if isinstance(raw, dict) else raw
+        return {"items": [CertificationScheme.model_validate(i) for i in (items_raw or [])]}
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
 
 
 @router.get("/certification/applications", tags=["certification"])
@@ -350,8 +412,9 @@ async def act_certification_application(
     )
     if auth.mock or not await frappe.health():
         raise HTTPException(status_code=503, detail="Frappe unavailable")
+    session = auth.frappe(frappe)
     try:
-        raw = await auth.frappe(frappe).method(
+        raw = await session.method(
             "eswasa_certification.workflow_act.act",
             json={
                 "doctype": "Certification Application",
@@ -364,7 +427,29 @@ async def act_certification_application(
                 "confirm": True,
             },
         )
-        return _as_app(raw)
+        app = _as_app(raw)
+        action_key = (body.action or "").lower().replace("-", "_").replace(" ", "_")
+        if action_key in ("issue_quotation",) or (
+            isinstance(raw, dict) and (raw.get("status") or "").lower() in ("quote ready", "quoted")
+        ):
+            try:
+                detail = await session.method(
+                    "eswasa_certification.api.get_application",
+                    params={"name": id},
+                )
+                quote = (detail or {}).get("quote") if isinstance(detail, dict) else None
+                if quote:
+                    pdf = await _ensure_quote_pdf(session=session, quote=quote)
+                    if pdf.get("quote"):
+                        from app.schemas import CertificationQuote
+
+                        try:
+                            app.quote = CertificationQuote.model_validate(pdf["quote"])
+                        except Exception:
+                            pass
+            except Exception:
+                logging.getLogger(__name__).exception("quote PDF after act failed for %s", id)
+        return app
     except FrappeError as exc:
         _raise_from_frappe(exc)
         raise  # pragma: no cover
@@ -536,6 +621,158 @@ async def act_field_visit(
         frappe=frappe,
         extra={"doctype": "Field Visit"},
     )
+
+
+@router.get("/certification/quotes", tags=["certification"])
+async def list_certification_quotes(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    limit: int = 100,
+) -> dict[str, list[dict[str, Any]]]:
+    if auth.mock or not await frappe.health():
+        return {"items": []}
+    try:
+        raw = await auth.frappe(frappe).method(
+            "eswasa_certification.api.list_quotes",
+            params={"limit": limit},
+        )
+        items_raw = raw.get("items", raw) if isinstance(raw, dict) else raw
+        return {"items": list(items_raw or [])}
+    except FrappeError as exc:
+        text = str(exc)
+        if (
+            exc.status_code == 403
+            or "PermissionError" in text
+            or "Insufficient Permission" in text
+            or "Not permitted" in text
+        ):
+            return {"items": []}
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
+
+
+@router.post(
+    "/certification/quotes",
+    status_code=status.HTTP_201_CREATED,
+    tags=["certification"],
+)
+async def create_certification_quote(
+    body: CreateCertificationQuote,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    if not body.confirm:
+        raise HTTPException(status_code=400, detail="confirm=true required before commit")
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    try:
+        raw = await auth.frappe(frappe).method(
+            "eswasa_certification.api.create_quote_request",
+            params=body.model_dump(exclude_none=True),
+        )
+        return raw if isinstance(raw, dict) else {"id": str(raw)}
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
+
+
+@router.post(
+    "/certification/quotes/{id}/issue",
+    tags=["certification"],
+)
+async def issue_certification_quote(
+    id: str,
+    body: IssueCertificationQuote,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    if not body.confirm:
+        raise HTTPException(status_code=400, detail="confirm=true required before commit")
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    params: dict[str, Any] = {
+        "name": id,
+        "confirm": True,
+        "valid_days": body.valid_days,
+        "notes": body.notes,
+    }
+    if body.lines is not None:
+        params["lines"] = [ln.model_dump() for ln in body.lines]
+    session = auth.frappe(frappe)
+    try:
+        raw = await session.method(
+            "eswasa_certification.api.issue_quote",
+            params=params,
+        )
+        quote = raw if isinstance(raw, dict) else {"id": id}
+        if quote.get("status") in ("issued", "accepted") or quote.get("lines"):
+            try:
+                pdf = await _ensure_quote_pdf(session=session, quote=quote)
+                if pdf.get("quote"):
+                    quote = pdf["quote"]
+                else:
+                    quote["pdf_url"] = pdf.get("pdf_url")
+                    quote["pdf_key"] = pdf.get("media_key") or pdf.get("pdf_key")
+            except Exception:
+                logging.getLogger(__name__).exception("quote PDF upload failed for %s", id)
+        return quote
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
+
+
+@router.get("/certification/quotes/{id}/pdf", tags=["certification"])
+async def get_certification_quote_pdf(
+    id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    """Ensure quotation PDF is in S3 and return a citizen-accessible URL."""
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    session = auth.frappe(frappe)
+    try:
+        raw = await session.method(
+            "eswasa_certification.api.list_quotes",
+            params={"limit": 200},
+        )
+        items = (raw.get("items") if isinstance(raw, dict) else None) or []
+        quote = next(
+            (
+                q
+                for q in items
+                if isinstance(q, dict)
+                and (
+                    q.get("id") == id
+                    or q.get("quotation") == id
+                    or q.get("application_id") == id
+                )
+            ),
+            None,
+        )
+        if not quote:
+            # Fall back: treat id as application name
+            app = await session.method(
+                "eswasa_certification.api.get_application",
+                params={"name": id},
+            )
+            quote = (app or {}).get("quote") if isinstance(app, dict) else None
+        if not quote:
+            raise HTTPException(status_code=404, detail="Quote not found")
+        pdf = await _ensure_quote_pdf(session=session, quote=quote)
+        return {
+            "id": quote.get("id") or id,
+            "application_id": quote.get("application_id"),
+            "download_url": pdf.get("pdf_url") or (pdf.get("quote") or {}).get("pdf_url"),
+            "media_key": pdf.get("media_key") or pdf.get("pdf_key"),
+            "backend": pdf.get("backend"),
+            "cached": pdf.get("cached", False),
+        }
+    except HTTPException:
+        raise
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
 
 
 @router.get("/certification/audits/overdue", tags=["certification"])
@@ -940,7 +1177,7 @@ async def list_approvals(
     limit: int = 20,
 ) -> ApprovalsResponse:
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable — approvals require live Workflow Action queue")
+        raise HTTPException(status_code=503, detail="Frappe unavailable: approvals require live Workflow Action queue")
     try:
         raw = await auth.frappe(frappe).method(
             "eswasa_governance.api.list_approvals",
@@ -2573,8 +2810,8 @@ async def create_hr_grade_band(
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=(
-                    f"DocType {_EMPLOYEE_GRADE_DOCTYPE} is not installed — "
-                    "enable HRMS Employee Grade before creating grade bands"
+                    f"DocType {_EMPLOYEE_GRADE_DOCTYPE} is not installed. "
+                    "Enable HRMS Employee Grade before creating grade bands"
                 ),
             ) from exc
         if "ValidationError" in text or "mandatory" in text.lower():
@@ -3257,7 +3494,7 @@ async def _aggregate_hr_summary(session: FrappeClient) -> HrSummary:
             HrActivityItem(
                 id=str(row.get("name") or ""),
                 kind="leave",
-                title=f"Leave pending — {row.get('employee_name') or row.get('employee') or ''}",
+                title=f"Leave pending: {row.get('employee_name') or row.get('employee') or ''}",
                 at=str(row.get("modified")) if row.get("modified") else None,
             )
         )
@@ -3267,7 +3504,7 @@ async def _aggregate_hr_summary(session: FrappeClient) -> HrSummary:
                 HrActivityItem(
                     id=str(row.get("name") or ""),
                     kind="hire",
-                    title=f"New hire — {row.get('employee_name') or row.get('name')}",
+                    title=f"New hire: {row.get('employee_name') or row.get('name')}",
                     at=str(row.get("date_of_joining")),
                 )
             )
@@ -4384,7 +4621,7 @@ async def get_hr_payroll_status(
         if not rows:
             return HrPayrollStatus(
                 status="none",
-                message="No payroll entry yet — HR can create one when payroll is due",
+                message="No payroll entry yet. HR can create one when payroll is due",
             )
         row = rows[0]
         st = str(row.get("status") or "")
@@ -4750,7 +4987,7 @@ async def analytics_ask(
     if not body.question or not body.question.strip():
         raise HTTPException(status_code=400, detail="question is required")
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable — analytics requires live data")
+        raise HTTPException(status_code=503, detail="Frappe unavailable: analytics requires live data")
     try:
         raw = await analytics_bridge.ask_analytics(auth.frappe(frappe), body.question.strip())
         return AnalyticsAskResponse.model_validate(raw)
@@ -4768,7 +5005,7 @@ async def list_analytics_reports(
 ) -> dict[str, list[AnalyticsReportSummary]]:
     """Catalogue of Core-backed reports. Requires live Frappe (no mock KPIs)."""
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable — analytics requires live data")
+        raise HTTPException(status_code=503, detail="Frappe unavailable: analytics requires live data")
     # Health gate only — catalogue ids map to live GET /analytics/{metric}.
     items = [AnalyticsReportSummary.model_validate(r) for r in analytics_bridge.list_report_summaries()]
     return {"items": items}
@@ -4781,7 +5018,7 @@ async def get_analytics_metric(
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> dict[str, Any]:
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable — analytics requires live data")
+        raise HTTPException(status_code=503, detail="Frappe unavailable: analytics requires live data")
     try:
         return await analytics_bridge.fetch_metric(auth.frappe(frappe), metric)
     except FrappeError as exc:
@@ -4843,6 +5080,223 @@ async def list_certification_audits(
     except FrappeError as exc:
         _raise_from_frappe(exc)
         raise  # pragma: no cover
+
+
+# --- Certification findings (Audit Finding) ---------------------------------
+# Desk Findings view: NCs raised by R-C2 / Field audits / desk, plus the
+# corrective-action review. Shape matches institution-portal DeskFinding.
+
+_FINDING_SEVERITY = {"Major NC": "major", "Minor NC": "minor", "Observation": "observation", "OFI": "observation"}
+_SEVERITY_TO_TYPE = {"major": "Major NC", "minor": "Minor NC", "observation": "Observation"}
+_REVIEW_PREFIX = "[finding-review]"
+
+
+class RaiseFindingBody(BaseModel):
+    clause: str
+    severity: Literal["major", "minor", "observation"]
+    statement: str
+    due: str
+    org: str | None = None
+    confirm: bool = False
+
+
+class ReviewFindingBody(BaseModel):
+    accept: bool
+    note: str = ""
+    confirm: bool = False
+
+
+def _finding_status(row: dict[str, Any], review: dict[str, Any] | None) -> str:
+    s = str(row.get("status") or "Open")
+    if s == "Closed":
+        return "accepted"
+    if s == "Under Review":
+        return "submitted"
+    if review and review.get("accept") is False:
+        return "rejected"
+    return "open"
+
+
+def _as_desk_finding(row: dict[str, Any], review: dict[str, Any] | None = None) -> dict[str, Any]:
+    status_ = _finding_status(row, review)
+    ca = (row.get("corrective_action") or "").strip()
+    return {
+        "id": row.get("name"),
+        "application_id": row.get("application") or "",
+        "audit_id": row.get("audit"),
+        "org": "",
+        "clause": row.get("clause_ref") or row.get("finding_type") or "",
+        "severity": _FINDING_SEVERITY.get(str(row.get("finding_type") or ""), "observation"),
+        "statement": row.get("description") or "",
+        "raised_at": str(row.get("creation") or ""),
+        "due": str(row.get("due_date") or row.get("creation") or ""),
+        "status": status_,
+        "response": (
+            {"root_cause": "", "correction": "", "corrective_action": ca, "evidence": []}
+            if ca and status_ in ("submitted", "accepted")
+            else None
+        ),
+        "review_note": (review or {}).get("note") or None,
+    }
+
+
+async def _finding_reviews(session: FrappeClient, names: list[str]) -> dict[str, dict[str, Any]]:
+    """Latest desk review per finding, kept as Comments (no review fields on the doctype)."""
+    if not names:
+        return {}
+    rows = await _frappe_get_list(
+        session,
+        "Comment",
+        fields=["reference_name", "content", "creation"],
+        filters=[
+            ["reference_doctype", "=", "Audit Finding"],
+            ["reference_name", "in", names],
+            ["content", "like", f"{_REVIEW_PREFIX}%"],
+        ],
+        limit=len(names) * 5,
+        order_by="creation asc",
+        soft=True,
+    )
+    out: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        text = str(r.get("content") or "")[len(_REVIEW_PREFIX) :].strip()
+        verdict, _, note = text.partition(":")
+        out[str(r.get("reference_name"))] = {"accept": verdict.strip() == "accepted", "note": note.strip()}
+    return out
+
+
+_FINDING_FIELDS = [
+    "name",
+    "audit",
+    "application",
+    "finding_type",
+    "status",
+    "clause_ref",
+    "due_date",
+    "description",
+    "corrective_action",
+    "creation",
+]
+
+
+@router.get("/certification/findings", tags=["certification"])
+async def list_certification_findings(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    application_id: str | None = None,
+    limit: int = 200,
+) -> dict[str, list[dict[str, Any]]]:
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    session = auth.frappe(frappe)
+    filters = [["application", "=", application_id]] if application_id else None
+    rows = await _frappe_get_list(
+        session,
+        "Audit Finding",
+        fields=_FINDING_FIELDS,
+        filters=filters,
+        limit=limit,
+        order_by="due_date asc",
+        soft=True,
+    )
+    reviews = await _finding_reviews(session, [str(r.get("name")) for r in rows])
+    return {"items": [_as_desk_finding(r, reviews.get(str(r.get("name")))) for r in rows]}
+
+
+@router.post("/certification/applications/{id}/findings", tags=["certification"])
+async def raise_certification_finding(
+    id: str,
+    body: RaiseFindingBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    if not body.confirm:
+        raise HTTPException(status_code=400, detail="confirm=true required before commit")
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    session = auth.frappe(frappe)
+    audits = await _frappe_get_list(
+        session,
+        "Audit",
+        fields=["name"],
+        filters=[["application", "=", id]],
+        limit=1,
+        order_by="creation desc",
+    )
+    if not audits:
+        raise HTTPException(
+            status_code=409,
+            detail=f"{id} has no audit yet. Schedule an audit before raising a finding.",
+        )
+    doc = await _frappe_insert(
+        session,
+        {
+            "doctype": "Audit Finding",
+            "audit": audits[0]["name"],
+            "application": id,
+            "finding_type": _SEVERITY_TO_TYPE[body.severity],
+            "status": "Open",
+            "clause_ref": body.clause,
+            "description": body.statement,
+            "due_date": body.due[:10],
+        },
+    )
+    audit_log(
+        action="certification.findings.raise",
+        actor=auth.user.username,
+        resource=str(doc.get("name") or id),
+        detail={"application": id, "severity": body.severity, "clause": body.clause},
+        confirmed=True,
+    )
+    return _as_desk_finding(doc)
+
+
+@router.post("/certification/findings/{id}/review", tags=["certification"])
+async def review_certification_finding(
+    id: str,
+    body: ReviewFindingBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    if not body.confirm:
+        raise HTTPException(status_code=400, detail="confirm=true required before commit")
+    if not body.accept and not body.note.strip():
+        raise HTTPException(status_code=400, detail="A review note is required when returning a finding")
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    session = auth.frappe(frappe)
+    # set_value runs doc.save → on_update R-C2 close clears the certificate block.
+    fields: dict[str, Any] = (
+        {"status": "Closed", "closed_on": date.today().isoformat()}
+        if body.accept
+        else {"status": "Open"}
+    )
+    raw = await _frappe_set_value(session, "Audit Finding", id, fields)
+    verdict = "accepted" if body.accept else "returned"
+    try:
+        await session.method(
+            "frappe.client.insert",
+            json={
+                "doc": {
+                    "doctype": "Comment",
+                    "comment_type": "Comment",
+                    "reference_doctype": "Audit Finding",
+                    "reference_name": id,
+                    "content": f"{_REVIEW_PREFIX} {verdict}: {body.note.strip()}",
+                }
+            },
+        )
+    except FrappeError:
+        logger.warning("finding review comment not saved for %s", id)
+    audit_log(
+        action=f"certification.findings.review.{verdict}",
+        actor=auth.user.username,
+        resource=id,
+        detail={"note": body.note},
+        confirmed=True,
+    )
+    row = raw if isinstance(raw, dict) else {"name": id, "status": fields["status"]}
+    return _as_desk_finding(row, {"accept": body.accept, "note": body.note.strip()})
 
 
 @router.get("/certification/certificates", tags=["certification"])

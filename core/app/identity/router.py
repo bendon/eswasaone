@@ -139,7 +139,7 @@ async def _send_otp_code(
     if result.stubbed:
         msg = (
             "Enter the one-time code. Email delivery is not configured yet "
-            "(SMTP) — the code is in the Core server log."
+            "(SMTP). The code is in the Core server log."
         )
         logger.info("OTP for %s stubbed=True code=%s", email_to, code)
         return msg, True
@@ -268,13 +268,13 @@ async def login(
         if not challenge:
             raise AuthRequired(
                 reason="challenge_required",
-                detail="Sign-in expired — enter your password again, then the new code.",
+                detail="Sign-in expired. Enter your password again, then the new code.",
             )
         if challenge.get("expires", 0) < time.time():
             _CHALLENGES.pop(body.challenge_id or "", None)
             raise AuthRequired(
                 reason="challenge_required",
-                detail="Sign-in expired — enter your password again, then the new code.",
+                detail="Sign-in expired. Enter your password again, then the new code.",
             )
 
         otp_key = str(challenge.get("identity", "")).lower()
@@ -497,7 +497,7 @@ async def _send_register_confirmation(
                 f"Hello {name},\n\n"
                 f"Your EswasaOne Service Portal account is ready.{org_line}\n"
                 f"Sign in at https://eswasaone.aiceafrica.com/\n\n"
-                f"— Eswatini Standards Authority"
+                f"Eswatini Standards Authority"
             ),
         )
     )
@@ -545,7 +545,7 @@ async def unlock(
         # Prefer a typed reason so portals can escalate to full sign-in.
         raise AuthRequired(
             reason="session_expired",
-            detail="Session required to unlock — sign in again",
+            detail="Session required to unlock. Sign in again",
         )
 
     data = store.get(auth.token)
@@ -558,7 +558,7 @@ async def unlock(
         clear_session_cookies(response, settings)
         raise AuthRequired(
             reason="otp_expired",
-            detail="OTP trust window expired — sign in with password and OTP",
+            detail="OTP trust window expired. Sign in with password and OTP",
         )
 
     identity = (body.email or body.username or auth.user.username).strip()
@@ -602,13 +602,13 @@ async def touch(
     if not data:
         raise AuthRequired(detail="Session expired")
     if data.get("locked"):
-        raise AuthRequired(reason="session_locked", detail="Session locked — unlock required")
+        raise AuthRequired(reason="session_locked", detail="Session locked; unlock required")
     otp_until = float(data.get("otp_verified_until") or 0)
     if otp_until < time.time():
         store.delete(auth.token)
         raise AuthRequired(
             reason="otp_expired",
-            detail="OTP trust window expired — sign in again",
+            detail="OTP trust window expired. Sign in again",
         )
     store.touch(auth.token)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -641,7 +641,7 @@ async def invite_staff(
         # Frappe welcome email also needs Email Account; Core SMTP is the shared signal
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="SMTP not configured — set SMTP_* and run configure_smtp.py before inviting staff",
+            detail="SMTP not configured. Set SMTP_* and run configure_smtp.py before inviting staff",
         )
 
     try:
@@ -783,7 +783,7 @@ async def request_password_reset(
             if not messaging.config.email_configured:
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="Email delivery is not configured — contact ESWASA to reset your password.",
+                    detail="Email delivery is not configured. Contact ESWASA to reset your password.",
                 ) from exc
             stubbed = True
 
@@ -820,7 +820,7 @@ async def request_password_reset(
     if not messaging.config.email_configured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Email delivery is not configured — contact ESWASA support to reset your password.",
+            detail="Email delivery is not configured. Contact ESWASA support to reset your password.",
         )
 
     stubbed = False
@@ -885,7 +885,7 @@ async def request_password_reset(
     if not messaging.config.email_configured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="SMTP not configured — cannot send password reset link",
+            detail="SMTP not configured; cannot send password reset link",
         )
 
     stubbed = False
@@ -939,7 +939,7 @@ async def request_password_reset(
     if not messaging.config.email_configured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="SMTP not configured — contact the administrator to reset your password.",
+            detail="SMTP not configured. Contact the administrator to reset your password.",
         )
 
     email = body.email.strip().lower()

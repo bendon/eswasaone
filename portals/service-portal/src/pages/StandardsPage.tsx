@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
-import { Link, useOutletContext } from "react-router-dom";
-import { Icon, type IconName } from "@eswasaone/shared-ui";
+import { Link, useOutletContext, useSearchParams } from "react-router-dom";
+import { Icon, Select, type IconName } from "@eswasaone/shared-ui";
 import { listStandards, slug, type StandardSummary } from "../api/standards";
 import type { LayoutOutletContext } from "../layout/ServiceLayout";
 import { Breadcrumbs } from "../components/Breadcrumbs";
+import { HelpBand } from "../components/HelpBand";
+import { OutlineCard } from "../components/OutlineCard";
+import { StaggeredGrid } from "../components/StaggeredGrid";
 import { safeText } from "../lib/safe";
 import { useCartToast } from "../ui/CartToast";
 
@@ -47,6 +50,10 @@ type Collection = {
   title: string;
   body: string;
   count: string;
+  countIcon: IconName;
+  tag: string;
+  cta: string;
+  hint: string;
   icon: IconName;
   tint: string;
   tone: string;
@@ -58,6 +65,10 @@ const COLLECTIONS: Collection[] = [
     title: "Food export starter pack",
     body: "Eleven standards covering labelling, hygiene, and contaminant limits for exporters of packaged food and agro-processed goods.",
     count: "11 standards",
+    countIcon: "i-layers",
+    tag: "Bundle",
+    cta: "Browse pack",
+    hint: "See all 11",
     icon: "i-globe",
     tint: "#E3F4E9",
     tone: "#15803D",
@@ -65,8 +76,12 @@ const COLLECTIONS: Collection[] = [
   {
     to: "/standards?collection=sme",
     title: "SME certification toolkit",
-    body: "ISO 9001, ISO 22000, and the SZNS Product Mark — everything an MSME needs to prepare for ESWASA certification.",
+    body: "ISO 9001, ISO 22000, and the SZNS Product Mark: everything an MSME needs to prepare for ESWASA certification.",
     count: "6 standards",
+    countIcon: "i-layers",
+    tag: "Toolkit",
+    cta: "Browse toolkit",
+    hint: "See all 6",
     icon: "i-badge",
     tint: "#ECEEFC",
     tone: "#313391",
@@ -76,6 +91,10 @@ const COLLECTIONS: Collection[] = [
     title: "Free to download",
     body: "Forty-five standards and technical references available at no cost, including all terminology and basic labelling guidance.",
     count: "45 standards",
+    countIcon: "i-download",
+    tag: "Free",
+    cta: "Browse free",
+    hint: "No cost",
     icon: "i-download",
     tint: "#FEF6DC",
     tone: "#D9A800",
@@ -85,6 +104,10 @@ const COLLECTIONS: Collection[] = [
     title: "Construction & materials",
     body: "Cement, aggregates, structural steel, and plumbing standards for contractors and local manufacturers.",
     count: "28 standards",
+    countIcon: "i-layers",
+    tag: "Sector",
+    cta: "Browse sector",
+    hint: "See all 28",
     icon: "i-layers",
     tint: "#FDF3E3",
     tone: "#B45309",
@@ -94,15 +117,23 @@ const COLLECTIONS: Collection[] = [
     title: "New & updated this year",
     body: "Everything published or revised in the last twelve months, with a short summary of what changed and why.",
     count: "17 new",
+    countIcon: "i-clock",
+    tag: "New",
+    cta: "See what changed",
+    hint: "17 updates",
     icon: "i-star",
     tint: "#F0E9FB",
     tone: "#7C3AED",
   },
   {
-    to: "/standards?collection=subscribe",
+    to: "/account/subscriptions",
     title: "Annual subscription",
-    body: "Unlimited access to the full SZNS catalogue for your whole team — with automatic notifications when a standard changes.",
+    body: "Unlimited access to the full SZNS catalogue for your whole team, with automatic notifications when a standard changes.",
     count: "From SZL 12,500/yr",
+    countIcon: "i-dollar",
+    tag: "Subscription",
+    cta: "View plans",
+    hint: "Whole team",
     icon: "i-refresh",
     tint: "#E4F4F1",
     tone: "#0E7C7B",
@@ -164,11 +195,11 @@ const INITIAL_FILTERS: FilterGroup[] = [
     label: "ICS classification",
     open: false,
     options: [
-      { id: "67", label: "67 — Food technology", count: 96 },
-      { id: "03", label: "03 — Services & management", count: 44 },
-      { id: "91", label: "91 — Construction", count: 28 },
-      { id: "35", label: "35 — Information technology", count: 18 },
-      { id: "13", label: "13 — Environment", count: 12 },
+      { id: "67", label: "67 · Food technology", count: 96 },
+      { id: "03", label: "03 · Services & management", count: 44 },
+      { id: "91", label: "91 · Construction", count: 28 },
+      { id: "35", label: "35 · Information technology", count: 18 },
+      { id: "13", label: "13 · Environment", count: 12 },
     ],
   },
 ];
@@ -195,10 +226,23 @@ function priceNum(price?: string): number {
 
 const PAGE_SIZE = 6;
 
+const isFree = (s: StandardSummary) => (s.price || "").toLowerCase().includes("free") || priceNum(s.price) === 0;
+
+/** What each curated collection (`?collection=`) shows from the catalogue. */
+const COLLECTION_FILTER: Record<string, { label: string; match: (s: StandardSummary) => boolean }> = {
+  "food-export": { label: "Food export starter pack", match: (s) => s.sector === "Food" },
+  sme: { label: "SME certification toolkit", match: (s) => s.sector === "Management" || /ISO|mark/i.test(`${s.code} ${s.title}`) },
+  free: { label: "Free to download", match: isFree },
+  construction: { label: "Construction & materials", match: (s) => s.sector === "Construction" },
+  new: { label: "New & updated this year", match: (s) => (s.year || 0) >= new Date().getFullYear() - 1 },
+};
+
 export function StandardsPage() {
   const { openDock } = useOutletContext<LayoutOutletContext>();
   const { addToCart, showToast } = useCartToast();
 
+  const [params, setParams] = useSearchParams();
+  const collection = COLLECTION_FILTER[params.get("collection") ?? ""];
   const [q, setQ] = useState("");
   const [draftQ, setDraftQ] = useState("");
   const [sector, setSector] = useState("");
@@ -236,14 +280,18 @@ export function StandardsPage() {
     };
   }, [q, sector]);
 
+  useEffect(() => {
+    if (collection) document.getElementById("catalogueList")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  }, [collection]);
+
   const sorted = useMemo(() => {
-    const list = [...items];
+    const list = collection ? items.filter(collection.match) : [...items];
     if (sort === "newest") list.sort((a, b) => (b.year || 0) - (a.year || 0));
     else if (sort === "code") list.sort((a, b) => a.code.localeCompare(b.code));
     else if (sort === "price-asc") list.sort((a, b) => priceNum(a.price) - priceNum(b.price));
     else if (sort === "price-desc") list.sort((a, b) => priceNum(b.price) - priceNum(a.price));
     return list;
-  }, [items, sort]);
+  }, [items, sort, collection]);
 
   const shown = sorted.slice(0, visible);
   const activeFilterCount = Object.values(checked).filter(Boolean).length;
@@ -351,9 +399,15 @@ export function StandardsPage() {
           <h1>Standards &amp; e-Store</h1>
           <p>
             Every current SZNS standard in one place. Search, filter by sector, preview the scope,
-            and buy the licensed full text — delivered as a secured PDF to your inbox.
+            and buy the licensed full text, delivered as a secured PDF to your inbox.
           </p>
           <div className="page-hero__actions">
+            <Link className="chip-cta" to="/standards/drafts">
+              Have your say on drafts
+            </Link>
+            <Link className="chip-cta" to="/standards/propose">
+              Propose a standard
+            </Link>
             <button
               type="button"
               className="chip-cta gold"
@@ -361,7 +415,7 @@ export function StandardsPage() {
                 setDraftQ("");
                 setQ("");
                 setSector("");
-                showToast("Showing free standards — filter Price → Free");
+                showToast("Showing free standards (filter Price → Free)");
               }}
             >
               <Icon name="i-book" /> Browse free standards
@@ -389,26 +443,21 @@ export function StandardsPage() {
               type="search"
               value={draftQ}
               onChange={(e) => setDraftQ(e.target.value)}
-              placeholder='Search by code, title, or keyword — e.g. “honey”, “SZNS 060”, “labelling”'
+              placeholder='Search by code, title, or keyword, e.g. “honey”, “SZNS 060”, “labelling”'
               aria-label="Search standards"
             />
           </label>
           <label className="sr-only" htmlFor="sectorSelect">
             Sector
           </label>
-          <select
-            className="searchform__sector"
-            id="sectorSelect"
-            value={sector}
-            onChange={(e) => setSector(e.target.value)}
-          >
+          <Select className="searchform__sector" id="sectorSelect" value={sector} onChange={(val) => setSector(val)}>
             <option value="">All sectors</option>
             {SECTORS.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
               </option>
             ))}
-          </select>
+          </Select>
           <button type="submit" className="searchform__submit">
             Search
           </button>
@@ -438,10 +487,22 @@ export function StandardsPage() {
 
         <div className="std-main">
           <div className="toolbar">
-            <span className="toolbar__count">
+            <span className="toolbar__count" id="catalogueList">
               {busy ? "Loading…" : `${sorted.length} standards`}{" "}
-              <span>· catalogue</span>
+              <span>· {collection ? collection.label : "catalogue"}</span>
             </span>
+            {collection ? (
+              <button
+                type="button"
+                className="hintchip"
+                onClick={() => {
+                  params.delete("collection");
+                  setParams(params);
+                }}
+              >
+                {collection.label} <Icon name="i-x" />
+              </button>
+            ) : null}
             <button
               type="button"
               className="toolbar__mobile-filter"
@@ -453,17 +514,13 @@ export function StandardsPage() {
             <div className="toolbar__spacer" />
             <div className="toolbar__sort">
               <label htmlFor="sortSelect">Sort</label>
-              <select
-                id="sortSelect"
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-              >
+              <Select id="sortSelect" value={sort} onChange={(val) => setSort(val)}>
                 <option value="relevant">Most relevant</option>
                 <option value="newest">Newest first</option>
                 <option value="code">Code A–Z</option>
                 <option value="price-asc">Price: low to high</option>
                 <option value="price-desc">Price: high to low</option>
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -535,7 +592,7 @@ export function StandardsPage() {
                         type="button"
                         className="abtn buy"
                         onClick={() =>
-                          addToCart(`${s.code} — ${s.title}`)
+                          addToCart(`${s.code}: ${s.title}`)
                         }
                       >
                         <Icon name="i-cart" /> Add to cart
@@ -573,54 +630,43 @@ export function StandardsPage() {
         <div className="featured__head">
           <div>
             <h2 id="featuredTitle">Curated collections</h2>
-            <p>Bundled by sector and use case — save when you buy together.</p>
+            <p>Bundled by sector and use case. Save when you buy together.</p>
           </div>
-          <button type="button" className="featured__link" onClick={() => showToast("Collections coming soon")}>
-            All collections <Icon name="i-cright" />
-          </button>
         </div>
-        <div className="collections">
-          {COLLECTIONS.map((c) => (
-            <Link
-              key={c.title}
-              className="collection"
+        <StaggeredGrid
+          label="Curated collections"
+          className="ggrid--featured"
+          items={COLLECTIONS}
+          itemKey={(c) => c.title}
+          renderItem={(c) => (
+            <OutlineCard
               to={c.to}
-              style={{ "--chip-tint": c.tint, "--chip-tone": c.tone } as CSSProperties}
-            >
-              <span className="collection__ic">
-                <Icon name={c.icon} />
-              </span>
-              <h3>{c.title}</h3>
-              <p>{c.body}</p>
-              <div className="collection__foot">
-                <span className="collection__count">{c.count}</span>
-                <span className="collection__arrow">
-                  <Icon name="i-cright" />
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+              icon={c.icon}
+              title={c.title}
+              body={c.body}
+              tint={c.tint}
+              tone={c.tone}
+              tag={c.tag}
+              meta={[{ icon: c.countIcon, label: c.count }]}
+              cta={c.cta}
+              hint={c.hint}
+            />
+          )}
+        />
       </section>
 
-      <section className="support">
-        <div className="support__copy">
-          <span>NEED HELP?</span>
-          <h2>Can&apos;t find the standard you need?</h2>
-          <p>
-            Tell Esi what you&apos;re working on and she&apos;ll match it to the right SZNS
-            reference, or connect you directly with the standards desk at ESWASA.
-          </p>
-        </div>
-        <div className="support__actions">
-          <button type="button" className="btn gold" onClick={() => openDock()}>
-            <Icon name="i-spark" /> Ask Esi
-          </button>
-          <a className="btn ghost" href="mailto:info@eswasa.co.sz">
-            <Icon name="i-send" /> Email the standards desk
-          </a>
-        </div>
-      </section>
+      <HelpBand
+        kicker="Need help?"
+        title="Can’t find the standard you need?"
+        body="The standards desk can match your product or process to the right SZNS reference, tell you what’s in development, and help with orders and subscriptions."
+        desk={{ label: "the standards desk", email: "info@eswasa.co.sz", subject: "Standards enquiry" }}
+        shortcut={{
+          icon: "i-search",
+          label: "Check which standards apply",
+          hint: "Answer a few questions about your product",
+          to: "/applicability",
+        }}
+      />
     </div>
   );
 }

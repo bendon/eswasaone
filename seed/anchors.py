@@ -102,7 +102,7 @@ def _ensure_cert_narrative(client: FrappeClient) -> dict[str, Any]:
                 app_name,
                 "assessment_notes",
                 (
-                    f"{app_marker}: portal activity — Cert application {cert_id} "
+                    f"{app_marker}: portal activity: Cert application {cert_id} "
                     "moved to Audit Scheduled. Certificate series reserved."
                 ),
             )
@@ -128,7 +128,7 @@ def _ensure_cert_narrative(client: FrappeClient) -> dict[str, Any]:
                     "application_date": "2025-08-15",
                     "assigned_auditor": AUDITOR_CODE,
                     "assessment_notes": (
-                        f"{app_marker}: portal activity — Cert application {cert_id} "
+                        f"{app_marker}: portal activity: Cert application {cert_id} "
                         "moved to Audit Scheduled."
                     ),
                 }
@@ -277,13 +277,13 @@ def _ensure_standards(client: FrappeClient) -> dict[str, str | None]:
     specs = [
         (
             ANCHORS["standard_published"],
-            "Food safety management — national adoption (catalogue abstract)",
+            "Food safety management: national adoption (catalogue abstract)",
             "Food",
             "2024-09-10",
         ),
         (
             ANCHORS["standard_purchase"],
-            "Textile labelling — national adoption (catalogue abstract)",
+            "Textile labelling: national adoption (catalogue abstract)",
             "Textiles",
             "2023-08-20",
         ),
@@ -302,7 +302,7 @@ def _ensure_standards(client: FrappeClient) -> dict[str, str | None]:
                     "ics_code": "67.020" if "1043" in code else "59.080",
                     "abstract": (
                         f"<p>{A10_MARKER}: Published catalogue entry for {code}. "
-                        "Paraphrase only — purchase full text via e-store.</p>"
+                        "Paraphrase only; purchase full text via e-store.</p>"
                     ),
                     "buy_url": "/estore",
                     "published_on": published,
@@ -336,7 +336,7 @@ def _ensure_estore_purchase(client: FrappeClient) -> dict[str, str | None]:
                     "rights": "licensed",
                     "is_published": 1,
                     "description": (
-                        f"<p>{A10_MARKER}: E-store listing — no full standard PDF in seed.</p>"
+                        f"<p>{A10_MARKER}: E-store listing: no full standard PDF in seed.</p>"
                     ),
                 },
             )

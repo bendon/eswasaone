@@ -53,7 +53,7 @@ def ensure_invoice_anchor(client: FrappeClient) -> dict[str, Any]:
         )
         desc = (
             f"<p>{marker}</p>"
-            f"<p>Invoice {inv} overdue — SZL 18,500 — Swazi Textiles</p>"
+            f"<p>Invoice {inv} overdue: SZL 18,500, Swazi Textiles</p>"
             "<p># TODO: wire real ERPNext Sales Invoice + GL months Apr–Sep</p>"
         )
         if found:

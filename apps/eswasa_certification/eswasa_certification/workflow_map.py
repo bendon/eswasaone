@@ -4,6 +4,7 @@ from __future__ import annotations
 STATES = (
     "Application",
     "Assessment",
+    "Quoted",
     "Audit Scheduled",
     "Audit",
     "NC Resolution",
@@ -18,6 +19,7 @@ STATES = (
 DISPLAY_STATUS: dict[str, str] = {
     "Application": "Submitted",
     "Assessment": "In Review",
+    "Quoted": "Quote Ready",
     "Audit Scheduled": "Audit Scheduled",
     "Audit": "Audit In Progress",
     "NC Resolution": "NC Resolution",
@@ -35,6 +37,9 @@ STATUS_ALIASES: dict[str, str] = {
     "assessment": "Assessment",
     "in review": "Assessment",
     "in_review": "Assessment",
+    "quoted": "Quoted",
+    "quote ready": "Quoted",
+    "quote_ready": "Quoted",
     "audit scheduled": "Audit Scheduled",
     "audit_scheduled": "Audit Scheduled",
     "audit": "Audit",
@@ -54,8 +59,10 @@ STATUS_ALIASES: dict[str, str] = {
 TRANSITIONS: dict[str, tuple[tuple[str, ...], str]] = {
     "submit_for_assessment": (("Application",), "Assessment"),
     "submit for assessment": (("Application",), "Assessment"),
-    "schedule_audit": (("Assessment", "Renewal"), "Audit Scheduled"),
-    "schedule audit": (("Assessment", "Renewal"), "Audit Scheduled"),
+    "issue_quotation": (("Assessment",), "Quoted"),
+    "issue quotation": (("Assessment",), "Quoted"),
+    "schedule_audit": (("Assessment", "Quoted", "Renewal"), "Audit Scheduled"),
+    "schedule audit": (("Assessment", "Quoted", "Renewal"), "Audit Scheduled"),
     "start_audit": (("Audit Scheduled",), "Audit"),
     "start audit": (("Audit Scheduled",), "Audit"),
     "raise_nc": (("Audit",), "NC Resolution"),
@@ -72,6 +79,7 @@ TRANSITIONS: dict[str, tuple[tuple[str, ...], str]] = {
         (
             "Application",
             "Assessment",
+            "Quoted",
             "Audit Scheduled",
             "Audit",
             "NC Resolution",
@@ -94,6 +102,8 @@ def normalize_action(action: str | None) -> str:
 _ACTION_LABELS: dict[str, str] = {
     "submit_for_assessment": "Submit for Assessment",
     "submit for assessment": "Submit for Assessment",
+    "issue_quotation": "Issue Quotation",
+    "issue quotation": "Issue Quotation",
     "schedule_audit": "Schedule Audit",
     "schedule audit": "Schedule Audit",
     "start_audit": "Start Audit",
@@ -173,8 +183,8 @@ def next_state(current: str, action: str) -> str:
             return target
     raise ValueError(
         f"Unknown action '{action}'. "
-        f"Known: submit_for_assessment, schedule_audit, start_audit, raise_nc, "
-        f"clear_nc, certify, start_surveillance, start_renewal, reassess, withdraw"
+        f"Known: submit_for_assessment, issue_quotation, schedule_audit, start_audit, "
+        f"raise_nc, clear_nc, certify, start_surveillance, start_renewal, reassess, withdraw"
     )
 
 

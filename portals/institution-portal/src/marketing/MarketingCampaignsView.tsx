@@ -134,7 +134,7 @@ export function MarketingCampaignsView() {
 
   function newCampaign() {
     // TODO: wire real — open a New Campaign composer / navigate to a create route.
-    setFlash("New campaign composer — TODO");
+    setFlash("New campaign composer: TODO");
   }
 
   const drawerSections: DrawerSection[] = useMemo(() => {
@@ -215,7 +215,7 @@ export function MarketingCampaignsView() {
         <>
           <ModuleHeader
             title="Campaigns"
-            subtitle="Marketing campaigns — track active, draft and completed work."
+            subtitle="Marketing campaigns: track active, draft and completed work."
             summary={summary}
             extra={
               <button type="button" className="btn gold" onClick={newCampaign}>

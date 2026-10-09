@@ -207,7 +207,7 @@ def _doc_title(doctype: str, name: str, fallback_state: str | None = None) -> st
 				title = _strip_html(str(val))
 				if title:
 					if fallback_state:
-						return f"{title} — {fallback_state}"
+						return f"{title}: {fallback_state}"
 					return title
 		return name
 	except Exception:

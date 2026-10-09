@@ -3,18 +3,24 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 
-// Config-time env: repo-root .env, overridden by this portal's .env / .env.local
+// Env lives in the repo-root .env (shared with Core), overridden by this portal's .env / .env.local.
+const envDir = path.resolve(__dirname, "../..");
 const env = {
-  ...loadEnv("development", path.resolve(__dirname, "../.."), ""),
+  ...loadEnv("development", envDir, ""),
   ...loadEnv("development", __dirname, ""),
 };
 const port = Number(env.FIELD_PORTAL_PORT) || 3017;
 const publicHost = env.PUBLIC_HOST || "eswasaone.aiceafrica.com";
-// /api + /ws proxy target (e.g. https://eswasaone.aiceafrica.com); default local Core
-const coreTarget = env.CORE_PROXY_TARGET || `http://127.0.0.1:${env.CORE_PORT || 8015}`;
-const coreWsTarget = coreTarget.replace(/^http/, "ws");
+// /api + /ws proxy target (e.g. https://eswasaone.aiceafrica.com); default local Core.
+// CORE_PROXY_TARGET is canonical; API_PROXY_TARGET is accepted for older .env files.
+const apiTarget = (
+  env.CORE_PROXY_TARGET ||
+  env.API_PROXY_TARGET ||
+  `http://127.0.0.1:${env.CORE_PORT || 8015}`
+).replace(/\/$/, "");
 
 export default defineConfig({
+  envDir,
   base: "/field/",
   plugins: [
     react(),
@@ -29,7 +35,7 @@ export default defineConfig({
       manifest: {
         name: "EswasaOne Field",
         short_name: "Field",
-        description: "Eswatini Standards Authority — employee field app",
+        description: "Eswatini Standards Authority employee field app",
         theme_color: "#24286F",
         background_color: "#24286F",
         display: "standalone",
@@ -99,6 +105,8 @@ export default defineConfig({
     }),
   ],
   resolve: {
+    // shared-ui deps (e.g. react-day-picker) must use this portal's single React copy.
+    dedupe: ["react", "react-dom"],
     alias: [
       {
         find: /^@eswasaone\/shared-ui\/(.*)$/,
@@ -121,16 +129,8 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: [publicHost, ".aiceafrica.com"],
     proxy: {
-      "/api": {
-        target: coreTarget,
-        changeOrigin: true,
-        secure: true,
-      },
-      "/ws": {
-        target: coreWsTarget,
-        ws: true,
-        changeOrigin: true,
-      },
+      "/api": { target: apiTarget, changeOrigin: true, secure: true, cookieDomainRewrite: "" },
+      "/ws": { target: apiTarget.replace(/^http/, "ws"), ws: true, changeOrigin: true },
     },
   },
   preview: {

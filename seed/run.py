@@ -25,7 +25,7 @@ log = logging.getLogger("seed")
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="python -m seed.run",
-        description="A10 DemoSeed — populate Frappe with mock-coherent demo data.",
+        description="A10 DemoSeed: populate Frappe with mock-coherent demo data.",
     )
     p.add_argument(
         "--years",

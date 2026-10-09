@@ -3,12 +3,27 @@ import { Link } from "react-router-dom";
 import { Icon, type IconName, type AccountOverview } from "@eswasaone/shared-ui";
 import { useAccount } from "./AccountContext";
 import { getOverview } from "../../api/account";
+import { actionsRequired, listApplications, schemeTitle, type ApplicationDetail } from "../../api/certification";
+import { stageTitle } from "../../certification/flows";
 import { Skeleton } from "./Skeleton";
 
 export function AccountOverviewPage() {
-  const { entity, activeEntity } = useAccount();
+  const { entity } = useAccount();
   const [data, setData] = useState<AccountOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [apps, setApps] = useState<ApplicationDetail[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void listApplications()
+      .then((a) => {
+        if (!cancelled) setApps(a);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,7 +84,7 @@ export function AccountOverviewPage() {
                     <div className="alert__body">
                       <b>{a.title}</b>
                       <span>{a.body}</span>
-                      <Link className="alert__cta" to={a.href}>
+                      <Link className="alert__cta" to={a.href ?? "/account"}>
                         {a.cta}
                         <Icon name="i-cright" width={12} height={12} />
                       </Link>
@@ -77,6 +92,43 @@ export function AccountOverviewPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          ) : null}
+
+          {/* Certification applications */}
+          {apps.length > 0 ? (
+            <div className="card">
+              <div className="card__head">
+                <h3>Certification applications</h3>
+                <Link to="/account/applications">
+                  View all <Icon name="i-cright" width={13} height={13} />
+                </Link>
+              </div>
+              <ul className="actfeed">
+                {apps.slice(0, 3).map((a) => {
+                  const todo = actionsRequired(a);
+                  return (
+                    <li key={a.id}>
+                      <span
+                        className="actfeed__ic"
+                        style={{ ["--tint" as string]: todo.length ? "#FEF3C7" : "#ECEEFC", ["--tone" as string]: todo.length ? "#92400E" : "#313391" }}
+                      >
+                        <Icon name={todo.length ? "i-warn" : "i-badge"} />
+                      </span>
+                      <div className="actfeed__body">
+                        <b>{schemeTitle(a.scheme)}</b>
+                        <span>
+                          {a.id} · {stageTitle(a.flow, a.stage)}
+                        </span>
+                        {todo.length ? <time>{todo[0]}</time> : null}
+                      </div>
+                      <Link className="actfeed__link" to={`/certification/${encodeURIComponent(a.id)}`} aria-label={`Open ${a.id}`}>
+                        <Icon name="i-cright" width={14} height={14} />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           ) : null}
 
@@ -102,7 +154,7 @@ export function AccountOverviewPage() {
                     <span>{f.subtitle}</span>
                     <time>{f.time}</time>
                   </div>
-                  <Link className="actfeed__link" to={f.href} aria-label="View">
+                  <Link className="actfeed__link" to={f.href ?? "/account"} aria-label="View">
                     <Icon name="i-cright" width={14} height={14} />
                   </Link>
                 </li>

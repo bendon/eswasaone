@@ -7,7 +7,7 @@ import { useToast } from "../../ui/Toast";
 import { Skeleton } from "./Skeleton";
 
 export function AccountTrainingPage() {
-  const { entity, activeEntity } = useAccount();
+  const { entity } = useAccount();
   const [items, setItems] = useState<Enrolment[]>([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();

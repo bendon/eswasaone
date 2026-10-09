@@ -2,8 +2,6 @@ import { useEffect } from "react";
 import { Link, useNavigate, useOutletContext, useSearchParams } from "react-router-dom";
 import {
   Icon,
-  SvcBandArt,
-  AiCardArt,
   useUpdates,
   type IconName,
   type UpdateItem,
@@ -35,25 +33,22 @@ const SERVICES: {
   body: string;
   to: string;
   pill: string;
-  tint: string;
-  tone: string;
-  ig: string;
   icon: IconName;
+  /** Photo for the card header (public/img, see CREDITS.md). */
+  img: string;
   items: ServiceItem[];
 }[] = [
   {
     title: "Standards & E-Store",
-    body: "Buy the SZNS standards your sector needs — delivered as a secured PDF.",
+    body: "Buy the SZNS standards your sector needs, delivered as a secured PDF.",
     to: "/standards",
     pill: "312 standards",
-    tint: "#ECEEFC",
-    tone: "#313391",
-    ig: "linear-gradient(145deg,#4A5F9E 0%,#313391 55%,#24286F 100%)",
     icon: "i-book",
+    img: "/img/standards.webp",
     items: [
-      { label: "SZNS 060 — Honey specification", meta: "SZL 280" },
-      { label: "SZNS 042 — Bottled drinking water", meta: "SZL 240" },
-      { label: "SZNS 001 — Product labelling", meta: "SZL 180" },
+      { label: "SZNS 060: Honey specification", meta: "SZL 280" },
+      { label: "SZNS 042: Bottled drinking water", meta: "SZL 240" },
+      { label: "SZNS 001: Product labelling", meta: "SZL 180" },
     ],
   },
   {
@@ -61,14 +56,12 @@ const SERVICES: {
     body: "Get your product or management system certified by ESWASA.",
     to: "/certification",
     pill: "148 certified",
-    tint: "#E3F4E9",
-    tone: "#15803D",
-    ig: "linear-gradient(145deg,#4ADE80 0%,#16A34A 50%,#15803D 100%)",
     icon: "i-badge",
+    img: "/img/certified.webp",
     items: [
-      { label: "ISO 9001 — Quality management", meta: "6–12 wk" },
-      { label: "ISO 22000 — Food safety", meta: "8–14 wk" },
-      { label: "SZNS Product Mark — local goods", meta: "4–8 wk" },
+      { label: "ISO 9001: Quality management", meta: "6–12 wk" },
+      { label: "ISO 22000: Food safety", meta: "8–14 wk" },
+      { label: "SZNS Product Mark for local goods", meta: "4–8 wk" },
     ],
   },
   {
@@ -76,10 +69,8 @@ const SERVICES: {
     body: "Market-access requirements broken down by product and destination.",
     to: "/export",
     pill: "45+ markets",
-    tint: "#E8EEFB",
-    tone: "#1E3A8A",
-    ig: "linear-gradient(145deg,#38BDF8 0%,#2563EB 50%,#1E3A8A 100%)",
     icon: "i-globe",
+    img: "/img/industry.webp",
     items: [
       { label: "Honey → European Union", meta: "5 steps" },
       { label: "Beef → SACU region", meta: "4 steps" },
@@ -91,13 +82,11 @@ const SERVICES: {
     body: "Standards-based training with a verifiable digital certificate.",
     to: "/training",
     pill: "24 courses",
-    tint: "#F0E9FB",
-    tone: "#7C3AED",
-    ig: "linear-gradient(145deg,#C4B5FD 0%,#8B5CF6 50%,#7C3AED 100%)",
     icon: "i-cap",
+    img: "/img/training.webp",
     items: [
-      { label: "HACCP — Food safety", meta: "3 days" },
-      { label: "ISO 9001 — Internal auditor", meta: "5 days" },
+      { label: "HACCP: Food safety", meta: "3 days" },
+      { label: "ISO 9001: Internal auditor", meta: "5 days" },
       { label: "Good manufacturing practice", meta: "2 days" },
     ],
   },
@@ -106,13 +95,11 @@ const SERVICES: {
     body: "Not sure which standard applies to your product? Run the free checker.",
     to: "/applicability",
     pill: "Free tool",
-    tint: "#E0F2FE",
-    tone: "#0369A1",
-    ig: "linear-gradient(145deg,#7DD3FC 0%,#0EA5E9 50%,#0369A1 100%)",
     icon: "i-shield",
+    img: "/img/crafts.webp",
     items: [
       { label: "Product → standard mapping", meta: "2 min" },
-      { label: "Free — no account needed", meta: "Instant" },
+      { label: "Free, no account needed", meta: "Instant" },
       { label: "Save results to your profile", meta: "Optional" },
     ],
   },
@@ -121,10 +108,8 @@ const SERVICES: {
     body: "Report substandard products or submit a quality enquiry to our team.",
     to: "/complaints",
     pill: "Tracked reference",
-    tint: "#FEF3C7",
-    tone: "#B45309",
-    ig: "linear-gradient(145deg,#FCD34D 0%,#F59E0B 50%,#B45309 100%)",
     icon: "i-alert-c",
+    img: "/img/mbabane-street.webp",
     items: [
       { label: "Report unsafe or substandard food", meta: "24–48 hr" },
       { label: "Report counterfeit goods", meta: "24–48 hr" },
@@ -133,55 +118,43 @@ const SERVICES: {
   },
 ];
 
+/** Light/dark checkerboard for the 3-column services grid. */
+const SERVICE_VARIANT = ["tint", "dark", "tint", "dark", "tint", "dark"] as const;
+
 /** AI band cards — larger feature cards for the AI & Technology section. */
 const AI_CARDS: {
   title: string;
   body: string;
   href: string;
   eyebrow: string;
-  band: string;
-  dot: string;
-  btnBg: string;
-  art: "standards" | "lab";
+  icon: IconName;
   items: ServiceItem[];
-  statusLabel: string;
-  statusType: "live" | "soon";
   goLabel: string;
 }[] = [
   {
     title: "AI & Technology Standards",
-    body: "National standards for AI systems, algorithms, data, and digital trust — aligned with ISO/IEC JTC 1/SC 42 and the EU AI Act. Drafted with industry, academia and civil society, and open for public comment.",
+    body: "National standards for AI systems, algorithms, data, and digital trust, aligned with ISO/IEC JTC 1/SC 42 and the EU AI Act. Drafted with industry, academia and civil society, and open for public comment.",
     href: "/ai-tech/standards",
     eyebrow: "Standards Development",
-    band: "linear-gradient(135deg,#4F46E5 0%,#3730A3 60%,#1E1B4B 100%)",
-    dot: "#4F46E5",
-    btnBg: "#4F46E5",
-    art: "standards",
+    icon: "i-scroll",
     items: [
-      { label: "SZNS AI 001 — AI governance & risk", meta: "Draft" },
-      { label: "SZNS AI 002 — Algorithmic transparency", meta: "Draft" },
-      { label: "SZNS AI 003 — Training data quality", meta: "Review" },
+      { label: "SZNS AI 001: AI governance & risk", meta: "Draft" },
+      { label: "SZNS AI 002: Algorithmic transparency", meta: "Draft" },
+      { label: "SZNS AI 003: Training data quality", meta: "Review" },
     ],
-    statusLabel: "Framework published",
-    statusType: "live",
     goLabel: "Explore standards",
   },
   {
     title: "AI & Technology Testing Lab",
-    body: "Independent testing for AI models, software, and digital systems against national and international standards. Fairness audits, robustness testing, software conformity, and structured assurance reports — accredited to ISO/IEC 17025.",
+    body: "Independent testing for AI models, software, and digital systems against national and international standards. Fairness audits, robustness testing, software conformity, and structured assurance reports, accredited to ISO/IEC 17025.",
     href: "/ai-tech/lab",
     eyebrow: "Conformity Assessment",
-    band: "linear-gradient(135deg,#8B5CF6 0%,#6D28D9 60%,#3B0764 100%)",
-    dot: "#8B5CF6",
-    btnBg: "#8B5CF6",
-    art: "lab",
+    icon: "i-flask",
     items: [
       { label: "AI fairness & bias audit", meta: "2 weeks" },
       { label: "Software conformity testing", meta: "1–3 weeks" },
       { label: "Cybersecurity & data protection audit", meta: "2–4 weeks" },
     ],
-    statusLabel: "Lab accepting clients",
-    statusType: "live",
     goLabel: "Book a test",
   },
 ];
@@ -201,10 +174,11 @@ const TRUST_ITEMS: {
 /** Curated featured goals for the hero (3, in display order). */
 const HERO_FEATURED_SLUGS = ["export-honey-eu", "iso-9001", "test-ai-model"];
 
-const HERO_FEATURED_IG: Record<string, string> = {
-  "export-honey-eu": "linear-gradient(145deg,#4A52B0 0%,#313391 100%)",
-  "iso-9001": "linear-gradient(145deg,#22C55E 0%,#15803D 100%)",
-  "test-ai-model": "linear-gradient(145deg,#8B5CF6 0%,#4F46E5 100%)",
+/** Eswatini photos for the featured-goal cards (public/img, see CREDITS.md). */
+const HERO_FEATURED_IMG: Record<string, string> = {
+  "export-honey-eu": "/img/farmland.webp",
+  "iso-9001": "/img/mbabane.webp",
+  "test-ai-model": "/img/rstp-wide.webp",
 };
 
 export function HomePage() {
@@ -227,130 +201,149 @@ export function HomePage() {
 
   return (
     <>
-      {/* 1. Announcement ribbon */}
-      <aside className="ribbon" aria-label="New service announcement">
-        <span className="ribbon__tag">New</span>
-        <span className="ribbon__copy">
-          <b>AI &amp; Technology Standards</b> and the{" "}
-          <b>AI &amp; Technology Testing Lab</b> are now open. Eswatini is one of
-          the first African nations to publish a national AI standards framework.
-        </span>
-        <Link className="ribbon__cta" to="/ai-tech">
-          Read the framework <Icon name="i-cright" />
-        </Link>
-      </aside>
-
-      {/* 2. Hero */}
+      {/* 1. Photo hero */}
       {showHeroAsk ? (
-        <section className="hero" aria-labelledby="heroTitle">
-          <div className="hero__inner">
-            <div className="hero__copy">
-              <span className="hero__label">ESWATINI STANDARDS AUTHORITY</span>
-              <h1 id="heroTitle">
-                The standards body for everything Eswatini makes, exports and now
-                codes.
-              </h1>
-              <p className="hero__sub">
-                Buy a standard, certify a product, test an AI model, or clear an
-                export. Pick a common goal below, or ask Esi anything — she&apos;ll
-                map the steps and the cost.
-              </p>
-              <div className="hero__trust" aria-label="Trust markers">
-                {HERO_TRUST.map((m) => (
-                  <span key={m.label}>
-                    <Icon name={m.icon} /> {m.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="goals" role="region" aria-label="Popular goals">
-              <span className="goals__lbl">Popular goals</span>
-              {heroGoals.map((p) => {
-                const ig = HERO_FEATURED_IG[p.slug] || "linear-gradient(145deg,#60A5FA 0%,#1D4ED8 100%)";
-                return (
-                  <Link
-                    key={p.slug}
-                    className="goal"
-                    to={`/goals/${p.slug}`}
-                    style={{ ["--ig" as string]: ig }}
-                  >
-                    <span className="goal__ic" aria-hidden="true">
-                      <Icon name={p.icon} />
-                    </span>
-                    <span className="goal__body">
-                      <b>{p.title}</b>
-                      <span>{featuredMetaLine(p)}</span>
-                    </span>
-                    <span className="goal__go" aria-hidden="true">
-                      <Icon name="i-cright" />
-                    </span>
-                  </Link>
-                );
-              })}
-              <Link to="/goals" className="goals__ask">
+        <section className="eg-hero bleed" aria-labelledby="heroTitle">
+          <div className="eg-hero__in">
+            <span className="eg-hero__label">ESWATINI STANDARDS AUTHORITY</span>
+            <h1 id="heroTitle">
+              The standards body for everything Eswatini makes, exports and now
+              codes.
+            </h1>
+            <p className="eg-hero__sub">
+              Buy a standard, certify a product, test an AI model, or clear an
+              export. Pick a common goal below, or ask Esi anything and she&apos;ll
+              map the steps and the cost.
+            </p>
+            <div className="eg-hero__actions">
+              <Link to="/goals" className="eg-btn eg-btn--gold">
                 Browse all goals
-                <Icon name="i-cright" />
               </Link>
-              <button type="button" className="goals__ask goals__ask--ghost" onClick={openDock}>
+              <button type="button" className="eg-btn eg-btn--ghost" onClick={openDock}>
                 Or ask Esi anything
-                <Icon name="i-cright" />
               </button>
             </div>
-          </div>
-
-          <div className="hero__stats">
-            {HERO_STATS.map((s) => (
-              <div key={s.label} className="hstat">
-                <b>{s.value}</b>
-                <span>{s.label}</span>
-              </div>
-            ))}
+            <div className="eg-hero__trust" aria-label="Trust markers">
+              {HERO_TRUST.map((m) => (
+                <span key={m.label}>
+                  <Icon name={m.icon} /> {m.label}
+                </span>
+              ))}
+            </div>
           </div>
         </section>
       ) : null}
 
-      {/* 3. AI & Technology feature band */}
-      <section className="ai-band" aria-labelledby="aiBandTitle">
-        <div className="ai-band__head">
-          <div>
-            <h2 id="aiBandTitle">
-              AI &amp; Emerging technology
-              <span className="new">New</span>
-            </h2>
+      {/* 2. Service tiles overlapping the hero + announcement band */}
+      <section className="eg-quick bleed" aria-label="Core services">
+        <div className="eg-quick__in">
+          <nav className="eg-tiles" aria-label="Services">
+            {SERVICES.map((svc) => (
+              <Link key={svc.title} className="eg-tile" to={svc.to}>
+                <span className="eg-tile__ic" aria-hidden="true">
+                  <Icon name={svc.icon} size={48} />
+                </span>
+                <b>{svc.title}</b>
+              </Link>
+            ))}
+          </nav>
+          <aside className="eg-band" aria-label="New service announcement">
+            <span className="eg-band__tag">New</span>
             <p>
-              Eswatini now sets its own standards for artificial intelligence, and
-              runs an independent lab to test AI systems, software and digital
-              infrastructure. One makes the rules — the other checks them.
+              <b>AI &amp; Technology Standards</b> and the{" "}
+              <b>AI &amp; Technology Testing Lab</b> are now open. Eswatini is one of
+              the first African nations to publish a national AI standards framework.
             </p>
-          </div>
-          <div className="r">
-            <Link to="/ai-tech">
-              Full programme <Icon name="i-cright" />
+            <Link className="eg-band__cta" to="/ai-tech">
+              Read the framework
+            </Link>
+          </aside>
+        </div>
+      </section>
+
+      {/* 3. Counters */}
+      <section className="eg-stats bleed" aria-label="ESWASA in numbers">
+        <div className="eg-sec__in eg-stats__grid">
+          {HERO_STATS.map((s) => (
+            <div key={s.label} className="eg-stat">
+              <b>{s.value}</b>
+              <span>{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. Popular goals — photo cards */}
+      <section className="eg-sec eg-sec--alt bleed" aria-labelledby="goalsTitle">
+        <div className="eg-sec__in">
+          <div className="eg-head">
+            <h2 id="goalsTitle">
+              Let&apos;s explore popular goals,
+              <br /> guides &amp; services.
+            </h2>
+            <Link to="/goals" className="eg-btn eg-btn--navy">
+              Browse all goals
             </Link>
           </div>
+          <div className="eg-photos">
+            {heroGoals.map((p) => (
+              <Link key={p.slug} className="eg-photo" to={`/goals/${p.slug}`}>
+                <span className="eg-photo__img">
+                  <img
+                    src={HERO_FEATURED_IMG[p.slug] || "/img/mbabane.webp"}
+                    alt=""
+                    loading="lazy"
+                  />
+                </span>
+                <span className="eg-photo__label">
+                  <b>{p.title}</b>
+                  <span>{featuredMetaLine(p)}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
+      </section>
 
-        <div className="ai-grid">
-          {AI_CARDS.map((card) => (
-            <Link
-              key={card.title}
-              className="ai-card"
-              to={card.href}
-              style={{
-                ["--band" as string]: card.band,
-                ["--dot" as string]: card.dot,
-                ["--btn-bg" as string]: card.btnBg,
-              }}
-            >
-              <div className="ai-card__band">
-                <span className="ai-card__eyebrow">{card.eyebrow}</span>
-                <AiCardArt motif={card.art} />
-              </div>
-              <div className="ai-card__body">
+      {/* 5. AI & Technology — split feature + cards */}
+      <section className="eg-sec bleed" aria-labelledby="aiBandTitle">
+        <div className="eg-sec__in">
+          <div className="eg-split">
+            <div className="eg-split__copy">
+              <span className="eg-eyebrow">New</span>
+              <h2 id="aiBandTitle">AI &amp; Emerging technology</h2>
+              <p>
+                Eswatini now sets its own standards for artificial intelligence, and
+                runs an independent lab to test AI systems, software and digital
+                infrastructure. One makes the rules and the other checks them.
+              </p>
+              <Link to="/ai-tech" className="eg-btn eg-btn--navy">
+                Full programme <Icon name="i-cright" />
+              </Link>
+            </div>
+            <div className="eg-split__img">
+              <img
+                src="/img/rstp.webp"
+                alt="Royal Science and Technology Park, Eswatini"
+                loading="lazy"
+              />
+            </div>
+          </div>
+
+          <div className="ai-grid">
+            {AI_CARDS.map((card, i) => (
+              <Link
+                key={card.title}
+                className={`ncard ncard--${i % 2 === 0 ? "light" : "dark"} ai-ncard`}
+                to={card.href}
+              >
+                <span className="ncard__ic" aria-hidden="true">
+                  <Icon name={card.icon} size={44} />
+                </span>
+                <span className="ncard__eyebrow">{card.eyebrow}</span>
                 <h3>{card.title}</h3>
                 <p>{card.body}</p>
-                <ul className="ai-card__items">
+                <ul className="ncard__items">
                   {card.items.map((it) => (
                     <li key={it.label}>
                       <em>{it.label}</em>
@@ -358,154 +351,163 @@ export function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <div className="ai-card__foot">
-                  <span className={`ai-card__status ai-card__status--${card.statusType}`}>
-                    {card.statusLabel}
-                  </span>
-                  <span className="ai-card__go">
-                    {card.goLabel} <Icon name="i-cright" />
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
+                <NotchButton label={card.goLabel} />
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* 4. Core services */}
-      <div className="sec-head">
-        <div>
-          <h2>Core services</h2>
-          <p>Everything the Authority offers, one click away</p>
-        </div>
-        <div className="r">
-          <Link to="/standards" className="link">
-            All services <Icon name="i-cright" />
-          </Link>
-        </div>
-      </div>
-
-      <section className="services" aria-label="Core services">
-        {SERVICES.map((svc) => (
-          <Link
-            key={svc.title}
-            className="svc"
-            to={svc.to}
-            style={{
-              ["--tint" as string]: svc.tint,
-              ["--tone" as string]: svc.tone,
-              ["--ig" as string]: svc.ig,
-            }}
-          >
-            <span className="svc__band" aria-hidden="true">
-              <span className="svc__ic">
-                <Icon name={svc.icon} />
-              </span>
-              <SvcBandArt motif={svc.icon} />
-            </span>
-            <div className="svc__body">
-              <h3>{svc.title}</h3>
-              <p>{svc.body}</p>
-              <ul className="svc__items">
-                {svc.items.map((it) => (
-                  <li key={it.label}>
-                    <em>{it.label}</em>
-                    <b>{it.meta}</b>
-                  </li>
-                ))}
-              </ul>
-              <div className="svc__foot">
-                <span className="svc__meta">{svc.pill}</span>
-                <span className="svc__go">
-                  <Icon name="i-cright" />
-                </span>
-              </div>
+      {/* 6. Core services — photo cards */}
+      <section className="eg-sec eg-sec--alt bleed" aria-labelledby="svcTitle">
+        <div className="eg-sec__in">
+          <div className="eg-head">
+            <div>
+              <h2 id="svcTitle">Core services</h2>
+              <p>Everything the Authority offers, one click away</p>
             </div>
-          </Link>
-        ))}
+            <Link to="/standards" className="eg-btn eg-btn--navy">
+              All services
+            </Link>
+          </div>
+          <div className="services">
+            {SERVICES.map((svc, i) => (
+              <Link
+                key={svc.title}
+                className={`svc ncard ncard--${SERVICE_VARIANT[i]}`}
+                to={svc.to}
+              >
+                <span className="svc__photo" aria-hidden="true">
+                  <img src={svc.img} alt="" />
+                  <span className="svc__ic">
+                    <Icon name={svc.icon} />
+                  </span>
+                </span>
+                <div className="svc__body">
+                  <h3>{svc.title}</h3>
+                  <p>{svc.body}</p>
+                  <ul className="svc__items">
+                    {svc.items.map((it) => (
+                      <li key={it.label}>
+                        <em>{it.label}</em>
+                        <b>{it.meta}</b>
+                      </li>
+                    ))}
+                  </ul>
+                  <span className="svc__meta">{svc.pill}</span>
+                </div>
+                <NotchButton label="Explore more" />
+              </Link>
+            ))}
+          </div>
+        </div>
       </section>
 
-      {/* 5. Trust strip */}
-      <section className="trust" aria-labelledby="trustTitle">
-        <div className="trust__head">
-          <div>
-            <h2 id="trustTitle">Why work with ESWASA</h2>
+      {/* 7. Trust strip */}
+      <section className="eg-sec bleed" aria-labelledby="trustTitle">
+        <div className="eg-sec__in">
+          <div className="eg-head eg-head--center">
+            <div>
+              <h2 id="trustTitle">Why work with ESWASA</h2>
+              <p>
+                Eswatini&apos;s national standards body, recognised regionally and
+                internationally
+              </p>
+            </div>
+          </div>
+          <div className="eg-trust">
+            {TRUST_ITEMS.map((item) => (
+              <div key={item.title} className="eg-trust__item">
+                <span className="eg-trust__ic">
+                  <Icon name={item.icon} />
+                </span>
+                <b>{item.title}</b>
+                <span>{item.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 8. Latest updates — API-backed */}
+      <section className="eg-sec eg-sec--alt bleed" aria-labelledby="updatesTitle">
+        <div className="eg-sec__in">
+          <div className="eg-head">
+            <div>
+              <h2 id="updatesTitle">Latest updates</h2>
+              <p>New standards, public reviews and programme announcements</p>
+            </div>
+            <Link to="/standards" className="eg-btn eg-btn--navy">
+              All updates
+            </Link>
+          </div>
+
+          <div className="updates__grid">
+            {updatesLoading ? (
+              <>
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="upd" style={{ opacity: 0.5 }}>
+                    <div className="upd__top">
+                      <span className="upd__tag upd__tag--new">Loading</span>
+                    </div>
+                    <h3>Loading updates…</h3>
+                    <p>&nbsp;</p>
+                  </div>
+                ))}
+              </>
+            ) : updates && updates.length > 0 ? (
+              updates.slice(0, 3).map((u) => <UpdateCard key={u.id} item={u} />)
+            ) : (
+              <div className="upd">
+                <p>No updates available right now. Check back soon.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 9. Support CTA — photo band */}
+      <section className="eg-cta bleed">
+        <div className="eg-sec__in eg-cta__in">
+          <div className="eg-cta__copy">
+            <span>NOT SURE WHERE TO START?</span>
+            <h2>Tell us what you&apos;re working on and we&apos;ll map the path.</h2>
             <p>
-              Eswatini&apos;s national standards body — recognised regionally and
-              internationally
+              Esi knows the full ESWASA catalogue: every standard, scheme and course.
+              Describe your product, export destination, or AI system and she&apos;ll
+              point you to the right service, or connect you with the desk that can
+              help.
             </p>
           </div>
-        </div>
-        <div className="trust__grid">
-          {TRUST_ITEMS.map((item) => (
-            <div key={item.title} className="trust__item">
-              <span className="trust__item__ic">
-                <Icon name={item.icon} />
-              </span>
-              <b>{item.title}</b>
-              <span>{item.desc}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 6. Latest updates — API-backed */}
-      <section className="updates" aria-labelledby="updatesTitle">
-        <div className="updates__head">
-          <div>
-            <h2 id="updatesTitle">Latest updates</h2>
-            <p>New standards, public reviews and programme announcements</p>
+          <div className="eg-cta__actions">
+            <button type="button" className="eg-btn eg-btn--gold" onClick={openDock}>
+              <Icon name="i-spark" /> Ask Esi
+            </button>
+            <a className="eg-btn eg-btn--ghost" href="mailto:info@eswasa.co.sz">
+              <Icon name="i-send" /> Email ESWASA
+            </a>
           </div>
-          <Link to="/standards">
-            All updates <Icon name="i-cright" />
-          </Link>
-        </div>
-
-        <div className="updates__grid">
-          {updatesLoading ? (
-            <>
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="upd" style={{ opacity: 0.5 }}>
-                  <div className="upd__top">
-                    <span className="upd__tag upd__tag--new">Loading</span>
-                  </div>
-                  <h3>Loading updates…</h3>
-                  <p>&nbsp;</p>
-                </div>
-              ))}
-            </>
-          ) : updates && updates.length > 0 ? (
-            updates.slice(0, 3).map((u) => <UpdateCard key={u.id} item={u} />)
-          ) : (
-            <div className="upd">
-              <p>No updates available right now. Check back soon.</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 7. Support CTA */}
-      <section className="support">
-        <div className="support__copy">
-          <span>NOT SURE WHERE TO START?</span>
-          <h2>Tell us what you&apos;re working on — we&apos;ll map the path.</h2>
-          <p>
-            Esi knows the full ESWASA catalogue — every standard, scheme and course.
-            Describe your product, export destination, or AI system and she&apos;ll
-            point you to the right service, or connect you with the desk that can
-            help.
-          </p>
-        </div>
-        <div className="support__actions">
-          <button type="button" className="btn gold" onClick={openDock}>
-            <Icon name="i-spark" /> Ask Esi
-          </button>
-          <a className="btn ghost" href="mailto:info@eswasa.co.sz">
-            <Icon name="i-send" /> Email ESWASA
-          </a>
         </div>
       </section>
     </>
+  );
+}
+
+/**
+ * Bottom-left notch CTA: a pill that sits in a cut-out of the card, the
+ * cut-out filled with the section background (see .notch in egov.css).
+ */
+function NotchButton({ label }: { label: string }) {
+  return (
+    <span className="notch">
+      <span className="notch__btn">
+        {label}
+        <span className="notch__chev" aria-hidden="true">
+          <Icon name="i-cright" size={14} />
+          <Icon name="i-cright" size={14} />
+        </span>
+      </span>
+    </span>
   );
 }
 
@@ -514,7 +516,7 @@ function UpdateCard({ item }: { item: UpdateItem }) {
   const tagClass = `upd__tag upd__tag--${item.tag}`;
   const footIcon = item.foot_icon as IconName;
   return (
-    <Link className="upd" to={item.href}>
+    <Link className="upd ncard ncard--tint" to={item.href}>
       <div className="upd__top">
         <span className={tagClass}>{item.tag}</span>
         <time className="upd__date">{formatDate(item.date)}</time>
@@ -525,10 +527,8 @@ function UpdateCard({ item }: { item: UpdateItem }) {
         <span>
           <Icon name={footIcon} /> {item.foot_label}
         </span>
-        <span className="upd__arrow">
-          <Icon name="i-cright" />
-        </span>
       </div>
+      <NotchButton label="Read more" />
     </Link>
   );
 }

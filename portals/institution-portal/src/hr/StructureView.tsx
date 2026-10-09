@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { apiFetch, AuthError, Icon, useDialogs } from "@eswasaone/shared-ui";
+import { apiFetch, AuthError, Icon, useDialogs, Select } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
@@ -421,26 +421,24 @@ function DesignationsPanel({
               </label>
               <label>
                 Department
-                <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
-                  <option value="">Unassigned</option>
-                  {deptOptions.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  block
+                  value={departmentId}
+                  onChange={setDepartmentId}
+                  options={[{ value: "", label: "Unassigned" }, ...deptOptions.map((d) => ({ value: d.id, label: d.name }))]}
+                />
               </label>
               <label>
                 Grade band
-                <select value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
-                  <option value="">None</option>
-                  {grades.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.code}
-                      {g.name ? ` — ${g.name}` : ""}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  block
+                  value={gradeId}
+                  onChange={setGradeId}
+                  options={[
+                    { value: "", label: "None" },
+                    ...grades.map((g) => ({ value: g.id, label: `${g.code}${g.name ? `: ${g.name}` : ""}` })),
+                  ]}
+                />
               </label>
               <label>
                 Approved headcount
@@ -584,15 +582,17 @@ function LocationsPanel({
               </label>
               <label>
                 Type
-                <select
+                <Select
+                  block
                   value={type}
-                  onChange={(e) => setType(e.target.value as "" | "hq" | "lab" | "satellite")}
-                >
-                  <option value="">Unspecified</option>
-                  <option value="hq">HQ</option>
-                  <option value="lab">Lab</option>
-                  <option value="satellite">Satellite</option>
-                </select>
+                  onChange={(v) => setType(v as "" | "hq" | "lab" | "satellite")}
+                  options={[
+                    { value: "", label: "Unspecified" },
+                    { value: "hq", label: "HQ" },
+                    { value: "lab", label: "Lab" },
+                    { value: "satellite", label: "Satellite" },
+                  ]}
+                />
               </label>
               <button type="submit" className="btn pri" disabled={busy}>
                 {busy ? "Saving…" : "Create location"}

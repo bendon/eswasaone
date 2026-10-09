@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     bench_path: str = "/srv/projects/eswasaone/engine/frappe-bench"
     bench_bin: str = "bench"
 
-    # Media — S3-compatible bucket (MinIO / AWS) or local filesystem fallback
+    # Media — S3-compatible bucket (MinIO / AWS / Hetzner) or local filesystem fallback
     media_local_path: str = "/var/lib/eswasaone/media"
     s3_endpoint_url: str = ""
     s3_bucket: str = ""
@@ -67,6 +67,8 @@ class Settings(BaseSettings):
     s3_secret_key: str = ""
     s3_region: str = "af-south-1"
     s3_public_base_url: str = ""
+    # Object key root inside the bucket (e.g. eswasaone → eswasaone/uploads/…)
+    s3_prefix: str = ""
 
     # Frappe → Core feed bridge (apps POST eswasa_feed here)
     # e.g. http://127.0.0.1:8015/api/events/webhooks/eswasa_feed

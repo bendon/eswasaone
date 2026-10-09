@@ -23,6 +23,7 @@ display:
   customer:
     Application: Submitted
     Assessment: In review
+    Quoted: Quote ready
     Audit Scheduled: Audit scheduled
     Audit: Audit in progress
     NC Resolution: Action needed
@@ -35,6 +36,7 @@ display:
 states:
   - {name: Application, sla: 1d claim, owner_role: Certification Officer, allow_edit: Certification Officer, style: ""}
   - {name: Assessment, sla: 3d, owner_role: Certification Officer, allow_edit: Certification Officer, style: Info}
+  - {name: Quoted, sla: 5d, owner_role: Certification Officer, allow_edit: Certification Officer, style: Info}
   - {name: Audit Scheduled, sla: 5d, owner_role: Certification Officer, allow_edit: Certification Officer, style: Info}
   - {name: Audit, sla: null, owner_role: Certification Auditor, allow_edit: Certification Auditor, style: Warning}
   - {name: NC Resolution, sla: 30d, owner_role: Certification Officer, allow_edit: Certification Officer, style: Danger}
@@ -52,8 +54,22 @@ transitions:
     rules: [R-C1]
     approvals_family: do
 
+  - action: Issue Quotation
+    from: Assessment
+    to: Quoted
+    actor: Certification Officer
+    allow_self_approval: 0
+    approvals_family: do
+
   - action: Schedule Audit
     from: Assessment
+    to: Audit Scheduled
+    actor: Certification Officer
+    allow_self_approval: 0
+    approvals_family: do
+
+  - action: Schedule Audit
+    from: Quoted
     to: Audit Scheduled
     actor: Certification Officer
     allow_self_approval: 0
@@ -142,6 +158,13 @@ transitions:
 
   - action: Withdraw
     from: Assessment
+    to: Withdraw
+    actor: Certification Manager
+    allow_self_approval: 0
+    reason: required
+
+  - action: Withdraw
+    from: Quoted
     to: Withdraw
     actor: Certification Manager
     allow_self_approval: 0

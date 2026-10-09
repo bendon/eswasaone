@@ -1,13 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import {
-  AuthError,
-  BrandLogo,
-  login,
-  requestOtp,
-  logout,
-  isLoginChallenge,
-  type SessionUser,
-} from "@eswasaone/shared-ui";
+import { AuthError, BrandLogo, DEMO_PERSONAS, demoDataEnabled, isLoginChallenge, login, logout, requestOtp, Select, setDemoPersona, type SessionUser } from "@eswasaone/shared-ui";
 import { hasStaffRole } from "../staff";
 
 type Props = {
@@ -84,7 +76,7 @@ export function StaffGate({ onStaffSession, deniedMessage }: Props) {
       }
 
       if (!challengeId) {
-        resetToPassword("Sign-in expired — enter your password again.");
+        resetToPassword("Sign-in expired. Enter your password again.");
         return;
       }
 
@@ -95,7 +87,7 @@ export function StaffGate({ onStaffSession, deniedMessage }: Props) {
         challenge_id: challengeId,
       });
       if (isLoginChallenge(session)) {
-        resetToPassword("Sign-in expired — enter your password again.");
+        resetToPassword("Sign-in expired. Enter your password again.");
         return;
       }
       await finishStaffSession(session.user);
@@ -207,6 +199,31 @@ export function StaffGate({ onStaffSession, deniedMessage }: Props) {
             </>
           ) : null}
         </form>
+        {demoDataEnabled() ? (
+          <div className="staff-gate__demo">
+            <p className="staff-gate__lead" style={{ margin: "18px 0 8px", fontWeight: 700 }}>
+              No staff account yet? Continue as a demo user
+            </p>
+            <Select aria-label="Demo staff account" value="" onChange={(val) => {
+                const p = DEMO_PERSONAS.find((x) => x.username === val);
+                if (!p) return;
+                setDemoPersona(p);
+                onStaffSession({ username: p.username, full_name: p.full_name, email: p.email, roles: p.roles });
+              }} block>
+              <option value="" disabled>
+                Choose a role to try…
+              </option>
+              {DEMO_PERSONAS.map((p) => (
+                <option key={p.username} value={p.username}>
+                  {p.full_name} — {p.title}
+                </option>
+              ))}
+            </Select>
+            <p className="crm-small" style={{ marginTop: 6 }}>
+              Demo data is saved in this browser only. Sign out to switch roles.
+            </p>
+          </div>
+        ) : null}
         <p className="staff-gate__foot">
           Public services: <a href="/">Service Portal</a>
         </p>

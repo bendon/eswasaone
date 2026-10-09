@@ -17,7 +17,6 @@
     "noFallthroughCasesInSwitch": true,
     "resolveJsonModule": true,
     "types": ["vitest/globals", "vite/client"],
-    "baseUrl": ".",
     "paths": {
       "@eswasaone/shared-ui": ["../shared-ui/src"],
       "@eswasaone/shared-ui/*": ["../shared-ui/src/*"],

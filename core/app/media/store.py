@@ -62,10 +62,14 @@ class MediaStore:
         self._s3 = boto3.client("s3", **kwargs)
         return self._s3
 
+    def _root_prefix(self) -> str:
+        return (self.settings.s3_prefix or "").strip().strip("/")
+
     def _make_key(self, *, filename: str | None, prefix: str) -> str:
         safe = (filename or "blob").replace("/", "_").replace("\\", "_")
         stamp = datetime.now(timezone.utc).strftime("%Y/%m/%d")
-        return f"{prefix.strip('/')}/{stamp}/{uuid.uuid4().hex[:12]}_{safe}"
+        parts = [p for p in (self._root_prefix(), prefix.strip("/"), stamp) if p]
+        return f"{'/'.join(parts)}/{uuid.uuid4().hex[:12]}_{safe}"
 
     def put_bytes(
         self,

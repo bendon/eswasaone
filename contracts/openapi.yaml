@@ -49,6 +49,23 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ServiceHome" }
 
+  /certification/schemes:
+    get:
+      tags: [certification]
+      operationId: listCertificationSchemes
+      description: Public catalogue of active Certification Schemes. `code` is the value CreateCertificationApplication.scheme accepts.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CertificationScheme" }
+
   /certification/applications:
     get:
       tags: [certification]
@@ -256,6 +273,87 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CertificationApplication" }
+
+  /certification/quotes:
+    get:
+      tags: [certification]
+      operationId: listCertificationQuotes
+      summary: Quote RFQs + issued ERPNext Quotations linked to applications
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CertificationQuote" }
+    post:
+      tags: [certification]
+      operationId: createCertificationQuote
+      summary: Citizen /certification/quote RFQ — creates a draft Quotation
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateCertificationQuote" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CertificationQuote" }
+
+  /certification/quotes/{id}/issue:
+    post:
+      tags: [certification]
+      operationId: issueCertificationQuote
+      summary: Issue fee lines on an RFQ Quotation, or run issue_quotation on an Application
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IssueCertificationQuote" }
+      responses:
+        "200":
+          description: Issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CertificationQuote" }
+
+  /certification/quotes/{id}/pdf:
+    get:
+      tags: [certification]
+      operationId: getCertificationQuotePdf
+      summary: Ensure quotation PDF is stored in S3 and return a download URL
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  application_id: { type: string }
+                  download_url: { type: string }
+                  media_key: { type: string }
+                  backend: { type: string }
+                  cached: { type: boolean }
 
   /certification/audits/overdue:
     get:
@@ -1143,6 +1241,21 @@ components:
         status: { type: string }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+        quote: { $ref: "#/components/schemas/CertificationQuote" }
+
+    CertificationScheme:
+      type: object
+      required: [code, name, scheme_type]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        standard_ref: { type: string, nullable: true }
+        scheme_type: { type: string, enum: ["Management System", "Product"] }
+        accreditation_basis: { type: string, nullable: true }
+        surveillance_interval_months: { type: integer, nullable: true }
+        certificate_validity_months: { type: integer, nullable: true }
+        fee: { type: number, nullable: true }
+        description: { type: string, nullable: true }
 
     CreateCertificationApplication:
       type: object
@@ -1152,6 +1265,74 @@ components:
         applicant_name: { type: string }
         contact_email: { type: string, format: email }
         confirm: { type: boolean }
+
+    CertificationQuoteLine:
+      type: object
+      required: [label, amount]
+      properties:
+        label: { type: string }
+        amount: { type: number }
+
+    CertificationQuote:
+      type: object
+      required: [id, status, flow, org, contact_email, standards, scope, requested_at]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [requested, issued, accepted, declined, expired] }
+        flow: { type: string, enum: [ms, product, ingelo, combined] }
+        org: { type: string }
+        contact: { type: string }
+        contact_email: { type: string }
+        phone: { type: string }
+        standards: { type: string }
+        scope: { type: string }
+        employees: { type: string }
+        sites: { type: string }
+        requested_at: { type: string, format: date-time }
+        issued_at: { type: string, format: date-time }
+        valid_until: { type: string, format: date-time }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/CertificationQuoteLine" }
+        total: { type: number }
+        application_id: { type: string }
+        notes: { type: string }
+        pdf_url: { type: string, description: Citizen-accessible quotation PDF (S3 or /api/media) }
+        pdf_key: { type: string }
+
+    CreateCertificationQuote:
+      type: object
+      required: [org, email, confirm]
+      properties:
+        confirm: { type: boolean }
+        flow: { type: string, enum: [ms, product, ingelo, combined] }
+        org: { type: string }
+        registration_no: { type: string }
+        contact: { type: string }
+        position: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        address: { type: string }
+        standards: { type: string }
+        scope: { type: string }
+        employees: { type: string }
+        sites: { type: string }
+        based_in_eswatini: { type: string }
+        made_in_eswatini: { type: string }
+        existing_certs: { type: string }
+        timeline: { type: string }
+        comments: { type: string }
+
+    IssueCertificationQuote:
+      type: object
+      required: [confirm]
+      properties:
+        confirm: { type: boolean }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/CertificationQuoteLine" }
+        valid_days: { type: integer, default: 30 }
+        notes: { type: string }
 
     AuditSummary:
       type: object
@@ -1754,3 +1935,4174 @@ components:
     GovernanceRiskSummary:
       allOf:
         - $ref: "#/components/schemas/GovernanceRisk"
+
+    # --- Core BFF response models (from app.openapi(); keep in sync with core/app/schemas.py) ---
+    AccountActivityItem:
+      properties:
+        id:
+          type: string
+          title: Id
+        tint:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tint
+        tone:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tone
+        icon:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Icon
+        title:
+          type: string
+          title: Title
+        subtitle:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Subtitle
+        time:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Time
+        href:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Href
+      type: object
+      required:
+      - id
+      - title
+      title: AccountActivityItem
+    AccountAlert:
+      properties:
+        id:
+          type: string
+          title: Id
+        tone:
+          type: string
+          title: Tone
+          default: info
+        tint:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tint
+        border_tint:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Border Tint
+        icon:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Icon
+        title:
+          type: string
+          title: Title
+        body:
+          type: string
+          title: Body
+        cta:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cta
+        href:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Href
+      type: object
+      required:
+      - id
+      - title
+      - body
+      title: AccountAlert
+    AccountEntitiesResponse:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AccountEntity'
+          type: array
+          title: Items
+        active:
+          type: string
+          title: Active
+      type: object
+      required:
+      - items
+      - active
+      title: AccountEntitiesResponse
+    AccountEntity:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        short_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Short Name
+        kind:
+          type: string
+          title: Kind
+        role:
+          type: string
+          title: Role
+        initials:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Initials
+        member_since:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Member Since
+        verified:
+          type: boolean
+          title: Verified
+          default: false
+      type: object
+      required:
+      - id
+      - name
+      - kind
+      - role
+      title: AccountEntity
+    AccountOverview:
+      properties:
+        stats:
+          $ref: '#/components/schemas/AccountStats'
+        alerts:
+          items:
+            $ref: '#/components/schemas/AccountAlert'
+          type: array
+          title: Alerts
+        feed:
+          items:
+            $ref: '#/components/schemas/AccountActivityItem'
+          type: array
+          title: Feed
+        summary:
+          items:
+            $ref: '#/components/schemas/AccountSummaryCard'
+          type: array
+          title: Summary
+      type: object
+      required:
+      - stats
+      - alerts
+      - feed
+      - summary
+      title: AccountOverview
+    AccountStatItem:
+      properties:
+        label:
+          type: string
+          title: Label
+        value:
+          type: integer
+          title: Value
+        accent:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Accent
+      type: object
+      required:
+      - label
+      - value
+      title: AccountStatItem
+    AccountStats:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AccountStatItem'
+          type: array
+          title: Items
+      type: object
+      required:
+      - items
+      title: AccountStats
+    AccountSummaryCard:
+      properties:
+        id:
+          type: string
+          title: Id
+        tint:
+          type: string
+          title: Tint
+        tone:
+          type: string
+          title: Tone
+        icon:
+          type: string
+          title: Icon
+        title:
+          type: string
+          title: Title
+        subtitle:
+          type: string
+          title: Subtitle
+      type: object
+      required:
+      - id
+      - tint
+      - tone
+      - icon
+      - title
+      - subtitle
+      title: AccountSummaryCard
+    ActApprovalBody:
+      properties:
+        action:
+          type: string
+          title: Action
+        confirm:
+          type: boolean
+          title: Confirm
+        comment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Comment
+      type: object
+      required:
+      - action
+      - confirm
+      title: ActApprovalBody
+    AddRoleBody:
+      properties:
+        role:
+          type: string
+          title: Role
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - role
+      - confirm
+      title: AddRoleBody
+    AdminAccessDevice:
+      properties:
+        id:
+          type: string
+          title: Id
+        label:
+          type: string
+          title: Label
+        fingerprint:
+          type: string
+          title: Fingerprint
+        owner_username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Owner Username
+        status:
+          type: string
+          enum:
+          - pending
+          - approved
+          - revoked
+          - expired
+          title: Status
+          default: pending
+        created_at:
+          type: string
+          title: Created At
+        approved_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Approved At
+        approved_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Approved By
+        expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Expires At
+        last_seen_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Seen At
+        last_seen_ip:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Seen Ip
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+      type: object
+      required:
+      - id
+      - label
+      - fingerprint
+      - created_at
+      title: AdminAccessDevice
+    AdminAccessDeviceCreate:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        label:
+          type: string
+          title: Label
+        fingerprint:
+          type: string
+          title: Fingerprint
+        owner_username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Owner Username
+        status:
+          type: string
+          enum:
+          - pending
+          - approved
+          title: Status
+          default: pending
+        expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Expires At
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+      type: object
+      required:
+      - confirm
+      - label
+      - fingerprint
+      title: AdminAccessDeviceCreate
+    AdminAccessDevicePatch:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        label:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Label
+        status:
+          anyOf:
+          - type: string
+            enum:
+            - pending
+            - approved
+            - revoked
+            - expired
+          - type: 'null'
+          title: Status
+        owner_username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Owner Username
+        expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Expires At
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+      type: object
+      required:
+      - confirm
+      title: AdminAccessDevicePatch
+    AdminAccessEvaluateResult:
+      properties:
+        allowed:
+          type: boolean
+          title: Allowed
+        reason:
+          type: string
+          title: Reason
+        enforce_off_lan:
+          type: boolean
+          title: Enforce Off Lan
+        on_trusted_network:
+          type: boolean
+          title: On Trusted Network
+        device_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Device Status
+        redirect_path:
+          type: string
+          title: Redirect Path
+          default: /
+      type: object
+      required:
+      - allowed
+      - reason
+      - enforce_off_lan
+      - on_trusted_network
+      title: AdminAccessEvaluateResult
+    AdminAccessNetwork:
+      properties:
+        id:
+          type: string
+          title: Id
+        label:
+          type: string
+          title: Label
+        cidr:
+          type: string
+          title: Cidr
+        enabled:
+          type: boolean
+          title: Enabled
+          default: true
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+      type: object
+      required:
+      - id
+      - label
+      - cidr
+      title: AdminAccessNetwork
+    AdminAccessNetworkCreate:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        label:
+          type: string
+          title: Label
+        cidr:
+          type: string
+          title: Cidr
+        enabled:
+          type: boolean
+          title: Enabled
+          default: true
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+      type: object
+      required:
+      - confirm
+      - label
+      - cidr
+      title: AdminAccessNetworkCreate
+    AdminAccessPolicy:
+      properties:
+        enforce_off_lan:
+          type: boolean
+          title: Enforce Off Lan
+          default: false
+        fail_closed:
+          type: boolean
+          title: Fail Closed
+          default: true
+        redirect_path:
+          type: string
+          title: Redirect Path
+          default: /
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+      type: object
+      title: AdminAccessPolicy
+      description: Controls Institution portal access outside trusted LAN/WAN.
+    AdminAppVersion:
+      properties:
+        app:
+          type: string
+          title: App
+        installed:
+          type: string
+          title: Installed
+        latest:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Latest
+        status:
+          type: string
+          enum:
+          - current
+          - update
+          - unknown
+          title: Status
+          default: unknown
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+      type: object
+      required:
+      - app
+      - installed
+      title: AdminAppVersion
+    AdminCommandResult:
+      properties:
+        ok:
+          type: boolean
+          title: Ok
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        lines:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Lines
+        lock_holder:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Lock Holder
+      type: object
+      required:
+      - ok
+      title: AdminCommandResult
+    AdminEmailSettings:
+      properties:
+        outgoing_ok:
+          type: boolean
+          title: Outgoing Ok
+        smtp_host:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Smtp Host
+        smtp_port:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Smtp Port
+        from_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: From Address
+        use_tls:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Use Tls
+        incoming_set:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Incoming Set
+        account_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Account Name
+      type: object
+      required:
+      - outgoing_ok
+      title: AdminEmailSettings
+    AdminJobsSnapshot:
+      properties:
+        running:
+          type: integer
+          title: Running
+        queued:
+          type: integer
+          title: Queued
+        completed_24h:
+          type: integer
+          title: Completed 24H
+        failed:
+          type: integer
+          title: Failed
+      type: object
+      required:
+      - running
+      - queued
+      - completed_24h
+      - failed
+      title: AdminJobsSnapshot
+    AdminOverview:
+      properties:
+        site:
+          type: string
+          title: Site
+        environment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Environment
+        frappe_version:
+          type: string
+          title: Frappe Version
+        erpnext_version:
+          type: string
+          title: Erpnext Version
+        frappe_status:
+          type: string
+          enum:
+          - ok
+          - warn
+          - err
+          title: Frappe Status
+          default: ok
+        erpnext_status:
+          type: string
+          enum:
+          - ok
+          - warn
+          - err
+          title: Erpnext Status
+          default: ok
+        active_users:
+          type: integer
+          title: Active Users
+        seat_limit:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Seat Limit
+        online_now:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Online Now
+        last_backup_ago:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Backup Ago
+        last_backup_ok:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Last Backup Ok
+        services:
+          items:
+            $ref: '#/components/schemas/AdminServiceStatus'
+          type: array
+          title: Services
+        apps:
+          items:
+            $ref: '#/components/schemas/AdminAppVersion'
+          type: array
+          title: Apps
+        updates_available:
+          type: integer
+          title: Updates Available
+          default: 0
+      type: object
+      required:
+      - site
+      - frappe_version
+      - erpnext_version
+      - active_users
+      - services
+      - apps
+      title: AdminOverview
+    AdminScheduledJob:
+      properties:
+        name:
+          type: string
+          title: Name
+        method:
+          type: string
+          title: Method
+        frequency:
+          type: string
+          title: Frequency
+        last_run:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Run
+        status:
+          type: string
+          title: Status
+        stopped:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Stopped
+      type: object
+      required:
+      - name
+      - method
+      - frequency
+      - status
+      title: AdminScheduledJob
+    AdminSchedulerResponse:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+        heartbeat_ago:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Heartbeat Ago
+        jobs:
+          items:
+            $ref: '#/components/schemas/AdminScheduledJob'
+          type: array
+          title: Jobs
+      type: object
+      required:
+      - enabled
+      - jobs
+      title: AdminSchedulerResponse
+    AdminServiceStatus:
+      properties:
+        name:
+          type: string
+          title: Name
+        meta:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Meta
+        status:
+          type: string
+          enum:
+          - ok
+          - warn
+          - err
+          - info
+          title: Status
+        detail:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Detail
+      type: object
+      required:
+      - name
+      - status
+      title: AdminServiceStatus
+    AdminSystemSettings:
+      properties:
+        time_zone:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Time Zone
+        date_format:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Date Format
+        currency:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Currency
+        number_format:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Number Format
+        session_expiry:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Session Expiry
+        enable_scheduler:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Enable Scheduler
+        disable_user_pass_login:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Disable User Pass Login
+        allow_consecutive_login_attempts:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Allow Consecutive Login Attempts
+        force_https:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Force Https
+      type: object
+      title: AdminSystemSettings
+    AdminUpdateRunBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        channel:
+          type: string
+          title: Channel
+          default: stable
+        backup_before:
+          type: boolean
+          title: Backup Before
+          default: true
+        migrate:
+          type: boolean
+          title: Migrate
+          default: true
+        maintenance:
+          type: boolean
+          title: Maintenance
+          default: true
+        dry_run:
+          type: boolean
+          title: Dry Run
+          default: false
+      type: object
+      required:
+      - confirm
+      title: AdminUpdateRunBody
+    AdminUpdatesResponse:
+      properties:
+        channel:
+          type: string
+          title: Channel
+        items:
+          items:
+            $ref: '#/components/schemas/AdminAppVersion'
+          type: array
+          title: Items
+      type: object
+      required:
+      - channel
+      - items
+      title: AdminUpdatesResponse
+    AdminUserSummary:
+      properties:
+        name:
+          type: string
+          title: Name
+        full_name:
+          type: string
+          title: Full Name
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        role_profile_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role Profile Name
+        last_active:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Active
+        enabled:
+          type: boolean
+          title: Enabled
+        user_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: User Type
+      type: object
+      required:
+      - name
+      - full_name
+      - enabled
+      title: AdminUserSummary
+    AdvanceCertificationBody:
+      properties:
+        action:
+          type: string
+          title: Action
+        confirm:
+          type: boolean
+          title: Confirm
+        expected_state:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Expected State
+        idempotency_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency Key
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        comment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Comment
+        payload:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Payload
+      type: object
+      required:
+      - action
+      - confirm
+      title: AdvanceCertificationBody
+      description: Workflow act body — used by /act and deprecated /advance.
+    AdvanceHrApplicantBody:
+      properties:
+        stage:
+          type: string
+          title: Stage
+        confirm:
+          type: boolean
+          title: Confirm
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+      type: object
+      required:
+      - stage
+      - confirm
+      title: AdvanceHrApplicantBody
+    AnalyticsAskBody:
+      properties:
+        question:
+          type: string
+          title: Question
+      type: object
+      required:
+      - question
+      title: AnalyticsAskBody
+    AnalyticsAskResponse:
+      properties:
+        answer:
+          type: string
+          title: Answer
+        citations:
+          anyOf:
+          - items:
+              additionalProperties: true
+              type: object
+            type: array
+          - type: 'null'
+          title: Citations
+        figures:
+          anyOf:
+          - items:
+              additionalProperties: true
+              type: object
+            type: array
+          - type: 'null'
+          title: Figures
+      type: object
+      required:
+      - answer
+      title: AnalyticsAskResponse
+    AnalyticsReportSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        period:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Period
+      type: object
+      required:
+      - id
+      - title
+      title: AnalyticsReportSummary
+    ApplicabilityRequest:
+      properties:
+        query:
+          type: string
+          title: Query
+        jurisdiction:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Jurisdiction
+        sector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sector
+        hs_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Hs Code
+      type: object
+      required:
+      - query
+      title: ApplicabilityRequest
+    ApplicabilityStep:
+      properties:
+        order:
+          type: integer
+          title: Order
+        title:
+          type: string
+          title: Title
+        detail:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Detail
+        href:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Href
+      type: object
+      required:
+      - order
+      - title
+      title: ApplicabilityStep
+    ApprovalItem:
+      properties:
+        id:
+          type: string
+          title: Id
+        doctype:
+          type: string
+          title: Doctype
+        name:
+          type: string
+          title: Name
+        title:
+          type: string
+          title: Title
+        module:
+          type: string
+          title: Module
+        status:
+          type: string
+          title: Status
+        due_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Due At
+        sla_breached:
+          type: boolean
+          title: Sla Breached
+      type: object
+      required:
+      - id
+      - doctype
+      - name
+      - title
+      - module
+      - status
+      - sla_breached
+      title: ApprovalItem
+    ApprovalsResponse:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ApprovalItem'
+          type: array
+          title: Items
+        pending_count:
+          type: integer
+          title: Pending Count
+      type: object
+      required:
+      - items
+      - pending_count
+      title: ApprovalsResponse
+    BackupBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        with_files:
+          type: boolean
+          title: With Files
+          default: true
+      type: object
+      required:
+      - confirm
+      title: BackupBody
+    BoardPackSection:
+      properties:
+        title:
+          type: string
+          title: Title
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - title
+      - status
+      title: BoardPackSection
+    Body_upload_media_api_media_upload_post:
+      properties:
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+        prefix:
+          type: string
+          title: Prefix
+          default: uploads
+      type: object
+      required:
+      - file
+      title: Body_upload_media_api_media_upload_post
+    CheckoutItem:
+      properties:
+        standard_code:
+          type: string
+          title: Standard Code
+        qty:
+          type: integer
+          minimum: 1.0
+          title: Qty
+      type: object
+      required:
+      - standard_code
+      - qty
+      title: CheckoutItem
+    CheckoutRequest:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/CheckoutItem'
+          type: array
+          title: Items
+        payment_method:
+          anyOf:
+          - type: string
+            enum:
+            - momo
+            - invoice
+          - type: 'null'
+          title: Payment Method
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - items
+      - confirm
+      title: CheckoutRequest
+    CreateCrmDealBody:
+      properties:
+        title:
+          type: string
+          title: Title
+        amount:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Amount
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - title
+      - confirm
+      title: CreateCrmDealBody
+    CreateCrmLeadBody:
+      properties:
+        title:
+          type: string
+          title: Title
+        organization:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Organization
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - title
+      - confirm
+      title: CreateCrmLeadBody
+    CreateFinanceInvoiceBody:
+      properties:
+        customer:
+          type: string
+          title: Customer
+        items:
+          anyOf:
+          - items:
+              additionalProperties: true
+              type: object
+            type: array
+          - type: 'null'
+          title: Items
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - customer
+      - confirm
+      title: CreateFinanceInvoiceBody
+    CreateHrEmployeeBody:
+      properties:
+        employee_name:
+          type: string
+          title: Employee Name
+        confirm:
+          type: boolean
+          title: Confirm
+        first_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: First Name
+        last_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Name
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department
+        designation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Designation
+        date_of_joining:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Date Of Joining
+        company_email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Company Email
+        gender:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Gender
+        date_of_birth:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Date Of Birth
+        company:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Company
+        reports_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reports To
+        invite:
+          type: boolean
+          title: Invite
+          default: false
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        roles:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Roles
+        profile_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Profile Name
+      type: object
+      required:
+      - employee_name
+      - confirm
+      title: CreateHrEmployeeBody
+      description: 'OpenAPI: HrEmployeeCreate.'
+    CreateHrJobBody:
+      properties:
+        job_title:
+          type: string
+          title: Job Title
+        confirm:
+          type: boolean
+          title: Confirm
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department
+        designation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Designation
+        vacancies:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Vacancies
+      type: object
+      required:
+      - job_title
+      - confirm
+      title: CreateHrJobBody
+    CreateHrLeaveBody:
+      properties:
+        leave_type:
+          type: string
+          title: Leave Type
+        from_date:
+          type: string
+          title: From Date
+        to_date:
+          type: string
+          title: To Date
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - leave_type
+      - from_date
+      - to_date
+      - confirm
+      title: CreateHrLeaveBody
+    CreateMarketingCampaignBody:
+      properties:
+        title:
+          type: string
+          title: Title
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - title
+      - confirm
+      title: CreateMarketingCampaignBody
+    CrmDealSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        amount:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Amount
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - id
+      - title
+      - status
+      title: CrmDealSummary
+    CrmLeadSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        organization:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Organization
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - id
+      - title
+      - status
+      title: CrmLeadSummary
+    CrmPipeline:
+      properties:
+        stages:
+          items:
+            $ref: '#/components/schemas/CrmPipelineStage'
+          type: array
+          title: Stages
+        companies:
+          type: integer
+          title: Companies
+      type: object
+      required:
+      - stages
+      - companies
+      title: CrmPipeline
+    CrmPipelineStage:
+      properties:
+        name:
+          type: string
+          title: Name
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - name
+      - count
+      title: CrmPipelineStage
+    EnrolTrainingBody:
+      properties:
+        course:
+          type: string
+          title: Course
+        batch:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Batch
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - course
+      - confirm
+      title: EnrolTrainingBody
+    EvaluateBody:
+      properties:
+        ip:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ip
+        fingerprint:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Fingerprint
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        path:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Path
+          default: /institution/
+        record:
+          type: boolean
+          title: Record
+          default: false
+      type: object
+      title: EvaluateBody
+      description: Optional preview inputs for System Managers.
+    FinanceDashboard:
+      properties:
+        revenue_ytd_szl:
+          type: number
+          title: Revenue Ytd Szl
+        budget_ytd_szl:
+          type: number
+          title: Budget Ytd Szl
+        variance_pct:
+          type: number
+          title: Variance Pct
+        months:
+          $ref: '#/components/schemas/FinanceMonths'
+        plan:
+          items:
+            $ref: '#/components/schemas/PlanTrafficLight'
+          type: array
+          title: Plan
+      type: object
+      required:
+      - revenue_ytd_szl
+      - budget_ytd_szl
+      - variance_pct
+      - months
+      - plan
+      title: FinanceDashboard
+    FinanceInvoiceSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        customer:
+          type: string
+          title: Customer
+        status:
+          type: string
+          title: Status
+        grand_total:
+          type: number
+          title: Grand Total
+        due_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Due Date
+        overdue:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Overdue
+      type: object
+      required:
+      - id
+      - customer
+      - status
+      - grand_total
+      title: FinanceInvoiceSummary
+    FinanceMonths:
+      properties:
+        labels:
+          items:
+            type: string
+          type: array
+          title: Labels
+        budget_thousands:
+          items:
+            type: number
+          type: array
+          title: Budget Thousands
+        actual_thousands:
+          items:
+            type: number
+          type: array
+          title: Actual Thousands
+      type: object
+      required:
+      - labels
+      - budget_thousands
+      - actual_thousands
+      title: FinanceMonths
+    FinanceSettings:
+      properties:
+        company_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Company Id
+        company_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Company Name
+        default_currency:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Default Currency
+        country:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Country
+        has_chart_of_accounts:
+          type: boolean
+          title: Has Chart Of Accounts
+          default: false
+        has_cost_centres:
+          type: boolean
+          title: Has Cost Centres
+          default: false
+        has_fiscal_year:
+          type: boolean
+          title: Has Fiscal Year
+          default: false
+        pastel_status:
+          type: string
+          enum:
+          - not_configured
+          - stubbed
+          title: Pastel Status
+          default: not_configured
+        payment_gateway_status:
+          type: string
+          enum:
+          - not_configured
+          - stubbed
+          title: Payment Gateway Status
+          default: not_configured
+        steps:
+          items:
+            $ref: '#/components/schemas/FinanceSetupStep'
+          type: array
+          title: Steps
+          default: []
+      type: object
+      title: FinanceSettings
+      description: Finance department configuration snapshot (ERP-lite foundation).
+    FinanceSetupStep:
+      properties:
+        id:
+          type: string
+          title: Id
+        label:
+          type: string
+          title: Label
+        done:
+          type: boolean
+          title: Done
+        href:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Href
+      type: object
+      required:
+      - id
+      - label
+      - done
+      title: FinanceSetupStep
+    GuideAction:
+      properties:
+        type:
+          type: string
+          enum:
+          - buy
+          - apply
+          - book
+          - open
+          title: Type
+        label:
+          type: string
+          title: Label
+        target:
+          type: string
+          title: Target
+        auth_required:
+          type: boolean
+          title: Auth Required
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+      type: object
+      required:
+      - type
+      - label
+      - target
+      - auth_required
+      title: GuideAction
+    GuideCitation:
+      properties:
+        label:
+          type: string
+          title: Label
+        url:
+          type: string
+          title: Url
+        rights:
+          type: string
+          enum:
+          - open
+          - public
+          - licensed
+          title: Rights
+      type: object
+      required:
+      - label
+      - url
+      - rights
+      title: GuideCitation
+    GuideMeta:
+      properties:
+        standards:
+          type: integer
+          title: Standards
+        est_fee:
+          type: string
+          title: Est Fee
+        est_timeline:
+          type: string
+          title: Est Timeline
+        steps:
+          type: integer
+          title: Steps
+      type: object
+      required:
+      - standards
+      - est_fee
+      - est_timeline
+      - steps
+      title: GuideMeta
+    GuideRequest:
+      properties:
+        goal:
+          type: string
+          title: Goal
+        locale:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Locale
+      type: object
+      required:
+      - goal
+      title: GuideRequest
+    GuideResponse:
+      properties:
+        title:
+          type: string
+          title: Title
+        summary:
+          type: string
+          title: Summary
+        meta:
+          $ref: '#/components/schemas/GuideMeta'
+        steps:
+          items:
+            $ref: '#/components/schemas/GuideStep'
+          type: array
+          title: Steps
+      type: object
+      required:
+      - title
+      - summary
+      - meta
+      - steps
+      title: GuideResponse
+    GuideStep:
+      properties:
+        title:
+          type: string
+          title: Title
+        detail:
+          type: string
+          title: Detail
+        citations:
+          items:
+            $ref: '#/components/schemas/GuideCitation'
+          type: array
+          title: Citations
+        action:
+          anyOf:
+          - $ref: '#/components/schemas/GuideAction'
+          - type: 'null'
+      type: object
+      required:
+      - title
+      - detail
+      title: GuideStep
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HeatCell:
+      properties:
+        L:
+          type: integer
+          title: L
+        I:
+          type: integer
+          title: I
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - L
+      - I
+      - count
+      title: HeatCell
+    HrActivityItem:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: At
+        kind:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Kind
+        href:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Href
+      type: object
+      required:
+      - id
+      - title
+      title: HrActivityItem
+    HrApplicant:
+      properties:
+        id:
+          type: string
+          title: Id
+        applicant_name:
+          type: string
+          title: Applicant Name
+        status:
+          type: string
+          title: Status
+        job:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Job
+        stage:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stage
+      type: object
+      required:
+      - id
+      - applicant_name
+      - status
+      title: HrApplicant
+    HrAppraisalSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        employee:
+          type: string
+          title: Employee
+        cycle:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cycle
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - id
+      - employee
+      - status
+      title: HrAppraisalSummary
+    HrAttendanceSnapshot:
+      properties:
+        date:
+          type: string
+          title: Date
+        out_today:
+          items:
+            $ref: '#/components/schemas/HrOutTodayItem'
+          type: array
+          title: Out Today
+        present_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Present Count
+        absent_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Absent Count
+      type: object
+      required:
+      - date
+      - out_today
+      title: HrAttendanceSnapshot
+    HrCostCentre:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        finance_account_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Finance Account Code
+        status:
+          type: string
+          enum:
+          - active
+          - draft
+          - archived
+          title: Status
+          default: active
+        employee_count:
+          type: integer
+          title: Employee Count
+          default: 0
+      type: object
+      required:
+      - id
+      - name
+      title: HrCostCentre
+    HrCostCentreCreate:
+      properties:
+        name:
+          type: string
+          title: Name
+        confirm:
+          type: boolean
+          title: Confirm
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        finance_account_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Finance Account Code
+        status:
+          type: string
+          enum:
+          - active
+          - draft
+          - archived
+          title: Status
+          default: active
+      type: object
+      required:
+      - name
+      - confirm
+      title: HrCostCentreCreate
+    HrCostCentrePatch:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        finance_account_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Finance Account Code
+        status:
+          anyOf:
+          - type: string
+            enum:
+            - active
+            - draft
+            - archived
+          - type: 'null'
+          title: Status
+      type: object
+      required:
+      - confirm
+      title: HrCostCentrePatch
+    HrCostCentreRef:
+      properties:
+        id:
+          type: string
+          title: Id
+        code:
+          type: string
+          title: Code
+        name:
+          type: string
+          title: Name
+      type: object
+      required:
+      - id
+      - code
+      - name
+      title: HrCostCentreRef
+    HrDepartment:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        parent_department_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Parent Department Id
+        head:
+          anyOf:
+          - $ref: '#/components/schemas/HrEmployeeRef'
+          - type: 'null'
+        cost_centre:
+          anyOf:
+          - $ref: '#/components/schemas/HrCostCentreRef'
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - active
+          - archived
+          title: Status
+          default: active
+        designation_count:
+          type: integer
+          title: Designation Count
+          default: 0
+        filled_count:
+          type: integer
+          title: Filled Count
+          default: 0
+        total_positions:
+          type: integer
+          title: Total Positions
+          default: 0
+      type: object
+      required:
+      - id
+      - name
+      title: HrDepartment
+    HrDepartmentCreate:
+      properties:
+        name:
+          type: string
+          title: Name
+        confirm:
+          type: boolean
+          title: Confirm
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        parent_department_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Parent Department Id
+        cost_centre_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cost Centre Id
+      type: object
+      required:
+      - name
+      - confirm
+      title: HrDepartmentCreate
+    HrDepartmentHeadBody:
+      properties:
+        employee_id:
+          type: string
+          title: Employee Id
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - employee_id
+      - confirm
+      title: HrDepartmentHeadBody
+    HrDepartmentPatch:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        parent_department_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Parent Department Id
+        cost_centre_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cost Centre Id
+        status:
+          anyOf:
+          - type: string
+            enum:
+            - active
+            - archived
+          - type: 'null'
+          title: Status
+      type: object
+      required:
+      - confirm
+      title: HrDepartmentPatch
+    HrDepartmentRef:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+      type: object
+      required:
+      - id
+      - name
+      title: HrDepartmentRef
+    HrDesignation:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        department:
+          anyOf:
+          - $ref: '#/components/schemas/HrDepartmentRef'
+          - type: 'null'
+        grade_band:
+          anyOf:
+          - $ref: '#/components/schemas/HrGradeBandRef'
+          - type: 'null'
+        filled:
+          type: integer
+          title: Filled
+          default: 0
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
+      type: object
+      required:
+      - id
+      - title
+      title: HrDesignation
+    HrDesignationCreate:
+      properties:
+        title:
+          type: string
+          title: Title
+        confirm:
+          type: boolean
+          title: Confirm
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        department_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department Id
+        grade_band_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Grade Band Id
+        approved_headcount:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Approved Headcount
+      type: object
+      required:
+      - title
+      - confirm
+      title: HrDesignationCreate
+    HrDesignationPatch:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        department_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department Id
+        grade_band_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Grade Band Id
+        approved_headcount:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Approved Headcount
+      type: object
+      required:
+      - confirm
+      title: HrDesignationPatch
+    HrEmployeeRef:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        initials:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Initials
+      type: object
+      required:
+      - id
+      - name
+      title: HrEmployeeRef
+    HrEmployeeSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        employee_name:
+          type: string
+          title: Employee Name
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department
+        designation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Designation
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+        date_of_joining:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Date Of Joining
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        initials:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Initials
+        reports_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reports To
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: User Id
+        desk_path:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Desk Path
+      type: object
+      required:
+      - id
+      - employee_name
+      title: HrEmployeeSummary
+    HrGradeBand:
+      properties:
+        id:
+          type: string
+          title: Id
+        code:
+          type: string
+          title: Code
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        level:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Level
+        min_salary:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Min Salary
+        max_salary:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Max Salary
+        currency:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Currency
+          default: SZL
+      type: object
+      required:
+      - id
+      - code
+      title: HrGradeBand
+    HrGradeBandCreate:
+      properties:
+        code:
+          type: string
+          title: Code
+        confirm:
+          type: boolean
+          title: Confirm
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        level:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Level
+        min_salary:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Min Salary
+        max_salary:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Max Salary
+        currency:
+          type: string
+          title: Currency
+          default: SZL
+      type: object
+      required:
+      - code
+      - confirm
+      title: HrGradeBandCreate
+    HrGradeBandPatch:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        level:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Level
+        min_salary:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Min Salary
+        max_salary:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Max Salary
+        currency:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Currency
+      type: object
+      required:
+      - confirm
+      title: HrGradeBandPatch
+    HrGradeBandRef:
+      properties:
+        id:
+          type: string
+          title: Id
+        code:
+          type: string
+          title: Code
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        level:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Level
+      type: object
+      required:
+      - id
+      - code
+      title: HrGradeBandRef
+    HrHoliday:
+      properties:
+        date:
+          type: string
+          title: Date
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Id
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        holiday_list:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Holiday List
+      type: object
+      required:
+      - date
+      title: HrHoliday
+    HrJobOpening:
+      properties:
+        id:
+          type: string
+          title: Id
+        job_title:
+          type: string
+          title: Job Title
+        status:
+          type: string
+          title: Status
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department
+        designation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Designation
+        vacancies:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Vacancies
+      type: object
+      required:
+      - id
+      - job_title
+      - status
+      title: HrJobOpening
+    HrLeaveActBody:
+      properties:
+        decision:
+          type: string
+          title: Decision
+        confirm:
+          type: boolean
+          title: Confirm
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+      type: object
+      required:
+      - decision
+      - confirm
+      title: HrLeaveActBody
+      description: 'OpenAPI: HrLeaveAct.'
+    HrLeaveBalance:
+      properties:
+        leave_type:
+          type: string
+          title: Leave Type
+        allocated:
+          type: number
+          title: Allocated
+        used:
+          type: number
+          title: Used
+        balance:
+          type: number
+          title: Balance
+        employee:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee
+      type: object
+      required:
+      - leave_type
+      - allocated
+      - used
+      - balance
+      title: HrLeaveBalance
+    HrLeaveSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        employee:
+          type: string
+          title: Employee
+        leave_type:
+          type: string
+          title: Leave Type
+        from_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: From Date
+        to_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: To Date
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - id
+      - employee
+      - leave_type
+      - status
+      title: HrLeaveSummary
+    HrLocation:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Address
+        type:
+          anyOf:
+          - type: string
+            enum:
+            - hq
+            - lab
+            - satellite
+          - type: 'null'
+          title: Type
+        status:
+          type: string
+          enum:
+          - active
+          - closed
+          title: Status
+          default: active
+        employee_count:
+          type: integer
+          title: Employee Count
+          default: 0
+      type: object
+      required:
+      - id
+      - name
+      title: HrLocation
+    HrLocationCreate:
+      properties:
+        name:
+          type: string
+          title: Name
+        confirm:
+          type: boolean
+          title: Confirm
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Address
+        type:
+          anyOf:
+          - type: string
+            enum:
+            - hq
+            - lab
+            - satellite
+          - type: 'null'
+          title: Type
+      type: object
+      required:
+      - name
+      - confirm
+      title: HrLocationCreate
+    HrLocationPatch:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+        address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Address
+        type:
+          anyOf:
+          - type: string
+            enum:
+            - hq
+            - lab
+            - satellite
+          - type: 'null'
+          title: Type
+        status:
+          anyOf:
+          - type: string
+            enum:
+            - active
+            - closed
+          - type: 'null'
+          title: Status
+      type: object
+      required:
+      - confirm
+      title: HrLocationPatch
+    HrLocationRef:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+      type: object
+      required:
+      - id
+      - name
+      title: HrLocationRef
+    HrOrgChartNode:
+      properties:
+        id:
+          type: string
+          title: Id
+        employee_name:
+          type: string
+          title: Employee Name
+        designation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Designation
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department
+        reports_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reports To
+        initials:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Initials
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+      type: object
+      required:
+      - id
+      - employee_name
+      title: HrOrgChartNode
+    HrOrganisation:
+      properties:
+        id:
+          type: string
+          title: Id
+        legal_name:
+          type: string
+          title: Legal Name
+        registration_number:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Registration Number
+        founded_year:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Founded Year
+        sector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sector
+        registered_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Registered Address
+        primary_location_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Primary Location Id
+        primary_location:
+          anyOf:
+          - $ref: '#/components/schemas/HrLocationRef'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - legal_name
+      title: HrOrganisation
+    HrOrganisationCounts:
+      properties:
+        departments:
+          type: integer
+          title: Departments
+        designations:
+          type: integer
+          title: Designations
+        filled_positions:
+          type: integer
+          title: Filled Positions
+        vacant_positions:
+          type: integer
+          title: Vacant Positions
+        locations:
+          type: integer
+          title: Locations
+        cost_centres:
+          type: integer
+          title: Cost Centres
+        employees:
+          type: integer
+          title: Employees
+      type: object
+      required:
+      - departments
+      - designations
+      - filled_positions
+      - vacant_positions
+      - locations
+      - cost_centres
+      - employees
+      title: HrOrganisationCounts
+    HrOrganisationCreate:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        legal_name:
+          type: string
+          title: Legal Name
+        abbr:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Abbr
+        default_currency:
+          type: string
+          title: Default Currency
+          default: SZL
+        country:
+          type: string
+          title: Country
+          default: Eswatini
+        registration_number:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Registration Number
+        founded_year:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Founded Year
+        sector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sector
+        registered_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Registered Address
+      type: object
+      required:
+      - confirm
+      - legal_name
+      title: HrOrganisationCreate
+      description: Create the singleton Frappe Company (confirm-before-commit).
+    HrOrganisationOverview:
+      properties:
+        setup:
+          $ref: '#/components/schemas/HrSetupProgress'
+        counts:
+          $ref: '#/components/schemas/HrOrganisationCounts'
+        departments:
+          items:
+            $ref: '#/components/schemas/HrDepartment'
+          type: array
+          title: Departments
+        designations_preview:
+          items:
+            $ref: '#/components/schemas/HrDesignation'
+          type: array
+          title: Designations Preview
+        designations_total:
+          type: integer
+          title: Designations Total
+        locations:
+          items:
+            $ref: '#/components/schemas/HrLocation'
+          type: array
+          title: Locations
+        cost_centres:
+          items:
+            $ref: '#/components/schemas/HrCostCentre'
+          type: array
+          title: Cost Centres
+        payroll:
+          $ref: '#/components/schemas/HrPayrollReadiness'
+        organisation:
+          anyOf:
+          - $ref: '#/components/schemas/HrOrganisation'
+          - type: 'null'
+      type: object
+      required:
+      - setup
+      - counts
+      - departments
+      - designations_preview
+      - designations_total
+      - locations
+      - cost_centres
+      - payroll
+      title: HrOrganisationOverview
+    HrOrganisationPatch:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        legal_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Legal Name
+        registration_number:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Registration Number
+        founded_year:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Founded Year
+        sector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sector
+        registered_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Registered Address
+        primary_location_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Primary Location Id
+      type: object
+      required:
+      - confirm
+      title: HrOrganisationPatch
+    HrOutTodayItem:
+      properties:
+        employee:
+          type: string
+          title: Employee
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Id
+        employee_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Name
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        leave_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Leave Type
+        from_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: From Date
+        to_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: To Date
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      type: object
+      required:
+      - employee
+      title: HrOutTodayItem
+    HrPayrollReadiness:
+      properties:
+        ready:
+          type: boolean
+          title: Ready
+        label:
+          type: string
+          title: Label
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+      type: object
+      required:
+      - ready
+      - label
+      title: HrPayrollReadiness
+    HrPayrollStatus:
+      properties:
+        status:
+          type: string
+          title: Status
+        period:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Period
+        employees_processed:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Employees Processed
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+      type: object
+      required:
+      - status
+      title: HrPayrollStatus
+    HrPayslip:
+      properties:
+        id:
+          type: string
+          title: Id
+        employee:
+          type: string
+          title: Employee
+        status:
+          type: string
+          title: Status
+        period:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Period
+        net_pay:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Net Pay
+      type: object
+      required:
+      - id
+      - employee
+      - status
+      title: HrPayslip
+    HrSetupProgress:
+      properties:
+        has_profile:
+          type: boolean
+          title: Has Profile
+        has_departments:
+          type: boolean
+          title: Has Departments
+        has_designations:
+          type: boolean
+          title: Has Designations
+        has_locations:
+          type: boolean
+          title: Has Locations
+        has_grades:
+          type: boolean
+          title: Has Grades
+        has_cost_centres:
+          type: boolean
+          title: Has Cost Centres
+        has_employees:
+          type: boolean
+          title: Has Employees
+        completion_pct:
+          type: number
+          title: Completion Pct
+        steps_completed:
+          type: integer
+          title: Steps Completed
+        steps_total:
+          type: integer
+          title: Steps Total
+      type: object
+      required:
+      - has_profile
+      - has_departments
+      - has_designations
+      - has_locations
+      - has_grades
+      - has_cost_centres
+      - has_employees
+      - completion_pct
+      - steps_completed
+      - steps_total
+      title: HrSetupProgress
+    HrSummary:
+      properties:
+        headcount:
+          type: integer
+          title: Headcount
+        appraisal_completion_pct:
+          type: number
+          title: Appraisal Completion Pct
+        open_leave:
+          type: integer
+          title: Open Leave
+        new_hires_q:
+          type: integer
+          title: New Hires Q
+          default: 0
+        on_leave_today:
+          type: integer
+          title: On Leave Today
+          default: 0
+        leave_pending:
+          type: integer
+          title: Leave Pending
+          default: 0
+        open_positions:
+          type: integer
+          title: Open Positions
+          default: 0
+        out_today:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/HrOutTodayItem'
+            type: array
+          - type: 'null'
+          title: Out Today
+        activity:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/HrActivityItem'
+            type: array
+          - type: 'null'
+          title: Activity
+      type: object
+      required:
+      - headcount
+      - appraisal_completion_pct
+      - open_leave
+      title: HrSummary
+      description: GET /hr/summary and GET /hr/overview share this payload.
+    InviteStaffRequest:
+      properties:
+        email:
+          type: string
+          title: Email
+        full_name:
+          type: string
+          title: Full Name
+        roles:
+          items:
+            type: string
+          type: array
+          title: Roles
+        org:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Org
+      type: object
+      required:
+      - email
+      - full_name
+      - roles
+      title: InviteStaffRequest
+    InviteStaffResponse:
+      properties:
+        ok:
+          type: boolean
+          title: Ok
+        email:
+          type: string
+          title: Email
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+      type: object
+      required:
+      - ok
+      - email
+      title: InviteStaffResponse
+    InviteTeamBody:
+      properties:
+        email:
+          type: string
+          title: Email
+        role:
+          type: string
+          enum:
+          - admin
+          - member
+          - viewer
+          title: Role
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - email
+      - role
+      - confirm
+      title: InviteTeamBody
+    LoginRequest:
+      properties:
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        password:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Password
+        otp:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Otp
+        challenge_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Challenge Id
+      type: object
+      title: LoginRequest
+      description: Prefer email; username kept for dual-path / desk users.
+    MaintenanceBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        enabled:
+          type: boolean
+          title: Enabled
+      type: object
+      required:
+      - confirm
+      - enabled
+      title: MaintenanceBody
+    MarketingCampaignSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - id
+      - title
+      - status
+      title: MarketingCampaignSummary
+    MediaObjectOut:
+      properties:
+        key:
+          type: string
+          title: Key
+        bucket:
+          type: string
+          title: Bucket
+        content_type:
+          type: string
+          title: Content Type
+        size:
+          type: integer
+          title: Size
+        url:
+          type: string
+          title: Url
+        backend:
+          type: string
+          title: Backend
+      type: object
+      required:
+      - key
+      - bucket
+      - content_type
+      - size
+      - url
+      - backend
+      title: MediaObjectOut
+    MediaStatusOut:
+      properties:
+        backend:
+          type: string
+          title: Backend
+        bucket:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Bucket
+        ready:
+          type: boolean
+          title: Ready
+          default: true
+      type: object
+      required:
+      - backend
+      title: MediaStatusOut
+    MetrologyJobSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        instrument:
+          type: string
+          title: Instrument
+        customer:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Customer
+        status:
+          type: string
+          title: Status
+        due_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Due Date
+      type: object
+      required:
+      - id
+      - instrument
+      - status
+      title: MetrologyJobSummary
+    NotificationPrefs:
+      properties:
+        application_updates:
+          type: boolean
+          title: Application Updates
+          default: true
+        order_confirmations:
+          type: boolean
+          title: Order Confirmations
+          default: true
+        certificate_expiry:
+          type: boolean
+          title: Certificate Expiry
+          default: true
+        training_announcements:
+          type: boolean
+          title: Training Announcements
+          default: false
+        two_factor:
+          type: boolean
+          title: Two Factor
+          default: false
+      type: object
+      title: NotificationPrefs
+    OtpRequest:
+      properties:
+        email:
+          type: string
+          title: Email
+      type: object
+      required:
+      - email
+      title: OtpRequest
+    OtpResponse:
+      properties:
+        ok:
+          type: boolean
+          title: Ok
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        stubbed:
+          type: boolean
+          title: Stubbed
+          default: false
+      type: object
+      required:
+      - ok
+      title: OtpResponse
+    PasswordResetRequest:
+      properties:
+        email:
+          type: string
+          title: Email
+      type: object
+      required:
+      - email
+      title: PasswordResetRequest
+    PasswordResetResponse:
+      properties:
+        ok:
+          type: boolean
+          title: Ok
+          default: true
+        message:
+          type: string
+          title: Message
+        stubbed:
+          type: boolean
+          title: Stubbed
+          default: false
+      type: object
+      required:
+      - message
+      title: PasswordResetResponse
+    PatchAccessPolicyBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        policy:
+          $ref: '#/components/schemas/AdminAccessPolicy'
+      type: object
+      required:
+      - confirm
+      - policy
+      title: PatchAccessPolicyBody
+    PatchHrEmployeeBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        employee_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Employee Name
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Department
+        designation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Designation
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        reports_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reports To
+      type: object
+      required:
+      - confirm
+      title: PatchHrEmployeeBody
+      description: 'OpenAPI: HrEmployeePatch.'
+    PatchSystemSettingsBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        values:
+          $ref: '#/components/schemas/AdminSystemSettings'
+      type: object
+      required:
+      - confirm
+      - values
+      title: PatchSystemSettingsBody
+    PatchUserBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Enabled
+        role_profile_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role Profile Name
+      type: object
+      required:
+      - confirm
+      title: PatchUserBody
+    PlanTrafficLight:
+      properties:
+        key:
+          type: string
+          title: Key
+        label:
+          type: string
+          title: Label
+        actual:
+          type: string
+          title: Actual
+        target:
+          type: string
+          title: Target
+        status:
+          type: string
+          enum:
+          - green
+          - amber
+          - red
+          title: Status
+      type: object
+      required:
+      - key
+      - label
+      - actual
+      - target
+      - status
+      title: PlanTrafficLight
+    PublishStandardBody:
+      properties:
+        standard:
+          type: string
+          title: Standard
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - standard
+      - confirm
+      title: PublishStandardBody
+    RaiseFindingBody:
+      properties:
+        clause:
+          type: string
+          title: Clause
+        severity:
+          type: string
+          enum:
+          - major
+          - minor
+          - observation
+          title: Severity
+        statement:
+          type: string
+          title: Statement
+        due:
+          type: string
+          title: Due
+        org:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Org
+        confirm:
+          type: boolean
+          title: Confirm
+          default: false
+      type: object
+      required:
+      - clause
+      - severity
+      - statement
+      - due
+      title: RaiseFindingBody
+    ReassignBody:
+      properties:
+        to_user:
+          type: string
+          title: To User
+        comment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Comment
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - to_user
+      - confirm
+      title: ReassignBody
+    RegisterRequest:
+      properties:
+        email:
+          type: string
+          title: Email
+        name:
+          type: string
+          title: Name
+        org:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Org
+        password:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Password
+      type: object
+      required:
+      - email
+      - name
+      title: RegisterRequest
+    ReviewFindingBody:
+      properties:
+        accept:
+          type: boolean
+          title: Accept
+        note:
+          type: string
+          title: Note
+          default: ''
+        confirm:
+          type: boolean
+          title: Confirm
+          default: false
+      type: object
+      required:
+      - accept
+      title: ReviewFindingBody
+    SlaSweepBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+          default: false
+        dry_run:
+          type: boolean
+          title: Dry Run
+          default: false
+        limit:
+          type: integer
+          maximum: 200.0
+          minimum: 1.0
+          title: Limit
+          default: 50
+      type: object
+      title: SlaSweepBody
+    TbtNotificationSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        symbol:
+          type: string
+          title: Symbol
+        title:
+          type: string
+          title: Title
+        impact:
+          type: string
+          enum:
+          - high
+          - medium
+          - low
+          title: Impact
+        unread:
+          type: boolean
+          title: Unread
+        published_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Published At
+      type: object
+      required:
+      - id
+      - symbol
+      - title
+      - impact
+      - unread
+      title: TbtNotificationSummary
+    TbtNotificationsResponse:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TbtNotificationSummary'
+          type: array
+          title: Items
+        new_count:
+          type: integer
+          title: New Count
+      type: object
+      required:
+      - items
+      - new_count
+      title: TbtNotificationsResponse
+    TbtSubscribeBody:
+      properties:
+        sector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sector
+        hs_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Hs Code
+        jurisdiction:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Jurisdiction
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - confirm
+      title: TbtSubscribeBody
+    TeamMember:
+      properties:
+        id:
+          type: string
+          title: Id
+        initials:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Initials
+        name:
+          type: string
+          title: Name
+        email:
+          type: string
+          title: Email
+        role:
+          type: string
+          title: Role
+        role_label:
+          type: string
+          title: Role Label
+        when:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: When
+        avatar_variant:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avatar Variant
+          default: default
+      type: object
+      required:
+      - id
+      - name
+      - email
+      - role
+      - role_label
+      title: TeamMember
+    TestEmailBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        to:
+          type: string
+          title: To
+      type: object
+      required:
+      - confirm
+      - to
+      title: TestEmailBody
+    TrainingCourseSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        published:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Published
+      type: object
+      required:
+      - id
+      - title
+      title: TrainingCourseSummary
+    TrainingEnrolmentSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        course:
+          type: string
+          title: Course
+        member:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Member
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - id
+      - course
+      - status
+      title: TrainingEnrolmentSummary
+    UnlockRequest:
+      properties:
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+      - password
+      title: UnlockRequest
+    UpdateItem:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        summary:
+          type: string
+          title: Summary
+        tag:
+          type: string
+          title: Tag
+        date:
+          type: string
+          title: Date
+        href:
+          type: string
+          title: Href
+        foot_icon:
+          type: string
+          title: Foot Icon
+        foot_label:
+          type: string
+          title: Foot Label
+      type: object
+      required:
+      - id
+      - title
+      - summary
+      - tag
+      - date
+      - href
+      - foot_icon
+      - foot_label
+      title: UpdateItem
+      description: A single update / announcement card for the landing page.
+    UpdateMeBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+        full_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Full Name
+        phone:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Phone
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+      type: object
+      required:
+      - confirm
+      title: UpdateMeBody
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    app__admin__router__ConfirmBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+      type: object
+      required:
+      - confirm
+      title: ConfirmBody
+    app__gateway__wave1__ConfirmBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+          default: false
+      type: object
+      title: ConfirmBody
+    app__governance__schemas__ConfirmBody:
+      properties:
+        confirm:
+          type: boolean
+          title: Confirm
+          default: false
+      type: object
+      title: ConfirmBody
+    LoginChallenge:
+      type: object
+      required: [status, challenge_id]
+      properties:
+        status:
+          type: string
+          enum: [otp_required]
+        challenge_id:
+          type: string
+        message:
+          type: string
+        stubbed:
+          type: boolean
+        email_hint:
+          type: string
+    AuthRequiredError:
+      type: object
+      required: [auth_required]
+      properties:
+        auth_required:
+          const: true
+        reason:
+          type: string
+        detail:
+          type: string
+    AdminBackupSummary:
+      type: object
+      required: [timestamp, path]
+      properties:
+        timestamp: {type: string}
+        size: {type: [string, 'null']}
+        backup_type: {type: [string, 'null']}
+        path: {type: string}
+    AdminBackupPolicy:
+      type: object
+      properties:
+        frequency: {type: [string, 'null']}
+        include_files: {type: [boolean, 'null']}
+        retention_days: {type: [integer, 'null']}
+        offsite: {type: [boolean, 'null']}
+        encrypt: {type: [boolean, 'null']}
+    AdminLogEntry:
+      type: object
+      required: [time, source, message, level]
+      properties:
+        time: {type: string}
+        source: {type: string}
+        message: {type: string}
+        level: {type: string, enum: [ok, warn, err, info]}
+        name: {type: [string, 'null']}
+    AdminIntegrationStatus:
+      type: object
+      required: [id, title, status, detail]
+      properties:
+        id: {type: string}
+        title: {type: string}
+        status: {type: string, enum: [ok, warn, err, info]}
+        detail: {type: string}
+        href: {type: [string, 'null']}
+    AdminAccessEvent:
+      type: object
+      required: [id, time, outcome, reason]
+      properties:
+        id: {type: string}
+        time: {type: string}
+        outcome: {type: string, enum: [allow, deny]}
+        reason: {type: string}
+        ip: {type: [string, 'null']}
+        username: {type: [string, 'null']}
+        device_id: {type: [string, 'null']}
+        path: {type: [string, 'null']}
+    OrderSummary:
+      type: object
+      required: [id, title, date, amount, status]
+      properties:
+        id: {type: string}
+        title: {type: string}
+        subtitle: {type: string}
+        date: {type: string, format: date}
+        amount: {type: string}
+        status: {type: string, enum: [done, review, pending, failed]}
+        status_label: {type: string}
+        entity: {type: string, enum: [personal, business]}
+    HrExpense:
+      type: object
+      required: [id, amount, expense_type, status]
+      properties:
+        id: {type: string}
+        amount: {type: number}
+        expense_type: {type: string}
+        description: {type: [string, 'null']}
+        status: {type: string}

@@ -91,7 +91,7 @@
    "fieldtype": "Check",
    "label": "Internal ESWASA",
    "default": 0,
-   "description": "R-M3: internal lab instrument — overdue blocks new jobs"
+   "description": "R-M3: internal lab instrument; overdue blocks new jobs"
   },
   {
    "fieldname": "blocked_for_use",

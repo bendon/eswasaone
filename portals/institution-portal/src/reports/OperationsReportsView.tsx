@@ -118,7 +118,7 @@ export function OperationsReportsView() {
 
   function exportPdf() {
     // TODO: wire real — POST /reports/operations/export to render a PDF pack.
-    setFlash("PDF export — TODO");
+    setFlash("PDF export: TODO");
   }
 
   const drawerSections: DrawerSection[] = useMemo(() => {

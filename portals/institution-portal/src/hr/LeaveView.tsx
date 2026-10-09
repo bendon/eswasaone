@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch, AuthError, Icon, RecordDrawer, useDialogs, type DrawerSection } from "@eswasaone/shared-ui";
+import { apiFetch, AuthError, Icon, RecordDrawer, useDialogs, type DrawerSection, Select } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
@@ -110,7 +110,7 @@ export function LeaveView() {
         body: JSON.stringify({ decision, confirm: true }),
       });
       await dialogs.alert({
-        message: `${decision === "approve" ? "Approved" : "Rejected"} — ${employee}`,
+        message: `${decision === "approve" ? "Approved" : "Rejected"}: ${employee}`,
         kind: "success",
       });
       reload();
@@ -183,17 +183,17 @@ export function LeaveView() {
             </div>
             <div className="hr-box__b" style={{ paddingTop: 8 }}>
               <div className="hr-filters" style={{ marginBottom: 8 }}>
-                <select
-                  className="hr-sel"
+                <Select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                  onChange={(v) => setStatusFilter(v as StatusFilter)}
                   aria-label="Filter leave"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="all">All</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
+                  options={[
+                    { value: "pending", label: "Pending" },
+                    { value: "all", label: "All" },
+                    { value: "approved", label: "Approved" },
+                    { value: "rejected", label: "Rejected" },
+                  ]}
+                />
               </div>
 
               {filtered.length === 0 ? (
@@ -292,7 +292,7 @@ export function LeaveView() {
               <div className="hr-box__b">
                 {balanceRows.length === 0 ? (
                   <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
-                    No allocations visible yet — ensure Leave Allocation records exist and your role can read them.
+                    No allocations visible yet. Ensure Leave Allocation records exist and your role can read them.
                   </p>
                 ) : (
                   <div className="hr-tl">

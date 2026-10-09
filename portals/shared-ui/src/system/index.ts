@@ -1,4 +1,4 @@
-export { brand, themeColor, themeBackground, fontSans, fontMono, type BrandColor } from "./brand";
+export { brand, themeColor, themeBackground, fontSans, fontDisplay, fontMono, type BrandColor } from "./brand";
 export {
   prefersReducedMotion,
   focusFirst,

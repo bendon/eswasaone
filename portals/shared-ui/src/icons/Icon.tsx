@@ -52,9 +52,11 @@ export type IconName =
   | "i-mail"
   | "i-map"
   | "i-mega"
+  | "i-mic"
   | "i-monitor"
   | "i-more"
   | "i-pin"
+  | "i-plane"
   | "i-refresh"
   | "i-scroll"
   | "i-search"
@@ -237,10 +239,22 @@ const PATHS_BASE = {
       <path d="M4 7l8 5 8-5" />
     </>
   ),
+  "i-plane": (
+    <>
+      <path d="M22 2L11 13" />
+      <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+    </>
+  ),
   "i-map": (
     <>
       <path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" />
       <path d="M9 4v14M15 6v14" />
+    </>
+  ),
+  "i-mic": (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0014 0M12 18v3M9 21h6" />
     </>
   ),
   "i-mega": (
@@ -395,7 +409,9 @@ const PATHS: Record<IconName, ReactNode> = {
   "i-dl": PATHS_BASE["i-clip"],
   "i-list": PATHS_BASE["i-scroll"],
   "i-open": PATHS_BASE["i-eye"],
-  "i-phone": PATHS_BASE["i-mail"],
+  "i-phone": (
+    <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" />
+  ),
   "i-play": PATHS_BASE["i-trend"],
 };
 

@@ -15,7 +15,21 @@
     "./tokens.css": "./src/styles/tokens.css",
     "./brand": "./src/brand/index.ts",
     "./system": "./src/system/index.ts",
-    "./types": "./src/types.ts"
+    "./crm": "./src/crm/index.ts",
+    "./types": "./src/types.ts",
+    "./workflow": "./src/workflow/index.ts",
+    "./tasks": "./src/tasks/index.ts",
+    "./notify": "./src/notify/index.ts",
+    "./record": "./src/record/index.ts",
+    "./store": "./src/store/index.ts",
+    "./governance": "./src/governance/index.ts",
+    "./billing": "./src/billing/index.ts",
+    "./field": "./src/field/index.ts",
+    "./metrology": "./src/metrology/index.ts",
+    "./certification": "./src/certification/index.ts",
+    "./standards": "./src/standards/index.ts",
+    "./domains": "./src/domains.ts",
+    "./print": "./src/print/index.tsx"
   },
   "peerDependencies": {
     "react": "^18.3.1",
@@ -27,5 +41,9 @@
     "@types/react-dom": "^18.3.1",
     "react": "^18.3.1",
     "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "date-fns": "^4.4.0",
+    "react-day-picker": "^9.14.0"
   }
 }

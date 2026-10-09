@@ -1,5 +1,8 @@
+import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@eswasaone/shared-ui";
+import { useStoreResource } from "@eswasaone/shared-ui/store";
+import { listTasks, taskSla, taskStore } from "@eswasaone/shared-ui/tasks";
 import { useAuth } from "../auth/AuthProvider";
 import { auditsHref } from "./audits";
 import { useHomeData } from "./home/useHomeData";
@@ -16,6 +19,10 @@ export function HomeScreen() {
   const firstName =
     (user?.full_name || user?.username || "").split(/\s+/)[0] || "there";
 
+  // "My tasks" strip (gap 02): field-family work from the shared inbox — visit reviews, reports returned.
+  const actor = useMemo(() => ({ name: user?.full_name || user?.username || "", roles: user?.roles ?? [] }), [user]);
+  const tasks = useStoreResource([taskStore], () => listTasks(actor, { queue: "all", module: "Field" }).filter((t) => t.assignee === actor.name || !t.assignee), [actor.name]);
+
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(next.mapsQuery)}`;
 
   return (
@@ -23,7 +30,7 @@ export function HomeScreen() {
       {fromCache || refreshing ? (
         <p className="hm-cache-note" role="status">
           {fromCache
-            ? "Showing last saved on this device — reconnect to sync."
+            ? "Showing last saved on this device. Reconnect to sync."
             : "Updating…"}
         </p>
       ) : null}
@@ -87,6 +94,29 @@ export function HomeScreen() {
           Claim
         </Link>
       </nav>
+
+      {tasks.data?.length ? (
+        <>
+          <h3 className="hm-sec">My tasks</h3>
+          <div className="hm-card">
+            {tasks.data.slice(0, 4).map((t) => (
+              <a key={t.id} className="hm-row" href={`/institution/approvals?open=${encodeURIComponent(t.name)}`}>
+                <span className="hm-row__ic">
+                  <Icon name={t.family === "alert" ? "i-warn" : "i-check-c"} />
+                </span>
+                <div className="hm-row__body">
+                  <b>{t.title}</b>
+                  <span>{t.assignee ? "Assigned to you" : `Pool: ${t.role}`}</span>
+                </div>
+                <span className="hm-stt">
+                  <span className="hm-stt__dot" />
+                  {taskSla(t).label}
+                </span>
+              </a>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       <h3 className="hm-sec">Today&apos;s schedule</h3>
       <div className="hm-card">

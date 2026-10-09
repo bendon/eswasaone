@@ -171,7 +171,7 @@ export function AccountSettingsPage() {
             <div className="toggle">
               <div className="toggle__copy">
                 <b>Two-factor authentication</b>
-                <span>Recommended — adds a one-time code at sign-in</span>
+                <span>Recommended. Adds a one-time code at sign-in</span>
               </div>
               <button
                 type="button"

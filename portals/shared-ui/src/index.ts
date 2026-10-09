@@ -23,6 +23,7 @@ export type { IconName, IconProps } from "./icons/Icon";
 export { AppShell } from "./components/AppShell";
 export { Sidebar, type NavItem } from "./components/Sidebar";
 export { TopBar, type TopBarMenuItem } from "./components/TopBar";
+export { TopBarSearch } from "./components/TopBarSearch";
 export { AskBox } from "./components/AskBox";
 export { HeroAsk } from "./components/HeroAsk";
 export { AskBar } from "./components/AskBar";
@@ -49,6 +50,7 @@ export {
   ConfirmModal,
   MessageAlert,
   PromptModal,
+  globalAlert,
   type DialogsApi,
   type ConfirmOptions,
   type AlertOptions,
@@ -63,6 +65,8 @@ export {
   type ConfirmActionOptions,
 } from "./components/ConfirmAction";
 export { DemoBadge, useDemoMode } from "./components/DemoBadge";
+export { demoDataEnabled } from "./demo";
+export { DEMO_PERSONAS, getDemoPersona, setDemoPersona, type DemoPersona } from "./demoSession";
 export {
   DeskLink,
   deskAvailable,
@@ -83,6 +87,21 @@ export {
 export { FileDownload, type FileDownloadProps } from "./components/FileDownload";
 
 export { apiBase, wsBase, apiFetch, askAgent } from "./api/client";
+export {
+  uploadMedia,
+  validateUpload,
+  UPLOAD_LIMITS,
+  type MediaObject,
+  type UploadResult,
+} from "./api/upload";
+export { newIdempotencyKey } from "./api/idempotency";
+export {
+  ApiError,
+  extractDetail,
+  humanizeApiDetail,
+  showApiError,
+  apiErrorFromResponse,
+} from "./api/errors";
 export { useFeed } from "./api/useFeed";
 export { useLiveFeed, type UseLiveFeedOptions } from "./api/useLiveFeed";
 export { useUpdates, type UpdateItem } from "./api/useUpdates";
@@ -117,6 +136,7 @@ export {
   getCsrfToken,
   setCsrfToken,
   STAFF_ROLES,
+  PROVISIONAL_ROLE_MAP,
   FIELD_ESS_ROLES,
   DESK_ONLY_ROLES,
   INSTITUTION_PORTAL_PATH,
@@ -144,7 +164,13 @@ export type {
   Session,
 } from "./auth";
 
-export { BrandLogo, SiteFooter, type SiteFooterHealth } from "./brand";
+export {
+  BrandLogo,
+  SiteFooter,
+  type SiteFooterHealth,
+  type SiteFooterColumn,
+  type SiteFooterContact,
+} from "./brand";
 
 export {
   brand,
@@ -157,3 +183,5 @@ export {
   setBodyScrollLocked,
 } from "./system";
 export type { BrandColor } from "./system";
+export { DateField, MonthField, type DateFieldProps, type MonthFieldProps } from "./components/DatePicker";
+export { Select, type SelectOption, type SelectProps } from "./components/Select";

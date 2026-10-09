@@ -24,15 +24,15 @@ BENCH = REPO_ROOT / "engine" / "frappe-bench"
 WELCOME_NAME = "EswasaOne Welcome"
 RESET_NAME = "EswasaOne Password Reset"
 
-WELCOME_SUBJECT = "Welcome to EswasaOne — set your password"
-RESET_SUBJECT = "EswasaOne — reset your password"
+WELCOME_SUBJECT = "Welcome to EswasaOne: set your password"
+RESET_SUBJECT = "EswasaOne: reset your password"
 
 # Set Password / Login chrome (get_app_logo + Website Settings.favicon)
 APP_LOGO = "/assets/eswasa_certification/images/eswasa-lockup.png"
 FAVICON = "/assets/eswasa_certification/images/favicon.ico"
 
 WELCOME_HTML = """\
-<div style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #0F172A; line-height: 1.55; max-width: 560px;">
+<div style="font-family: Arial, Helvetica, sans-serif; color: #0F172A; line-height: 1.55; max-width: 560px;">
   <p style="font-size: 11px; letter-spacing: .14em; font-weight: 700; color: #313391; text-transform: uppercase; margin: 0 0 12px;">EswasaOne · Institution Portal</p>
   <h1 style="font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 16px;">Complete your registration</h1>
   <p>Hello {{ first_name }}{% if last_name %} {{ last_name }}{% endif %},</p>
@@ -60,7 +60,7 @@ WELCOME_HTML = """\
 """
 
 RESET_HTML = """\
-<div style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #0F172A; line-height: 1.55; max-width: 560px;">
+<div style="font-family: Arial, Helvetica, sans-serif; color: #0F172A; line-height: 1.55; max-width: 560px;">
   <p style="font-size: 11px; letter-spacing: .14em; font-weight: 700; color: #313391; text-transform: uppercase; margin: 0 0 12px;">EswasaOne · Institution Portal</p>
   <h1 style="font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 16px;">Reset your password</h1>
   <p>Hello {{ first_name }}{% if last_name %} {{ last_name }}{% endif %},</p>

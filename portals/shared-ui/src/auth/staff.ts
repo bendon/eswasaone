@@ -33,7 +33,38 @@ export const STAFF_ROLES = new Set([
   "Eswasa Verification Officer",
   "Ingest Curator",
   "Ingest Viewer",
+  // UI-phase roles the workflow map needs but engine/fixtures doesn't have yet (gap 01 C13).
+  // TODO: fixture — add these Role fixtures in engine/fixtures and keep this list in sync.
+  "Quality Manager",
+  "Customer Service",
+  "Customer Service Manager",
+  "Eswasa Appeals Panel",
+  "Technical Reviewer",
+  "Scheme Manager",
+  "Lab Manager",
+  "Technical Manager",
+  "Head of Standards",
+  "TC Secretary",
+  "Company Secretary",
 ]);
+
+/**
+ * Nearest existing fixture for each UI-phase role (gap 01 C13), used until the fixtures exist.
+ * TODO: fixture — drop entries as the real roles land.
+ */
+export const PROVISIONAL_ROLE_MAP: Record<string, string> = {
+  "Quality Manager": "Certification Manager",
+  "Customer Service": "Desk User",
+  "Customer Service Manager": "Sales Manager",
+  "Eswasa Appeals Panel": "Certification Manager",
+  "Technical Reviewer": "Certification Officer",
+  "Scheme Manager": "Certification Manager",
+  "Lab Manager": "Eswasa Metrology Manager",
+  "Technical Manager": "Eswasa Metrology Reviewer",
+  "Head of Standards": "Eswasa Standards Manager",
+  "TC Secretary": "Eswasa Standards Officer",
+  "Company Secretary": "Eswasa Board Secretary",
+};
 
 /**
  * Field workers + HRMS ESS — land on Field PWA after login.
@@ -113,16 +144,40 @@ export function redirectStaffAfterLogin(
   if (path.startsWith("/field") || path.startsWith("/institution")) {
     return false;
   }
-  if (hasDeskOnlyRole(roles)) {
-    window.location.assign(INSTITUTION_PORTAL_PATH);
-    return true;
+  // Bounced straight back here after a recent redirect — the staff SPA is not
+  // being served on this origin. Stop instead of reloading forever.
+  if (redirectedRecently()) {
+    console.warn(
+      "[staff-redirect] Staff portal redirect bounced back to the Service Portal; not retrying. " +
+        "Check that /institution/ and /field/ are routed to their SPAs on this origin.",
+    );
+    return false;
   }
-  if (hasFieldEssRole(roles)) {
-    window.location.assign(FIELD_PORTAL_PATH);
-    return true;
-  }
-  window.location.assign(INSTITUTION_PORTAL_PATH);
+  const dest =
+    hasDeskOnlyRole(roles) || !hasFieldEssRole(roles) ? INSTITUTION_PORTAL_PATH : FIELD_PORTAL_PATH;
+  markRedirect();
+  window.location.assign(dest);
   return true;
+}
+
+const REDIRECT_MARK_KEY = "eswasaone_staff_redirect_at";
+const REDIRECT_LOOP_WINDOW_MS = 15_000;
+
+function redirectedRecently(): boolean {
+  try {
+    const at = Number(window.sessionStorage?.getItem(REDIRECT_MARK_KEY));
+    return Number.isFinite(at) && at > 0 && Date.now() - at < REDIRECT_LOOP_WINDOW_MS;
+  } catch {
+    return false;
+  }
+}
+
+function markRedirect(): void {
+  try {
+    window.sessionStorage?.setItem(REDIRECT_MARK_KEY, String(Date.now()));
+  } catch {
+    /* storage unavailable — loop guard is best-effort */
+  }
 }
 
 /**

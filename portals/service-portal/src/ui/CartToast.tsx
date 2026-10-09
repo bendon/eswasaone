@@ -17,6 +17,13 @@ type CartToastContextValue = {
 
 const CartToastContext = createContext<CartToastContextValue | null>(null);
 
+/** Safe no-op when HMR / error-boundary remount briefly leaves the tree without a provider. */
+const FALLBACK: CartToastContextValue = {
+  cartCount: 0,
+  addToCart: () => undefined,
+  showToast: () => undefined,
+};
+
 export function CartToastProvider({ children }: { children: ReactNode }) {
   const [cartCount, setCartCount] = useState(0);
   const [toastMsg, setToastMsg] = useState("");
@@ -55,7 +62,5 @@ export function CartToastProvider({ children }: { children: ReactNode }) {
 }
 
 export function useCartToast(): CartToastContextValue {
-  const ctx = useContext(CartToastContext);
-  if (!ctx) throw new Error("useCartToast must be used within CartToastProvider");
-  return ctx;
+  return useContext(CartToastContext) ?? FALLBACK;
 }

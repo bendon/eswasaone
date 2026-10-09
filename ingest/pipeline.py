@@ -86,7 +86,7 @@ def run_eping_tbt(settings: Settings | None = None) -> dict[str, Any]:
                         "title": record.title,
                         "url": record.url,
                         "rights": record.rights,
-                        "summary": "Licensed — full text not stored for public output.",
+                        "summary": "Licensed: full text not stored for public output.",
                         "raw_keys": list(record.raw.keys()),
                     }
                     digest, path = store.write_json(payload)

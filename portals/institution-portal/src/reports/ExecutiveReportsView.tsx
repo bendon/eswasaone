@@ -112,7 +112,7 @@ export function ExecutiveReportsView() {
 
   function exportPdf() {
     // TODO: wire real — POST /reports/executive/export to render a PDF pack.
-    setFlash("PDF export — TODO");
+    setFlash("PDF export: TODO");
   }
 
   const drawerSections: DrawerSection[] = useMemo(() => {
@@ -194,7 +194,7 @@ export function ExecutiveReportsView() {
         <>
           <ModuleHeader
             title="Executive Reports"
-            subtitle="High-level executive reports — revenue, plan, and trend."
+            subtitle="High-level executive reports: revenue, plan, and trend."
             summary={summary}
             extra={
               <button type="button" className="btn ghost" onClick={exportPdf}>

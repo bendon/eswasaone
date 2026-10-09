@@ -52,8 +52,8 @@ export function PayrollView() {
             </p>
           ) : null}
           <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "0 0 12px" }}>
-            Slips and run status come from HRMS via Core. Creating/submitting a payroll run stays in
-            Frappe Desk (deep config) when available on this host.
+            Slips and run status come from HRMS via Core. Creating/submitting a payroll run stays in the
+            admin desk (deep config) when available on this host.
           </p>
 
           <div className="hr-box" style={{ marginBottom: 16 }}>

@@ -1,11 +1,8 @@
-/** Demo mode — fixture data allowed only when VITE_DEMO_MODE=true. */
+import { demoDataEnabled } from "../demo";
 
+/** Demo mode: local demo data is on unless VITE_DEMO_MODE=false. */
 export function useDemoMode(): boolean {
-  try {
-    return String(import.meta.env.VITE_DEMO_MODE ?? "").toLowerCase() === "true";
-  } catch {
-    return false;
-  }
+  return demoDataEnabled();
 }
 
 export function DemoBadge({ className = "" }: { className?: string }) {
@@ -13,7 +10,7 @@ export function DemoBadge({ className = "" }: { className?: string }) {
   return (
     <span
       className={`demo-badge ${className}`.trim()}
-      title="Fixture / sample data — write actions are disabled"
+      title="Sample data: changes are saved on this device until the backend is connected"
       role="status"
     >
       Demo data

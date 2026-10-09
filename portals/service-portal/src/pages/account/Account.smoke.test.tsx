@@ -93,7 +93,7 @@ vi.mock("../../api/account", () => ({
                 border_tint: "#F1E2A5",
                 icon: "i-clock",
                 title: "Course in progress",
-                body: "HACCP food safety — Module 3 of 8.",
+                body: "HACCP food safety, Module 3 of 8.",
                 cta: "Resume course",
                 href: "/account/training",
               },
@@ -157,7 +157,7 @@ vi.mock("../../api/orders", () => ({
   listOrders: vi.fn().mockResolvedValue([
     {
       id: "#8851",
-      title: "SZNS 060 — Honey specification",
+      title: "SZNS 060: Honey specification",
       subtitle: "Licensed PDF · ICS 67.180",
       date: "2026-04-04",
       amount: "SZL 280",
@@ -168,7 +168,10 @@ vi.mock("../../api/orders", () => ({
   ]),
 }));
 
-vi.mock("../../api/certification", () => ({
+vi.mock("../../api/certification", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../api/certification")>()),
+  listApplications: vi.fn().mockResolvedValue([]),
+  listQuotes: vi.fn().mockResolvedValue([]),
   listCertificates: vi.fn().mockResolvedValue([
     {
       id: "c1",
@@ -261,10 +264,11 @@ describe("Account workspace", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/SZNS 060 — Honey specification/i)).toBeInTheDocument();
+      expect(screen.getByText(/SZNS 060: Honey specification/i)).toBeInTheDocument();
     });
     expect(screen.getByText("#8851")).toBeInTheDocument();
-    expect(screen.getByText("Completed")).toBeInTheDocument();
+    // "Completed" is also a status-filter <option>; assert the row's pill.
+    expect(screen.getByText("Completed", { selector: ".pill" })).toBeInTheDocument();
   });
 
   it("lists certificates as cards", async () => {

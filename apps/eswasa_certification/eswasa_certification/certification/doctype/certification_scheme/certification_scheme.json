@@ -12,6 +12,7 @@
   "standard_ref",
   "scheme_type",
   "accreditation_basis",
+  "responsible_department",
   "section_break_ops",
   "surveillance_interval_months",
   "certificate_validity_months",
@@ -71,6 +72,16 @@
    "label": "Accreditation Basis",
    "reqd": 1,
    "options": "ISO/IEC 17021\nISO/IEC 17065"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "responsible_department",
+   "fieldtype": "Select",
+   "label": "Responsible Department",
+   "options": "Certification\nProduct Certification\nManagement Systems Certification\nMetrology & Calibration\nStandards Development\nTBT & Trade\nFinance & Administration",
+   "default": "Certification",
+   "description": "Department that handles applications under this scheme — used for ToDo routing and notifications on submit.",
+   "in_list_view": 1
   },
   {
    "doctype": "DocField",

@@ -754,7 +754,7 @@ async def get_account_overview(
                     tint="#FEF6DC",
                     border_tint="#F1E2A5",
                     icon="i-clock",
-                    title=f"Application {app.get('name')} — {app.get('status')}",
+                    title=f"Application {app.get('name')}: {app.get('status')}",
                     body=f"{app.get('scheme') or 'Scheme'} · {app.get('applicant_name') or ''}",
                     cta="Track application",
                     href=f"/certification/{app.get('name')}",
@@ -942,7 +942,7 @@ async def invite_team_member(
                     "Sign in (or complete the welcome email if this is a new account) "
                     "and switch to the business workspace to collaborate on applications, "
                     "orders and certificates.\n\n"
-                    "— EswasaOne\n"
+                    "EswasaOne\n"
                 ),
             )
         )
@@ -1031,6 +1031,85 @@ async def get_notification_prefs(
 async def update_notification_prefs(
     body: NotificationPrefs,
     auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> NotificationPrefs:
     _PREFS[auth.user.username] = body
     return body
+
+
+# --- Notification feed (service portal inbox) -------------------------------
+
+
+class NotificationFeedItem(BaseModel):
+    id: str
+    subject: str
+    body: str | None = None
+    document_type: str | None = None
+    document_name: str | None = None
+    read: bool = False
+    created_at: str | None = None
+    link: str | None = None
+
+
+class NotificationFeedResponse(BaseModel):
+    items: list[NotificationFeedItem]
+    unread_count: int
+
+
+@router.get("/notifications/feed", response_model=NotificationFeedResponse)
+async def get_notification_feed(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    limit: int = Query(default=50, ge=1, le=200),
+) -> NotificationFeedResponse:
+    """Pull Notification Log entries for the authenticated user (citizen inbox).
+
+    Reads Frappe Notification Log filtered by ``for_user`` = the caller's
+    email/username, mapping to the shape the service portal expects.
+    """
+    if auth.mock or not await frappe.health():
+        return NotificationFeedResponse(items=[], unread_count=0)
+
+    session = auth.frappe(frappe)
+    user_email = auth.user.email or auth.user.username
+
+    try:
+        rows = await _safe_list(
+            session,
+            "Notification Log",
+            fields=[
+                "name",
+                "subject",
+                "email_content",
+                "document_type",
+                "document_name",
+                "creation",
+            ],
+            filters=[["for_user", "=", user_email]],
+            limit=limit,
+            order_by="creation desc",
+        )
+    except Exception:
+        rows = []
+
+    items: list[NotificationFeedItem] = []
+    for row in rows:
+        doc_type = row.get("document_type") or ""
+        doc_name = row.get("document_name") or ""
+        link = None
+        if doc_type == "Certification Application" and doc_name:
+            link = f"/certification/track/{doc_name}"
+        items.append(
+            NotificationFeedItem(
+                id=str(row.get("name") or ""),
+                subject=str(row.get("subject") or ""),
+                body=row.get("email_content"),
+                document_type=doc_type or None,
+                document_name=doc_name or None,
+                read=False,
+                created_at=str(row.get("creation") or "") or None,
+                link=link,
+            )
+        )
+
+    return NotificationFeedResponse(items=items, unread_count=len(items))

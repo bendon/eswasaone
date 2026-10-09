@@ -32,7 +32,7 @@ def run() -> dict[str, Any]:
                 "sector": "Smoke",
                 "rights": "licensed",
                 "is_published": 1,
-                "description": "<p>Licensed smoke listing — no full text.</p>",
+                "description": "<p>Licensed smoke listing, no full text.</p>",
             }
         ).insert(ignore_permissions=True)
 

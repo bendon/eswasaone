@@ -22,7 +22,7 @@ _TBT_COLLECTION = "tbt_notifications"
 _MOCK_CORPUS: list[dict[str, Any]] = [
     {
         "source_id": "WTO-TBT-001",
-        "title": "WTO TBT Agreement — Article 2 (paraphrase)",
+        "title": "WTO TBT Agreement, Article 2 (paraphrase)",
         "rights": "open",
         "url": "https://www.wto.org/english/docs_e/legal_e/17-tbt_e.htm",
         "excerpt": (
@@ -46,7 +46,7 @@ _MOCK_CORPUS: list[dict[str, Any]] = [
     },
     {
         "source_id": "SZNS 001",
-        "title": "SZNS 001 — General requirements for product labelling",
+        "title": "SZNS 001: General requirements for product labelling",
         "rights": "licensed",
         "url": "/estore/SZNS-001",
         "excerpt": None,

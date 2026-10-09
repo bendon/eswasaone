@@ -182,7 +182,7 @@ export function TbtAlertsView() {
               label: "Subscribe",
               icon: "i-mail",
               variant: "gold",
-              onClick: () => setFlash("Subscribe — TODO: wire real"),
+              onClick: () => setFlash("Subscribe (TODO: wire real)"),
             },
             {
               label: "Close",
@@ -208,7 +208,7 @@ export function TbtAlertsView() {
         <>
           <ModuleHeader
             title="TBT Alerts"
-            subtitle="WTO/TBT notifications — track new and high-impact alerts."
+            subtitle="WTO/TBT notifications: track new and high-impact alerts."
             summary={summary}
             extra={
               <Link to="/tbt/subscriptions" className="btn ghost">

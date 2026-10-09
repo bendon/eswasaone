@@ -3,5 +3,5 @@
   "title": "Email Domain / SMTP (Atlas Engine)",
   "public": 1,
   "notify_on_login": 0,
-  "content": "<p><b>Outbound email</b></p><ul><li>Configure via repo-root <code>SMTP_*</code> env vars, then run <code>engine/fixtures/configure_smtp.py</code> as user <code>frappe</code> — upserts Email Account <b>EswasaOne Outbound</b> (default outgoing).</li><li>Same <code>SMTP_*</code> vars feed Core OTP / confirmation mail (<code>core/app/adapters/messaging.py</code>).</li><li>Until SMTP_HOST and SMTP_FROM are set, OTP and invites stay stubbed / 503 — no accidental outbound mail.</li><li>Desk: Email Account → Send Test after configure.</li></ul>"
+  "content": "<p><b>Outbound email</b></p><ul><li>Configure via repo-root <code>SMTP_*</code> env vars, then run <code>engine/fixtures/configure_smtp.py</code> as user <code>frappe</code>. This upserts Email Account <b>EswasaOne Outbound</b> (default outgoing).</li><li>Same <code>SMTP_*</code> vars feed Core OTP / confirmation mail (<code>core/app/adapters/messaging.py</code>).</li><li>Until SMTP_HOST and SMTP_FROM are set, OTP and invites stay stubbed / 503 (no accidental outbound mail).</li><li>Desk: Email Account → Send Test after configure.</li></ul>"
 }

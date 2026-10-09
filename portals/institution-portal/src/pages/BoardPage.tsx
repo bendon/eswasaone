@@ -1,87 +1,17 @@
 import { useState } from "react";
-import {
-  FormDrawer,
-  Icon,
-  Toast,
-  useConfirmAction,
-  type FormDrawerField,
-} from "@eswasaone/shared-ui";
+import { Link } from "react-router-dom";
+import { Icon } from "@eswasaone/shared-ui";
+import { listBodies } from "@eswasaone/shared-ui/governance";
+import { useGov } from "../board/ui";
+import { ScheduleDrawer } from "../board/OverviewMeetings";
 import { ModulePageShell } from "./ModulePageShell";
 
-const MEETING_FIELDS: FormDrawerField[] = [
-  { name: "title", label: "Title", required: true, placeholder: "Q4 Board meeting" },
-  {
-    name: "body",
-    label: "Body",
-    type: "select",
-    required: true,
-    options: [
-      { value: "Full Board", label: "Full Board" },
-      { value: "Audit & Risk Committee", label: "Audit & Risk Committee" },
-      { value: "Finance & Investment Committee", label: "Finance & Investment Committee" },
-      { value: "HR & Remuneration Committee", label: "HR & Remuneration Committee" },
-      { value: "Technical Committee", label: "Technical Committee" },
-    ],
-  },
-  { name: "date", label: "Date", type: "date", required: true },
-  { name: "venue", label: "Venue", placeholder: "ESWASA Boardroom, Matsapha" },
-];
-
-const RESOLUTION_FIELDS: FormDrawerField[] = [
-  { name: "title", label: "Resolution", required: true, type: "textarea" },
-  { name: "meeting", label: "Meeting ref", required: true, placeholder: "BM-2026-Q3" },
-];
-
-/** Board & Governance — Overview · Meetings · Pack · Resolutions · Risks · Members */
+/** Board & Governance (gap 03) — every tab reads the governance store; writes go through the workflow engine. */
 export function BoardPage() {
-  const { confirmAction, host } = useConfirmAction();
-  const [flash, setFlash] = useState<string | null>(null);
-  const [meetingOpen, setMeetingOpen] = useState(false);
-  const [resolutionOpen, setResolutionOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  async function submitMeeting(values: Record<string, string>) {
-    const ok = await confirmAction({
-      title: "Schedule meeting",
-      message: `Schedule “${values.title}” for ${values.date || "the selected date"}?`,
-      consequence: "Creates a Board Meeting and notifies the secretariat.",
-      ruleId: "R-G2",
-      confirmLabel: "Schedule",
-    });
-    if (!ok) return;
-    setBusy(true);
-    try {
-      // TODO: wire real — POST /governance/meetings
-      setFlash(`Meeting scheduled — TODO (${values.title})`);
-      setMeetingOpen(false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function submitResolution(values: Record<string, string>) {
-    const ok = await confirmAction({
-      title: "Record resolution",
-      message: `Record this resolution against ${values.meeting || "the meeting"}?`,
-      consequence: "Creates a Board Resolution and opens the action tracker.",
-      ruleId: "R-G3",
-      confirmLabel: "Record",
-    });
-    if (!ok) return;
-    setBusy(true);
-    try {
-      // TODO: wire real — POST /governance/resolutions
-      setFlash(`Resolution recorded — TODO`);
-      setResolutionOpen(false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
+  const [open, setOpen] = useState(false);
+  const bodies = useGov(() => listBodies());
   return (
     <div className="gov">
-      {host}
-      <Toast message={flash} />
       <ModulePageShell
         reason="Staff sign-in required for board"
         tabs={[
@@ -89,50 +19,33 @@ export function BoardPage() {
           { to: "meetings", label: "Meetings", icon: "i-cal" },
           { to: "pack", label: "Board pack", icon: "i-layers" },
           { to: "resolutions", label: "Resolutions", icon: "i-file" },
+          { to: "cac", label: "CAC", icon: "i-award" },
           { to: "risks", label: "Risk register", icon: "i-shield" },
+          { to: "declarations", label: "Declarations" },
           { to: "members", label: "Members", icon: "i-users" },
+          { to: "calendar", label: "Calendar" },
+          { to: "settings", label: "Settings", icon: "i-sliders" },
         ]}
       >
         <div className="gov-head">
           <div>
             <h2>Board &amp; Governance</h2>
-            <p>
-              Meetings, packs, resolutions, risk, and membership for the Board and its committees.
-            </p>
+            <p>Meetings, packs, resolutions, risk and declarations for the Board and its committees.</p>
           </div>
           <div className="gov-head__r">
-            <button type="button" className="btn ghost" onClick={() => setResolutionOpen(true)}>
-              <Icon name="i-file" />
-              Record resolution
-            </button>
-            <button type="button" className="btn gold" onClick={() => setMeetingOpen(true)}>
-              <Icon name="i-plus" />
-              Schedule meeting
+            <Link className="btn ghost" to="/member">
+              <Icon name="i-eye" /> Member view
+            </Link>
+            <Link className="btn ghost" to="/board/resolutions/written/new">
+              <Icon name="i-send" /> Written resolution
+            </Link>
+            <button type="button" className="btn gold" onClick={() => setOpen(true)}>
+              <Icon name="i-plus" /> Schedule meeting
             </button>
           </div>
         </div>
       </ModulePageShell>
-
-      <FormDrawer
-        open={meetingOpen}
-        title="Schedule meeting"
-        mode="create"
-        fields={MEETING_FIELDS}
-        busy={busy}
-        submitLabel="Continue"
-        onClose={() => setMeetingOpen(false)}
-        onSubmit={submitMeeting}
-      />
-      <FormDrawer
-        open={resolutionOpen}
-        title="Record resolution"
-        mode="create"
-        fields={RESOLUTION_FIELDS}
-        busy={busy}
-        submitLabel="Continue"
-        onClose={() => setResolutionOpen(false)}
-        onSubmit={submitResolution}
-      />
+      <ScheduleDrawer open={open} onClose={() => setOpen(false)} bodies={bodies.data ?? []} />
     </div>
   );
 }

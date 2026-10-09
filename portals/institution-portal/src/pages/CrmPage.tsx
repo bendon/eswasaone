@@ -1,111 +1,53 @@
-import { useEffect } from "react";
-import type { CrmDealsResponse, CrmLeadsResponse, CrmPipeline } from "../api/types";
-import { useApiResource } from "../hooks/useApiResource";
-import { EmptyState, ErrorState, LoadingState, PageHeader } from "../components/PageStates";
-import { RequireStaff } from "../components/RequireStaff";
-import { useInstitution } from "../layout/InstitutionLayout";
+import { useMemo } from "react";
+import type { SubTab } from "@eswasaone/shared-ui";
+import {
+  caseSla,
+  crmDemoMode,
+  isAppealsPanel,
+  isCommercialOnly,
+  isOpen,
+  listCases,
+  listSignals,
+  publicCrmConfig,
+  useCrm,
+} from "@eswasaone/shared-ui/crm";
+import { useActor } from "../crm/shared";
+import { ModulePageShell } from "./ModulePageShell";
 
+/**
+ * CRM & Commercial — client relationship, service desk and signal-driven commercial pipeline.
+ * Overview · Cases · Appeals (panel only) · Clients · Signals · Opportunities · Quotes · Renewals · Insights · Settings
+ */
 export function CrmPage() {
-  const { openAuth, user, sessionKey } = useInstitution();
-  const pipeline = useApiResource<CrmPipeline>("/crm/pipeline", {
-    enabled: Boolean(user),
-    refreshKey: sessionKey,
-  });
-  const leads = useApiResource<CrmLeadsResponse>("/crm/leads", {
-    enabled: Boolean(user),
-    refreshKey: sessionKey,
-  });
-  const deals = useApiResource<CrmDealsResponse>("/crm/deals", {
-    enabled: Boolean(user),
-    refreshKey: sessionKey,
-  });
+  const actor = useActor();
+  const demo = crmDemoMode();
+  const cases = useCrm(() => (demo ? listCases({ includeAppeals: true }) : Promise.resolve([])), [demo]);
+  const signals = useCrm(() => (demo ? listSignals() : Promise.resolve([])), [demo]);
 
-  useEffect(() => {
-    if (pipeline.authRequired || leads.authRequired || deals.authRequired) {
-      openAuth("Staff sign-in required for CRM");
-    }
-  }, [pipeline.authRequired, leads.authRequired, deals.authRequired, openAuth]);
+  const tabs = useMemo<SubTab[]>(() => {
+    const cfg = publicCrmConfig();
+    const open = (cases.data ?? []).filter(isOpen);
+    const breaching = open.filter((c) => c.type !== "appeal" && caseSla(c, cfg.case_types[c.type]).status === "breach").length;
+    const appeals = open.filter((c) => c.type === "appeal").length;
+    const newSignals = (signals.data ?? []).filter((s) => s.status === "new").length;
+    const panel = isAppealsPanel(actor);
+    const commercialOnly = isCommercialOnly(actor);
+    return [
+      { to: "", label: "Overview", icon: "i-chart" },
+      { to: "cases", label: "Cases", icon: "i-mail", badge: breaching || undefined },
+      ...(panel ? [{ to: "appeals", label: "Appeals", icon: "i-lock", badge: appeals || undefined } as SubTab] : []),
+      { to: "clients", label: "Clients", icon: "i-building" },
+      { to: "console", label: "Console", icon: "i-phone" },
+      { to: "signals", label: "Signals", icon: "i-spark", badge: newSignals || undefined },
+      { to: "pipeline", label: "Opportunities", icon: "i-trend" },
+      { to: "quotes", label: "Quotes", icon: "i-file" },
+      { to: "renewals", label: "Renewals", icon: "i-refresh" },
+      { to: "insights", label: "Insights", icon: "i-layers" },
+      { to: "knowledge", label: "Knowledge", icon: "i-book" },
+      { to: "contracts", label: "Contracts", icon: "i-scroll" },
+      ...(commercialOnly ? [] : [{ to: "settings", label: "Settings", icon: "i-sliders" } as SubTab]),
+    ];
+  }, [cases.data, signals.data, actor]);
 
-  const loading = pipeline.loading || leads.loading || deals.loading;
-  const error = pipeline.error || leads.error || deals.error;
-  const retry = () => {
-    pipeline.reload();
-    leads.reload();
-    deals.reload();
-  };
-
-  return (
-    <RequireStaff reason="Staff sign-in required for CRM">
-      {loading ? (
-        <LoadingState label="Loading CRM…" />
-      ) : error ? (
-        <ErrorState message={error} onRetry={retry} />
-      ) : !pipeline.data ? (
-        <EmptyState title="No pipeline data" />
-      ) : (
-        <>
-          <PageHeader
-            title="CRM & Commercial"
-            subtitle={`${pipeline.data.companies} companies in register`}
-          />
-          {!pipeline.data.stages?.length ? (
-            <EmptyState title="No pipeline stages" />
-          ) : (
-            <section className="kpis" style={{ marginBottom: 24 }}>
-              {pipeline.data.stages.map((s) => (
-                <div key={s.name} className="kpi">
-                  <div className="kpi__label">{s.name}</div>
-                  <div className="kpi__val">{s.count}</div>
-                </div>
-              ))}
-            </section>
-          )}
-
-          <div className="sec-label">Leads</div>
-          {(leads.data?.items ?? []).length === 0 ? (
-            <EmptyState title="No leads" detail="Leads will appear when Core returns them." />
-          ) : (
-            <div className="panel" style={{ marginBottom: 24 }}>
-              <div className="act">
-                {(leads.data?.items ?? []).map((lead) => (
-                  <div key={lead.id} className="act__i">
-                    <span className="act__d" style={{ background: "var(--gold)" }} />
-                    <div>
-                      <p>{lead.title}</p>
-                      <span>
-                        {lead.status}
-                        {lead.organization ? ` · ${lead.organization}` : ""}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="sec-label">Deals</div>
-          {(deals.data?.items ?? []).length === 0 ? (
-            <EmptyState title="No deals" detail="Deals will appear when Core returns them." />
-          ) : (
-            <div className="panel">
-              <div className="act">
-                {(deals.data?.items ?? []).map((deal) => (
-                  <div key={deal.id} className="act__i">
-                    <span className="act__d" style={{ background: "var(--green)" }} />
-                    <div>
-                      <p>{deal.title}</p>
-                      <span>
-                        {deal.status}
-                        {deal.amount != null ? ` · SZL ${deal.amount.toLocaleString()}` : ""}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </RequireStaff>
-  );
+  return <ModulePageShell reason="Staff sign-in required for CRM & Commercial" tabs={tabs} />;
 }

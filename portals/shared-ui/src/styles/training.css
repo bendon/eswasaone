@@ -228,60 +228,6 @@
   background:none;border:0;cursor:pointer;font:inherit;font-weight:700;color:var(--navy);
 }
 .paths__link svg{width:14px;height:14px;stroke:currentColor}
-.pathgrid{display:grid;grid-template-columns:1fr;gap:14px}
-@media (min-width:640px){ .pathgrid{grid-template-columns:repeat(2,1fr)} }
-@media (min-width:1024px){ .pathgrid{grid-template-columns:repeat(3,1fr)} }
-.path{
-  display:flex;flex-direction:column;gap:12px;
-  padding:22px;background:#fff;
-  border:1px solid var(--line);border-radius:var(--r-lg);
-  box-shadow:var(--sh-xs);
-  transition:transform .2s, box-shadow .2s, border-color .2s;
-  text-decoration:none;color:inherit;
-}
-.path:hover{
-  transform:translateY(-3px);box-shadow:var(--sh-lg);border-color:#D3DDE9;
-}
-.path__ic{
-  width:44px;height:44px;border-radius:12px;
-  display:grid;place-items:center;
-  background:var(--chip-tint,var(--navy-l));
-  color:var(--chip-tone,var(--navy));
-}
-.path__ic svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.9}
-.path h3{
-  font-size:15.5px;font-weight:800;letter-spacing:-.015em;margin-top:4px;
-}
-.path p{font-size:13px;color:var(--muted);line-height:1.55;flex:1}
-.path__steps{
-  display:flex;flex-wrap:wrap;gap:6px;
-  padding-top:14px;border-top:1px solid var(--line-2);margin-top:6px;
-}
-.path__step{
-  display:inline-flex;align-items:center;
-  font-size:11px;font-weight:700;
-  color:var(--chip-tone,var(--navy));
-  background:var(--chip-tint,var(--navy-l));
-  padding:4px 9px;border-radius:999px;
-}
-.path__foot{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:10px;padding-top:12px;
-}
-.path__count{
-  font-size:12px;font-weight:700;color:var(--muted-2);
-}
-.path__arrow{
-  width:32px;height:32px;border-radius:50%;
-  background:var(--bg);color:var(--muted);
-  display:grid;place-items:center;
-  transition:background .2s, color .2s, transform .2s;
-}
-.path__arrow svg{width:14px;height:14px;stroke:currentColor;stroke-width:2.2}
-.path:hover .path__arrow{
-  background:var(--chip-tone,var(--navy));
-  color:#fff;transform:translateX(3px);
-}
 
 @media (max-width:900px){
   .course{padding:18px 18px 16px 20px;gap:12px}

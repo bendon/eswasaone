@@ -14,6 +14,8 @@
 @import "./governance.css";
 @import "./admin.css";
 @import "./skeletons.css";
+@import "./crm.css";
+@import "./workflow.css";
 
 .app {
   display: grid;
@@ -1204,5 +1206,193 @@
   .hero {
     padding: 22px 18px;
     border-radius: var(--r-lg);
+  }
+}
+
+/* ---------- Sidebar collapse toggle (sits on the rail / body seam) ---------- */
+.side__signout svg {
+  stroke: var(--red);
+}
+.side__toggle {
+  display: none;
+}
+
+@media (min-width: 901px) {
+  .app:not(.app--auth-gate) {
+    transition: grid-template-columns 0.22s ease;
+  }
+  .app.app--side-collapsed:not(.app--auth-gate) {
+    grid-template-columns: var(--sidebar-width-collapsed, 76px) 1fr;
+  }
+  .side {
+    z-index: 45;
+  }
+  .side__toggle {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: 28px;
+    right: -14px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(16, 24, 40, 0.14);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, transform 0.15s;
+  }
+  .side__toggle:hover {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--gold-ink);
+  }
+  .side__toggle:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .side__toggle svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    transition: transform 0.22s ease;
+  }
+  .side--collapsed .side__toggle svg {
+    transform: rotate(180deg);
+  }
+
+  /* Icon-only rail */
+  .side--collapsed .side__brand {
+    justify-content: center;
+    padding: 20px 0 16px;
+  }
+  .side--collapsed .side__brand > div,
+  .side--collapsed .nav__label,
+  .side--collapsed .nav a .nav-lock {
+    display: none;
+  }
+  .side--collapsed .nav {
+    padding: 4px 10px;
+  }
+  .side--collapsed .nav a,
+  .side--collapsed .side__foot a {
+    justify-content: center;
+    padding: 10px 0;
+    position: relative;
+  }
+  .side--collapsed .side__foot {
+    padding: 10px;
+  }
+  .side--collapsed .nav a .badge {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    margin: 0;
+    min-width: 8px;
+    height: 8px;
+    padding: 0;
+    font-size: 0;
+    border-radius: 50%;
+  }
+}
+
+/* ---------- Top bar: centred global search ---------- */
+.top.top--center > h1 {
+  flex:1 1 0;
+  min-width:0
+}
+.top.top--center .top__r {
+  flex:1 1 0;
+  justify-content:flex-end;
+  margin-left:0
+}
+.top__center {
+  flex:0 1 560px;
+  min-width:0
+}
+.top-search {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  height:40px;
+  padding:0 5px 0 14px;
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:12px;
+  transition:border-color .15s, background .15s, box-shadow .15s
+}
+.top-search:focus-within {
+  background:var(--card);
+  border-color:color-mix(in srgb, var(--gold) 60%, var(--line));
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 18%, transparent)
+}
+.top-search > svg {
+  width:16px;
+  height:16px;
+  stroke:var(--muted);
+  flex:0 0 auto
+}
+.top-search input {
+  flex:1;
+  min-width:0;
+  height:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--ink);
+  font:inherit;
+  font-size:13.5px
+}
+.top-search input::placeholder {
+  color:var(--muted-2)
+}
+.top-search button {
+  flex:0 0 auto;
+  height:30px;
+  padding:0 12px;
+  border:0;
+  border-radius:8px;
+  background:var(--gold);
+  color:var(--gold-ink);
+  font:inherit;
+  font-size:12.5px;
+  font-weight:700;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  transition:background .15s, opacity .15s
+}
+.top-search button:hover:not(:disabled) {
+  background:var(--gold-d)
+}
+.top-search button:disabled {
+  opacity:.55;
+  cursor:default
+}
+.top-search button svg {
+  width:13px;
+  height:13px;
+  stroke:currentColor
+}
+@media (max-width:900px) {
+  .top.top--center > h1 {
+    display:none
+  }
+  .top__center {
+    flex:1 1 auto
+  }
+  .top.top--center .top__r {
+    flex:0 0 auto
+  }
+}
+@media (max-width:520px) {
+  .top-search button span {
+    display:none
+  }
+  .top-search button {
+    padding:0 9px
   }
 }

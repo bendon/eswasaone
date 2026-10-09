@@ -101,7 +101,7 @@ def publish_feed(
     _comment(
         reference_doctype,
         reference_name,
-        f"[feed:{event}] {subject}" + (f" — {detail}" if detail else ""),
+        f"[feed:{event}] {subject}" + (f": {detail}" if detail else ""),
     )
 
 
@@ -400,7 +400,7 @@ def _job_fee(job) -> float:
 def _create_draft_invoice(job) -> str | None:
     """R-M1: draft Sales Invoice for calibration fee. Idempotent."""
     if not frappe.db.exists("DocType", "Sales Invoice"):
-        _comment(job.doctype, job.name, "[R-M1] Sales Invoice DocType missing — stub skipped")
+        _comment(job.doctype, job.name, "[R-M1] Sales Invoice DocType missing; stub skipped")
         return None
     if job.get("sales_invoice") and frappe.db.exists("Sales Invoice", job.sales_invoice):
         return job.sales_invoice
@@ -447,7 +447,7 @@ def _create_draft_invoice(job) -> str | None:
             "item_code": item_code,
             "qty": 1,
             "rate": fee,
-            "description": f"Calibration fee — {job.job_code or job.name}",
+            "description": f"Calibration fee: {job.job_code or job.name}",
         }
         if income:
             item_row["income_account"] = income
@@ -590,7 +590,7 @@ def validate_instrument_not_blocked(doc, method: str | None = None) -> None:
     blocked = cint(frappe.db.get_value("Instrument", instrument, "blocked_for_use"))
     if blocked:
         frappe.throw(
-            f"Instrument {instrument} is blocked for use — internal calibration overdue (R-M3).",
+            f"Instrument {instrument} is blocked for use: internal calibration overdue (R-M3).",
             frappe.ValidationError,
         )
 
@@ -925,7 +925,7 @@ def rm3_calibration_due_sweep() -> dict[str, int]:
                 doctype="Instrument",
                 name=row.name,
                 role=ROLE_MANAGER,
-                description=f"R-M3: Internal instrument {row.name} blocked — calibrate before use",
+                description=f"R-M3: Internal instrument {row.name} blocked; calibrate before use",
             )
             publish_feed(
                 event="R-M3",
@@ -1020,7 +1020,7 @@ def rm4_out_of_tolerance(doc, method: str | None = None) -> None:
     if blocking and not cint(doc.get("supervisor_signed_off")):
         frappe.throw(
             (
-                f"Result {doc.result_id or doc.name} is out of tolerance — "
+                f"Result {doc.result_id or doc.name} is out of tolerance; "
                 f"supervisor sign-off is required before submit/approve (R-M4)."
             ),
             frappe.ValidationError,

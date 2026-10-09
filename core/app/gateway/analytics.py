@@ -346,7 +346,7 @@ def _answer_for(payload: dict[str, Any], question: str) -> str:
         return f"Annual-plan traffic lights: {n} amber/red threshold breach(es)."
     if metric == "finance_kpis":
         return (
-            f"Finance KPIs — revenue YTD {payload.get('revenue_ytd_szl', 0)} SZL, "
+            f"Finance KPIs: revenue YTD {payload.get('revenue_ytd_szl', 0)} SZL, "
             f"budget YTD {payload.get('budget_ytd_szl', 0)} SZL, "
             f"variance {payload.get('variance_pct', 0)}%."
         )

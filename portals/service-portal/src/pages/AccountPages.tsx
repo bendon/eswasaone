@@ -64,7 +64,7 @@ export function AccountOverviewPage() {
 
 export function AccountOrdersPage() {
   return (
-    <p className="page-note">No orders yet — buy a standard from the catalogue.</p>
+    <p className="page-note">No orders yet. Buy a standard from the catalogue.</p>
   );
 }
 

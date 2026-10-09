@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Icon, type IconName } from "../icons/Icon";
+import { Select } from "./Select";
 
 /* ---------- ModuleHeader ---------- */
 
@@ -244,17 +245,14 @@ export function Toolbar({ filters, search, extra }: ToolbarProps) {
   return (
     <div className="mod-toolbar">
       {filters?.map((f) => (
-        <select
+        <Select
           key={f.label}
           className="mod-sel"
           value={f.value}
-          onChange={(e) => f.onChange(e.target.value)}
+          onChange={f.onChange}
+          options={f.options}
           aria-label={f.label}
-        >
-          {f.options.map((o) => (
-            <option key={o} value={o}>{o}</option>
-          ))}
-        </select>
+        />
       ))}
       {search ? (
         <div className="mod-search">

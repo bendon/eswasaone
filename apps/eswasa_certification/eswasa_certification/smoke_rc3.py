@@ -75,7 +75,7 @@ def run() -> dict[str, Any]:
             "status": "Active",
             "issued_on": nowdate(),
             "valid_until": add_months(nowdate(), 36),
-            "scope_summary": "R-C3 smoke scope — ISO 9001 demo.",
+            "scope_summary": "R-C3 smoke scope: ISO 9001 demo.",
         }
     )
     cert.insert(ignore_permissions=True)

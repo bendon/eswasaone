@@ -83,7 +83,7 @@ def _citations_from_documents(docs: list[dict[str, Any]]) -> list[dict[str, Any]
         # Never emit licensed full text in a free answer.
         if rights == "licensed":
             excerpt = _(
-                "Licensed content — paraphrase only; purchase via e-store."
+                "Licensed content: paraphrase only; purchase via e-store."
             )
         elif len(excerpt) > 280:
             excerpt = excerpt[:277] + "…"

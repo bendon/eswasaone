@@ -21,7 +21,7 @@ export function ReportsPage() {
     <RequireStaff reason="Staff sign-in required for reports">
       <PageHeader
         title="Reports & Analytics"
-        subtitle="Executive charts — deeper Insights live in Desk companions"
+        subtitle="Executive charts. Deeper Insights live in Desk companions"
       />
       {loading ? (
         <LoadingState label="Loading charts…" />

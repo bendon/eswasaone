@@ -595,7 +595,7 @@ async def run_admin_update(
         )
         return AdminCommandResult(
             ok=True,
-            message="dry_run — no commands executed",
+            message="dry_run: no commands executed",
             lines=[f"planned: {ln}" for ln in planned],
         )
 

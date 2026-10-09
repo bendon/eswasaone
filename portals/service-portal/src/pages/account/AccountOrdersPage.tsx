@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Icon, type OrderSummary } from "@eswasaone/shared-ui";
+import { Icon, Select, type OrderSummary } from "@eswasaone/shared-ui";
 import { useAccount } from "./AccountContext";
 import { listOrders } from "../../api/orders";
 import { useToast } from "../../ui/Toast";
@@ -69,17 +69,12 @@ export function AccountOrdersPage() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
-        <select
-          className="toolbar__select"
-          aria-label="Status"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
+        <Select className="toolbar__select" aria-label="Status" value={statusFilter} onChange={(val) => setStatusFilter(val)}>
           <option value="all">All statuses</option>
           <option value="completed">Completed</option>
           <option value="review">In review</option>
           <option value="pending">Pending payment</option>
-        </select>
+        </Select>
       </div>
 
       <div className="tablewrap">

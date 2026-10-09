@@ -6,8 +6,8 @@ import {
   type CSSProperties,
   type FormEvent,
 } from "react";
-import { Link, useNavigate, useOutletContext } from "react-router-dom";
-import { Icon, type IconName } from "@eswasaone/shared-ui";
+import { Link, useNavigate } from "react-router-dom";
+import { Icon, Select, type IconName } from "@eswasaone/shared-ui";
 import {
   LEARNING_PATHS,
   listCourses,
@@ -16,9 +16,20 @@ import {
 } from "../api/training";
 import { useAuth } from "../auth/AuthProvider";
 import { Breadcrumbs } from "../components/Breadcrumbs";
-import type { LayoutOutletContext } from "../layout/ServiceLayout";
+import { HelpBand } from "../components/HelpBand";
+import { OutlineCard, type OutlineCardMeta } from "../components/OutlineCard";
+import { StaggeredGrid } from "../components/StaggeredGrid";
 import { safeText } from "../lib/safe";
 import { useCartToast } from "../ui/CartToast";
+
+/** "4 courses · ~9 days" → meta chips for the path card. */
+function pathMeta(meta: string): OutlineCardMeta[] {
+  return meta.split("·").map((part, i) => {
+    const label = part.trim();
+    const icon: IconName = i === 0 ? "i-layers" : /day|week/i.test(label) ? "i-clock" : "i-badge";
+    return { icon, label };
+  });
+}
 
 const HERO_STATS = [
   { value: "2,840", label: "Learners enrolled" },
@@ -113,7 +124,6 @@ const DEFAULT_STYLE = {
 };
 
 export function TrainingPage() {
-  const { openDock } = useOutletContext<LayoutOutletContext>();
   const { user, openAuth } = useAuth();
   const { showToast } = useCartToast();
   const navigate = useNavigate();
@@ -211,7 +221,7 @@ export function TrainingPage() {
 
   function courseCta(c: Course) {
     if (c.waitlist) {
-      showToast("Added to waitlist — we'll email you when a seat opens");
+      showToast("Added to waitlist. We'll email you when a seat opens");
       return;
     }
     navigate(`/training/${c.id}`);
@@ -280,7 +290,7 @@ export function TrainingPage() {
           <h1>Learn the standard. Then pass the audit.</h1>
           <p>
             ESWASA training is built around the standards you&apos;re actually being audited
-            against — HACCP, ISO 9001, ISO 22000, ISO 45001 and the SZNS labelling rules. Every
+            against: HACCP, ISO 9001, ISO 22000, ISO 45001 and the SZNS labelling rules. Every
             course ends with a digital certificate that employers and auditors recognise.
           </p>
           <div className="page-hero__actions">
@@ -384,25 +394,20 @@ export function TrainingPage() {
               type="search"
               value={draftQ}
               onChange={(e) => setDraftQ(e.target.value)}
-              placeholder='Search by course, code, or topic — e.g. “HACCP”, “ISO 9001”, “auditor”'
+              placeholder='Search by course, code, or topic, e.g. “HACCP”, “ISO 9001”, “auditor”'
               aria-label="Search courses"
             />
           </label>
           <label className="sr-only" htmlFor="trackSelect">
             Track
           </label>
-          <select
-            className="searchform__select"
-            id="trackSelect"
-            value={track}
-            onChange={(e) => setTrack(e.target.value)}
-          >
+          <Select className="searchform__select" id="trackSelect" value={track} onChange={(val) => setTrack(val)}>
             {TRACKS.map((t) => (
               <option key={t.value || "all"} value={t.value}>
                 {t.label}
               </option>
             ))}
-          </select>
+          </Select>
           <button type="submit" className="searchform__submit">
             Search
           </button>
@@ -447,12 +452,12 @@ export function TrainingPage() {
             <div className="toolbar__spacer" />
             <div className="toolbar__sort">
               <label htmlFor="trainSort">Sort</label>
-              <select id="trainSort" value={sort} onChange={(e) => setSort(e.target.value)}>
+              <Select id="trainSort" value={sort} onChange={(val) => setSort(val)}>
                 <option value="popular">Most popular</option>
                 <option value="date">Next starting date</option>
                 <option value="duration">Shortest duration</option>
                 <option value="fee">Price: low to high</option>
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -579,7 +584,7 @@ export function TrainingPage() {
               </p>
               <button
                 type="button"
-                onClick={() => showToast("Loaded more courses — TODO: wire real LMS")}
+                onClick={() => showToast("Loaded more courses (TODO: wire real LMS)")}
               >
                 Load more courses
               </button>
@@ -627,56 +632,48 @@ export function TrainingPage() {
             All paths <Icon name="i-cright" />
           </button>
         </div>
-        <div className="pathgrid">
-          {LEARNING_PATHS.map((p) => (
-            <Link
-              key={p.id}
-              className="path"
+        <StaggeredGrid
+          label="Learning paths"
+          className="ggrid--featured"
+          items={LEARNING_PATHS}
+          itemKey={(p) => p.id}
+          renderItem={(p) => (
+            <OutlineCard
               to={`/training?path=${encodeURIComponent(p.id)}`}
-              style={{ "--chip-tint": p.tint, "--chip-tone": p.tone } as CSSProperties}
+              icon={p.icon}
+              title={p.title}
+              body={p.body}
+              tint={p.tint}
+              tone={p.tone}
+              tag={`${p.steps.length} steps`}
+              meta={pathMeta(p.meta)}
+              cta="View path"
+              hint="See the courses"
             >
-              <span className="path__ic">
-                <Icon name={p.icon} />
-              </span>
-              <h3>{p.title}</h3>
-              <p>{p.body}</p>
-              <div className="path__steps">
+              <ol className="gcard__seq" aria-label="Course sequence">
                 {p.steps.map((step) => (
-                  <span className="path__step" key={step}>
-                    {step}
-                  </span>
+                  <li key={step}>
+                    <span>{step}</span>
+                  </li>
                 ))}
-              </div>
-              <div className="path__foot">
-                <span className="path__count">{p.meta}</span>
-                <span className="path__arrow">
-                  <Icon name="i-cright" />
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </ol>
+            </OutlineCard>
+          )}
+        />
       </section>
 
-      <section className="support">
-        <div className="support__copy">
-          <span>NOT SURE WHICH COURSE?</span>
-          <h2>Tell us your role, and we&apos;ll suggest the right path.</h2>
-          <p>
-            Esi knows the full ESWASA training catalogue. Describe what you do and what
-            you&apos;re trying to achieve — she&apos;ll point you to the shortest path, or connect
-            you with the training centre to scope an in-house programme.
-          </p>
-        </div>
-        <div className="support__actions">
-          <button type="button" className="sbtn gold" onClick={() => openDock()}>
-            <Icon name="i-spark" /> Ask Esi
-          </button>
-          <a className="sbtn ghost" href="mailto:training@eswasa.co.sz">
-            <Icon name="i-send" /> Email the training centre
-          </a>
-        </div>
-      </section>
+      <HelpBand
+        kicker="Not sure which course?"
+        title="Tell us your role, and we’ll suggest the right path."
+        body="The training centre can point you to the shortest path for your role, or scope an in-house programme for your whole team."
+        desk={{ label: "the training centre", email: "training@eswasa.co.sz", subject: "Training enquiry" }}
+        shortcut={{
+          icon: "i-steps",
+          label: "Start from a goal",
+          hint: "e.g. Train my team on food safety",
+          to: "/goals",
+        }}
+      />
     </div>
   );
 }

@@ -32,7 +32,10 @@ export const brand = {
 } as const;
 
 /** Type stacks — keep in sync with tokens.css */
-export const fontSans = '"Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+export const fontSans =
+  '"Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+export const fontDisplay =
+  '"Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
 export const fontMono =
   '"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 

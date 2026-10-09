@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from app.schemas import (
+    CertificationScheme,
     ApprovalItem,
     ApprovalsResponse,
     AuditSummary,
@@ -136,6 +137,54 @@ def mock_service_home() -> ServiceHome:
     )
 
 
+_MOCK_SCHEMES = (
+    ("ISO9001-QMS", "Quality Management Systems: Requirements", "SZNS ISO 9001:2015", "Management System"),
+    (
+        "ISO14001-EMS",
+        "Environmental Management Systems: Requirements with guidance for use",
+        "SZNS ISO 14001:2015",
+        "Management System",
+    ),
+    (
+        "ISO22000-FSMS",
+        "Food Safety Management Systems: Requirements for any organization in the food chain",
+        "SZNS ISO 22000:2018",
+        "Management System",
+    ),
+    (
+        "ISO45001-OHSMS",
+        "Occupational Health and Safety Management Systems: Requirements with guidance for use",
+        "SZNS ISO 45001:2018",
+        "Management System",
+    ),
+    (
+        "HACCP-10330",
+        "Hazard Analysis and Critical Control Point (HACCP)",
+        "SZNS SANS 10330:2020",
+        "Management System",
+    ),
+    ("PRODUCT-MARK", "Product certification", "Product Certification Mark", "Product"),
+    ("INGELO", "Ingelo: certification for local MSME producers", "Ingelo Certification Scheme", "Product"),
+    ("COMBINED", "Combined request (e.g., ISO + Product)", "Combined request", "Management System"),
+)
+
+
+def mock_schemes() -> list[CertificationScheme]:
+    """Mirror of eswasa_certification.schemes.PUBLISHED_SCHEMES for offline dev."""
+    return [
+        CertificationScheme(
+            code=code,
+            name=name,
+            standard_ref=ref,
+            scheme_type=kind,
+            accreditation_basis="ISO/IEC 17065" if kind == "Product" else "ISO/IEC 17021",
+            surveillance_interval_months=12,
+            certificate_validity_months=36,
+        )
+        for code, name, ref, kind in _MOCK_SCHEMES
+    ]
+
+
 def mock_applications(status: str | None = None, limit: int = 20) -> list[CertificationApplication]:
     items = [
         CertificationApplication(
@@ -229,7 +278,7 @@ def mock_standards(q: str | None = None, sector: str | None = None) -> list[Stan
         ),
         StandardSummary(
             code="SZNS ISO 9001",
-            title="Quality management systems — Requirements",
+            title="Quality management systems: Requirements",
             sector="Management",
             status="Published",
             buy_url="/estore/SZNS-ISO-9001",
@@ -248,7 +297,7 @@ def mock_verify(token: str) -> VerificationResult:
     return VerificationResult(
         valid=valid,
         token=token,
-        subject="Acme Foods (Pty) Ltd — Product Mark" if valid else None,
+        subject="Acme Foods (Pty) Ltd: Product Mark" if valid else None,
         issued_at=_now() if valid else None,
         expires_at="2027-09-19T00:00:00+00:00" if valid else None,
         details={"scheme": "Product Certification", "mock": True} if valid else {"mock": True},
@@ -284,7 +333,7 @@ def mock_approvals(limit: int = 20) -> ApprovalsResponse:
             id="Certification Application::CERT-0042",
             doctype="Certification Application",
             name="CERT-0042",
-            title="CERT-0042 — advance to Audit Scheduled",
+            title="CERT-0042: advance to Audit Scheduled",
             module="certification",
             status="Pending",
             due_at="2026-09-22T12:00:00+00:00",
@@ -305,7 +354,7 @@ def mock_tbt_notifications(
         TbtNotificationSummary(
             id="G/TBT/N/EU/891",
             symbol="G/TBT/N/EU/891",
-            title="High impact on textiles — EU chemical restrictions",
+            title="High impact on textiles: EU chemical restrictions",
             impact="high",
             unread=True,
             published_at="2026-09-20T08:00:00+00:00",
@@ -321,7 +370,7 @@ def mock_tbt_notifications(
         TbtNotificationSummary(
             id="G/TBT/N/US/2104",
             symbol="G/TBT/N/US/2104",
-            title="Electrical safety plugs — alignment with IEC",
+            title="Electrical safety plugs: alignment with IEC",
             impact="high",
             unread=True,
             published_at="2026-09-18T10:00:00+00:00",
@@ -329,7 +378,7 @@ def mock_tbt_notifications(
         TbtNotificationSummary(
             id="G/TBT/N/KE/88",
             symbol="G/TBT/N/KE/88",
-            title="Metrology — weighing instruments revision",
+            title="Metrology: weighing instruments revision",
             impact="low",
             unread=True,
             published_at="2026-09-17T09:15:00+00:00",

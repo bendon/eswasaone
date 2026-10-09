@@ -3,18 +3,24 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 
-// Config-time env: repo-root .env, overridden by this portal's .env / .env.local
+// Env lives in the repo-root .env (shared with Core), overridden by this portal's .env / .env.local.
+const envDir = path.resolve(__dirname, "../..");
 const env = {
-  ...loadEnv("development", path.resolve(__dirname, "../.."), ""),
+  ...loadEnv("development", envDir, ""),
   ...loadEnv("development", __dirname, ""),
 };
 const port = Number(env.SERVICE_PORTAL_PORT) || 3015;
 const publicHost = env.PUBLIC_HOST || "eswasaone.aiceafrica.com";
-// /api + /ws proxy target (e.g. https://eswasaone.aiceafrica.com); default local Core
-const coreTarget = env.CORE_PROXY_TARGET || `http://127.0.0.1:${env.CORE_PORT || 8015}`;
-const coreWsTarget = coreTarget.replace(/^http/, "ws");
+// /api + /ws proxy target (e.g. https://eswasaone.aiceafrica.com); default local Core.
+// CORE_PROXY_TARGET is canonical; API_PROXY_TARGET is accepted for older .env files.
+const apiTarget = (
+  env.CORE_PROXY_TARGET ||
+  env.API_PROXY_TARGET ||
+  `http://127.0.0.1:${env.CORE_PORT || 8015}`
+).replace(/\/$/, "");
 
 export default defineConfig({
+  envDir,
   plugins: [
     react(),
     VitePWA({
@@ -23,7 +29,7 @@ export default defineConfig({
       manifest: {
         name: "EswasaOne",
         short_name: "EswasaOne",
-        description: "Eswatini Standards Authority — citizen service portal",
+        description: "Eswatini Standards Authority citizen service portal",
         theme_color: "#0E7C7B",
         background_color: "#0A464F",
         display: "standalone",
@@ -79,6 +85,8 @@ export default defineConfig({
     }),
   ],
   resolve: {
+    // shared-ui deps (e.g. react-day-picker) must use this portal's single React copy.
+    dedupe: ["react", "react-dom"],
     alias: [
       {
         find: /^@eswasaone\/shared-ui\/(.*)$/,
@@ -100,22 +108,27 @@ export default defineConfig({
     port,
     strictPort: true,
     allowedHosts: [publicHost, ".aiceafrica.com"],
+    // Serve shared-ui assets (fonts) and contracts from outside this portal's root.
+    fs: { allow: [path.resolve(__dirname, ".."), path.resolve(__dirname, "../../contracts")] },
     proxy: {
-      "/api": {
-        target: coreTarget,
-        changeOrigin: true,
-        secure: true,
-      },
-      "/ws": {
-        target: coreWsTarget,
-        ws: true,
-        changeOrigin: true,
-      },
+      "/api": { target: apiTarget, changeOrigin: true, secure: true, cookieDomainRewrite: "" },
+      "/ws": { target: apiTarget.replace(/^http/, "ws"), ws: true, changeOrigin: true },
+      // Mirror nginx: staff SPAs live on the same origin so the post-login
+      // redirect lands on the real Institution / Field app (and shares the cookie).
+      // Without these, /institution/ fell through to this SPA's catch-all → "/" →
+      // staff redirect → /institution/ … an endless reload loop.
+      "/institution": { target: "http://127.0.0.1:3016", ws: true },
+      "/field": { target: "http://127.0.0.1:3017", ws: true },
     },
   },
   preview: {
     host: "127.0.0.1",
     port,
     strictPort: true,
+  },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./src/test/setup.ts"],
   },
 });

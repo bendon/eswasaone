@@ -58,7 +58,7 @@ const home: ServiceHome = {
     {
       id: "a1",
       type: "certification",
-      title: "ISO 9001:2015 Certification — Swazi Fresh Produce Ltd",
+      title: "ISO 9001:2015 Certification: Swazi Fresh Produce Ltd",
       body: "CERT-2025-0041 · 2 Sep 2025",
       severity: "warn",
       created_at: "2025-09-02T10:00:00Z",
@@ -74,7 +74,7 @@ const home: ServiceHome = {
     {
       id: "a3",
       type: "purchase",
-      title: "SZNS 987:2023 — Purchase",
+      title: "SZNS 987:2023 purchase",
       body: "STD-2025-0009 · 20 Aug 2025",
       severity: "info",
       created_at: "2025-08-20T10:00:00Z",
@@ -91,7 +91,7 @@ const home: ServiceHome = {
     {
       id: "al2",
       type: "standard",
-      title: "SZNS 1043:2024 Food Safety — now available in the e-store",
+      title: "SZNS 1043:2024 Food Safety, now available in the e-store",
       severity: "success",
       created_at: "2025-09-10T08:00:00Z",
     },
@@ -111,7 +111,7 @@ export const handlers = [
     const body = (await request.json()) as { message?: string };
     const msg = body.message ?? "";
     const res: AgentAskResponse = {
-      answer: `Thanks for asking about “${msg}”. Here’s a guided next step — open the matching service tile below, or refine your question.`,
+      answer: `Thanks for asking about “${msg}”. Here’s a guided next step: open the matching service tile below, or refine your question.`,
       tools_used: ["mock_router"],
       citations: [
         {

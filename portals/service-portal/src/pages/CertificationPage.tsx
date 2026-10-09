@@ -5,54 +5,34 @@ import {
   type CSSProperties,
   type FormEvent,
 } from "react";
-import { Link, useNavigate, useOutletContext } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon, type IconName } from "@eswasaone/shared-ui";
-import { SCHEMES, type Scheme } from "../api/certification";
+import { type Scheme } from "../api/certification";
+import {
+  CERT_DOCUMENTS,
+  CHARTER,
+  FLOW_LABEL,
+  FLOW_STAGES,
+  type CertFlow,
+} from "../certification/flows";
+import { SideDrawer } from "../certification/ui";
+import { useSchemes } from "../certification/useSchemes";
 import { verifyToken, type VerificationResult } from "../api/misc";
 import { useAuth } from "../auth/AuthProvider";
 import { Breadcrumbs } from "../components/Breadcrumbs";
-import type { LayoutOutletContext } from "../layout/ServiceLayout";
+import { HelpBand } from "../components/HelpBand";
+import { OutlineCard } from "../components/OutlineCard";
+import { SortMenu } from "../components/SortMenu";
+import { StaggeredGrid } from "../components/StaggeredGrid";
 import { safeText } from "../lib/safe";
 import { useCartToast } from "../ui/CartToast";
 
+/** Facts published by ESWASA (certification pages + Service Charter). */
 const HERO_STATS = [
-  { value: "148", label: "Companies certified" },
-  { value: "7", label: "Active schemes" },
-  { value: "4–14 wk", label: "Typical timeline" },
-  { value: "3 yrs", label: "Certificate validity" },
-] as const;
-
-const PROCESS_STEPS = [
-  {
-    n: "01",
-    title: "Apply online",
-    body: "Submit your organisation details, scope, and site information. You'll get a tracked reference number instantly.",
-    dur: "15 min",
-  },
-  {
-    n: "02",
-    title: "Gap assessment",
-    body: "We review your current systems against the standard and give you a written gap report with prioritised actions.",
-    dur: "1–2 weeks",
-  },
-  {
-    n: "03",
-    title: "Stage 1 audit",
-    body: "Documentation and readiness review at your site. We confirm your management system is ready for full evaluation.",
-    dur: "1–2 days",
-  },
-  {
-    n: "04",
-    title: "Stage 2 audit",
-    body: "Full on-site evaluation of your implemented system — processes, records, interviews, and observation of work in practice.",
-    dur: "2–5 days",
-  },
-  {
-    n: "05",
-    title: "Certification decision",
-    body: "The Certification Approval Committee reviews the audit report, and — if compliant — issues a 3-year certificate.",
-    dur: "2–4 weeks",
-  },
+  { value: "3", label: "Certification paths" },
+  { value: "5", label: "Management-system standards" },
+  { value: `${CHARTER.quoteDays} days`, label: "Quote turnaround (working)" },
+  { value: "3 yrs", label: "Product permit validity" },
 ] as const;
 
 type PathCard = {
@@ -60,6 +40,10 @@ type PathCard = {
   title: string;
   body: string;
   count: string;
+  countIcon: IconName;
+  tag: string;
+  cta: string;
+  hint: string;
   icon: IconName;
   tint: string;
   tone: string;
@@ -67,126 +51,201 @@ type PathCard = {
 
 const PATHS: PathCard[] = [
   {
-    to: "/certification?path=exporter",
-    title: "First-time exporter pack",
-    body: "ISO 9001 plus the relevant product standards and export-desk support — the shortest credible path to your first international shipment.",
-    count: "4 steps",
-    icon: "i-globe",
+    to: "/certification/quote",
+    title: "Not sure what it will cost?",
+    body: "Request a quotation. ESWASA says cost depends on company size, operations and, for products, the certification parameters.",
+    count: `${CHARTER.quoteDays} working days`,
+    countIcon: "i-clock",
+    tag: "Quote",
+    cta: "Request a quote",
+    hint: "Service Charter",
+    icon: "i-dollar",
     tint: "#ECEEFC",
     tone: "#313391",
   },
   {
-    to: "/certification?path=food",
-    title: "Food processor readiness",
-    body: "HACCP first, then ISO 22000 — with our internal-auditor training bundled so your team can maintain the system after certification.",
-    count: "3 stages",
-    icon: "i-clipboard",
-    tint: "#E3F4E9",
-    tone: "#15803D",
-  },
-  {
-    to: "/certification?path=msme",
-    title: "MSME starter path",
-    body: "For small businesses new to standards. Starts with the Ingelo scheme — subsidised training, testing and assessment — then SZNS Product Mark.",
-    count: "Subsidised",
+    to: "/certification/apply?scheme=ingelo",
+    title: "Local MSME producer?",
+    body: "Check whether you qualify for Ingelo and ask for a free pre-application consultation and gap-analysis workshop.",
+    count: "Free consultation",
+    countIcon: "i-users",
+    tag: "Ingelo",
+    cta: "Check eligibility",
+    hint: "Emaswati-owned MSMEs",
     icon: "i-users",
     tint: "#DCFCE7",
     tone: "#166534",
   },
   {
-    to: "/certification?path=integrated",
-    title: "Integrated management system",
-    body: "ISO 9001, ISO 14001 and ISO 45001 audited together. One integrated audit schedule, three certificates, lower total cost.",
-    count: "3 schemes",
-    icon: "i-layers",
-    tint: "#F0E9FB",
-    tone: "#7C3AED",
-  },
-  {
-    to: "/certification?path=recertify",
-    title: "Recertification",
-    body: "Already certified and coming up to the end of your three-year cycle? Book your recertification audit and keep the certificate continuous.",
-    count: "6–10 weeks",
+    to: "/account/applications",
+    title: "Already certified?",
+    body: "Management-system certification continues with two surveillance audits, then a recertification audit. Track yours in your account.",
+    count: "Surveillance",
+    countIcon: "i-refresh",
+    tag: "Maintain",
+    cta: "My applications",
+    hint: "Stay certified",
     icon: "i-trend",
     tint: "#E4F4F1",
     tone: "#0E7C7B",
   },
   {
-    to: "/certification?path=upgrade",
-    title: "Upgrade from HACCP",
-    body: "Already HACCP certified? Bridge to ISO 22000 with a reduced-scope audit — your existing HACCP plan counts toward the new system.",
-    count: "Reduced scope",
-    icon: "i-star",
+    to: "/applicability",
+    title: "Which standard applies?",
+    body: "Find the standard for your product or process before you apply, or buy it from the standards store.",
+    count: "Standards",
+    countIcon: "i-book",
+    tag: "Standards",
+    cta: "Check applicability",
+    hint: "Start here",
+    icon: "i-search",
     tint: "#FEF6DC",
     tone: "#B8860B",
   },
 ];
 
-type FilterGroup = {
+type FilterOption = {
   id: string;
   label: string;
-  open: boolean;
-  options: { id: string; label: string; count: number; default?: boolean }[];
+  test: (s: Scheme) => boolean;
+  /** Narrower options listed under this one (e.g. each standard under Management systems). */
+  children?: FilterOption[];
 };
+type FilterGroup = { id: string; label: string; open: boolean; options: FilterOption[] };
 
-const FILTERS: FilterGroup[] = [
-  {
-    id: "type",
-    label: "Scheme type",
-    open: true,
-    options: [
-      { id: "ms", label: "Management systems", count: 4, default: true },
-      { id: "product", label: "Product certification", count: 2 },
-      { id: "sector", label: "Sector-specific", count: 2 },
-      { id: "msme", label: "MSME / Ingelo", count: 1 },
-    ],
-  },
-  {
-    id: "sector",
-    label: "Sector",
-    open: true,
-    options: [
-      { id: "food", label: "Food & agriculture", count: 4, default: true },
-      { id: "all", label: "All industries", count: 3 },
-      { id: "construction", label: "Construction", count: 1 },
-      { id: "manufacturing", label: "Manufacturing", count: 2 },
-    ],
-  },
-  {
-    id: "duration",
-    label: "Duration",
-    open: true,
-    options: [
-      { id: "lt6", label: "Under 6 weeks", count: 2 },
-      { id: "6-10", label: "6 – 10 weeks", count: 4 },
-      { id: "10-14", label: "10 – 14 weeks", count: 2 },
-    ],
-  },
-  {
-    id: "fee",
-    label: "Fee range",
-    open: true,
-    options: [
-      { id: "free", label: "Subsidised / free", count: 1 },
-      { id: "lt20", label: "Under SZL 20,000", count: 2 },
-      { id: "20-50", label: "SZL 20,000 – 50,000", count: 4 },
-      { id: "gt50", label: "Over SZL 50,000", count: 1 },
-    ],
-  },
-  {
-    id: "avail",
-    label: "Availability",
-    open: false,
-    options: [
-      { id: "open", label: "Open for applications", count: 7, default: true },
-      { id: "wait", label: "Waitlist", count: 0 },
-      { id: "soon", label: "Coming soon", count: 1 },
-    ],
-  },
+const bySchemeId = (id: string) => (s: Scheme) => s.id === id;
+const MS_SHORT: Record<string, string> = {
+  iso9001: "ISO 9001 · Quality",
+  iso14001: "ISO 14001 · Environment",
+  iso22000: "ISO 22000 · Food safety",
+  iso45001: "ISO 45001 · Health & safety",
+  haccp: "HACCP (SANS 10330)",
+};
+/** Filter groups; the per-standard options follow the schemes the backend lists. */
+function buildFilters(listed: Scheme[]): FilterGroup[] {
+  const msStandards: FilterOption[] = listed.filter((s) => s.flow === "ms").map((s) => ({
+    id: s.id,
+    label: MS_SHORT[s.id] ?? s.code.replace(/^SZNS /, ""),
+    test: bySchemeId(s.id),
+  }));
+  return [
+    {
+      id: "type",
+      label: "Certification type",
+      open: true,
+      options: [
+        {
+          id: "ms",
+          label: "Management systems",
+          test: (s) => s.flow === "ms",
+          children: msStandards,
+        },
+        {
+          id: "product",
+          label: "Product certification",
+          test: (s) => s.flow === "product",
+          // One published scheme covers every product; these are the categories ESWASA cites.
+          children: [
+            { id: "construction", label: "Construction products", test: (s) => s.flow === "product" && s.sectors.includes("construction") },
+            { id: "food", label: "Food products", test: (s) => s.flow === "product" && s.sectors.includes("food") },
+            { id: "manufactured", label: "Other manufactured goods", test: (s) => s.flow === "product" && s.sectors.includes("manufacturing") },
+          ],
+        },
+        { id: "msme", label: "Ingelo (MSME)", test: (s) => s.flow === "ingelo" },
+      ],
+    },
+    {
+      id: "sector",
+      label: "Sector",
+      open: true,
+      options: [
+        { id: "food", label: "Food & agriculture", test: (s) => s.sectors.includes("food") },
+        { id: "all", label: "All industries", test: (s) => s.sectors.includes("all") },
+        { id: "construction", label: "Construction", test: (s) => s.sectors.includes("construction") },
+        { id: "manufacturing", label: "Manufacturing", test: (s) => s.sectors.includes("manufacturing") },
+      ],
+    },
+    {
+      id: "fee",
+      label: "Fee",
+      open: true,
+      options: [
+        { id: "free", label: "Free support available", test: (s) => s.flow === "ingelo" },
+        { id: "quote", label: "By quotation", test: (s) => s.flow !== "ingelo" },
+      ],
+    },
+    {
+      id: "who",
+      label: "Who can apply",
+      open: false,
+      options: [
+        { id: "any", label: "Any organisation", test: (s) => s.flow !== "ingelo" },
+        { id: "msme", label: "Emaswati-owned MSMEs", test: (s) => s.flow === "ingelo" },
+      ],
+    },
+    {
+      id: "accreditation",
+      label: "Accreditation",
+      open: false,
+      options: [
+        {
+          id: "sadcas",
+          label: "SADCAS accredited",
+          test: (s) => s.facts.some((f) => f.label === "Accreditation" && f.value.includes("SADCAS")),
+        },
+      ],
+    },
+  ];
+}
+
+const SORTS = [
+  { value: "default", label: "ESWASA order" },
+  { value: "code", label: "Code A–Z" },
+  { value: "title", label: "Name A–Z" },
+  { value: "type", label: "Certification type" },
 ];
 
+const FLOW_ORDER: Record<string, number> = { ms: 0, product: 1, ingelo: 2, combined: 3 };
+
+const fkey = (...parts: string[]) => parts.join(":");
+
+/** Tests a group currently applies: ticked sub-options win over their parent. */
+function activeTests(g: FilterGroup, checked: Record<string, boolean>): ((s: Scheme) => boolean)[] {
+  const tests: ((s: Scheme) => boolean)[] = [];
+  for (const o of g.options) {
+    const kids = (o.children ?? []).filter((c) => checked[fkey(g.id, o.id, c.id)]);
+    if (kids.length) tests.push(...kids.map((c) => c.test));
+    else if (checked[fkey(g.id, o.id)]) tests.push(o.test);
+  }
+  return tests;
+}
+
+function applyFilters(
+  filters: FilterGroup[],
+  list: Scheme[],
+  checked: Record<string, boolean>,
+  skipGroup?: string,
+): Scheme[] {
+  return list.filter((s) =>
+    filters.every((g) => {
+      if (g.id === skipGroup) return true;
+      const tests = activeTests(g, checked);
+      return tests.length === 0 || tests.some((t) => t(s));
+    }),
+  );
+}
+
+function sortSchemes(list: Scheme[], sort: string): Scheme[] {
+  const out = [...list];
+  if (sort === "code") out.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+  else if (sort === "title") out.sort((a, b) => a.title.localeCompare(b.title));
+  else if (sort === "type") out.sort((a, b) => FLOW_ORDER[a.flow] - FLOW_ORDER[b.flow]);
+  return out;
+}
+
+const PROCESS_TABS: CertFlow[] = ["ms", "product", "ingelo"];
+
 export function CertificationPage() {
-  const { openDock } = useOutletContext<LayoutOutletContext>();
   const { user, openAuth } = useAuth();
   const { showToast } = useCartToast();
   const navigate = useNavigate();
@@ -194,36 +253,31 @@ export function CertificationPage() {
   const verifyRef = useRef<HTMLElement>(null);
   const verifyInputRef = useRef<HTMLInputElement>(null);
 
-  const [sort, setSort] = useState("popular");
+  const [sort, setSort] = useState("default");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [filterOpen, setFilterOpen] = useState<Record<string, boolean>>(
-    Object.fromEntries(FILTERS.map((g) => [g.id, g.open])),
+    Object.fromEntries(buildFilters([]).map((g) => [g.id, g.open])),
   );
-  const [checked, setChecked] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {};
-    for (const g of FILTERS) {
-      for (const o of g.options) init[`${g.id}:${o.id}`] = Boolean(o.default);
-    }
-    return init;
-  });
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [processTab, setProcessTab] = useState<CertFlow>("ms");
+  const [drawer, setDrawer] = useState<Scheme | null>(null);
   const [verifyValue, setVerifyValue] = useState("");
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [verifyResult, setVerifyResult] = useState<VerificationResult | null>(null);
+  const [verifyFailed, setVerifyFailed] = useState(false);
 
-  const schemes = useMemo(() => {
-    const list = [...SCHEMES];
-    if (sort === "code") list.sort((a, b) => a.code.localeCompare(b.code));
-    else if (sort === "fastest") {
-      list.sort((a, b) => durationRank(a.duration) - durationRank(b.duration));
-    } else if (sort === "fee") {
-      list.sort((a, b) => feeRank(a) - feeRank(b));
-    }
-    return list;
-  }, [sort]);
+  const [subOpen, setSubOpen] = useState<Record<string, boolean>>({});
+  const allSchemes = useSchemes();
+  const listedSchemes = useMemo(() => allSchemes.filter((s) => s.listed), [allSchemes]);
+  const filters = useMemo(() => buildFilters(listedSchemes), [listedSchemes]);
 
-  const openCount = schemes.filter((s) => s.open).length;
-  const activeFilterCount = Object.values(checked).filter(Boolean).length;
+  const schemes = useMemo(
+    () => sortSchemes(applyFilters(filters, listedSchemes, checked), sort),
+    [filters, listedSchemes, sort, checked],
+  );
+
+  const activeFilterCount = filters.reduce((n, g) => n + activeTests(g, checked).length, 0);
 
   function scrollToCatalogue() {
     catalogueRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -238,23 +292,38 @@ export function CertificationPage() {
 
   function trackApplication() {
     if (user) {
-      navigate("/account");
+      navigate("/account/applications");
       return;
     }
     openAuth({
       title: "Sign in to track",
       reason: "See live stage, pending documents, and audit dates for your application.",
-      next: "/account",
+      next: "/account/applications",
     });
   }
 
   function clearFilters() {
-    const next: Record<string, boolean> = {};
-    for (const g of FILTERS) {
-      for (const o of g.options) next[`${g.id}:${o.id}`] = false;
-    }
-    setChecked(next);
+    setChecked({});
     showToast("Filters cleared");
+  }
+
+  /** Parent ticks/unticks all its sub-options; a parent is ticked when all of them are. */
+  function toggleOption(g: FilterGroup, o: FilterOption, child?: FilterOption) {
+    setChecked((prev) => {
+      const next = { ...prev };
+      const kids = o.children ?? [];
+      if (!child) {
+        const on = !prev[fkey(g.id, o.id)];
+        next[fkey(g.id, o.id)] = on;
+        for (const c of kids) next[fkey(g.id, o.id, c.id)] = on;
+        if (on && kids.length) setSubOpen((p) => ({ ...p, [fkey(g.id, o.id)]: true }));
+      } else {
+        const k = fkey(g.id, o.id, child.id);
+        next[k] = !prev[k];
+        next[fkey(g.id, o.id)] = kids.every((c) => next[fkey(g.id, o.id, c.id)]);
+      }
+      return next;
+    });
   }
 
   function toggleSave(id: string) {
@@ -270,8 +339,12 @@ export function CertificationPage() {
     const token = verifyValue.trim();
     if (token.length < 6) return;
     setVerifyBusy(true);
+    setVerifyFailed(false);
     try {
       setVerifyResult(await verifyToken(token));
+    } catch {
+      setVerifyResult(null);
+      setVerifyFailed(true);
     } finally {
       setVerifyBusy(false);
     }
@@ -290,7 +363,7 @@ export function CertificationPage() {
             Clear all
           </button>
         </div>
-        {FILTERS.map((group) => (
+        {filters.map((group) => (
           <div
             key={group.id}
             className="fgroup"
@@ -306,22 +379,57 @@ export function CertificationPage() {
               {group.label} <Icon name="i-chev" />
             </button>
             <div className="fgroup__list">
-              {group.options.map((opt) => (
-                <label className="fcheck" key={opt.id}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(checked[`${group.id}:${opt.id}`])}
-                    onChange={() =>
-                      setChecked((prev) => ({
-                        ...prev,
-                        [`${group.id}:${opt.id}`]: !prev[`${group.id}:${opt.id}`],
-                      }))
-                    }
-                  />
-                  <span>{opt.label}</span>
-                  <em>{opt.count}</em>
-                </label>
-              ))}
+              {group.options.map((opt) => {
+                const base = applyFilters(filters, listedSchemes, checked, group.id);
+                const kids = opt.children ?? [];
+                const pkey = fkey(group.id, opt.id);
+                const someKids = kids.some((c) => checked[fkey(group.id, opt.id, c.id)]);
+                const expanded = Boolean(subOpen[pkey]);
+                return (
+                  <div key={opt.id} className={`fopt${kids.length ? " has-kids" : ""}`}>
+                    <div className="fopt__row">
+                      <label className="fcheck">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(checked[pkey])}
+                          ref={(el) => {
+                            if (el) el.indeterminate = !checked[pkey] && someKids;
+                          }}
+                          onChange={() => toggleOption(group, opt)}
+                        />
+                        <span>{opt.label}</span>
+                        <em>{base.filter(opt.test).length}</em>
+                      </label>
+                      {kids.length ? (
+                        <button
+                          type="button"
+                          className="fopt__toggle"
+                          aria-expanded={expanded}
+                          aria-label={`${expanded ? "Hide" : "Show"} ${opt.label} options`}
+                          onClick={() => setSubOpen((p) => ({ ...p, [pkey]: !p[pkey] }))}
+                        >
+                          <Icon name="i-chev" />
+                        </button>
+                      ) : null}
+                    </div>
+                    {kids.length && expanded ? (
+                      <div className="fsub">
+                        {kids.map((c) => (
+                          <label className="fcheck" key={c.id}>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(checked[fkey(group.id, opt.id, c.id)])}
+                              onChange={() => toggleOption(group, opt, c)}
+                            />
+                            <span>{c.label}</span>
+                            <em>{base.filter(c.test).length}</em>
+                          </label>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}
@@ -343,14 +451,20 @@ export function CertificationPage() {
           <span className="page-hero__label">ESWASAONE · CERTIFICATION</span>
           <h1>Certification that travels with your product.</h1>
           <p>
-            Management-system, product, and sector-specific certification issued under ESWASA
-            accreditation. Apply in minutes, track your audits, and get a certificate recognised
-            by buyers at home and abroad.
+            Management systems, product certification and the Ingelo scheme for local MSMEs,
+            from the Eswatini Standards Authority. Request a quote, apply online and follow each
+            stage of your certification.
           </p>
           <div className="page-hero__actions">
             <button type="button" className="chip-cta gold" onClick={scrollToCatalogue}>
               <Icon name="i-badge" /> Browse schemes
             </button>
+            <Link className="chip-cta" to="/certification/quote">
+              <Icon name="i-dollar" /> Request a quote
+            </Link>
+            <Link className="chip-cta" to="/certification/readiness">
+              <Icon name="i-check-c" /> Am I ready?
+            </Link>
             <button type="button" className="chip-cta" onClick={scrollToVerify}>
               <Icon name="i-eye" /> Verify a certificate
             </button>
@@ -398,7 +512,7 @@ export function CertificationPage() {
             </span>
             <div className="action__body">
               <b>Start a new application</b>
-              <span>Pick a scheme and apply — no account required to begin</span>
+              <span>Pick a scheme and apply. No account required to begin</span>
             </div>
             <span className="action__go">
               <Icon name="i-cright" />
@@ -436,7 +550,7 @@ export function CertificationPage() {
                 setVerifyValue(e.target.value);
                 setVerifyResult(null);
               }}
-              placeholder="e.g.  ESWASA-ISO9001-2024-01142"
+              placeholder="Certificate number"
               autoComplete="off"
               spellCheck={false}
             />
@@ -450,13 +564,19 @@ export function CertificationPage() {
           </div>
           <p className="verify-widget__note">
             <Icon name="i-shield" />
-            Certificate data is drawn live from the ESWASA register.
+            Results come from the ESWASA register. See also the{" "}
+            <Link to="/certification/status">suspended, withdrawn &amp; reduced-scope register</Link>.
           </p>
+          {verifyFailed ? (
+            <div className="verify-widget__result">
+              Couldn’t reach the register, so no result is shown. Please try again.
+            </div>
+          ) : null}
           {verifyResult ? (
             <div className={`verify-widget__result${verifyResult.valid ? " ok" : ""}`}>
               {verifyResult.valid
-                ? `Valid — ${safeText(verifyResult.subject || verifyResult.token)}`
-                : `Not found — ${safeText(verifyResult.token)}`}
+                ? `Valid: ${safeText(verifyResult.subject || verifyResult.token)}`
+                : `Not found: ${safeText(verifyResult.token)}`}
             </div>
           ) : null}
         </form>
@@ -477,7 +597,7 @@ export function CertificationPage() {
         <div>
           <div className="toolbar">
             <span className="toolbar__count">
-              {schemes.length} certification schemes <span>· {openCount} open now</span>
+              {schemes.length} certification schemes <span>· as published by ESWASA</span>
             </span>
             <button
               type="button"
@@ -488,15 +608,7 @@ export function CertificationPage() {
               <span className="badge">{activeFilterCount}</span>
             </button>
             <div className="toolbar__spacer" />
-            <div className="toolbar__sort">
-              <label htmlFor="certSort">Sort</label>
-              <select id="certSort" value={sort} onChange={(e) => setSort(e.target.value)}>
-                <option value="popular">Most popular</option>
-                <option value="fastest">Fastest to certify</option>
-                <option value="fee">Lowest fee first</option>
-                <option value="code">Code A–Z</option>
-              </select>
-            </div>
+            <SortMenu label="Sort" value={sort} options={SORTS} onChange={setSort} />
           </div>
 
           <ul className="certlist">
@@ -531,29 +643,22 @@ export function CertificationPage() {
                 </h2>
                 <p className="cert__abstract">{safeText(s.body)}</p>
                 <dl className="cert__facts">
-                  <div className="cert__fact">
-                    <dt>Duration</dt>
-                    <dd>{s.duration}</dd>
-                  </div>
-                  <div className="cert__fact">
-                    <dt>Certificate validity</dt>
-                    <dd>{s.validity}</dd>
-                  </div>
-                  <div className="cert__fact">
-                    <dt>{s.feeLabel || "Fee range"}</dt>
-                    <dd className="mono">{s.fee}</dd>
-                  </div>
+                  {s.facts.map((f) => (
+                    <div className="cert__fact" key={f.label}>
+                      <dt>{f.label}</dt>
+                      <dd>{f.value}</dd>
+                    </div>
+                  ))}
                 </dl>
                 <div className="cert__foot">
-                  <span className={`cert__badge${s.subsidised ? " subsidised" : ""}`}>
-                    <Icon name={s.subsidised ? "i-star" : "i-check-c"} />
-                    {s.subsidised ? "Funding available" : "Open for applications"}
-                  </span>
+                  <a className="cert__badge" href={s.source} target="_blank" rel="noopener noreferrer">
+                    <Icon name="i-open" /> eswasa.co.sz
+                  </a>
                   <div className="cert__actions">
                     <button
                       type="button"
                       className="abtn ghost"
-                      onClick={() => showToast(`${s.secondaryLabel} coming soon`)}
+                      onClick={() => setDrawer(s)}
                     >
                       <Icon name="i-file" /> {s.secondaryLabel}
                     </button>
@@ -570,20 +675,22 @@ export function CertificationPage() {
             ))}
           </ul>
 
-          <div className="loadmore">
-            <div className="loadmore__bar">
-              <i style={{ width: "62%" }} />
+          {schemes.length === 0 ? (
+            <div className="empty">
+              <b>No schemes match these filters</b>
+              <p>Clear a filter, or ask the certification desk which scheme fits.</p>
+              <button type="button" className="abtn ghost" onClick={clearFilters}>
+                Clear filters
+              </button>
             </div>
-            <p>
-              Showing {schemes.length} of 11 certification schemes offered by ESWASA
+          ) : (
+            <p className="page-note">
+              Showing {schemes.length} of {listedSchemes.length} certification schemes. Need more than one
+              type, e.g. ISO + Product?{" "}
+              <Link to="/certification/quote?flow=combined">Request a combined quote</Link> and name the
+              standards and products yourself.
             </p>
-            <button
-              type="button"
-              onClick={() => showToast("Loaded more schemes — TODO: wire real catalogue")}
-            >
-              Load more schemes
-            </button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -591,93 +698,190 @@ export function CertificationPage() {
         <div className="process__head">
           <h2 id="processTitle">How certification works</h2>
           <p>
-            Every management-system certification at ESWASA follows the same five-stage path.
-            Most applicants complete it in six to fourteen weeks, depending on the size of the
-            organisation and the readiness of existing systems.
+            ESWASA runs three certification paths, each with its own process as published on
+            eswasa.co.sz. Request a quote first, or apply and ESWASA will quote after reviewing.
           </p>
         </div>
-        <div className="process__steps">
-          {PROCESS_STEPS.map((step) => (
-            <div className="pstep" key={step.n}>
-              <span className="pstep__n">{step.n}</span>
+        <div className="cf-tabs" role="tablist" aria-label="Certification path">
+          {PROCESS_TABS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              role="tab"
+              aria-selected={processTab === f}
+              onClick={() => setProcessTab(f)}
+            >
+              {FLOW_LABEL[f]}
+            </button>
+          ))}
+        </div>
+        <div className="cf-steps" role="tabpanel" aria-label={`${FLOW_LABEL[processTab]} certification steps`}>
+          {FLOW_STAGES[processTab].map((step, i) => (
+            <div className="cf-step" key={step.key}>
+              <span className="cf-step__n">{String(i + 1).padStart(2, "0")}</span>
               <h3>{step.title}</h3>
               <p>{step.body}</p>
-              <span className="pstep__dur">
-                <Icon name="i-clock" /> {step.dur}
+              {step.sla ? (
+                <span className="sla">
+                  <Icon name="i-clock" /> {step.sla}
+                </span>
+              ) : null}
+              <span className="who">
+                {step.who === "you" ? "You" : step.who === "eswasa" ? "ESWASA" : "You + ESWASA"}
               </span>
             </div>
           ))}
         </div>
+        <div className="cf-nav">
+          {processTab === "ingelo" ? (
+            <Link className="cf-btn cf-btn--gold" to="/certification/apply?scheme=ingelo">
+              <Icon name="i-check-c" /> Check Ingelo eligibility
+            </Link>
+          ) : (
+            <Link
+              className="cf-btn cf-btn--pri"
+              to={`/certification/apply?scheme=${processTab === "product" ? "product" : "iso9001"}`}
+            >
+              <Icon name="i-send" /> Start an application
+            </Link>
+          )}
+          <Link className="cf-btn cf-btn--ghost" to={`/certification/quote?flow=${processTab}`}>
+            <Icon name="i-dollar" /> Request a quote
+          </Link>
+        </div>
+      </section>
+
+      <section className="process" aria-labelledby="docsTitle">
+        <div className="process__head">
+          <h2 id="docsTitle">Rules, policies &amp; procedures</h2>
+          <p>
+            The documents that govern ESWASA certification: impartiality, appeals (within{" "}
+            {CHARTER.appealWindowDays} days), complaints, suspension and withdrawal, and use of the mark.
+          </p>
+        </div>
+        <div className="cf-docs">
+          {CERT_DOCUMENTS.map((d) => (
+            <div className="cf-doc" key={d.code}>
+              <Icon name="i-file" />
+              <div>
+                <code>{d.code}</code>
+                {d.title}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="page-note">
+          Status of certified clients: <Link to="/certification/status">public status register</Link>.
+          Concerns about a certified client? <Link to="/complaints?topic=certification">Raise a complaint</Link>.
+        </p>
       </section>
 
       <section className="featured" aria-labelledby="featuredTitle">
         <div className="featured__head">
           <div>
             <h2 id="featuredTitle">Common starting points</h2>
-            <p>Curated schemes and prep packs for the situations we see most often.</p>
+            <p>Where to begin, depending on where you are.</p>
           </div>
-          <button
-            type="button"
-            className="featured__link"
-            onClick={() => showToast("Paths catalogue coming soon")}
-          >
-            All paths <Icon name="i-cright" />
-          </button>
         </div>
-        <div className="collections">
-          {PATHS.map((c) => (
-            <Link
-              key={c.title}
-              className="collection"
+        <StaggeredGrid
+          label="Common starting points"
+          className="ggrid--featured"
+          items={PATHS}
+          itemKey={(c) => c.title}
+          renderItem={(c) => (
+            <OutlineCard
               to={c.to}
-              style={{ "--chip-tint": c.tint, "--chip-tone": c.tone } as CSSProperties}
-            >
-              <span className="collection__ic">
-                <Icon name={c.icon} />
-              </span>
-              <h3>{c.title}</h3>
-              <p>{c.body}</p>
-              <div className="collection__foot">
-                <span className="collection__count">{c.count}</span>
-                <span className="collection__arrow">
-                  <Icon name="i-cright" />
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+              icon={c.icon}
+              title={c.title}
+              body={c.body}
+              tint={c.tint}
+              tone={c.tone}
+              tag={c.tag}
+              meta={[{ icon: c.countIcon, label: c.count }]}
+              cta={c.cta}
+              hint={c.hint}
+            />
+          )}
+        />
       </section>
 
-      <section className="support">
-        <div className="support__copy">
-          <span>NOT SURE WHERE TO START?</span>
-          <h2>Tell us what you&apos;re making, and we&apos;ll tell you what to certify.</h2>
-          <p>
-            Esi knows the full ESWASA scheme catalogue. Describe your product or process and
-            she&apos;ll match you to the right certification, or connect you with the
-            certification desk for a scoping call.
-          </p>
-        </div>
-        <div className="support__actions">
-          <button type="button" className="sbtn gold" onClick={() => openDock()}>
-            <Icon name="i-spark" /> Ask Esi
-          </button>
-          <a className="sbtn ghost" href="mailto:info@eswasa.co.sz">
-            <Icon name="i-send" /> Email the certification desk
-          </a>
-        </div>
-      </section>
+      {drawer ? <SchemeDrawer scheme={drawer} onClose={() => setDrawer(null)} /> : null}
+
+      <HelpBand
+        kicker="Not sure where to start?"
+        title="Tell us what you’re making and we’ll tell you what to certify."
+        body="The certification desk can match your product or process to the right scheme and book a scoping call before you apply."
+        desk={{ label: "the certification desk", email: "info@eswasa.co.sz", subject: "Certification enquiry" }}
+        shortcut={{
+          icon: "i-steps",
+          label: "Start from a goal",
+          hint: "Step-by-step guides",
+          to: "/goals",
+        }}
+      />
     </div>
   );
 }
 
-function durationRank(duration: string): number {
-  const m = duration.match(/(\d+)/);
-  return m ? Number(m[1]) : 99;
-}
-
-function feeRank(s: Scheme): number {
-  if (s.subsidised || /subsid/i.test(s.fee)) return 0;
-  const m = s.fee.replace(/,/g, "").match(/(\d+)/);
-  return m ? Number(m[1]) : 99;
+function SchemeDrawer({ scheme, onClose }: { scheme: Scheme; onClose: () => void }) {
+  const ingelo = scheme.flow === "ingelo";
+  return (
+    <SideDrawer kicker={scheme.code} title={ingelo ? "Ingelo eligibility" : "How it works"} onClose={onClose}>
+      {ingelo ? (
+        <>
+          <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 8 }}>
+            Ingelo is a Ministry of Commerce, Industry and Trade initiative for local producers.
+          </p>
+          <div className="cf-sec">You qualify if</div>
+          <ul className="cf-bul">
+            <li><Icon name="i-check" /> You are Emaswati</li>
+            <li><Icon name="i-check" /> You run a local MSME producing goods or services</li>
+            <li><Icon name="i-check" /> You are willing to scale production to meet export quota requirements</li>
+          </ul>
+          <div className="cf-sec">Benefits listed by ESWASA</div>
+          <ul className="cf-bul">
+            <li><Icon name="i-check" /> Free pre-application consultations and gap-analysis workshops</li>
+            <li><Icon name="i-check" /> Expert technical guidance throughout certification</li>
+            <li><Icon name="i-check" /> The ESWASA Approved mark on your products</li>
+            <li><Icon name="i-check" /> Access to local, regional and AfCFTA markets</li>
+          </ul>
+          <div className="cf-sec">Application</div>
+          <p style={{ fontSize: 13.5 }}>
+            Form CER_FO_002_IPC. On eswasa.co.sz it is downloaded and emailed to certification@eswasa.co.sz or
+            handed in at Matsapha. Here you fill it in online.
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="cf-sec">Stages</div>
+          <ol style={{ paddingLeft: 18, fontSize: 13.5, lineHeight: 1.5, display: "flex", flexDirection: "column", gap: 6 }}>
+            {FLOW_STAGES[scheme.flow].map((st) => (
+              <li key={st.key}>
+                <b>{st.title}</b>. {st.body}
+              </li>
+            ))}
+          </ol>
+          <div className="cf-sec">Documents</div>
+          <p style={{ fontSize: 13.5 }}>
+            ESWASA does not publish a document checklist. Attach what you have (up to 5 PDFs) to your quote
+            request, and ESWASA will tell you what else it needs.
+          </p>
+        </>
+      )}
+      <p style={{ fontSize: 12.5, marginTop: 12 }}>
+        Source:{" "}
+        <a href={scheme.source} target="_blank" rel="noopener noreferrer">
+          {scheme.source.replace("https://", "")}
+        </a>
+      </p>
+      <div className="cf-nav">
+        <Link className="cf-btn cf-btn--pri" to={`/certification/apply?scheme=${scheme.id}`}>
+          <Icon name="i-send" /> {ingelo ? "Check eligibility & apply" : "Start application"}
+        </Link>
+        <Link className="cf-btn cf-btn--ghost" to={`/certification/quote?scheme=${scheme.id}`}>
+          Request a quote
+        </Link>
+      </div>
+    </SideDrawer>
+  );
 }

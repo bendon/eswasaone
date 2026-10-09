@@ -1,4 +1,6 @@
 import { apiFetch } from "@eswasaone/shared-ui";
+import { demoMode } from "../certification/demoStore";
+import { lodgeCase, type CaseSubject, type CaseType } from "@eswasaone/shared-ui/crm";
 
 export type ApplicabilityResult = {
   summary: string;
@@ -64,29 +66,46 @@ export async function listTbtAlerts(): Promise<TbtAlert[]> {
 export async function verifyToken(token: string): Promise<VerificationResult> {
   try {
     return await apiFetch<VerificationResult>(`/verify/${encodeURIComponent(token)}`);
-  } catch {
+  } catch (err) {
+    // Never report a certificate as valid unless the register answered.
+    if (!demoMode()) throw err;
     const valid = /^ESW-|^CERT-/i.test(token);
     return {
       valid,
       token,
-      subject: valid ? "Demo organisation — Product Mark" : null,
+      subject: valid ? "DEMO DATA: not a real certificate" : null,
     };
   }
 }
 
+/** Quick complaint from other pages (e.g. certification tracker). The full journey lives at /complaints. */
 export async function lodgeComplaint(body: {
   subject: string;
   detail: string;
   contact?: string;
+  type?: CaseType;
+  about?: CaseSubject;
 }): Promise<{ id: string }> {
-  try {
-    return await apiFetch<{ id: string }>("/complaints", {
-      method: "POST",
-      body: JSON.stringify(body),
+  // Demo: goes to the shared CRM case store so staff see it in /institution/crm/cases.
+  if (demoMode()) {
+    const contact = body.contact?.trim();
+    const c = await lodgeCase({
+      type: body.type ?? "service_complaint",
+      subject: body.subject,
+      description: body.detail,
+      channel: "account",
+      about: body.about,
+      reporter: contact
+        ? { anonymous: false, email: contact.includes("@") ? contact : undefined, phone: contact.includes("@") ? undefined : contact, preferred: contact.includes("@") ? "email" : "sms" }
+        : { anonymous: true, preferred: "email" },
     });
-  } catch {
-    return { id: `CMP-${Date.now().toString(36).toUpperCase()}` };
+    return { id: c.ref };
   }
+  // TODO: wire real — POST /cases. No complaints endpoint in Core yet: don't invent a reference number.
+  return apiFetch<{ id: string }>("/complaints", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 export type ActivityItem = {
@@ -102,5 +121,30 @@ export async function accountActivity(): Promise<ActivityItem[]> {
     return res.items ?? [];
   } catch {
     return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Notification feed — pulls from Core /account/notifications/feed
+// ---------------------------------------------------------------------------
+
+export type NotificationFeedEntry = {
+  id: string;
+  subject: string;
+  body: string | null;
+  document_type: string | null;
+  document_name: string | null;
+  read: boolean;
+  created_at: string | null;
+  link: string | null;
+};
+
+export async function fetchNotificationFeed(limit = 50): Promise<{ items: NotificationFeedEntry[]; unread_count: number }> {
+  try {
+    return await apiFetch<{ items: NotificationFeedEntry[]; unread_count: number }>(
+      `/account/notifications/feed?limit=${limit}`,
+    );
+  } catch {
+    return { items: [], unread_count: 0 };
   }
 }

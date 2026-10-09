@@ -174,7 +174,7 @@ class MessagingAdapter:
             return self._stub(
                 "email",
                 req.to,
-                detail="SMTP_HOST/SMTP_FROM empty — console fallback",
+                detail="SMTP_HOST/SMTP_FROM empty; console fallback",
                 subject=req.subject,
                 body=req.body[:200],
             )
@@ -234,7 +234,7 @@ class MessagingAdapter:
             return self._stub(
                 "sms",
                 req.to,
-                detail="SMS_API_URL/SMS_API_KEY empty — console fallback",
+                detail="SMS_API_URL/SMS_API_KEY empty; console fallback",
                 body=req.body[:160],
             )
 
@@ -278,7 +278,7 @@ class MessagingAdapter:
             return self._stub(
                 "whatsapp",
                 req.to,
-                detail="WHATSAPP_API_URL/WHATSAPP_TOKEN empty — console fallback",
+                detail="WHATSAPP_API_URL/WHATSAPP_TOKEN empty; console fallback",
                 body=req.body[:160],
                 template=req.template_name,
             )

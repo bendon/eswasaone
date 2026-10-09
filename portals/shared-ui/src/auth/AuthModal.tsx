@@ -113,7 +113,7 @@ export function AuthModal({
         });
         if (isLoginChallenge(session)) {
           resetToCredentials();
-          setError("Sign-in expired — enter your details again.");
+          setError("Sign-in expired. Enter your details again.");
           return;
         }
         onSuccess?.(session.user);

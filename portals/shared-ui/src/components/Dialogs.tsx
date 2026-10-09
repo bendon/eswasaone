@@ -10,6 +10,17 @@ import {
   type ReactNode,
 } from "react";
 import { focusFirst, onEscape, setBodyScrollLocked, trapFocus } from "../system/a11y";
+import {
+  clearAlertState,
+  getAlertState,
+  globalAlert,
+  subscribeAlert,
+  type AlertOptions,
+  type AlertState,
+} from "./dialogBus";
+
+export type { AlertOptions } from "./dialogBus";
+export { globalAlert } from "./dialogBus";
 
 /* ---------- Types ---------- */
 
@@ -24,13 +35,6 @@ export type ConfirmOptions = {
   ruleId?: string;
 };
 
-export type AlertOptions = {
-  title?: string;
-  message: string;
-  kind?: "info" | "success" | "error";
-  okLabel?: string;
-};
-
 export type PromptOptions = {
   title: string;
   message?: string;
@@ -43,9 +47,7 @@ export type PromptOptions = {
 };
 
 type ConfirmState = ConfirmOptions & { resolve: (ok: boolean) => void };
-type AlertState = AlertOptions & { resolve: () => void };
 type PromptState = PromptOptions & { resolve: (value: string | null) => void };
-
 /* ---------- Shell ---------- */
 
 function DialogShell({
@@ -232,12 +234,11 @@ export function PromptModal({
   );
 }
 
-/* ---------- Global store (single host for the whole portal) ---------- */
+/* ---------- Global store (confirm / prompt; alert lives in dialogBus) ---------- */
 
 type Listener = () => void;
 
 let _confirm: ConfirmState | null = null;
-let _alert: AlertState | null = null;
 let _prompt: PromptState | null = null;
 const _listeners = new Set<Listener>();
 
@@ -259,14 +260,6 @@ function globalConfirm(opts: ConfirmOptions): Promise<boolean> {
   });
 }
 
-function globalAlert(opts: AlertOptions | string): Promise<void> {
-  const normalized: AlertOptions = typeof opts === "string" ? { message: opts } : opts;
-  return new Promise<void>((resolve) => {
-    _alert = { ...normalized, resolve };
-    notify();
-  });
-}
-
 function globalPrompt(opts: PromptOptions): Promise<string | null> {
   return new Promise<string | null>((resolve) => {
     _prompt = { ...opts, resolve };
@@ -279,10 +272,17 @@ function globalPrompt(opts: PromptOptions): Promise<string | null> {
  */
 export function DialogHost() {
   const [, setTick] = useState(0);
-  useEffect(() => subscribe(() => setTick((n) => n + 1)), []);
+  useEffect(() => {
+    const unsubA = subscribe(() => setTick((n) => n + 1));
+    const unsubB = subscribeAlert(() => setTick((n) => n + 1));
+    return () => {
+      unsubA();
+      unsubB();
+    };
+  }, []);
 
   const confirmState = _confirm;
-  const alertState = _alert;
+  const alertState = getAlertState();
   const promptState = _prompt;
 
   return (
@@ -313,7 +313,7 @@ export function DialogHost() {
         okLabel={alertState?.okLabel}
         onClose={() => {
           alertState?.resolve();
-          _alert = null;
+          clearAlertState();
           notify();
         }}
       />
@@ -341,7 +341,6 @@ export function DialogHost() {
     </>
   );
 }
-
 /* ---------- Context + hooks ---------- */
 
 export type DialogsApi = {

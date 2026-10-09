@@ -5,7 +5,7 @@
  * ├ Main: summary · tabs (module body, documents, history) ─┬ Rail: SLA · people · links · independence ┤
  */
 import { useRef, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Icon } from "../icons/Icon";
 import { Select } from "../components/Select";
 import { useStoreResource } from "../store/localStore";
@@ -45,8 +45,14 @@ export function RecordPage({
   banner?: ReactNode;
   defaultTab?: string;
 }) {
-  const [tab, setTab] = useState(defaultTab ?? tabs[0]?.id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab");
+  const [tab, setTab] = useState(urlTab ?? defaultTab ?? tabs[0]?.id);
   const cur = tabs.find((t) => t.id === tab) ?? tabs[0];
+  const selectTab = (id: string) => {
+    setTab(id);
+    setSearchParams(id === (defaultTab ?? tabs[0]?.id) ? {} : { tab: id }, { replace: true });
+  };
   return (
     <div className="eo-record">
       <div className="crm-ws__head eo-record__head">
@@ -71,7 +77,7 @@ export function RecordPage({
           <div className="crm-card">
             <div className="crm-tabs" role="tablist">
               {tabs.map((t) => (
-                <button key={t.id} type="button" role="tab" aria-selected={t.id === cur?.id} className={t.id === cur?.id ? "on" : ""} onClick={() => setTab(t.id)}>
+                <button key={t.id} type="button" role="tab" aria-selected={t.id === cur?.id} className={t.id === cur?.id ? "on" : ""} onClick={() => selectTab(t.id)}>
                   {t.label}
                   {t.badge !== undefined && t.badge !== 0 ? <span className="n">{t.badge}</span> : null}
                 </button>
@@ -244,6 +250,7 @@ export function DocumentsPanel({
   const docs = res.data ?? [];
   const current = docs.filter((d) => !d.superseded_by);
   const shown = showOld ? docs : current;
+  const disconnected = res.notConnected;
 
   const onFile = async (file?: File | null) => {
     if (!file) return;
@@ -262,6 +269,14 @@ export function DocumentsPanel({
 
   return (
     <div className="eo-docs">
+      {disconnected ? (
+        <div className="crm-empty" role="status" aria-live="polite">
+          <Icon name="i-link" />
+          <b>Document storage isn't available yet</b>
+          <p>Document upload and version control need the Core Engine document service, which is not live yet.</p>
+        </div>
+      ) : (
+        <>
       {required.length ? (
         <ul className="eo-checks eo-checks--row">
           {required.map((r) => {
@@ -367,11 +382,11 @@ export function DocumentsPanel({
           </table>
         </div>
       )}
+        </>
+      )}
     </div>
   );
 }
-
-/* ---------------- assistant (C14, L8) ---------------- */
 
 /**
  * "Suggest next step" — proposes only. It summarises history, flags missing documents and drafts

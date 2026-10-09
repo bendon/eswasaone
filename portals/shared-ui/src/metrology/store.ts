@@ -10,8 +10,10 @@
  *   GET/PUT /metrology/methods, GET /account/instruments, GET /verify/cal/{token},
  *   POST /lims/test-requests, PUT /lims/test-requests/{id}/results, POST /lims/test-requests/{id}/act.
  */
+import { apiFetch } from "../api/client";
 import { createInvoice, invoiceFor, type Invoice } from "../billing/store";
 import { registerSignalGenerator, sendNps } from "../crm/store";
+import { demoDataEnabled } from "../demo";
 import { planVisit, recordSampleResult, registerLabRouter, registerVisitParent, peekVisit } from "../field/store";
 import type { FieldVisit, Sample } from "../field/types";
 import { notifySafe } from "../notify/store";
@@ -22,7 +24,7 @@ import { allowedActions, applyTransition, SUPER_ROLES } from "../workflow/engine
 import type { ActInput, ActionOption, Actor } from "../workflow/types";
 import { JOB_DEF, TEST_DEF } from "./defs";
 import { DEFAULT_MET_SETTINGS, SEED_EQUIPMENT, SEED_INSTRUMENTS, SEED_METHODS, seedJobs, seedTests } from "./seed";
-import type { CalItem, CalJob, CalPointRow, CustomerInstrument, Discipline, LabEquipment, Method, MetrologySettings, TestRequest, TestResult, Worksheet } from "./types";
+import type { CalItem, CalJob, CalPointRow, CustomerInstrument, Discipline, JobState, LabEquipment, Method, MetrologySettings, TestRequest, TestResult, Worksheet } from "./types";
 
 type MetState = {
   v: 1;
@@ -115,7 +117,82 @@ function worksheetProblem(s: MetState, j: CalJob): string | null {
 
 /* ---------------- reads ---------------- */
 
-export function listJobs(f: { state?: string; metrologist?: string; email?: string; discipline?: string } = {}): CalJob[] {
+function liveJobStatusToState(status: string): JobState {
+  const s = status.trim().toLowerCase();
+  const map: Record<string, JobState> = {
+    requested: "Requested",
+    quoted: "Quoted",
+    accepted: "Accepted",
+    received: "Received",
+    "in progress": "In Progress",
+    "under review": "Pending Review",
+    "pending review": "Pending Review",
+    reviewed: "Reviewed",
+    certified: "Certified",
+    dispatched: "Dispatched",
+    cancelled: "Cancelled",
+  };
+  return map[s] ?? "Requested";
+}
+
+function liveJobToCal(raw: {
+  id: string;
+  instrument: string;
+  customer?: string | null;
+  status: string;
+  due_date?: string | null;
+}): CalJob {
+  const state = liveJobStatusToState(raw.status);
+  const now = new Date().toISOString();
+  return {
+    id: raw.id,
+    state,
+    seq: 1,
+    customer: raw.customer || "—",
+    customer_email: "unknown",
+    contact: raw.customer || "—",
+    location: "lab",
+    items: [
+      {
+        id: `${raw.id}-1`,
+        description: raw.instrument,
+        serial: raw.instrument,
+        make: "",
+        model: "",
+        range: "",
+        resolution: "",
+        discipline: "Mass",
+      },
+    ],
+    discipline: "Mass",
+    accreditation: false,
+    preferred_date: raw.due_date || now.slice(0, 10),
+    delivery: "collect",
+    created_at: now,
+    due: raw.due_date || undefined,
+    worksheet: { method_id: "", refs: [], points: [], env: {}, attachments: [] },
+    history: [{ at: now, actor: "System", action: `Loaded from Core (${raw.status})`, to: state }],
+  };
+}
+
+export async function listJobs(f: { state?: string; metrologist?: string; email?: string; discipline?: string } = {}): Promise<CalJob[]> {
+  if (!demoDataEnabled()) {
+    const params = new URLSearchParams();
+    params.set("limit", "100");
+    if (f.state) params.set("status", f.state);
+    const res = await apiFetch<{ items: { id: string; instrument: string; customer?: string | null; status: string; due_date?: string | null }[] }>(
+      `/metrology/jobs?${params}`,
+    );
+    return (res.items ?? [])
+      .map(liveJobToCal)
+      .filter((j) => !f.metrologist || j.metrologist === f.metrologist)
+      .filter((j) => !f.discipline || j.discipline === f.discipline)
+      .filter((j) => {
+        const email = f.email?.toLowerCase();
+        return !email || j.customer_email.toLowerCase() === email;
+      })
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
   metStore.guard("Calibration jobs");
   reconcile();
   const email = f.email?.toLowerCase();
@@ -449,6 +526,7 @@ export function verifyCalCertificate(token: string): { valid: boolean; id?: stri
 /* ---------------- equipment & methods ---------------- */
 
 export function listEquipment(): LabEquipment[] {
+  if (!demoDataEnabled()) return [];
   metStore.guard("Lab equipment");
   return metStore.view((s) => Object.values(s.equipment).sort((a, b) => a.cal_due.localeCompare(b.cal_due)));
 }
@@ -534,7 +612,21 @@ export function capacity(): { name: string; disciplines: string[]; jobs: { id: s
   });
 }
 
-export function metrologyOverview() {
+export async function metrologyOverview() {
+  if (!demoDataEnabled()) {
+    const jobs = await listJobs();
+    const byState = Object.fromEntries(JOB_DEF.states.map((st) => [st.id, jobs.filter((j) => j.state === st.id).length]));
+    return {
+      byState,
+      open: jobs.filter((j) => !["Dispatched", "Cancelled"].includes(j.state)).length,
+      turnaround: 0,
+      sla: DEFAULT_MET_SETTINGS.lab_turnaround_days,
+      ootRate: 0,
+      equipmentDue: 0,
+      equipmentBlocked: 0,
+      testsOpen: 0,
+    };
+  }
   metStore.guard("Metrology");
   reconcile();
   const s = metStore.read();
@@ -558,6 +650,7 @@ export function metrologyOverview() {
 /* ---------------- LIMS test requests (M11) ---------------- */
 
 export function listTests(f: { state?: string } = {}): TestRequest[] {
+  if (!demoDataEnabled()) return [];
   metStore.guard("Test requests");
   reconcile();
   return metStore.view((s) => Object.values(s.tests).filter((t) => !f.state || t.state === f.state).sort((a, b) => b.requested_at.localeCompare(a.requested_at)));

@@ -235,7 +235,7 @@ function IntakeDialog({ onClose, onDone, by }: { onClose: () => void; onDone: (i
       canSubmit={Boolean(v.org.trim() && v.scope.trim() && v.contact.trim())}
       onClose={onClose}
       onSubmit={async () => {
-        const a = createApplication(
+        const a = await createApplication(
           {
             scheme: v.scheme,
             org: v.org,

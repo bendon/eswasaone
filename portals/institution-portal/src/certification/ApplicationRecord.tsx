@@ -60,6 +60,22 @@ export function ApplicationRecordPage() {
   );
 }
 
+/** Map application workflow state to the most relevant record tab. */
+const STATE_TO_TAB: Record<string, string> = {
+  "Submitted": "docs",
+  "Document Review": "docs",
+  "Awaiting Customer": "docs",
+  "Quoted": "quote",
+  "Audit Planned": "plan",
+  "Audit in Progress": "findings",
+  "NC Resolution": "findings",
+  "Technical Review": "review",
+  "Decision": "decision",
+  "Certified": "certificate",
+  "Rejected": "history",
+  "Withdrawn": "history",
+};
+
 function Record({ b, actor, show, toast }: { b: AppBundle; actor: Actor; show: (m: string) => void; toast: React.ReactNode }) {
   const a = b.app;
   const acts = appActions(a.id, actor);
@@ -82,6 +98,7 @@ function Record({ b, actor, show, toast }: { b: AppBundle; actor: Actor; show: (
         title={a.org}
         state={stateDef(APP_DEF, a.state)?.label}
         tone={stateDef(APP_DEF, a.state)?.tone}
+        defaultTab={STATE_TO_TAB[a.state] ?? "docs"}
         chips={sla ? <span className={`crm-sla crm-sla--${sla.status}`}>{sla.label}</span> : null}
         actions={
           <Acts

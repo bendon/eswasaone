@@ -286,7 +286,7 @@
 .crm-ws__back svg { width: 14px; height: 14px; stroke: currentColor; }
 .crm-ws__back:hover { color: var(--navy); }
 .crm-ws__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
-.crm-ws__rail { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 84px; }
+.crm-ws__rail { display: flex; flex-direction: column; gap: 14px; position: sticky; top: calc(var(--top-h, 64px) + var(--subtabs-h, 42px) + 16px); }
 @media (max-width: 1100px) { .crm-ws__rail { position: static; } }
 
 .crm-summary { font-size: 13px; line-height: 1.55; color: var(--ink); background: linear-gradient(135deg, var(--navy-l), color-mix(in srgb, var(--gold-soft) 50%, var(--card))); border-radius: 12px; padding: 12px 14px; display: flex; gap: 10px; }
@@ -337,7 +337,7 @@
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
 }
-.crm-composer__tabs button.on { color: var(--navy); border-bottom-color: var(--navy); }
+.crm-composer__tabs button.on { color: var(--gold-d); border-bottom-color: var(--gold); }
 .crm-composer__tabs button.on.internal { color: var(--gold-d); border-bottom-color: var(--gold); }
 .crm-composer textarea { border: 0; border-radius: 0; min-height: 110px; box-shadow: none !important; }
 .crm-composer--internal textarea { background: color-mix(in srgb, var(--gold-soft) 45%, var(--card)); }
@@ -433,9 +433,9 @@
 .crm-health--watch::before { background: var(--amber); }
 .crm-health--risk::before { background: var(--red); }
 
-.crm-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 16px; overflow-x: auto; }
+.crm-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 16px; overflow-x: auto; overflow-y: hidden; }
 .crm-tabs button { border: 0; background: none; font: inherit; font-size: 13px; font-weight: 700; color: var(--muted); padding: 10px 13px; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; gap: 6px; align-items: center; }
-.crm-tabs button.on { color: var(--navy); border-bottom-color: var(--navy); }
+.crm-tabs button.on { color: var(--gold-d); border-bottom-color: var(--gold); }
 .crm-tabs button .n { font-size: 11px; background: var(--line-2); border-radius: 999px; padding: 0 6px; color: var(--muted); }
 
 /* Renewals buckets */
@@ -476,6 +476,10 @@
 }
 .crm-drawer--wide { width: min(820px, 100vw); }
 @keyframes crmIn { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+@keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
+@keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.8; } }
 .crm-drawer__h { padding: 18px 22px 14px; border-bottom: 1px solid var(--line-2); display: flex; align-items: flex-start; gap: 12px; }
 .crm-drawer__h h3 { font-size: 17px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
 .crm-drawer__h p { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); }
@@ -552,7 +556,7 @@
 .crm-steps { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
 .crm-steps li { list-style: none; display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--muted-2); padding: 7px 12px 7px 7px; border-radius: 999px; background: var(--line-2); }
 .crm-steps li i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11px; background: var(--card); color: var(--muted); }
-.crm-steps li.on { background: var(--navy); color: #fff; }
+.crm-steps li.on { background: var(--gold-d); color: #fff; }
 .crm-steps li.on i { background: var(--gold); color: var(--gold-ink); }
 .crm-steps li.done { background: var(--navy-l); color: var(--navy); }
 .crm-steps li.done i { background: var(--navy); color: #fff; }

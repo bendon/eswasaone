@@ -177,8 +177,8 @@ export function InstitutionLayout() {
     }
     let cancelled = false;
     void Promise.allSettled([
-      apiFetch<{ pending_count: number }>("/approvals?limit=1"),
-      apiFetch<{ new_count: number }>("/tbt/alerts?limit=1"),
+      apiFetch<{ pending_count: number }>("/approvals?limit=1", { quiet: true }),
+      apiFetch<{ new_count: number }>("/tbt/alerts?limit=1", { quiet: true }),
     ]).then(async (results) => {
       if (cancelled) return;
       const next: BadgePayload = {};

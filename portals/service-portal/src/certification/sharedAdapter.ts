@@ -4,10 +4,41 @@
  * same record in demo mode (gap 05: "promote deskApi into shared-ui/certification").
  * Customer wording comes from the workflow definition (displayState, gap 01 C9).
  */
-import { APP_DEF, getApplication, listApplications, listCertificates, REG_DEF, type AppBundle, type CertApplication } from "@eswasaone/shared-ui/certification";
+import {
+  APP_DEF,
+  certStore,
+  listCertificates,
+  peekApplication,
+  REG_DEF,
+  type AppBundle,
+  type CertApplication,
+} from "@eswasaone/shared-ui/certification";
 import { visitsFor } from "@eswasaone/shared-ui/field";
 import { displayState } from "@eswasaone/shared-ui/workflow";
 import type { AppAudit, AppDocument, ApplicationDetail, Certificate, Finding, LabResult } from "../api/certification";
+
+/** Sync demo-store bundle (avoids async getApplication for tracker merge). */
+function peekBundle(id: string): AppBundle | null {
+  const a = peekApplication(id) ?? certStore.read().apps[id];
+  if (!a) return null;
+  const s = certStore.read();
+  return {
+    app: a,
+    scheme: s.settings.schemes.find((x) => x.code === a.scheme),
+    visits: (() => {
+      try {
+        return visitsFor(a.id);
+      } catch {
+        return [];
+      }
+    })(),
+    samples: [],
+    tests: [],
+    invoice: null,
+    certificate: a.certificate_id ? s.certs[a.certificate_id] ?? null : null,
+    settings: s.settings,
+  };
+}
 
 function stageOf(a: CertApplication, b?: AppBundle): string {
   const visitsClosed = (b?.visits ?? []).filter((v) => v.state === "Closed").length;
@@ -93,7 +124,13 @@ export function toDetail(b: AppBundle): ApplicationDetail {
 
 export function sharedList(email?: string): ApplicationDetail[] {
   try {
-    return listApplications({ email }).map((a) => toDetail(getApplication(a.id)!));
+    const apps = Object.values(certStore.read().apps).filter(
+      (a) => !email || a.customer_email === "demo" || a.customer_email.toLowerCase() === email.toLowerCase(),
+    );
+    return apps
+      .map((a) => peekBundle(a.id))
+      .filter((b): b is AppBundle => Boolean(b))
+      .map((b) => toDetail(b));
   } catch {
     return [];
   }
@@ -101,7 +138,7 @@ export function sharedList(email?: string): ApplicationDetail[] {
 
 export function sharedDetail(id: string): ApplicationDetail | null {
   try {
-    const b = getApplication(id);
+    const b = peekBundle(id);
     return b ? toDetail(b) : null;
   } catch {
     return null;
@@ -110,7 +147,7 @@ export function sharedDetail(id: string): ApplicationDetail | null {
 
 export function isShared(id: string): boolean {
   try {
-    return Boolean(getApplication(id));
+    return Boolean(peekApplication(id) ?? certStore.read().apps[id]);
   } catch {
     return false;
   }

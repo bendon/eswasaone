@@ -556,7 +556,14 @@ export function RegisterView() {
               <Tile key={s.id} label={s.label} value={certs.filter((c) => c.state === s.id).length} tone={s.id === "Suspended" ? "red" : s.id === "Surveillance Due" ? "amber" : undefined} to="/certification/certificates" />
             ))}
           </div>
-          {cases.loading && !cases.data ? <p className="crm-muted">Loading cases…</p> : null}
+          {cases.notConnected ? (
+            <div className="crm-empty" role="status">
+              <Icon name="i-link" />
+              <b>Case register isn't connected yet</b>
+              <p>CRM cases and appeals need the Core Engine case management system, which is not live yet.</p>
+            </div>
+          ) : cases.loading && !cases.data ? <p className="crm-muted">Loading cases…</p> : null}
+          {!cases.notConnected && (cases.data ?? []).length > 0 && (
           <table className="crm-table">
             <thead>
               <tr>
@@ -584,6 +591,7 @@ export function RegisterView() {
               ))}
             </tbody>
           </table>
+          )}
         </div>
       )}
     </Gate>

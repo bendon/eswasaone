@@ -204,7 +204,7 @@
 .eo-diff del { background: var(--red-l); }
 .eo-reader { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; }
 @media (max-width: 900px) { .eo-reader { grid-template-columns: 1fr; } }
-.eo-reader__toc { position: sticky; top: 84px; align-self: start; display: flex; flex-direction: column; gap: 4px; }
+.eo-reader__toc { position: sticky; top: calc(var(--top-h, 64px) + var(--subtabs-h, 42px) + 16px); align-self: start; display: flex; flex-direction: column; gap: 4px; }
 .eo-reader__toc a { font-size: 13px; color: var(--muted); text-decoration: none; padding: 5px 8px; border-radius: 8px; }
 .eo-reader__toc a:hover { background: var(--navy-l); color: var(--navy); }
 .eo-reader__sec { border-bottom: 1px solid var(--line-2); padding: 16px 0; }

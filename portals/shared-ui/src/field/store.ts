@@ -10,6 +10,7 @@
  *   GET /field/me/visits, GET/POST /field/samples, POST /field/samples/{id}/custody {action, seal},
  *   POST /field/visits/{id}/confirm | reschedule (customer).
  */
+import { demoDataEnabled } from "../demo";
 import { notifySafe } from "../notify/store";
 import { createLocalStore, isoIn, nowIso } from "../store/localStore";
 import { DEMO_STAFF, onLeave, staffByName, type StaffMember } from "../tasks/staff";
@@ -129,6 +130,8 @@ function receiptTask(smp: Sample) {
 export type VisitFilter = { type?: VisitType | ""; state?: string; parent?: string; person?: string; module?: string; client_email?: string };
 
 export function listVisits(f: VisitFilter = {}): FieldVisit[] {
+  // TODO: wire real — GET /field/visits (Core currently exposes /field/me/* and visit act only).
+  if (!demoDataEnabled()) return [];
   fieldStore.guard("Field visits");
   reconcile(fieldStore.read());
   const email = f.client_email?.toLowerCase();
@@ -145,6 +148,7 @@ export function listVisits(f: VisitFilter = {}): FieldVisit[] {
 }
 
 export function getVisit(id: string): FieldVisit | null {
+  if (!demoDataEnabled()) return peekVisit(id);
   fieldStore.guard("Field visit");
   reconcile(fieldStore.read());
   return fieldStore.view((s) => s.visits[id] ?? null);
@@ -461,8 +465,9 @@ export function resolveConflict(id: string, actor: Actor, note: string): void {
 /* ---------------- samples & chain of custody ---------------- */
 
 export function listSamples(f: { holder?: string; state?: string; parent?: string; visit?: string } = {}): Sample[] {
-  fieldStore.guard("Samples");
-  reconcile(fieldStore.read());
+  // TODO: wire real — GET /field/samples.
+  if (!demoDataEnabled()) return [];
+  fieldStore.guard("Samples");  reconcile(fieldStore.read());
   return fieldStore.view((s) =>
     Object.values(s.samples)
       .filter((x) => !f.holder || x.holder === f.holder || x.collected_by === f.holder)

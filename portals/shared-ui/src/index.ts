@@ -85,6 +85,11 @@ export {
   type FormDrawerProps,
 } from "./components/FormDrawer";
 export { FileDownload, type FileDownloadProps } from "./components/FileDownload";
+export {
+  NotConnectedPanel,
+  ResourceGate,
+  useResourceState,
+} from "./components/NotConnectedPanel";
 
 export { apiBase, wsBase, apiFetch, askAgent } from "./api/client";
 export {

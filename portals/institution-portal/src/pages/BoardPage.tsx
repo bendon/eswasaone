@@ -45,7 +45,7 @@ export function BoardPage() {
           </div>
         </div>
       </ModulePageShell>
-      <ScheduleDrawer open={open} onClose={() => setOpen(false)} bodies={bodies.data ?? []} />
+      <ScheduleDrawer open={open} onClose={() => setOpen(false)} bodies={bodies.notConnected ? [] : (bodies.data ?? [])} />
     </div>
   );
 }

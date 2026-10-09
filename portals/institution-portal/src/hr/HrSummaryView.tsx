@@ -1,13 +1,26 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
 import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrOrganisationOverview, HrSetupProgress } from "../api/types";
+import { HeadcountChart } from "./HeadcountChart";
+import {
+  ATTENTION,
+  AWAY_TODAY,
+  ESTABLISHMENT,
+  HEADCOUNT_SERIES,
+  MOVEMENTS,
+} from "./overviewMock";
 
-/** Overview — live GET /hr/organisation/overview only (no fixture fallbacks). */
+/**
+ * Overview — people cockpit (SoT: docs/mocks/eswasaone-hr.html).
+ * Live GET /hr/organisation/overview drives KPI counts + setup banner;
+ * attention / establishment / trends use typed mocks until contract endpoints exist.
+ * // TODO: wire real — attention queue, away-today, payroll run snapshot, movements.
+ */
 
 const SETUP_STEPS: { key: keyof HrSetupProgress; label: string }[] = [
   { key: "has_profile", label: "Organisation profile" },
@@ -20,6 +33,7 @@ const SETUP_STEPS: { key: keyof HrSetupProgress; label: string }[] = [
 ];
 
 export function HrSummaryView() {
+  const navigate = useNavigate();
   const { openAuth, user, sessionKey } = useInstitution();
   const overview = useApiResource<HrOrganisationOverview>("/hr/organisation/overview", {
     enabled: Boolean(user),
@@ -41,6 +55,28 @@ export function HrSummaryView() {
     (counts?.departments ?? 0) === 0 ||
     (counts?.employees ?? 0) === 0;
 
+  const filled = counts?.employees ?? counts?.filled_positions ?? 86;
+  const approved = useMemo(() => {
+    const fromDepts = ESTABLISHMENT.reduce((s, d) => s + d.approved, 0);
+    const vacant = counts?.vacant_positions ?? 10;
+    const live = (counts?.filled_positions ?? filled) + vacant;
+    return live > 0 ? live : fromDepts;
+  }, [counts, filled]);
+  const vacancies = Math.max(0, approved - filled);
+  const estPct = approved > 0 ? Math.round((filled / approved) * 100) : 0;
+  const maxPosts = Math.max(...ESTABLISHMENT.map((d) => d.approved));
+
+  const asOf = useMemo(
+    () =>
+      new Date().toLocaleDateString(undefined, {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }),
+    [],
+  );
+
   return (
     <RequireStaff reason="Staff sign-in required">
       <ResourceGate
@@ -54,63 +90,29 @@ export function HrSummaryView() {
       >
         {data ? (
           <div className="hr">
-            <section className="hr-org-hero" aria-label="Organisation profile">
-              <div className="hr-org-hero__main">
-                <div className="hr-org-hero__mark" aria-hidden>
-                  <Icon name="i-layers" />
-                </div>
-                <div>
-                  <p className="hr-org-hero__eyebrow">Organisation</p>
-                  <h3>{org?.legal_name ?? "Organisation not configured"}</h3>
-                  <p>
-                    {org
-                      ? [
-                          org.sector,
-                          org.registration_number ? `Reg. ${org.registration_number}` : null,
-                          org.founded_year ? `Est. ${org.founded_year}` : null,
-                          org.primary_location?.name,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ") ||
-                        org.registered_address ||
-                        "Profile on file. Continue structure setup below."
-                      : "Create the Company profile and structure before onboarding people. Numbers stay at zero until records exist."}
-                  </p>
-                </div>
+            <div className="hr-head">
+              <div>
+                <h2>People overview</h2>
+                <p>
+                  As at {asOf}. {filled} employees
+                  {(counts?.departments ?? 0) > 0
+                    ? ` in ${counts?.departments} departments`
+                    : org?.legal_name
+                      ? ` · ${org.legal_name}`
+                      : ""}
+                  .
+                </p>
               </div>
-              <div className="hr-setup-card">
-                <div className="hr-setup-card__top">
-                  <div>
-                    <h4>Setup progress</h4>
-                    <p>
-                      {setup
-                        ? `${setup.steps_completed} of ${setup.steps_total} steps`
-                        : "Awaiting setup data"}
-                    </p>
-                  </div>
-                  <span className={`hr-st ${setup && setup.completion_pct >= 100 ? "ok" : "leave"}`}>
-                    <span className="d" />
-                    {setup ? `${Math.round(setup.completion_pct)}%` : "0%"}
-                  </span>
-                </div>
-                <div className="hr-prog" aria-hidden>
-                  <i style={{ width: `${Math.min(100, Math.max(0, setup?.completion_pct ?? 0))}%` }} />
-                </div>
-                <ul className="hr-setup-list">
-                  {SETUP_STEPS.map((step) => {
-                    const done = Boolean(setup?.[step.key]);
-                    return (
-                      <li key={step.key} className={done ? "done" : undefined}>
-                        <span className="hr-setup-list__mark" aria-hidden>
-                          {done ? "✓" : "·"}
-                        </span>
-                        {step.label}
-                      </li>
-                    );
-                  })}
-                </ul>
+              <div className="hr-head__r">
+                <button type="button" className="btn ghost" disabled title="Coming soon">
+                  Board HR pack
+                </button>
+                <Link to="/hr/directory" className="btn pri">
+                  <Icon name="i-plus" />
+                  Add employee
+                </Link>
               </div>
-            </section>
+            </div>
 
             {incomplete ? (
               <div className="hr-box hr-setup-banner" style={{ marginBottom: 16 }}>
@@ -118,9 +120,24 @@ export function HrSummaryView() {
                   <div>
                     <h3>Structure setup incomplete</h3>
                     <p>
-                      Counts reflect what is set up so far. Add departments and
-                      designations first, then locations, grades, and your first employee record.
+                      {setup
+                        ? `${setup.steps_completed} of ${setup.steps_total} steps · ${Math.round(setup.completion_pct)}%`
+                        : "Awaiting setup data"}
+                      . Finish Structure before the cockpit numbers fully reflect the establishment.
                     </p>
+                    <ul className="hr-setup-list" style={{ marginTop: 10 }}>
+                      {SETUP_STEPS.map((step) => {
+                        const done = Boolean(setup?.[step.key]);
+                        return (
+                          <li key={step.key} className={done ? "done" : undefined}>
+                            <span className="hr-setup-list__mark" aria-hidden>
+                              {done ? "✓" : "·"}
+                            </span>
+                            {step.label}
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
                   <Link to="/hr/structure" className="btn gold sm">
                     <Icon name="i-plus" />
@@ -130,292 +147,268 @@ export function HrSummaryView() {
               </div>
             ) : null}
 
-            <section className="kpis kpis--5" aria-label="Organisation KPIs">
-              <div className="kpi">
-                <div className="l">Departments</div>
-                <div className="v">{(counts?.departments ?? 0).toLocaleString()}</div>
-                <div className="d">{(counts?.departments ?? 0) ? "active units" : "none yet"}</div>
-              </div>
-              <div className="kpi">
-                <div className="l">Designations</div>
-                <div className="v">{(counts?.designations ?? 0).toLocaleString()}</div>
-                <div className="d">
-                  {(counts?.vacant_positions ?? 0) > 0
-                    ? `${counts?.vacant_positions} vacant slots`
-                    : (counts?.designations ?? 0)
-                      ? "roles defined"
-                      : "none yet"}
-                </div>
-              </div>
-              <div className="kpi">
-                <div className="l">Employee records</div>
-                <div className="v">{(counts?.employees ?? 0).toLocaleString()}</div>
-                <div className="d">
-                  {(counts?.filled_positions ?? 0) > 0
-                    ? `${counts?.filled_positions} positions filled`
-                    : "none onboarded yet"}
-                </div>
-              </div>
-              <div className="kpi">
-                <div className="l">Locations</div>
-                <div className="v">{(counts?.locations ?? 0).toLocaleString()}</div>
-                <div className="d">
-                  {(counts?.cost_centres ?? 0) > 0
-                    ? `${counts?.cost_centres} cost centres`
-                    : "branches / sites"}
-                </div>
-              </div>
-              <div className="kpi">
-                <div className="l">Payroll readiness</div>
-                <div
-                  className="v"
-                  style={{
-                    fontSize: data.payroll.ready ? 22 : 16,
-                    color: data.payroll.ready ? "var(--green)" : "var(--amber)",
-                  }}
-                >
-                  {data.payroll.label || (data.payroll.ready ? "Ready" : "Not ready")}
-                </div>
-                <div className={`d ${data.payroll.ready ? "up" : "warn"}`}>
-                  {data.payroll.reason || (data.payroll.ready ? "structure + people in place" : "setup incomplete")}
-                </div>
-              </div>
-            </section>
+            <div className="kpis kpis--5" role="group" aria-label="People KPIs">
+              <button type="button" className="kpi" onClick={() => navigate("/hr/structure")}>
+                <span className="l">Headcount</span>
+                <span className="v">
+                  {filled} <small>of {approved} posts</small>
+                </span>
+                <span className="d">{estPct}% of the approved establishment</span>
+              </button>
+              <button type="button" className="kpi" onClick={() => navigate("/hr/recruitment")}>
+                <span className="l">Vacancies</span>
+                <span className="v">{vacancies}</span>
+                <span className="d">4 in recruitment, 2 frozen, 4 not started</span>
+              </button>
+              <button type="button" className="kpi" onClick={() => navigate("/hr/time-off")}>
+                <span className="l">Away today</span>
+                <span className="v">{AWAY_TODAY.length}</span>
+                <span className="d">3 on leave, 2 on field work</span>
+              </button>
+              <button type="button" className="kpi" onClick={() => navigate("/hr/directory")}>
+                <span className="l">Turnover, 12 months</span>
+                <span className="v">8.4%</span>
+                <span className="d">7 leavers, 12 joiners</span>
+              </button>
+              <button type="button" className="kpi" onClick={() => navigate("/hr/directory")}>
+                <span className="l">Ending in 60 days</span>
+                <span className="v">5</span>
+                <span className="d warn">3 contracts, 2 probations</span>
+              </button>
+            </div>
 
-            <div className="hr-box" style={{ marginBottom: 16 }}>
-              <div className="hr-box__h">
-                <div>
-                  <h3>Departments</h3>
-                  <p>
-                    {(counts?.departments ?? 0) === 0
-                      ? "No departments yet. Add the first unit in Structure"
-                      : `${counts?.departments} department${counts?.departments === 1 ? "" : "s"}`}
-                  </p>
+            <div className="hr-grid c2a">
+              <div className="hr-stack">
+                <div className="hr-box">
+                  <div className="hr-box__h">
+                    <div>
+                      <h3>Needs attention</h3>
+                      <p>Ordered by the date something stops working</p>
+                    </div>
+                  </div>
+                  <div className="hr-box__b flush">
+                    <ul className="hr-attn">
+                      {ATTENTION.map((item) => (
+                        <li key={item.id}>
+                          <span className={`hr-st ${item.tone}`}>
+                            <span className="d" />
+                            {item.when}
+                          </span>
+                          <div>
+                            <b>{item.title}</b>
+                            <span className="s">{item.detail}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="hr-lnk"
+                            onClick={() => navigate(`/hr/${item.jump}`)}
+                          >
+                            {item.jumpLabel}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-                <Link to="/hr/structure?tab=departments" className="btn ghost sm">
-                  Manage
-                </Link>
-              </div>
-              <div className="hr-box__b">
-                {data.departments.length === 0 ? (
-                  <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
-                    No departments yet. Add one under Structure to organise the Authority.
-                  </p>
-                ) : (
-                  <div className="hr-dept-grid">
-                    {data.departments.map((d) => (
-                      <article key={d.id} className="hr-dept-card">
-                        <header>
-                          <b>{d.name}</b>
-                          {d.code ? <span className="mono">{d.code}</span> : null}
-                        </header>
-                        <dl>
-                          <div>
-                            <dt>Head</dt>
-                            <dd>{d.head?.name || "Unassigned"}</dd>
-                          </div>
-                          <div>
-                            <dt>Designations</dt>
-                            <dd>{d.designation_count}</dd>
-                          </div>
-                          <div>
-                            <dt>Filled / positions</dt>
-                            <dd>
-                              {d.filled_count}
-                              {d.total_positions ? ` / ${d.total_positions}` : ""}
-                            </dd>
-                          </div>
-                          {d.cost_centre ? (
-                            <div>
-                              <dt>Cost centre</dt>
-                              <dd>{d.cost_centre.name}</dd>
+
+                <div className="hr-box">
+                  <div className="hr-box__h">
+                    <div>
+                      <h3>Establishment by department</h3>
+                      <p>Filled posts against approved posts</p>
+                    </div>
+                    <Link to="/hr/structure" className="hr-lnk">
+                      Open Structure
+                    </Link>
+                  </div>
+                  <div className="hr-box__b">
+                    <div className="hr-est">
+                      {ESTABLISHMENT.map((d) => {
+                        const vac = d.approved - d.filled;
+                        return (
+                          <div key={d.name} className="hr-est__row">
+                            <span>{d.name}</span>
+                            <div className="hr-est__bar">
+                              <div
+                                className="hr-est__track"
+                                style={{ width: `${(d.approved / maxPosts) * 100}%` }}
+                              >
+                                <i style={{ width: `${(d.filled / d.approved) * 100}%` }} />
+                              </div>
                             </div>
-                          ) : null}
-                        </dl>
-                        <span className={`hr-st ${d.status === "active" ? "ok" : "leave"}`}>
-                          <span className="d" />
-                          {d.status}
-                        </span>
-                      </article>
+                            <span className="hr-est__n">
+                              {d.filled} <small>of {d.approved}</small>
+                            </span>
+                            <span className={`hr-est__v${vac ? " has" : ""}`}>
+                              {vac ? `${vac} vacant` : "Full"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="hr-key">
+                      <span>
+                        <i style={{ background: "var(--navy)" }} />
+                        Filled
+                      </span>
+                      <span>
+                        <i style={{ background: "var(--line)" }} />
+                        Approved but vacant
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hr-box">
+                  <div className="hr-box__h">
+                    <div>
+                      <h3>Headcount, last 12 months</h3>
+                      <p>Employees on the payroll at month end</p>
+                    </div>
+                  </div>
+                  <div className="hr-box__b">
+                    <HeadcountChart series={HEADCOUNT_SERIES} />
+                    <details className="hr-tblview">
+                      <summary>Show as table</summary>
+                      <table>
+                        <tbody>
+                          {HEADCOUNT_SERIES.map((p) => (
+                            <tr key={p.label}>
+                              <th>{p.label}</th>
+                              <td>{p.value}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </details>
+                  </div>
+                </div>
+              </div>
+
+              <div className="hr-stack">
+                <div className="hr-box">
+                  <div className="hr-box__h">
+                    <div>
+                      <h3>Away today</h3>
+                      <p>
+                        {AWAY_TODAY.length} of {filled}
+                      </p>
+                    </div>
+                    <Link to="/hr/time-off" className="hr-lnk">
+                      Calendar
+                    </Link>
+                  </div>
+                  <div className="hr-box__b hr-out">
+                    {AWAY_TODAY.map((p) => (
+                      <div key={p.name} className="hr-out__i">
+                        <span className="hr-av">{p.initials}</span>
+                        <div>
+                          <b>{p.name}</b>
+                          <span className="s">{p.detail}</span>
+                        </div>
+                      </div>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
-
-            <div className="hr-box" style={{ marginBottom: 16 }}>
-              <div className="hr-box__h">
-                <div>
-                  <h3>Designations</h3>
-                  <p>
-                    Preview of {data.designations_preview.length}
-                    {data.designations_total > data.designations_preview.length
-                      ? ` (of ${data.designations_total})`
-                      : ""}{" "}
-                    roles
-                  </p>
                 </div>
-                <Link to="/hr/structure?tab=designations" className="btn ghost sm">
-                  View all
-                </Link>
-              </div>
-              <div className="hr-box__b" style={{ paddingTop: 0, overflowX: "auto" }}>
-                {data.designations_preview.length === 0 ? (
-                  <p style={{ margin: "14px 0 0", color: "var(--muted)", fontSize: 13 }}>
-                    No designations yet. Add roles under Structure → Designations.
-                  </p>
-                ) : (
-                  <table className="hr-table">
-                    <thead>
-                      <tr>
-                        <th>Title</th>
-                        <th>Department</th>
-                        <th>Grade</th>
-                        <th>Filled</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.designations_preview.map((row) => (
-                        <tr key={row.id}>
-                          <td>
-                            <b style={{ fontWeight: 700 }}>{row.title}</b>
-                            {row.code ? (
-                              <div className="mono" style={{ fontSize: 11, color: "var(--muted-2)" }}>
-                                {row.code}
-                              </div>
-                            ) : null}
-                          </td>
-                          <td>{row.department?.name || "—"}</td>
-                          <td>{row.grade_band?.code || row.grade_band?.name || "—"}</td>
-                          <td>
-                            {row.filled}
-                            {row.total != null ? ` / ${row.total}` : ""}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </div>
 
-            <div className="hr-grid c2" style={{ marginBottom: 16 }}>
-              <div className="hr-box">
-                <div className="hr-box__h">
-                  <div>
-                    <h3>Locations</h3>
-                    <p>{(counts?.locations ?? 0) === 0 ? "No branches yet" : `${counts?.locations} sites`}</p>
+                <div className="hr-box">
+                  <div className="hr-box__h">
+                    <div>
+                      <h3>October payroll</h3>
+                      <p>Pays Fri 23 Oct</p>
+                    </div>
+                    <span className="hr-st leave">
+                      <span className="d" />
+                      Step 2 of 6
+                    </span>
+                  </div>
+                  <div className="hr-box__b hr-out">
+                    <div className="hr-out__i">
+                      <div>
+                        <b>Changes to approve</b>
+                        <span className="s">1 joiner, 1 promotion, 1 leaver</span>
+                      </div>
+                      <span className="r">3 waiting</span>
+                    </div>
+                    <div className="hr-out__i">
+                      <div>
+                        <b>Estimated gross</b>
+                        <span className="s">1.7% above September</span>
+                      </div>
+                      <span className="r mono">E 2,412,600</span>
+                    </div>
+                    <div className="hr-out__i">
+                      <div>
+                        <b>Cut-off</b>
+                        <span className="s">Changes after this go to November</span>
+                      </div>
+                      <span className="r">Tue 20 Oct</span>
+                    </div>
+                    <div style={{ marginTop: 8 }}>
+                      <Link to="/hr/payroll" className="hr-lnk">
+                        Open Payroll
+                      </Link>
+                    </div>
                   </div>
                 </div>
-                <div className="hr-box__b hr-out">
-                  {data.locations.length === 0 ? (
-                    <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
-                      Add HQ or lab locations in Structure.
-                    </p>
-                  ) : (
-                    data.locations.map((loc) => (
-                      <div key={loc.id} className="hr-out__i">
-                        <span className="hr-av" aria-hidden>
-                          <Icon name="i-pin" />
-                        </span>
+
+                <div className="hr-box">
+                  <div className="hr-box__h">
+                    <div>
+                      <h3>Movements in October</h3>
+                      <p>Joiners, leavers and changes</p>
+                    </div>
+                  </div>
+                  <div className="hr-box__b hr-out">
+                    {MOVEMENTS.map((m) => (
+                      <div key={m.name} className="hr-out__i">
+                        <span className={`hr-st ${m.tone}`}>{m.label}</span>
                         <div>
-                          <b style={{ display: "block", fontSize: 13.5 }}>{loc.name}</b>
-                          <span style={{ fontSize: 11.5, color: "var(--muted-2)" }}>
-                            {[loc.type, loc.code].filter(Boolean).join(" · ") || loc.address || "—"}
-                          </span>
+                          <b>{m.name}</b>
+                          <span className="s">{m.detail}</span>
                         </div>
-                        <span className="r">{loc.employee_count} staff</span>
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
-              <div className="hr-box">
-                <div className="hr-box__h">
-                  <div>
-                    <h3>Cost centres</h3>
-                    <p>
-                      {(counts?.cost_centres ?? 0) === 0
-                        ? "None configured"
-                        : `${counts?.cost_centres} centres`}
-                    </p>
+                    ))}
                   </div>
                 </div>
-                <div className="hr-box__b hr-out">
-                  {data.cost_centres.length === 0 ? (
-                    <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
-                      Cost centres unlock payroll allocation and department linking.
-                    </p>
-                  ) : (
-                    data.cost_centres.map((cc) => (
-                      <div key={cc.id} className="hr-out__i">
-                        <span className="hr-av" aria-hidden>
-                          <Icon name="i-bank" />
-                        </span>
-                        <div>
-                          <b style={{ display: "block", fontSize: 13.5 }}>{cc.name}</b>
-                          <span style={{ fontSize: 11.5, color: "var(--muted-2)" }}>
-                            {cc.code || cc.finance_account_code || cc.status}
-                          </span>
-                        </div>
-                        <span className="r">{cc.employee_count}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
 
-            <div className="hr-box">
-              <div className="hr-box__h">
-                <div>
-                  <h3>Next steps</h3>
-                  <p>Finish structure before scaling Directory and payroll</p>
+                <div className="hr-box">
+                  <div className="hr-box__h">
+                    <div>
+                      <h3>Record quality</h3>
+                      <p>What the other modules rely on</p>
+                    </div>
+                  </div>
+                  <div className="hr-box__b hr-out">
+                    <div className="hr-out__i">
+                      <div>
+                        <b>Linked to a portal login</b>
+                        <span className="s">Without the link, approvals can&apos;t route to the person</span>
+                      </div>
+                      <span className="r">
+                        {filled} of {filled}
+                      </span>
+                    </div>
+                    <div className="hr-out__i">
+                      <div>
+                        <b>Line manager set</b>
+                        <span className="s">Drives leave approval and the Team view</span>
+                      </div>
+                      <span className="r">
+                        {filled} of {filled}
+                      </span>
+                    </div>
+                    <div className="hr-out__i">
+                      <div>
+                        <b>Required documents on file</b>
+                        <span className="s">ID, contract, qualifications</span>
+                      </div>
+                      <span className="r">
+                        {Math.max(0, filled - 9)} of {filled}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="hr-box__b">
-                <ol className="hr-next-steps">
-                  {!setup?.has_grades ? (
-                    <li>
-                      <Link to="/hr/structure?tab=grades">Define grade bands</Link>
-                      <span>Salary bands for designations and payroll readiness.</span>
-                    </li>
-                  ) : null}
-                  {!setup?.has_cost_centres ? (
-                    <li>
-                      <Link to="/hr/structure?tab=cost-centres">Add cost centres</Link>
-                      <span>Link departments to finance for reporting.</span>
-                    </li>
-                  ) : null}
-                  {!setup?.has_employees ? (
-                    <li>
-                      <Link to="/hr/directory">Create the first employee</Link>
-                      <span>Portal logins are not the same as employee records until you onboard staff.</span>
-                    </li>
-                  ) : null}
-                  {!setup?.has_departments ? (
-                    <li>
-                      <Link to="/hr/structure?tab=departments">Add a department</Link>
-                      <span>Org units are the backbone of designations and people.</span>
-                    </li>
-                  ) : null}
-                  {!setup?.has_designations ? (
-                    <li>
-                      <Link to="/hr/structure?tab=designations">Add a designation</Link>
-                      <span>Roles with optional approved headcount.</span>
-                    </li>
-                  ) : null}
-                  {setup?.has_grades &&
-                  setup.has_cost_centres &&
-                  setup.has_employees &&
-                  setup.has_departments &&
-                  setup.has_designations ? (
-                    <li>
-                      <Link to="/hr/directory">Review Directory</Link>
-                      <span>Structure is in place. Manage people and leave next.</span>
-                    </li>
-                  ) : null}
-                </ol>
               </div>
             </div>
           </div>

@@ -7,6 +7,10 @@
   margin-bottom: 16px;
   overflow-x: auto;
   scrollbar-width: none;
+  position: sticky;
+  top: var(--top-h, 64px);
+  z-index: 30;
+  background: var(--bg);
 }
 .subtabs::-webkit-scrollbar {
   display: none;
@@ -39,8 +43,8 @@
   color: var(--ink);
 }
 .subtab.on {
-  color: var(--navy);
-  border-bottom-color: var(--navy);
+  color: var(--tab-on, var(--gold-d));
+  border-bottom-color: var(--gold);
   font-weight: 700;
 }
 

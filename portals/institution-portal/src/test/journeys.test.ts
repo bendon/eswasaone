@@ -53,14 +53,14 @@ describe("certification journey (gap 05)", () => {
     customerUploadDoc(id, "internal_audit", "ia-2026.pdf", "Sipho");
     customerUploadDoc(id, "mgmt_review", "mr-2026.pdf", "Sipho");
     await customerRespondInfo(id, "Both attached.", "Sipho");
-    expect(getApplication(id)!.app.state).toBe("Document Review");
-    for (const d of getApplication(id)!.app.documents) setDocStatus(id, d.key, "acceptable", "", officer);
+    expect((await getApplication(id))!.app.state).toBe("Document Review");
+    for (const d of (await getApplication(id))!.app.documents) setDocStatus(id, d.key, "acceptable", "", officer);
     await issueQuote(id, [{ label: "Audit", qty: 4, unit_price: 6500 }], 4, officer);
     const { invoice } = customerAcceptQuote(id, { name: "Sipho Nkambule", title: "MD" }, "Sipho");
     await expect(confirmDeposit(id, "Sipho")).rejects.toThrow(/deposit/);
     await payInvoice(invoice.id, getInvoice(invoice.id)!.deposit!, "momo");
     await confirmDeposit(id, "Sipho");
-    expect(getApplication(id)!.app.state).toBe("Audit Planned");
+    expect((await getApplication(id))!.app.state).toBe("Audit Planned");
 
     // Plan, assign, accept, customer confirms, field work, review by someone else.
     addStage(id, { label: "Stage 2", date: new Date(Date.now() + 86_400_000).toISOString(), days: 3 }, manager);
@@ -76,7 +76,7 @@ describe("certification journey (gap 05)", () => {
     await actOnVisit(v.id, "submit", lead, { expected_state: "In Progress" });
     await expect(actOnVisit(v.id, "close", { ...lead, roles: ["Certification Manager"] }, { expected_state: "Submitted" })).rejects.toThrow(/different reviewer|led this visit/i);
     await actOnVisit(v.id, "close", manager, { expected_state: "Submitted" });
-    const app = getApplication(id)!.app;
+    const app = (await getApplication(id))!.app;
     expect(app.state).toBe("NC Resolution");
     expect(app.duties?.["Audit team"]).toContain(lead.name);
 
@@ -89,7 +89,7 @@ describe("certification journey (gap 05)", () => {
     await completeTechnicalReview(id, { checklist: TR_CHECKLIST.map((c) => ({ ...c, ok: true })), recommendation: "grant", justification: "fine" }, reviewer);
     await expect(actOnApplication(id, "grant", { name: reviewer.name, roles: ["Certification Manager"] }, { expected_state: "Decision" })).rejects.toThrow();
     await actOnApplication(id, "grant", manager, { expected_state: "Decision" });
-    const done = getApplication(id)!;
+    const done = (await getApplication(id))!;
     expect(done.app.state).toBe("Certified");
     expect(done.certificate?.state).toBe("Active");
   });

@@ -12,7 +12,9 @@
  *   PUT /standards/catalogue/{id}, POST /standards/catalogue/{id}/review,
  *   GET/POST/DELETE /standards/subscriptions, GET/PUT /standards/settings.
  */
+import { apiFetch } from "../api/client";
 import { createSignal } from "../crm/store";
+import { demoDataEnabled } from "../demo";
 import { notifySafe } from "../notify/store";
 import { createLocalStore, isoIn, nowIso } from "../store/localStore";
 import { openTask, reconcileTasks, syncRecordTasks, taskStore } from "../tasks/store";
@@ -134,6 +136,8 @@ export async function resetStandardsDemo(): Promise<void> {
 /* ---------------- work items ---------------- */
 
 export function listWorkItems(f: { state?: string; tc?: string } = {}): WorkItem[] {
+  // TODO: wire real — GET /standards/workitems once response maps to WorkItem.
+  if (!demoDataEnabled()) return [];
   stdStore.guard("Work programme");
   reconcile();
   return stdStore.view((s) => Object.values(s.items).filter((w) => (!f.state || w.state === f.state) && (!f.tc || w.tc_id === f.tc)).sort((a, b) => a.ref.localeCompare(b.ref)));
@@ -292,12 +296,14 @@ export function createWorkItem(input: Pick<WorkItem, "ref" | "title" | "scope" |
 
 /** "Have your say": drafts open for public comment. */
 export function openDrafts(): (WorkItem & { tc_name: string; comments: number })[] {
+  if (!demoDataEnabled()) return [];
   stdStore.guard("Drafts for comment");
   reconcile();
   return stdStore.view((s) => Object.values(s.items).filter((w) => w.state === "Public Review").map((w) => ({ ...w, tc_name: `${s.tcs[w.tc_id]?.number} ${s.tcs[w.tc_id]?.name}`, comments: Object.values(s.comments).filter((c) => c.work_item_id === w.id).length })).sort((a, b) => (a.comment_period?.closes ?? "").localeCompare(b.comment_period?.closes ?? "")));
 }
 
 export function listComments(f: { wi?: string; email?: string } = {}): (DraftComment & { wi_ref: string; wi_title: string; wi_state: string })[] {
+  if (!demoDataEnabled()) return [];
   stdStore.guard("Comments");
   reconcile();
   const e = f.email?.toLowerCase();
@@ -426,6 +432,7 @@ export function getBallot(id: string): { ballot: Ballot; wi: WorkItem; tc: Techn
 }
 
 export function listBallots(): (Ballot & { wi_ref: string; wi_title: string })[] {
+  if (!demoDataEnabled()) return [];
   stdStore.guard("Ballots");
   reconcile();
   return stdStore.view((s) => Object.values(s.ballots).map((b) => ({ ...b, wi_ref: s.items[b.work_item_id]?.ref ?? "", wi_title: s.items[b.work_item_id]?.title ?? "" })).sort((a, b) => b.opens.localeCompare(a.opens)));
@@ -486,6 +493,7 @@ export function myBallots(email?: string): { ballot: Ballot; wi: WorkItem; membe
 /* ---------------- proposals (R-S1) ---------------- */
 
 export function listProposals(f: { email?: string; state?: string } = {}): Proposal[] {
+  if (!demoDataEnabled()) return [];
   stdStore.guard("Proposals");
   reconcile();
   const e = f.email?.toLowerCase();
@@ -545,12 +553,14 @@ export async function actOnProposal(id: string, action: string, actor: Actor, in
 /* ---------------- committees ---------------- */
 
 export function listTcs(): TechnicalCommittee[] {
+  if (!demoDataEnabled()) return [];
   stdStore.guard("Technical committees");
   reconcile();
   return stdStore.view((s) => Object.values(s.tcs));
 }
 
 export function getTc(id: string): TechnicalCommittee | null {
+  if (!demoDataEnabled()) return null;
   stdStore.guard("Technical committee");
   reconcile();
   return stdStore.view((s) => s.tcs[id] ?? null);
@@ -612,7 +622,35 @@ export function addTcMeeting(tcId: string, m: { date: string; title: string; att
 
 /* ---------------- catalogue & periodic review (R-S4) ---------------- */
 
-export function listCatalogue(f: { q?: string; status?: string; sector?: string } = {}): CatalogueEntry[] {
+export async function listCatalogue(f: { q?: string; status?: string; sector?: string } = {}): Promise<CatalogueEntry[]> {
+  if (!demoDataEnabled()) {
+    const params = new URLSearchParams();
+    if (f.q) params.set("q", f.q);
+    if (f.sector) params.set("sector", f.sector);
+    const res = await apiFetch<{ items: { code: string; title: string; sector?: string | null; status?: string | null; buy_url?: string | null }[] }>(
+      `/standards?${params}`,
+    );
+    return (res.items ?? []).map((s) => {
+      const statusRaw = (s.status || "current").toLowerCase();
+      const status: CatalogueEntry["status"] =
+        statusRaw.includes("withdraw") ? "withdrawn" : statusRaw.includes("super") ? "superseded" : statusRaw.includes("draft") ? "draft" : "current";
+      return {
+        id: s.code,
+        ref: s.code,
+        title: s.title,
+        sector: s.sector || "General",
+        ics: "",
+        keywords: [],
+        price: 0,
+        pages: 0,
+        status,
+        published_at: new Date().toISOString().slice(0, 10),
+        preview_pages: 0,
+        abstract: "",
+        licensed: true,
+      };
+    });
+  }
   stdStore.guard("Catalogue");
   const q = f.q?.trim().toLowerCase();
   return stdStore.view((s) =>
@@ -626,7 +664,10 @@ export function listCatalogue(f: { q?: string; status?: string; sector?: string 
 /** Catalogue rows for the public Service list (never throws). */
 export function publicCatalogue(): CatalogueEntry[] {
   try {
-    return listCatalogue();
+    if (!demoDataEnabled()) return [];
+    // Sync demo path only — live callers should await listCatalogue().
+    stdStore.guard("Catalogue");
+    return Object.values(stdStore.read().catalogue);
   } catch {
     return [];
   }
@@ -644,6 +685,7 @@ export function saveCatalogueEntry(e: CatalogueEntry, actor: Actor): CatalogueEn
 }
 
 export function reviewQueue(): { entry: CatalogueEntry; due: string; years: number }[] {
+  if (!demoDataEnabled()) return [];
   stdStore.guard("Periodic review");
   const s = stdStore.read();
   const span = s.settings.review_years * 365 * 86_400_000;

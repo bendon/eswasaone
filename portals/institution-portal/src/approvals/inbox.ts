@@ -122,6 +122,33 @@ export function fromApprovalItem(item: ApprovalItem): InboxItem {
   const { pri, sla } = slaMeta(item);
   const { fam, verb } = inferFamily(item);
   const mod = moduleLabel(item.module || "Governance");
+  const detail: Record<string, string> = {
+    Status: item.status || "Pending",
+    Module: mod,
+  };
+  if (item.due_at) {
+    detail["Due"] = new Date(item.due_at).toLocaleDateString(undefined, { dateStyle: "medium" });
+  }
+  // Doctype-specific enrichment
+  const dt = item.doctype || "";
+  if (/Certification Application/i.test(dt)) {
+    detail["Application"] = item.name;
+    detail["Type"] = "Certification";
+  } else if (/Work Item/i.test(dt)) {
+    detail["Work item"] = item.name;
+    detail["Type"] = "Standards development";
+  } else if (/Instrument/i.test(dt)) {
+    detail["Instrument"] = item.name;
+    detail["Type"] = "Calibration alert";
+  } else if (/TBT/i.test(dt)) {
+    detail["Notification"] = item.name;
+    detail["Type"] = "Trade barrier alert";
+  } else {
+    detail["Reference"] = item.name;
+  }
+  if (item.sla_breached) {
+    detail["SLA"] = "Breached";
+  }
   return {
     id: item.id || `${item.doctype}::${item.name}`,
     fam,
@@ -132,13 +159,7 @@ export function fromApprovalItem(item: ApprovalItem): InboxItem {
     name: item.name,
     module: mod,
     verb,
-    detail: {
-      Status: item.status || "Pending",
-      Module: mod,
-      ...(item.due_at
-        ? { Due: new Date(item.due_at).toLocaleDateString(undefined, { dateStyle: "medium" }) }
-        : {}),
-    },
+    detail,
     live: true,
   };
 }

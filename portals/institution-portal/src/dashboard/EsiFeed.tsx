@@ -66,6 +66,28 @@ function extractRef(text: string): string | null {
   return m ? m[0].toUpperCase() : null;
 }
 
+/**
+ * Map a reference ID to the correct institution-portal route.
+ * The Core feed API may send hrefs without the sub-path segment (e.g.
+ * `/institution/certification/APP-2026-00027` instead of
+ * `/institution/certification/applications/APP-2026-00027`).
+ * This function corrects the path so deep-links never hit the router
+ * catch-all and bounce to the dashboard.
+ */
+function refToHref(ref: string): string | null {
+  if (ref.startsWith("APP-")) return `/institution/certification/applications/${ref}`;
+  if (ref.startsWith("CERT-")) return `/institution/certification/certificates/${ref}`;
+  if (ref.startsWith("AUD-")) return `/institution/certification`;
+  if (ref.startsWith("FV-")) return `/institution/fieldops`;
+  if (ref.startsWith("WI-")) return `/institution/standards/workitems/${ref}`;
+  if (ref.startsWith("STD-")) return `/institution/standards/catalogue/${ref}`;
+  if (ref.startsWith("RES-")) return `/institution/board/resolutions/${ref}`;
+  if (ref.startsWith("RISK-")) return `/institution/board/risks/${ref}`;
+  if (ref.startsWith("MET-")) return `/institution/metrology/jobs/${ref}`;
+  if (ref.startsWith("TBT-")) return `/institution/tbt`;
+  return null;
+}
+
 /** Parse key=value pairs from the body detail string. */
 function parseDetail(body: string | undefined): Record<string, string> {
   if (!body) return {};
@@ -104,7 +126,10 @@ function enrichItem(item: FeedItem): EnrichedItem {
   const body = item.body;
   const ref = extractRef(title) ?? extractRef(body ?? "");
   const detail = parseDetail(body);
-  const href = item.href;
+  // Prefer a correctly-mapped route from the ref; fall back to the API-provided href.
+  // The Core feed may send hrefs without the sub-path segment (e.g.
+  // /institution/certification/APP-2026-00027 → should be /applications/APP-2026-00027).
+  const href = (ref && refToHref(ref)) || item.href;
   const time = relativeTime(item.created_at);
 
   // --- Pattern: Application submitted (R-C1) — shown as batch row, not here ---

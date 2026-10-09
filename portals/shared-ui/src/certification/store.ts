@@ -18,6 +18,7 @@
 import { createInvoice, depositPaid, getInvoice, invoiceFor, invoiceTotals, listInvoices, type Invoice } from "../billing/store";
 import { openSystemCase, registerAppealExclusion, registerSignalGenerator, sendNps } from "../crm/store";
 import { registerHealthFactor } from "../crm/derive";
+import { demoDataEnabled } from "../demo";
 import { actOnVisit, listSamples, planVisit, registerSampleParent, registerVisitParent, visitsFor } from "../field/store";
 import type { FieldVisit, Sample, VisitType } from "../field/types";
 import { testsFor } from "../metrology/store";
@@ -29,6 +30,13 @@ import { closeRecordTasks, openTask, reconcileTasks, syncRecordTasks, taskStore 
 import { allowedActions, applyTransition, SUPER_ROLES } from "../workflow/engine";
 import type { ActInput, ActionOption, Actor } from "../workflow/types";
 import { APP_DEF, MARK_DEF, REG_DEF } from "./defs";
+import {
+  actLiveApplication,
+  createLiveApplication,
+  fetchLiveApplication,
+  fetchLiveApplications,
+  fetchLiveSchemes,
+} from "./liveApi";
 import { DEFAULT_CERT_SETTINGS, SEED_COMPETENCE, seedApplications, seedCertificates, seedMarks } from "./seed";
 import type { AppDoc, AuditReport, CertApplication, CertificateRec, CertSettings, Competence, FeeLine, MarkRequest, Nonconformity, SchemeDef, TechReview } from "./types";
 
@@ -55,6 +63,18 @@ export const certStore = createLocalStore<CertState>({
     settings: structuredClone(DEFAULT_CERT_SETTINGS),
   }),
 });
+
+/**
+ * Non-reactive in-memory cache for live Core apps so appActions / peekApplication
+ * can read without triggering a store mutation (which would cause an infinite loop
+ * via useStoreResource → listApplications → fetchLiveApplications → cacheLiveApp).
+ */
+const liveAppCache = new Map<string, CertApplication>();
+
+/** Cache a live Core app so appActions / sync reads work without demo store. */
+function cacheLiveApp(a: CertApplication): void {
+  liveAppCache.set(a.id, a);
+}
 
 const SYSTEM: Actor = { name: "System", roles: ["System Manager"] };
 const isSuper = (a: Actor) => a.roles.some((r) => SUPER_ROLES.includes(r));
@@ -165,6 +185,16 @@ export function getCertSettings(): CertSettings {
   return certStore.view((s) => s.settings);
 }
 
+/** Live: refresh schemes from GET /certification/schemes into settings (non-demo). */
+let liveSchemes: SchemeDef[] | null = null;
+export async function ensureCertSettings(): Promise<CertSettings> {
+  if (demoDataEnabled()) return getCertSettings();
+  if (!liveSchemes) {
+    liveSchemes = await fetchLiveSchemes();
+  }
+  return { ...getCertSettings(), schemes: liveSchemes };
+}
+
 export async function saveCertSettings(patch: Partial<CertSettings>): Promise<CertSettings> {
   return certStore.mutate((s) => {
     s.settings = { ...s.settings, ...patch };
@@ -173,6 +203,10 @@ export async function saveCertSettings(patch: Partial<CertSettings>): Promise<Ce
 }
 
 export function schemeOf(code: string): SchemeDef | undefined {
+  if (liveSchemes) {
+    const found = liveSchemes.find((x) => x.code === code);
+    if (found) return found;
+  }
   return certStore.read().settings.schemes.find((x) => x.code === code);
 }
 
@@ -203,7 +237,24 @@ export const linesTotal = (lines: FeeLine[]) => lines.reduce((n, l) => n + l.qty
 
 export type AppFilter = { state?: string; officer?: string; flow?: string; scheme?: string; email?: string; q?: string };
 
-export function listApplications(f: AppFilter = {}): CertApplication[] {
+export async function listApplications(f: AppFilter = {}): Promise<CertApplication[]> {
+  if (!demoDataEnabled()) {
+    await ensureCertSettings();
+    const items = await fetchLiveApplications({
+      state: f.state,
+      q: f.q,
+      limit: 200,
+    });
+    for (const a of items) cacheLiveApp(a);
+    return items
+      .filter((a) => !f.officer || a.officer === f.officer)
+      .filter((a) => !f.flow || a.flow === f.flow)
+      .filter((a) => !f.scheme || a.scheme === f.scheme)
+      .filter((a) => {
+        const email = f.email?.toLowerCase();
+        return !email || a.customer_email.toLowerCase() === email;
+      });
+  }
   certStore.guard("Certification applications");
   reconcile();
   const email = f.email?.toLowerCase();
@@ -239,11 +290,7 @@ const tryOr = <T,>(fn: () => T, fallback: T): T => {
   }
 };
 
-export function getApplication(id: string): AppBundle | null {
-  certStore.guard("Certification application");
-  reconcile();
-  const a = certStore.view((s) => s.apps[id] ?? null);
-  if (!a) return null;
+function bundleOf(a: CertApplication): AppBundle {
   const s = certStore.read();
   return {
     app: a,
@@ -257,7 +304,24 @@ export function getApplication(id: string): AppBundle | null {
   };
 }
 
+export async function getApplication(id: string): Promise<AppBundle | null> {
+  if (!demoDataEnabled()) {
+    await ensureCertSettings();
+    const a = await fetchLiveApplication(id);
+    if (!a) return null;
+    cacheLiveApp(a);
+    return bundleOf(a);
+  }
+  certStore.guard("Certification application");
+  reconcile();
+  const a = certStore.view((s) => s.apps[id] ?? null);
+  if (!a) return null;
+  return bundleOf(a);
+}
+
 export function peekApplication(id: string): CertApplication | null {
+  const live = liveAppCache.get(id);
+  if (live) return structuredClone(live);
   return certStore.view((s) => s.apps[id] ?? null);
 }
 
@@ -278,7 +342,7 @@ function openNcs(a: CertApplication) {
 }
 
 export function appActions(id: string, actor: Actor): ActionOption[] {
-  const a = certStore.read().apps[id];
+  const a = liveAppCache.get(id) ?? certStore.read().apps[id];
   if (!a) return [];
   const visits = tryOr(() => visitsFor(a.id), []);
   return allowedActions(APP_DEF, a, actor).map((x) => {
@@ -340,6 +404,12 @@ function notifyApp(a: CertApplication, title: string, body: string, kind: "appli
 }
 
 export async function actOnApplication(id: string, action: string, actor: Actor, input: ActInput): Promise<CertApplication> {
+  if (!demoDataEnabled()) {
+    const expected = input.expected_state ?? peekApplication(id)?.state ?? "Submitted";
+    const a = await actLiveApplication(id, action, expected, input.reason, input.note);
+    cacheLiveApp(a);
+    return a;
+  }
   const block = appActions(id, actor).find((x) => x.action === action)?.disabledReason;
   if (block) throw new Error(block);
   if (["grant", "grant_conditions", "refuse"].includes(action)) return decide(id, action as "grant" | "grant_conditions" | "refuse", input, actor);
@@ -373,7 +443,29 @@ export type NewApplicationInput = {
   transfer_from?: CertApplication["transfer_from"];
 };
 
-export function createApplication(input: NewApplicationInput, who: string): CertApplication {
+export async function createApplication(input: NewApplicationInput, who: string): Promise<CertApplication> {
+  if (!demoDataEnabled()) {
+    await ensureCertSettings();
+    const a = await createLiveApplication({
+      scheme: input.scheme,
+      org: input.org,
+      customer_email: input.customer_email,
+    });
+    // Enrich with desk intake fields Core does not yet accept on create.
+    const enriched: CertApplication = {
+      ...a,
+      contact: input.contact || a.contact,
+      phone: input.phone,
+      employees: input.employees || a.employees,
+      sites: input.sites?.length ? input.sites : a.sites,
+      scope: input.scope || a.scope,
+      channel: input.channel,
+      transfer_from: input.transfer_from,
+      customer_email: input.customer_email || a.customer_email,
+    };
+    cacheLiveApp(enriched);
+    return enriched;
+  }
   certStore.guard("Certification application");
   const sc = schemeOf(input.scheme);
   if (!sc) throw new Error("Choose a certification scheme.");
@@ -903,7 +995,7 @@ export function customerCertificateRequest(certId: string, kind: "scope" | "chan
   safe(() => openTask({ doctype: "Certification", name: c.id, state: `Request: ${label}`, seq: c.history.length + 200, family: "do", verb: "task", role: "Certification Officer", title: `${label} — ${c.org}`, module: "Certification", link: certLink(c.id), sla_days: 5, facts: { Certificate: c.number, Request: text } }));
 }
 
-export function startRenewal(certId: string, who: string): CertApplication {
+export async function startRenewal(certId: string, who: string): Promise<CertApplication> {
   const c = certStore.read().certs[certId];
   if (!c) throw new Error("Certificate not found.");
   const prev = certStore.read().apps[c.application_id];
@@ -969,8 +1061,8 @@ export function saveCompetence(c: Competence): Competence {
 
 /* ---------------- overview / misc ---------------- */
 
-export function pipelineCounts(): Record<string, number> {
-  const apps = listApplications();
+export async function pipelineCounts(): Promise<Record<string, number>> {
+  const apps = await listApplications();
   return Object.fromEntries(APP_DEF.states.map((st) => [st.id, apps.filter((a) => a.state === st.id).length]));
 }
 
@@ -1187,11 +1279,12 @@ registerHealthFactor((c) => {
  * TODO: wire real — POST /certification/applications/{id}/audit-report/draft {visit} (server-side template).
  */
 export function draftAuditReport(appId: string, visitId: string): string {
-  const b = getApplication(appId);
-  if (!b) throw new Error("Application not found.");
-  const v = b.visits.find((x) => x.id === visitId);
+  // Prefer cached app (hydrated by getApplication / listApplications); demo store otherwise.
+  const a = peekApplication(appId) ?? certStore.read().apps[appId];
+  if (!a) throw new Error("Application not found.");
+  const visits = tryOr(() => visitsFor(appId), []);
+  const v = visits.find((x) => x.id === visitId);
   if (!v) throw new Error("Visit not found on this application.");
-  const a = b.app;
   const ans = (k: "yes" | "no" | "na") => v.checklist.filter((c) => c.answer === k).length;
   const unanswered = v.checklist.filter((c) => !c.answer).length;
   const ncs = [...a.findings.filter((n) => n.visit_id === v.id), ...v.findings.filter((f) => !a.findings.some((n) => n.visit_id === v.id && n.statement === f.statement))];
@@ -1241,8 +1334,8 @@ export function draftAuditReport(appId: string, visitId: string): string {
 }
 
 export function auditReportFor(appId: string, visitId: string): AuditReport | null {
-  const b = getApplication(appId);
-  const rows = (b?.app.audit_reports ?? []).filter((r) => r.visit_id === visitId);
+  const a = peekApplication(appId) ?? certStore.read().apps[appId];
+  const rows = (a?.audit_reports ?? []).filter((r) => r.visit_id === visitId);
   return rows.sort((x, y) => y.version - x.version)[0] ?? null;
 }
 

@@ -142,7 +142,7 @@ export function CrmNotConnected({ what = "This screen", audience = "staff" }: { 
       title={`${what} isn't connected yet`}
       detail={
         audience === "staff"
-          ? "Demo data has been turned off (VITE_DEMO_MODE=false) and Core's /cases and /crm endpoints aren't live yet. Remove the flag to work with sample data."
+          ? "This screen still needs a live Core Engine endpoint. Certification applications, CRM deals and metrology jobs are wired; cases and clients are not yet connected."
           : "Online cases aren't connected to ESWASA yet. Please email info@eswasa.co.sz or call (+268) 2518 4633 and we'll log it for you."
       }
     />

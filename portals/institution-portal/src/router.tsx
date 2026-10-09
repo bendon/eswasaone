@@ -1,8 +1,14 @@
 import { Suspense, lazy, type ComponentType, type ReactNode } from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, useParams } from "react-router-dom";
 import { InstitutionLayout } from "./layout/InstitutionLayout";
 import { PageSkeleton } from "./components/PageStates";
 import { ErrorPage } from "./pages/ErrorPage";
+
+/** Redirect /certification/APP-2026-00027 → /certification/applications/APP-2026-00027 */
+function AppRefRedirect() {
+  const { ref } = useParams();
+  return <Navigate to={`/certification/applications/${ref ?? ""}`} replace />;
+}
 
 type PageFactory = () => Promise<{ default: ComponentType }>;
 
@@ -276,7 +282,11 @@ export const router = createBrowserRouter(
                 () => import("./pages/CertificationPage").then((m) => ({ default: m.CertificationPage })),
                 [
                   sv(undefined, () => import("./certification/sub-views"), "PipelineView"),
+                  // Redirect legacy deep-links: /certification/APP-2026-00027 → /certification/applications/APP-2026-00027
+                  { path: ":ref", element: <AppRefRedirect /> },
                   sv("applications/:id", () => import("./certification/sub-views"), "ApplicationRecordPage"),
+                  // Legacy redirect: /institution/certification/APP-XXXX-XXXXX → /applications/APP-XXXX-XXXXX
+                  { path: ":ref", element: <Navigate to="../applications/:ref" replace /> },
                   sv("quotes", () => import("./certification/sub-views"), "QuotesView"),
                   sv("audits", () => import("./certification/sub-views"), "AuditsView"),
                   sv("findings", () => import("./certification/sub-views"), "FindingsView"),
@@ -523,6 +533,19 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "competence",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({
+                            default: m.CompetenceView,
+                          }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
                     path: "recruitment",
                     element: (
                       <L
@@ -554,6 +577,19 @@ export const router = createBrowserRouter(
                         factory={() =>
                           import("./hr/sub-views").then((m) => ({
                             default: m.PayrollView,
+                          }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "cases",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({
+                            default: m.CasesView,
                           }))
                         }
                         skeleton="panel"

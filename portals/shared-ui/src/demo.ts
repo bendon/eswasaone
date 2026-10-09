@@ -1,9 +1,9 @@
 /**
  * Demo data switch for every portal.
  *
- * The Core / Frappe backend is still mostly missing, so local demo stores are ON
- * by default: reads fall back to seed data and writes land in the local store.
- * Set VITE_DEMO_MODE=false to opt out (screens then show not-connected states).
+ * Default ON: local seed stores. Set VITE_DEMO_MODE=false to use Core/Frappe where
+ * wired (certification applications, CRM deals, metrology jobs, …). Screens without
+ * a live endpoint show empty lists or a not-connected state.
  */
 export function demoDataEnabled(): boolean {
   try {

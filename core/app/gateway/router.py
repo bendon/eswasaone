@@ -1488,6 +1488,15 @@ async def list_tbt_alerts(
             return TbtNotificationsResponse(items=[], new_count=0)
         return mapped
     except FrappeError as exc:
+        # Optional chrome widget: staff without TBT DocPerm get an empty inbox,
+        # not a global permission modal on every Institution page load.
+        text = str(exc)
+        if (
+            "PermissionError" in text
+            or "Insufficient Permission" in text
+            or "Not permitted" in text
+        ):
+            return TbtNotificationsResponse(items=[], new_count=0)
         _raise_from_frappe(exc)
     raise HTTPException(status_code=502, detail="TBT alerts unavailable")
 

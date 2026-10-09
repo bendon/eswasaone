@@ -6,4 +6,6 @@ export { AccessRequestsView } from "./AccessRequestsView";
 export { RecruitmentView } from "./RecruitmentView";
 export { PayrollView } from "./PayrollView";
 export { StructureView } from "./StructureView";
+export { CompetenceView } from "./CompetenceView";
+export { CasesView } from "./CasesView";
 export { HrChrome } from "./HrChrome";

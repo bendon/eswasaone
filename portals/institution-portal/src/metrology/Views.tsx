@@ -86,7 +86,7 @@ function JobTable({ jobs, empty = "Nothing here." }: { jobs: CalJob[]; empty?: s
 }
 
 export function MetOverview() {
-  const res = useDomain(() => ({ o: metrologyOverview(), jobs: listJobs() }), []);
+  const res = useDomain(async () => ({ o: await metrologyOverview(), jobs: await listJobs() }), []);
   return (
     <Gate res={res} what="Metrology">
       {({ o, jobs }) => (
@@ -144,7 +144,13 @@ export function MetReceipt() {
   const [rec, setRec] = useState<CalJob | null>(null);
   const [seal, setSeal] = useState("");
   const [cond, setCond] = useState<"ok" | "damaged" | "seal_broken" | "mismatch">("ok");
-  const res = useDomain(() => ({ jobs: listJobs({ state: "Accepted" }).filter((j) => j.location === "lab").sort((a, b) => `${a.dropoff?.date ?? "9"}${a.dropoff?.time ?? ""}`.localeCompare(`${b.dropoff?.date ?? "9"}${b.dropoff?.time ?? ""}`)), samples: listSamples().filter((s) => ["In Transit", "Received", "Collected"].includes(s.state)) }), []);
+  const res = useDomain(async () => {
+    const jobs = (await listJobs({ state: "Accepted" }))
+      .filter((j) => j.location === "lab")
+      .sort((a, b) => `${a.dropoff?.date ?? "9"}${a.dropoff?.time ?? ""}`.localeCompare(`${b.dropoff?.date ?? "9"}${b.dropoff?.time ?? ""}`));
+    const samples = listSamples().filter((s) => ["In Transit", "Received", "Collected"].includes(s.state));
+    return { jobs, samples };
+  }, []);
   return (
     <Gate res={res} what="Receipt">
       {({ jobs, samples }) => (
@@ -265,7 +271,7 @@ export function MetJobs() {
 
 export function MetReview() {
   const actor = useStaffActor();
-  const res = useDomain(() => listJobs().filter((j) => ["Pending Review", "Reviewed"].includes(j.state)), []);
+  const res = useDomain(async () => (await listJobs()).filter((j) => ["Pending Review", "Reviewed"].includes(j.state)), []);
   return (
     <Gate res={res} what="Review queue">
       {(jobs) => (

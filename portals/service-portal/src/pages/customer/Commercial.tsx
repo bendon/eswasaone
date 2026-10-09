@@ -20,8 +20,15 @@ export function AccountQuotesPage() {
   const res = useCrm(() => listQuotesForCustomer(me.email), [me.email]);
   return (
     <Panel title="Quotes" sub="Quotes from ESWASA. Accept online with your name and position; pay the deposit or ask to be invoiced.">
-      {res.loading && !res.data ? <p className="page-note">Loading…</p> : null}
-      {(res.data ?? []).length ? (
+      {res.notConnected ? (
+        <div className="crm-empty" role="status">
+          <Icon name="i-link" />
+          <b>Quotes aren't connected yet</b>
+          <p>Online quotes are managed by the CRM quotes endpoint, which isn't live yet. Please ask ESWASA for a PDF quote.</p>
+        </div>
+      ) : res.loading && !res.data ? (
+        <p className="page-note">Loading…</p>
+      ) : (res.data ?? []).length ? (
         <table className="crm-table">
           <thead>
             <tr>
@@ -311,7 +318,7 @@ export function CustomerPrintPage() {
       return i ? <InvoiceDoc inv={i} /> : null;
     }
     if (kind === "certquote") {
-      const b = getApplication(id);
+      const b = await getApplication(id);
       return b ? <CertQuoteDoc app={b.app} /> : null;
     }
     if (kind === "quote") {

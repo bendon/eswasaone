@@ -890,7 +890,7 @@ function OverviewTab({
     <>
       <section className="kpis" style={{ marginBottom: 16 }}>
         <div className="kpi">
-          <div className="kpi__label">Frappe Framework</div>
+          <div className="kpi__label">Core Engine</div>
           <div className="kpi__val" style={{ fontFamily: "var(--font-mono)", fontSize: 20 }}>
             {d.frappe_version}
           </div>
@@ -1560,7 +1560,7 @@ function UsersTab({
         </div>
       )}
       <p style={{ fontSize: 12.5, color: "var(--muted-2)", marginTop: 12 }}>
-        Roles &amp; permissions are enforced by Frappe RBAC. This screen never bypasses the
+        Roles &amp; permissions are enforced by the Core Engine's role-based access control. This screen never bypasses the
         permission model.
       </p>
     </>

@@ -461,12 +461,9 @@ export function RenewPage() {
               type="button"
               className="cf-btn cf-btn--pri"
               onClick={() => {
-                try {
-                  const a = startRenewal(c.id, me.name);
-                  nav(`/certification/${a.id}`);
-                } catch (e) {
-                  setErr(e instanceof Error ? e.message : String(e));
-                }
+                void startRenewal(c.id, me.name)
+                  .then((a) => nav(`/certification/${a.id}`))
+                  .catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
               }}
             >
               Submit recertification request
@@ -538,12 +535,22 @@ export function TransferPage() {
         style={{ marginTop: 12 }}
         disabled={!v.org || !v.body || !v.cert || !v.scope}
         onClick={() => {
-          try {
-            const a = createApplication({ scheme: v.scheme, org: v.org, contact: v.contact, customer_email: v.email || "demo", employees: Number(v.employees) || 1, sites: [{ name: "Main site", address: "", employees: Number(v.employees) || 1 }], scope: v.scope, channel: "transfer", transfer_from: { body: v.body, certificate: v.cert, expires: v.expires } }, v.contact);
-            nav(`/certification/${a.id}`);
-          } catch (e) {
-            setErr(e instanceof Error ? e.message : String(e));
-          }
+          void createApplication(
+            {
+              scheme: v.scheme,
+              org: v.org,
+              contact: v.contact,
+              customer_email: v.email || "demo",
+              employees: Number(v.employees) || 1,
+              sites: [{ name: "Main site", address: "", employees: Number(v.employees) || 1 }],
+              scope: v.scope,
+              channel: "transfer",
+              transfer_from: { body: v.body, certificate: v.cert, expires: v.expires },
+            },
+            v.contact,
+          )
+            .then((a) => nav(`/certification/${a.id}`))
+            .catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)));
         }}
       >
         Submit transfer application

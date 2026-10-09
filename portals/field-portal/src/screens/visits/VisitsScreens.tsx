@@ -540,6 +540,7 @@ function CalCard({ v, editable, onSave }: { v: FieldVisit; editable: boolean; on
 
 function SampleList({ visit }: { visit: string }) {
   const res = useField(() => listSamples({ visit }), [visit]);
+  if (res.notConnected) return <p className="fv-sub">Samples not connected.</p>;
   return (
     <>
       {(res.data ?? []).map((s) => (
@@ -847,6 +848,13 @@ export function SamplesScreen() {
   const list = mine.length ? mine : res.data ?? [];
   return (
     <section className="field-screen fv-stack" aria-label="Samples">
+      {res.notConnected ? (
+        <div className="fv-card" role="status" aria-live="polite">
+          <h3>Samples aren't available yet</h3>
+          <p className="fv-sub">Sample tracking needs the Core Engine field service module, which is not live yet.</p>
+        </div>
+      ) : (
+        <>
       {toast}
       <div className="fv-card">
         <h3>Hand over to the lab</h3>
@@ -892,6 +900,8 @@ export function SamplesScreen() {
           ) : null}
         </div>
       ))}
+        </>
+      )}
     </section>
   );
 }

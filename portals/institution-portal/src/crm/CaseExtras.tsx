@@ -72,6 +72,7 @@ export function CaseDeliveries({ c }: { c: Case }) {
   const res = useCrm(() => listDeliveries({ case_ref: c.ref }), [c.ref, c.updated_at]);
   const [busy, setBusy] = useState(false);
   const rows = res.data ?? [];
+  if (res.notConnected) return null;
   if (!rows.length) return null;
   return (
     <div className="crm-card">

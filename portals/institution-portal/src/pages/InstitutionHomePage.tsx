@@ -131,10 +131,12 @@ export function InstitutionHomePage() {
     if (!user) return;
     let cancelled = false;
     void Promise.allSettled([
-      apiFetch<FinanceDashboard>("/finance/kpis"),
-      apiFetch<ApprovalsResponse>("/approvals?limit=5"),
-      apiFetch<TbtNotificationsResponse>("/tbt/alerts?limit=5"),
-      apiFetch<{ items?: AuditSummary[] }>("/certification/audits/overdue"),
+      apiFetch<FinanceDashboard>("/finance/kpis", { quiet: true }),
+      apiFetch<ApprovalsResponse>("/approvals?limit=5", { quiet: true }),
+      apiFetch<TbtNotificationsResponse>("/tbt/alerts?limit=5", { quiet: true }),
+      apiFetch<{ items?: AuditSummary[] }>("/certification/audits/overdue", {
+        quiet: true,
+      }),
     ]).then(([f, a, t, aud]) => {
       if (cancelled) return;
       if (f.status === "fulfilled") setFinance(f.value);

@@ -175,7 +175,7 @@ export function PrintPage() {
           if (!c) throw new Error("Certificate not found");
           set(<CertificateDoc cert={c.cert} />);
         } else if (kind === "refusal" || kind === "certquote" || kind === "auditplan") {
-          const b = getApplication(id);
+          const b = await getApplication(id);
           if (!b) throw new Error("Application not found");
           set(kind === "refusal" ? <RefusalLetterDoc app={b.app} /> : kind === "certquote" ? <CertQuoteDoc app={b.app} /> : <AuditPlanDoc app={b.app} visits={b.visits} />);
         } else if (kind === "calcert") {

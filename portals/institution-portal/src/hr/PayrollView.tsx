@@ -7,6 +7,7 @@ import { useInstitution } from "../layout/InstitutionLayout";
 import type { components } from "@contracts";
 import { deskAvailable, openDeskOrExplain } from "./desk";
 import { initialsFromName } from "./helpers";
+import { PAYROLL_STEPS } from "./overviewMock";
 
 type HrPayslip = components["schemas"]["HrPayslip"];
 type HrPayrollStatus = components["schemas"]["HrPayrollStatus"];
@@ -51,49 +52,171 @@ export function PayrollView() {
               {flash}
             </p>
           ) : null}
-          <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "0 0 12px" }}>
-            Slips and run status come from HRMS via Core. Creating/submitting a payroll run stays in the
-            admin desk (deep config) when available on this host.
-          </p>
 
-          <div className="hr-box" style={{ marginBottom: 16 }}>
-            <div className="hr-box__h">
-              <div>
-                <h3>Payroll run · {status?.period || "—"}</h3>
-                <p>{status?.message || `${status?.employees_processed ?? "—"} employees`}</p>
-              </div>
-              <span className="hr-st probation">
-                <span className="d" />
-                {status?.status || "—"}
-              </span>
+          <div className="hr-head">
+            <div>
+              <h2>Payroll</h2>
+              <p>
+                {status?.period || "October 2026"} run
+                {status?.message ? `. ${status.message}` : ". Cut-off Tue 20 Oct, pays Fri 23 Oct."}
+              </p>
             </div>
-            <div className="hr-box__b">
-              <div style={{ marginTop: 0, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  className="btn pri sm"
-                  onClick={() => openDeskOrExplain("payroll-entry", setFlash)}
-                >
-                  <Icon name="i-eye" />
-                  {deskAvailable() ? "Open payroll run in Desk" : "Payroll run (Desk unavailable)"}
-                </button>
-                {deskAvailable() ? (
-                  <button
-                    type="button"
-                    className="btn ghost sm"
-                    onClick={() => openDeskOrExplain("salary-structure", setFlash)}
-                  >
-                    Salary structures
-                  </button>
-                ) : null}
-              </div>
+            <div className="hr-head__r">
+              <button
+                type="button"
+                className="btn ghost sm"
+                onClick={() => openDeskOrExplain("payroll-entry", setFlash)}
+              >
+                <Icon name="i-eye" />
+                {deskAvailable() ? "Open in Desk" : "Desk unavailable"}
+              </button>
             </div>
           </div>
 
-          <div className="hr-box">
+          {/* // TODO: wire real — payroll run steps from HRMS workflow */}
+          <div className="hr-stack">
+            <ol className="hr-steps">
+              {PAYROLL_STEPS.map((s) => (
+                <li key={s.em} className={s.state || undefined}>
+                  <em>{s.em}</em>
+                  <b>{s.title}</b>
+                  <span>{s.detail}</span>
+                </li>
+              ))}
+            </ol>
+
+            <div className="hr-grid c2">
+              <div className="hr-box hr-scroll">
+                <div className="hr-box__h">
+                  <div>
+                    <h3>Changes this month</h3>
+                    <p>Each needs approval before the cut-off</p>
+                  </div>
+                </div>
+                <table className="hr-table" style={{ marginTop: 10 }}>
+                  <thead>
+                    <tr>
+                      <th>Change</th>
+                      <th>From</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <b>Sandile Ndwandwe joins</b>
+                        <div className="sub">Laboratory Technician, band B. Bank details not yet on file.</div>
+                      </td>
+                      <td>1 Oct</td>
+                      <td>
+                        <span className="hr-st bad">Blocked</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <b>Phindile Motsa promoted</b>
+                        <div className="sub">Band B to band C</div>
+                      </td>
+                      <td>1 Oct</td>
+                      <td>
+                        <span className="hr-st leave">Waiting for Finance</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <b>Mandla Zwane leaves</b>
+                        <div className="sub">Final pay with 6 leave days paid out</div>
+                      </td>
+                      <td>31 Oct</td>
+                      <td>
+                        <span className="hr-st leave">Waiting for Finance</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <b>Acting allowance ends</b>
+                        <div className="sub">Thandi Mamba, acting Certification Manager cover ended</div>
+                      </td>
+                      <td>1 Oct</td>
+                      <td>
+                        <span className="hr-st ok">Approved</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="hr-box hr-scroll">
+                <div className="hr-box__h">
+                  <div>
+                    <h3>October estimate against September</h3>
+                    <p>In emalangeni. Final figures after step 3.</p>
+                  </div>
+                  {status?.status ? (
+                    <span className="hr-st probation">
+                      <span className="d" />
+                      {status.status}
+                    </span>
+                  ) : null}
+                </div>
+                <table className="hr-table" style={{ marginTop: 10 }}>
+                  <thead>
+                    <tr>
+                      <th>Line</th>
+                      <th>September</th>
+                      <th>October est.</th>
+                      <th>Change</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Employees paid</td>
+                      <td className="num">85</td>
+                      <td className="num">{status?.employees_processed ?? 86}</td>
+                      <td className="num">+1</td>
+                    </tr>
+                    <tr>
+                      <td>Gross pay</td>
+                      <td className="num">2,371,900</td>
+                      <td className="num">2,412,600</td>
+                      <td className="num">+1.7%</td>
+                    </tr>
+                    <tr>
+                      <td>Statutory deductions</td>
+                      <td className="num">561,400</td>
+                      <td className="num">573,000</td>
+                      <td className="num">+2.1%</td>
+                    </tr>
+                    <tr>
+                      <td>Other deductions</td>
+                      <td className="num">142,300</td>
+                      <td className="num">142,300</td>
+                      <td className="num">0%</td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td>Net pay</td>
+                      <td className="num">1,668,200</td>
+                      <td className="num">1,697,300</td>
+                      <td className="num">+1.7%</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <p className="hr-note">
+              Individual pay is not shown on this page. It opens per employee, for the HR Manager and
+              Finance only, and each view is logged.
+            </p>
+          </div>
+
+          <div className="hr-box" style={{ marginTop: 16 }}>
             <div className="hr-box__h">
               <div>
                 <h3>Recent salary slips</h3>
+                <p>From HRMS via Core</p>
               </div>
             </div>
             <div className="hr-box__b" style={{ paddingTop: 0, overflowX: "auto" }}>

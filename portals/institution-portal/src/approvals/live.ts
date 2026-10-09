@@ -23,10 +23,89 @@ const ROUTE_BY_MODULE: Record<string, string> = {
   CRM: "/crm",
 };
 
+/**
+ * Clean raw Frappe Workflow Action titles into human-readable sentences.
+ * Strips bracket prefixes like `[Certification Application:APP-2026-00020:Audit:8]`
+ * and converts `Workflow: Certification Application APP-2026-00020 → Audit`
+ * into `Approve audit transition for APP-2026-00020`.
+ */
+function cleanTitle(raw: string, doctype: string, name: string): string {
+  let t = raw.trim();
+
+  // Strip leading bracket: [Doctype:Name:State:Step]
+  const bracketMatch = t.match(/^\[([^\]]+)\]\s*/);
+  if (bracketMatch) {
+    t = t.slice(bracketMatch[0].length);
+  }
+
+  // Strip "Workflow:" prefix
+  t = t.replace(/^Workflow:\s*/i, "");
+
+  // Pattern: "Doctype Name → State" → "Approve {state} for {Name}"
+  const transitionMatch = t.match(/^(\S+(?:\s+\S+)*)\s+(\S+)\s*→\s*(.+)$/);
+  if (transitionMatch) {
+    const ref = transitionMatch[2].trim();
+    const targetState = transitionMatch[3].trim();
+    // Use just the ref (e.g. APP-2026-00020) if it looks like an ID
+    const niceRef = ref.match(/^[A-Z]+-\d{4}-\d+$/) ? ref : name;
+    return `Approve ${targetState.toLowerCase()} transition for ${niceRef}`;
+  }
+
+  // If still starts with doctype name, strip it
+  const dtPrefix = `${doctype} `;
+  if (t.toLowerCase().startsWith(dtPrefix.toLowerCase())) {
+    t = t.slice(dtPrefix.length);
+  }
+
+  // Capitalize first letter
+  if (t.length > 0) {
+    t = t[0].toUpperCase() + t.slice(1);
+  }
+
+  return t || raw;
+}
+
+/** Build richer facts from the raw API item. */
+function buildFacts(item: ApprovalItem, module: string): Record<string, string> {
+  const facts: Record<string, string> = {
+    Status: item.status || "Pending",
+    Module: module,
+  };
+
+  if (item.due_at) {
+    facts["Due"] = new Date(item.due_at).toLocaleDateString(undefined, { dateStyle: "medium" });
+  }
+
+  // Doctype-specific enrichment
+  const dt = item.doctype || "";
+  if (/Certification Application/i.test(dt)) {
+    facts["Application"] = item.name;
+    facts["Type"] = "Certification";
+  } else if (/Work Item/i.test(dt)) {
+    facts["Work item"] = item.name;
+    facts["Type"] = "Standards development";
+  } else if (/Instrument/i.test(dt)) {
+    facts["Instrument"] = item.name;
+    facts["Type"] = "Calibration alert";
+  } else if (/TBT/i.test(dt)) {
+    facts["Notification"] = item.name;
+    facts["Type"] = "Trade barrier alert";
+  } else {
+    facts["Reference"] = item.name;
+  }
+
+  if (item.sla_breached) {
+    facts["SLA"] = "Breached";
+  }
+
+  return facts;
+}
+
 export function liveToTask(item: ApprovalItem & { family?: Task["family"]; verb?: string; role?: string; link?: string }): InboxTask {
   const row = fromApprovalItem(item);
   const module = moduleLabel(item.module || "Governance") as TaskModule;
   const created = new Date().toISOString();
+  const cleanT = cleanTitle(item.title, item.doctype, item.name);
   return {
     id: `live|${item.doctype}|${item.name}`,
     doctype: item.doctype,
@@ -38,11 +117,11 @@ export function liveToTask(item: ApprovalItem & { family?: Task["family"]; verb?
     role: item.role ?? "Staff",
     created_at: created,
     due: item.due_at ?? new Date(Date.now() + 5 * 86_400_000).toISOString(),
-    title: item.title,
+    title: cleanT,
     module,
     link: item.link ?? ROUTE_BY_MODULE[module] ?? "/",
     priority: item.sla_breached ? "urgent" : "normal",
-    facts: row.detail,
+    facts: buildFacts(item, module),
     log: [],
     live: true,
   };

@@ -1,11 +1,9 @@
 /**
  * CRM & service-desk data layer shared by the Service and Institution portals.
  *
- * Core has no /crm/* or /cases/* endpoints yet, so every call goes to a local store that
- * loads unless VITE_DEMO_MODE=false (same rule as certification/deskApi.ts). Outside demo
- * mode each call throws CrmNotConnectedError and screens show their not-connected state.
- * Both portals share one origin (/ and /institution/), so a case lodged publicly shows up in
- * the staff queue, and the `storage` event keeps open tabs in sync.
+ * Demo mode uses a local store shared across portals. With VITE_DEMO_MODE=false, reads go to
+ * Core where endpoints exist (/crm/leads, /crm/deals, /crm/pipeline); case/client/signal screens
+ * return empty lists until Complaint / client APIs land (see TODO).
  *
  * TODO: wire real — provisional endpoints:
  *   POST /cases · GET /cases · GET|PATCH /cases/{ref} · POST /cases/{ref}/act · POST /cases/{ref}/messages
@@ -44,6 +42,7 @@ import type {
   NpsSurvey,
   NpsTrigger,
 } from "./types";
+import { apiFetch } from "../api/client";
 import { demoDataEnabled } from "../demo";
 import { createInvoice } from "../billing/store";
 import { planVisit, registerSampleParent, registerVisitParent } from "../field/store";
@@ -457,6 +456,8 @@ export type CaseFilter = {
 };
 
 export async function listCases(f: CaseFilter = {}): Promise<Case[]> {
+  // TODO: wire real — GET /cases once Complaint DocType lands (workflow registry complaint.yaml).
+  if (!crmDemoMode()) return [];
   guard("Cases");
   const open = new Set(["Open", "Triaged", "In Progress", "Awaiting Customer", "Escalated", "Reopened"]);
   return structuredClone(Object.values(read().cases))
@@ -470,6 +471,7 @@ export async function listCases(f: CaseFilter = {}): Promise<Case[]> {
 }
 
 export async function getCase(ref: string): Promise<Case | null> {
+  if (!crmDemoMode()) return null;
   guard("Case");
   const c = read().cases[ref];
   return c ? structuredClone(c) : null;
@@ -658,11 +660,14 @@ export async function handOff(ref: string, actor: CrmActor, kind: "investigation
 /* ---------------- clients ---------------- */
 
 export async function listClients(): Promise<Client[]> {
+  // TODO: wire real — GET /crm/clients (Customer / CRM Organization).
+  if (!crmDemoMode()) return [];
   guard("Clients");
   return structuredClone(Object.values(read().clients)).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function getClient(id: string): Promise<Client | null> {
+  if (!crmDemoMode()) return null;
   guard("Client");
   const c = read().clients[id];
   return c ? structuredClone(c) : null;
@@ -718,6 +723,8 @@ export async function updateClient(id: string, patch: Partial<Pick<Client, "tier
 /* ---------------- signals ---------------- */
 
 export async function listSignals(): Promise<Signal[]> {
+  // TODO: wire real — GET /crm/signals once Core exposes signal feed.
+  if (!crmDemoMode()) return [];
   guard("Signals");
   return structuredClone(Object.values(read().signals)).sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
@@ -803,7 +810,39 @@ export async function convertSignal(id: string, actor: CrmActor): Promise<Opport
 
 /* ---------------- opportunities ---------------- */
 
+const STAGE_PROB: Record<OpportunityStage, number> = { qualify: 25, proposal: 50, negotiation: 75, won: 100, lost: 0 };
+
+function dealStage(status: string): OpportunityStage {
+  const s = status.toLowerCase();
+  if (s.includes("won") || s.includes("closed won")) return "won";
+  if (s.includes("lost") || s.includes("closed lost")) return "lost";
+  if (s.includes("negotiat") || s.includes("propos")) return s.includes("negotiat") ? "negotiation" : "proposal";
+  return "qualify";
+}
+
 export async function listOpportunities(): Promise<Opportunity[]> {
+  if (!crmDemoMode()) {
+    const res = await apiFetch<{ items: { id: string; title: string; amount?: number | null; status: string }[] }>(
+      "/crm/deals?limit=100",
+    );
+    const now = new Date().toISOString();
+    return (res.items ?? []).map((d) => {
+      const stage = dealStage(d.status);
+      return {
+        id: d.id,
+        title: d.title || d.id,
+        stage,
+        services: ["certification"] as Opportunity["services"],
+        value: d.amount ?? 0,
+        probability: STAGE_PROB[stage],
+        owner: "—",
+        created_at: now,
+        expected_close: now.slice(0, 10),
+        source: "manual" as const,
+        notes: [],
+      };
+    });
+  }
   guard("Opportunities");
   return structuredClone(Object.values(read().opportunities)).sort((a, b) => a.expected_close.localeCompare(b.expected_close));
 }
@@ -819,8 +858,6 @@ export async function saveOpportunity(o: Opportunity): Promise<Opportunity> {
     return o;
   });
 }
-
-const STAGE_PROB: Record<OpportunityStage, number> = { qualify: 25, proposal: 50, negotiation: 75, won: 100, lost: 0 };
 
 export async function moveOpportunity(id: string, stage: OpportunityStage, actor: CrmActor, lostReason?: string): Promise<Opportunity> {
   guard("Opportunity");
@@ -848,6 +885,8 @@ export function quoteTotals(q: Pick<CrmQuote, "lines" | "discount_pct">) {
 }
 
 export async function listQuotes(): Promise<CrmQuote[]> {
+  // TODO: wire real — certification quotes already live at GET /certification/quotes.
+  if (!crmDemoMode()) return [];
   guard("Quotes");
   return structuredClone(Object.values(read().quotes)).sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
@@ -935,6 +974,7 @@ export async function actOnQuote(id: string, action: QuoteAction, actor: CrmActo
 /* ---------------- config ---------------- */
 
 export async function getCrmConfig(): Promise<CrmConfig> {
+  if (!crmDemoMode()) return structuredClone(DEFAULT_CONFIG);
   guard("Settings");
   return structuredClone(read().config);
 }
@@ -1228,6 +1268,7 @@ export async function lookupContacts(q: string): Promise<{ client: Client; conta
 }
 
 export async function listAllContacts(): Promise<{ client: Pick<Client, "id" | "name" | "tier">; contact: Contact }[]> {
+  if (!crmDemoMode()) return [];
   guard("Contacts");
   return structuredClone(Object.values(read().clients).flatMap((c) => c.contacts.map((contact) => ({ client: { id: c.id, name: c.name, tier: c.tier }, contact })))).sort((a, b) => a.contact.name.localeCompare(b.contact.name));
 }
@@ -1329,6 +1370,7 @@ export async function customerActOnQuote(id: string, action: "accept" | "decline
 /* ---------------- knowledge base ---------------- */
 
 export async function listArticles(f: { status?: KbArticle["status"]; q?: string; type?: CaseType } = {}): Promise<KbArticle[]> {
+  if (!crmDemoMode()) return [];
   guard("Knowledge base");
   const q = f.q?.trim().toLowerCase();
   return structuredClone(Object.values(read().kb ?? {}))
@@ -1381,6 +1423,7 @@ export function markArticleHelpful(id: string): void {
 /* ---------------- contracts ---------------- */
 
 export async function listContracts(): Promise<ServiceContract[]> {
+  if (!crmDemoMode()) return [];
   guard("Contracts");
   return structuredClone(Object.values(read().contracts ?? {})).sort((a, b) => a.end.localeCompare(b.end));
 }
@@ -1465,6 +1508,7 @@ export async function createCampaignDraft(input: { name: string; client_ids: str
 }
 
 export async function listCampaigns(): Promise<CampaignDraft[]> {
+  if (!crmDemoMode()) return [];
   guard("Campaigns");
   return structuredClone(Object.values(read().campaigns ?? {})).sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
@@ -1722,6 +1766,21 @@ export async function answerNps(id: string, score: number, comment?: string): Pr
 export type NpsSummary = { nps: number | null; responses: number; sent: number; promoters: number; passives: number; detractors: number; byTrigger: Record<NpsTrigger, { nps: number | null; responses: number }>; recent: NpsSurvey[] };
 
 export async function npsSummary(): Promise<NpsSummary> {
+  if (!crmDemoMode()) {
+    return {
+      nps: null,
+      responses: 0,
+      sent: 0,
+      promoters: 0,
+      passives: 0,
+      detractors: 0,
+      byTrigger: {
+        certificate_issued: { nps: null, responses: 0 },
+        calibration_delivered: { nps: null, responses: 0 },
+      },
+      recent: [],
+    };
+  }
   guard("NPS");
   const all = Object.values(read().nps ?? {});
   const score = (rows: NpsSurvey[]) => {

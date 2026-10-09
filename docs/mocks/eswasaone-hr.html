@@ -4,397 +4,965 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#313391">
-<title>EswasaOne — HR &amp; People</title>
 <!--
   Fidelity SoT for Institution Portal /hr.
   Chrome (dark rail + top bar) comes from InstitutionLayout.
   React port: portals/institution-portal/src/pages/HrPage.tsx + src/hr/*
+  Styles: portals/shared-ui/src/styles/hr.css (via institution.css)
 -->
+<title>EswasaOne HR Mockup</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <style>
-  :root{
-    --bg:#F4F7FA;--card:#FFFFFF;--line:#E4EAF2;--line-2:#EFF3F8;
-    --ink:#0F172A;--muted:#5A6B84;--muted-2:#8A9AB1;
-    --navy:#313391;--navy-d:#24286F;--navy-l:#ECEEFC;
-    --gold:#F5C518;--gold-d:#D9A800;--gold-ink:#24286F;--gold-l:#FEF6DC;
-    --green:#16A34A;--green-l:#DCFCE7;--red:#E11D6E;--red-l:#FDECEC;
-    --amber:#D97706;--amber-l:#FEF3C7;--blue:#2563EB;--blue-l:#E0F2FE;--purple:#7C3AED;--purple-l:#F0E9FB;--live:#22C55E;
-    --sidebar:#0E1524;--sidebar-2:#161F32;--sidebar-line:#1E2942;--sidebar-fg:#C7D2E4;--sidebar-nav:#AEBBD3;--sidebar-dim:#7E8CA8;
-    --r-sm:10px;--r:14px;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
-    --sh-xs:0 1px 2px rgba(16,24,40,.05);--sh-sm:0 1px 3px rgba(16,24,40,.06);--sh-lg:0 20px 44px -20px rgba(16,24,40,.24);
+/* Layout: portal shell (dark rail + sticky top bar + sticky module tabs). Overview is a
+   KPI row, then a work queue and trends beside a narrower column of today's facts. */
+
+/* ============ TOKENS — portal values, plus the few marked NEW ============ */
+:root{
+  --bg:#f4f7fa; --card:#ffffff; --card-2:#fbfcfe; --line:#e4eaf2; --line-2:#eff3f8;
+  --ink:#0f172a; --muted:#5a6b84; --muted-2:#6f7f97;
+  --navy:#2e3191; --navy-d:#24286f; --navy-l:#eceefc;
+  --navy-ink:#2e3191;   /* NEW: navy used as text */
+  --on-navy:#ffffff;    /* NEW: text on a navy fill */
+  --gold:#f8bc24; --gold-d:#e0a50c; --gold-ink:#24286f; --gold-l:#fef6dc;
+  --tab-on:#8f6300;     /* NEW: active tab text that passes contrast on --bg */
+  --green:#16a34a; --green-l:#dcfce7; --green-ink:#166534;
+  --red:#e11d6e; --red-l:#fdecec; --red-ink:#9f1239; --red-line:#f4c2d4;
+  --amber:#d97706; --amber-l:#fef3c7; --amber-ink:#92400e;
+  --purple:#7c3aed; --purple-l:#f0e9fb;
+  --cb-line:#c7d2e0;
+  --sidebar:#0e1524; --sidebar-2:#161f32; --sidebar-line:#1e2942; --sidebar-width:248px;
+  --sidebar-fg:#c7d2e4; --sidebar-fg-muted:#8a97b4; --sidebar-fg-nav:#aebbd3;
+  --sidebar-fg-hover:#e6edf9; --sidebar-strong:#ffffff;
+  --r-sm:10px; --r:14px;
+  --sh-xs:0 1px 2px rgba(16,24,40,.05);
+  --sh-lg:0 18px 44px -12px rgba(16,24,40,.4);
+  --top-h:64px;         /* NEW: one source for every sticky offset */
+  --font-sans:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b111c; --card:#141c2b; --card-2:#101827; --line:#243047; --line-2:#1c2638;
+    --ink:#e8eef8; --muted:#a3b3ca; --muted-2:#8697b1;
+    --navy:#4a50c8; --navy-d:#5a60d6; --navy-l:#20244f; --navy-ink:#c3c6ff; --on-navy:#ffffff;
+    --gold-l:#3a2f0c; --tab-on:#f8bc24;
+    --green:#34c26b; --green-l:#11311f; --green-ink:#8fe3ae;
+    --red:#ff5c9a; --red-l:#3a1424; --red-ink:#ffadc9; --red-line:#6b2440;
+    --amber:#f0a63a; --amber-l:#3a2a0a; --amber-ink:#fcd58a;
+    --purple:#b79cff; --purple-l:#2a2050; --cb-line:#3a4a66;
+    color-scheme:dark;
   }
-  *,*::before,*::after{box-sizing:border-box}*{margin:0;padding:0}
-  body{background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
-  a{color:inherit;text-decoration:none}svg{flex:0 0 auto}
-  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
-  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+}
+:root[data-theme="dark"]{
+  --bg:#0b111c; --card:#141c2b; --card-2:#101827; --line:#243047; --line-2:#1c2638;
+  --ink:#e8eef8; --muted:#a3b3ca; --muted-2:#8697b1;
+  --navy:#4a50c8; --navy-d:#5a60d6; --navy-l:#20244f; --navy-ink:#c3c6ff; --on-navy:#ffffff;
+  --gold-l:#3a2f0c; --tab-on:#f8bc24;
+  --green:#34c26b; --green-l:#11311f; --green-ink:#8fe3ae;
+  --red:#ff5c9a; --red-l:#3a1424; --red-ink:#ffadc9; --red-line:#6b2440;
+  --amber:#f0a63a; --amber-l:#3a2a0a; --amber-ink:#fcd58a;
+  --purple:#b79cff; --purple-l:#2a2050; --cb-line:#3a4a66;
+  color-scheme:dark;
+}
+@media (max-width:520px){ :root{ --top-h:56px } }
 
-  .side{background:var(--sidebar);color:var(--sidebar-fg);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
-  .side__brand{display:flex;align-items:center;gap:11px;padding:20px 20px 16px}
-  .side__logo{width:38px;height:38px;border-radius:9px;background:#fff;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-  .side__logo svg{width:22px;height:22px;stroke:var(--navy)}
-  .side__brand b{font-weight:800;font-size:16px;color:#fff;display:block}
-  .side__brand span{font-size:10px;letter-spacing:.14em;color:var(--sidebar-dim);font-weight:600}
-  .side__role{margin:2px 14px 12px;padding:11px 13px;border:1px solid rgba(245,197,24,.4);background:rgba(245,197,24,.08);border-radius:11px;display:flex;align-items:center;gap:10px}
-  .side__role svg{width:17px;height:17px;stroke:var(--gold)}
-  .side__role b{color:var(--gold);font-size:12.5px;font-weight:700;display:block}
-  .side__role span{color:var(--sidebar-dim);font-size:11px}
-  .nav{flex:1;overflow-y:auto;padding:4px 12px}.nav::-webkit-scrollbar{width:0}
-  .nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;color:var(--sidebar-nav);font-size:13.5px;font-weight:500;margin-bottom:2px}
-  .nav a svg{width:18px;height:18px;stroke:currentColor}
-  .nav a:hover{background:var(--sidebar-2);color:#E6EDF9}
-  .nav a.on{background:linear-gradient(90deg,rgba(245,197,24,.16),rgba(245,197,24,.04));color:#fff;font-weight:600;box-shadow:inset 2px 0 0 var(--gold)}
-  .side__foot{border-top:1px solid var(--sidebar-line);padding:10px 12px}
-  .side__foot a{display:flex;align-items:center;gap:11px;padding:9px 12px;color:var(--sidebar-dim);font-size:13px;border-radius:8px}
-  .side__foot a:hover{background:var(--sidebar-2);color:var(--sidebar-fg)}
-  .side__foot a svg{width:17px;height:17px;stroke:currentColor}
+*,*::before,*::after{box-sizing:border-box}
+*{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button,select,input,textarea{font:inherit;color:inherit}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 
-  .main{display:flex;flex-direction:column;min-width:0}
-  .top{height:64px;background:rgba(255,255,255,.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 26px;gap:12px;position:sticky;top:0;z-index:10}
-  .top h1{font-size:16px;font-weight:700}
-  .pill{font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--navy);background:var(--gold-l);border-radius:999px;padding:4px 10px}
-  .content{padding:22px 26px 40px;overflow-x:hidden}
+/* ============ SHELL — existing, with the sticky fix applied ============ */
+.app{display:grid;grid-template-columns:var(--sidebar-width) minmax(0,1fr);min-height:100dvh}
+.side{background:var(--sidebar);color:var(--sidebar-fg);display:flex;flex-direction:column;position:sticky;top:0;height:100dvh}
+.side__brand{display:flex;align-items:center;gap:11px;padding:20px 20px 16px}
+.side__logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(150deg,var(--gold),var(--gold-d));display:grid;place-items:center;color:var(--gold-ink);font-weight:800;font-size:13px;flex:0 0 auto}
+.side__brand b{font-weight:800;font-size:16px;color:var(--sidebar-strong);display:block;letter-spacing:-.01em}
+.side__brand div span{font-size:10px;letter-spacing:.14em;color:var(--sidebar-fg-muted);font-weight:600}
+.nav{flex:1;overflow-y:auto;padding:4px 12px;display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;color:var(--sidebar-fg-nav);font-size:13.5px;font-weight:500}
+.nav a svg{width:18px;height:18px;flex-shrink:0}
+.nav a:hover{background:var(--sidebar-2);color:var(--sidebar-fg-hover)}
+.nav a.on{background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 16%,transparent),color-mix(in srgb,var(--gold) 4%,transparent));color:var(--sidebar-strong);font-weight:600;box-shadow:inset 2px 0 0 var(--gold)}
+.nav a .badge{margin-left:auto;background:var(--gold);color:var(--gold-ink);font-size:10.5px;font-weight:800;min-width:19px;height:19px;border-radius:10px;display:grid;place-items:center;padding:0 5px}
 
-  .head{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
-  .head h2{font-size:22px;font-weight:800;letter-spacing:-.02em}
-  .head p{color:var(--muted);font-size:13.5px;margin-top:2px}
-  .head .r{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 14px;border-radius:10px;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer;border:1px solid transparent}
-  .btn svg{width:15px;height:15px}
-  .btn.pri{background:var(--navy);color:#fff}.btn.pri svg{stroke:#fff}
-  .btn.gold{background:var(--gold);color:var(--gold-ink)}.btn.gold svg{stroke:var(--gold-ink)}
-  .btn.ghost{background:#fff;border-color:var(--line);color:var(--ink)}.btn.ghost svg{stroke:var(--muted)}
-  .btn.sm{min-height:32px;padding:0 12px;font-size:12px;border-radius:9px}
+.main{display:flex;flex-direction:column;min-width:0}
+.top{height:var(--top-h);background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 26px;gap:12px;position:sticky;top:env(safe-area-inset-top,0px);z-index:40}
+.top h1{font-size:16px;font-weight:700;letter-spacing:-.015em}
+.ibtn.top__menu-btn{display:none}
+.top__r{margin-left:auto;display:flex;align-items:center;gap:10px}
+.top__user{display:flex;align-items:center;gap:10px}
+.top__av{width:34px;height:34px;border-radius:50%;background:var(--navy);color:var(--on-navy);display:grid;place-items:center;font-weight:700;font-size:12px;flex:0 0 auto}
+.top__user b{font-size:13px;font-weight:700;display:block;line-height:1.2}
+.top__user span{font-size:11px;color:var(--muted-2)}
+.ibtn{width:38px;height:38px;border-radius:var(--r-sm);border:1px solid transparent;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+.ibtn:hover{background:var(--bg);border-color:var(--line)}
+.ibtn svg{width:18px;height:18px}
+.pill{font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--navy-ink);background:var(--gold-l);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.top-search{flex:0 1 420px;margin-left:24px;display:flex;align-items:center;gap:8px;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:var(--bg);color:var(--muted-2)}
+.top-search svg{width:16px;height:16px;flex-shrink:0}
+.top-search input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:13px;color:var(--ink)}
 
-  /* lifecycle ribbon */
-  .life{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
-  .life button{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}
-  .life button svg{width:14px;height:14px;stroke:currentColor}
-  .life button:hover{border-color:var(--navy);color:var(--navy)}
+/* FIX: the page scrolls, not .content, so sticky offsets measure from the viewport.
+   Bottom padding keeps the last card clear of the Ask Esi dock. */
+.content{flex:1;padding:0 26px 96px;min-width:0}
 
-  /* KPI strip */
-  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
-  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px 16px;box-shadow:var(--sh-xs)}
-  .kpi .l{font-size:10.5px;font-weight:600;letter-spacing:.03em;color:var(--muted-2);text-transform:uppercase}
-  .kpi .v{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-top:8px}
-  .kpi .d{font-size:11.5px;font-weight:700;margin-top:3px}
-  .kpi .d.up{color:var(--green)}.kpi .d.warn{color:var(--amber)}.kpi .d.down{color:var(--red)}
+.subtabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--top-h));z-index:30;background:var(--bg);padding-top:8px}
+.subtabs::-webkit-scrollbar{display:none}
+.subtab{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;margin-bottom:-1px}
+.subtab svg{width:15px;height:15px;flex-shrink:0}
+.subtab:hover{color:var(--ink)}
+.subtab.on{color:var(--tab-on);border-bottom-color:var(--gold);font-weight:700}
+.subtab__badge{background:var(--navy-l);color:var(--navy-ink);font-size:10.5px;font-weight:800;min-width:19px;height:19px;border-radius:10px;display:grid;place-items:center;padding:0 5px}
+.subtab.on .subtab__badge{background:var(--gold);color:var(--gold-ink)}
 
-  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap}
-  .tab{background:none;border:0;padding:11px 15px;border-radius:9px 9px 0 0;font:inherit;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
-  .tab:hover{color:var(--ink)}.tab.on{color:var(--navy);border-bottom-color:var(--navy)}
-  .panel{display:none}.panel.on{display:block}
+.dock{position:fixed;right:22px;bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:50;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 16px 6px 6px;box-shadow:var(--sh-lg);font-size:12.5px;color:var(--muted)}
+.dock__av{width:38px;height:38px;border-radius:50%;background:var(--navy);color:var(--gold);display:grid;place-items:center}
+.dock__av svg{width:18px;height:18px}
 
-  .grid{display:grid;gap:16px}.c2{grid-template-columns:1fr 1fr}.c2a{grid-template-columns:1.4fr 1fr}
-  .box{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-xs)}
-  .box__h{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 18px 4px}
-  .box__h h3{font-size:15px;font-weight:700}.box__h p{font-size:12px;color:var(--muted-2);margin-top:2px}
-  .box__b{padding:14px 18px 18px}
-  .chart{position:relative;height:220px}
 
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted-2);padding:14px 16px 12px;background:#FAFBFD}
-  td{padding:12px 16px;border-top:1px solid var(--line-2);vertical-align:middle}
-  tr:hover td{background:#FAFBFD}
-  .who{display:flex;align-items:center;gap:11px}
-  .av{width:34px;height:34px;border-radius:50%;background:var(--navy-l);color:var(--navy);display:grid;place-items:center;font-weight:800;font-size:12px;flex-shrink:0}
-  .who b{font-weight:700;display:block;font-size:13.5px}.who .id{font-family:var(--mono);font-size:11px;color:var(--muted-2)}
-  .st{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;border-radius:999px;padding:3px 10px}
-  .st .d{width:6px;height:6px;border-radius:50%}
-  .st.ok{background:var(--green-l);color:#166534}.st.ok .d{background:var(--green)}
-  .st.leave{background:var(--amber-l);color:#92400E}.st.leave .d{background:var(--amber)}
-  .st.probation{background:var(--blue-l);color:#075985}.st.probation .d{background:var(--blue)}
+/* ============ HR — tokens added for this module (NEW) ============ */
+:root{ --blue-l:#e0f2fe; --blue-ink:#075985; --th:#fafbfd }
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){ --blue-l:#0f2c44; --blue-ink:#9ad4f5; --th:#111a29 } }
+:root[data-theme="dark"]{ --blue-l:#0f2c44; --blue-ink:#9ad4f5; --th:#111a29 }
 
-  .filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
-  .sel{height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font:inherit;font-size:13px;background:#fff}
-  .search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;background:#fff}
-  .search svg{width:16px;height:16px;stroke:var(--muted-2)}.search input{flex:1;border:0;outline:0;background:transparent;font:inherit;font-size:13px}
+/* ============ HR — existing classes, colours moved onto tokens ============ */
+.hr-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.hr-head h2{font-size:22px;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+.hr-head p{color:var(--muted);font-size:13.5px;margin-top:2px}
+.hr-head__r{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 15px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.btn svg{width:15px;height:15px;flex-shrink:0}
+.btn.pri{background:var(--navy);color:var(--on-navy)} .btn.pri:hover{background:var(--navy-d)}
+.btn.ghost{background:var(--card);border-color:var(--line);color:var(--ink)} .btn.ghost:hover{background:var(--bg)}
+.btn.sm{min-height:34px;padding:0 12px;font-size:12px;border-radius:9px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px;margin-bottom:18px}
+/* CHANGED: a KPI is a button that opens the tab holding its detail */
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px;box-shadow:var(--sh-xs);text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:3px;min-width:0}
+.kpi:hover{border-color:var(--navy)}
+.kpi .l{font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+.kpi .v{font-size:24px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:4px}
+.kpi .v small{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0}
+.kpi .d{font-size:11.5px;font-weight:600;color:var(--muted)}
+.kpi .d.warn{color:var(--amber-ink)}
+.hr-grid{display:grid;gap:16px}
+.hr-grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.hr-grid.c2a{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);align-items:start}
+.hr-stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.hr-box{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-xs);min-width:0}
+.hr-box__h{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 18px 4px;gap:12px}
+.hr-box__h h3{font-size:15px;font-weight:700}
+.hr-box__h p{font-size:12px;color:var(--muted);margin-top:2px}
+.hr-box__b{padding:14px 18px 18px}
+.hr-box__b.flush{padding:8px 0 0}
+.hr-out{display:flex;flex-direction:column}
+.hr-out__i{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--line-2);min-width:0}
+.hr-out__i:first-child{border-top:0}
+.hr-out__i > div{min-width:0}
+.hr-out__i b{display:block;font-size:13.5px;font-weight:700}
+.hr-out__i span.s{font-size:12px;color:var(--muted)}
+.hr-out__i .r{margin-left:auto;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.hr-av{width:34px;height:34px;border-radius:50%;background:var(--navy-l);color:var(--navy-ink);display:grid;place-items:center;font-weight:800;font-size:12px;flex-shrink:0}
+.hr-who{display:flex;align-items:center;gap:11px}
+.hr-who b{font-weight:700;display:block;font-size:13.5px}
+.hr-who .id{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.hr-st{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.hr-st .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+.hr-st.ok{background:var(--green-l);color:var(--green-ink)}
+.hr-st.leave{background:var(--amber-l);color:var(--amber-ink)}
+.hr-st.probation{background:var(--blue-l);color:var(--blue-ink)}
+.hr-st.bad{background:var(--red-l);color:var(--red-ink)}          /* NEW */
+.hr-st.info{background:var(--navy-l);color:var(--navy-ink)}        /* NEW */
+.hr-st.mute{background:var(--bg);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}  /* NEW */
+.hr-scroll{overflow-x:auto}
+.hr-table{width:100%;border-collapse:collapse;font-size:13px}
+.hr-table th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:12px 16px;background:var(--th);white-space:nowrap}
+.hr-table td{padding:12px 16px;border-top:1px solid var(--line-2);vertical-align:middle}
+.hr-table tbody tr:hover td{background:var(--th)}
+.hr-table .num{font-variant-numeric:tabular-nums;font-weight:700}
+.hr-table .sub{font-size:12px;color:var(--muted)}
+.hr-table tfoot td{font-weight:700;background:var(--th)}
+.hr-table tr[data-emp]{cursor:pointer}
+.hr-filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.hr-sel{height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font-size:13px;background:var(--card);color:var(--ink)}
+.hr-search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;background:var(--card);color:var(--muted-2)}
+.hr-search svg{width:16px;height:16px}
+.hr-search input{flex:1;border:0;outline:0;background:transparent;font-size:13px;min-width:0;color:var(--ink)}
+.hr-prog{height:8px;border-radius:4px;background:var(--line-2);overflow:hidden;min-width:80px}
+.hr-prog i{display:block;height:100%;background:var(--navy);border-radius:4px}
 
-  /* whos out */
-  .out{display:flex;flex-direction:column}
-  .out__i{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--line-2)}
-  .out__i:first-child{border-top:0}
-  .out__i .r{margin-left:auto;font-size:11.5px;color:var(--muted)}
+/* ============ HR — NEW ============ */
+.hr-note{font-size:12.5px;color:var(--muted);max-width:72ch}
+.hr-note b{color:var(--ink)}
+.hr-lnk{font-size:12.5px;font-weight:700;color:var(--navy-ink);background:none;border:0;cursor:pointer;min-height:32px;white-space:nowrap}
 
-  /* recruitment board */
-  .board{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
-  .col{flex:0 0 240px;background:#EEF1F6;border-radius:14px;padding:10px}
-  .col__h{display:flex;align-items:center;gap:8px;padding:6px 8px 12px}
-  .col__h .dot{width:8px;height:8px;border-radius:50%}
-  .col__h b{font-size:12.5px;font-weight:800}.col__h .c{margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:999px;font-size:11px;font-weight:800;padding:2px 8px;color:var(--muted)}
-  .appc{background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;box-shadow:var(--sh-xs);margin-bottom:9px;cursor:pointer;transition:box-shadow .15s,transform .15s}
-  .appc:hover{box-shadow:var(--sh-lg);transform:translateY(-2px)}
-  .appc b{font-size:13.5px;font-weight:700}.appc .role{font-size:12px;color:var(--muted);margin-top:2px}
-  .appc .meta{font-size:11px;color:var(--muted-2);margin-top:8px;display:flex;gap:8px}
-  .appc .go{margin-top:10px;width:100%;min-height:30px;border-radius:8px;background:var(--navy);color:#fff;border:0;font:inherit;font-weight:700;font-size:11.5px;cursor:pointer}
+/* Needs attention: the work HR has to do, ranked by date */
+.hr-attn{list-style:none;display:flex;flex-direction:column}
+.hr-attn li{display:grid;grid-template-columns:104px minmax(0,1fr) auto;gap:14px;align-items:center;padding:13px 18px;border-top:1px solid var(--line-2)}
+.hr-attn li:first-child{border-top:0}
+.hr-attn .hr-st,.hr-attn .hr-lnk{justify-self:start}
+.hr-attn b{display:block;font-size:13.5px;font-weight:700}
+.hr-attn span.s{font-size:12px;color:var(--muted)}
 
-  /* traffic light */
-  .tl{display:flex;flex-direction:column;gap:14px}
-  .tl__row .tl__top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
-  .tl__top .v{font-weight:700;display:flex;align-items:center;gap:8px}.tl__top .v .s{width:9px;height:9px;border-radius:50%}
-  .tl__bar{height:8px;border-radius:5px;background:var(--line-2);overflow:hidden}.tl__fill{height:100%;border-radius:5px}
+/* Establishment: filled posts against approved posts, one scale for every row */
+.hr-est{display:flex;flex-direction:column;gap:11px}
+.hr-est__row{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr) 86px 78px;gap:12px;align-items:center;font-size:13px}
+.hr-est__row > span:first-child{font-weight:600;overflow-wrap:anywhere}
+.hr-est__track{height:10px;border-radius:4px;background:var(--line);overflow:hidden}
+.hr-est__track i{display:block;height:100%;background:var(--navy);border-radius:4px}
+.hr-est__n{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;white-space:nowrap}
+.hr-est__n small{font-weight:500;color:var(--muted);font-size:12px}
+.hr-est__v{font-size:12px;color:var(--muted);white-space:nowrap}
+.hr-est__v.has{color:var(--amber-ink);font-weight:700}
+.hr-key{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:14px}
+.hr-key i{display:inline-block;width:18px;height:8px;border-radius:3px;margin-right:6px;vertical-align:middle}
 
-  .prog{height:10px;border-radius:6px;background:var(--line-2);overflow:hidden;margin-top:10px}.prog i{display:block;height:100%;background:var(--navy);border-radius:6px}
+/* Headcount line */
+.hr-line{position:relative}
+.hr-line svg{display:block;width:100%;height:190px;overflow:visible}
+.hr-line .grid{stroke:var(--line-2);stroke-width:1}
+.hr-line .ln{stroke:var(--navy);stroke-width:2}
+.hr-line .cross{stroke:var(--muted-2);stroke-width:1}
+.hr-line .pt{fill:var(--navy);stroke:var(--card);stroke-width:2}
+.hr-line text{fill:var(--muted);stroke:none;font-size:11px;font-family:var(--font-sans)}
+.hr-line text.end{fill:var(--ink);font-weight:800;font-size:12px}
+.hr-tip{position:absolute;top:0;transform:translateX(-50%);background:var(--ink);color:var(--card);font-size:12px;font-weight:600;border-radius:8px;padding:6px 10px;white-space:nowrap;pointer-events:none}
+.hr-tblview{margin-top:10px;font-size:12.5px;color:var(--muted)}
+.hr-tblview summary{cursor:pointer;font-weight:700;color:var(--navy-ink);min-height:28px}
+.hr-tblview table{border-collapse:collapse;margin-top:8px;font-variant-numeric:tabular-nums}
+.hr-tblview td,.hr-tblview th{padding:3px 14px 3px 0;text-align:left}
 
-  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,60px);background:var(--navy-d);color:#fff;border-radius:12px;padding:12px 18px;font-size:13.5px;font-weight:600;box-shadow:0 18px 44px -12px rgba(16,24,40,.4);opacity:0;transition:.24s;z-index:90}
-  .toast.show{opacity:1;transform:translate(-50%,0)}
+/* Leave calendar: one tint, a letter code per kind, dashed when not yet approved */
+.hr-cal{display:grid;grid-template-columns:170px repeat(10,minmax(38px,1fr));gap:4px;min-width:640px;align-items:center;font-size:12.5px}
+.hr-cal .h{font-size:11px;font-weight:700;color:var(--muted);text-align:center;line-height:1.25}
+.hr-cal .h b{display:block;color:var(--ink);font-size:12.5px}
+.hr-cal .w2{margin-left:10px}
+.hr-cal .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hr-cal .c{height:32px;border-radius:6px;background:var(--line-2);display:grid;place-items:center;font-weight:800;font-size:12px;color:var(--navy-ink)}
+.hr-cal .c.on{background:var(--navy-l)}
+.hr-cal .c.pend{background:transparent;box-shadow:inset 0 0 0 1.5px var(--navy-ink);border-radius:6px;outline:0}
+.hr-cal .c.pend{box-shadow:none;border:1.5px dashed var(--navy-ink)}
+.hr-cal .c.today{box-shadow:inset 0 -3px 0 var(--gold)}
 
-  @media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.c2,.c2a{grid-template-columns:1fr}}
-  @media(max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.kpis{grid-template-columns:repeat(2,1fr)}.content{padding:16px}}
+/* Competence matrix */
+.hr-mx th.c,.hr-mx td.c{text-align:center}
+.hr-mx th.c{white-space:normal;min-width:104px;line-height:1.3}
+.hr-mx .none{color:var(--muted-2)}
+
+/* Payroll run steps */
+.hr-steps{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.hr-steps li{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;background:var(--card)}
+.hr-steps b{font-size:13px}
+.hr-steps span{font-size:12px;color:var(--muted)}
+.hr-steps li.done{background:var(--green-l);border-color:transparent}
+.hr-steps li.done b,.hr-steps li.done span{color:var(--green-ink)}
+.hr-steps li.now{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+.hr-steps em{font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+/* Recruitment funnel counts */
+.hr-funnel{display:flex;gap:6px}
+.hr-funnel span{min-width:44px;text-align:center;border-radius:7px;background:var(--bg);border:1px solid var(--line);padding:3px 6px;font-size:11px;color:var(--muted);line-height:1.3}
+.hr-funnel b{display:block;font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* Employee record drawer */
+.hr-scrim{position:fixed;inset:0;background:rgba(8,12,22,.45);z-index:70}
+.hr-drawer{position:fixed;top:0;right:0;bottom:0;width:min(480px,100vw);background:var(--card);border-left:1px solid var(--line);z-index:71;display:flex;flex-direction:column;box-shadow:var(--sh-lg);padding-top:env(safe-area-inset-top,0px)}
+.hr-drawer__h{display:flex;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line)}
+.hr-drawer__h .hr-av{width:44px;height:44px;font-size:14px}
+.hr-drawer__h h3{font-size:17px;font-weight:800;letter-spacing:-.01em}
+.hr-drawer__h p{font-size:12.5px;color:var(--muted)}
+.hr-drawer__b{flex:1;overflow-y:auto;padding:18px 20px 28px;display:flex;flex-direction:column;gap:22px}
+.hr-sec{display:flex;flex-direction:column;gap:10px}
+.hr-sec h4{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hr-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;font-size:13px}
+.hr-kv div{display:flex;flex-direction:column;min-width:0}
+.hr-kv dt{font-size:11.5px;color:var(--muted)}
+.hr-kv dd{font-weight:600;overflow-wrap:anywhere}
+.hr-lock{display:flex;gap:12px;align-items:center;justify-content:space-between;border:1px dashed var(--line);border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.hr-bal{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:12.5px}
+.hr-bal b{font-variant-numeric:tabular-nums}
+.hr-hist{list-style:none;display:flex;flex-direction:column;gap:10px;font-size:12.5px}
+.hr-hist li{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px}
+.hr-hist time{color:var(--muted);font-variant-numeric:tabular-nums}
+
+.hr-toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));transform:translate(-50%,60px);background:var(--navy-d);color:var(--on-navy);border-radius:12px;padding:12px 18px;font-size:13.5px;font-weight:600;box-shadow:var(--sh-lg);opacity:0;pointer-events:none;transition:opacity .24s,transform .24s;z-index:90;max-width:calc(100vw - 40px)}
+.hr-toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:1180px){
+  .hr-grid.c2a,.hr-grid.c2{grid-template-columns:minmax(0,1fr)}
+  .subtabs{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+}
+@media (max-width:700px){
+  .hr-attn li{grid-template-columns:minmax(0,1fr);gap:6px;padding:13px 16px}
+  .hr-est__row{grid-template-columns:minmax(0,1fr) auto;row-gap:5px}
+  .hr-est__bar{grid-column:1/-1;order:3}
+  .hr-est__v{grid-column:1/-1;order:4}
+  .hr-head__r{margin-left:0;width:100%}
+  .hr-table{min-width:640px}
+  .hr-kv{grid-template-columns:minmax(0,1fr)}
+}
+
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;inset:0 auto 0 0;width:var(--sidebar-width);z-index:60;transform:translateX(-100%);transition:transform .2s}
+  .app.nav-open .side{transform:none}
+  .ibtn.top__menu-btn{display:grid}
+  .top-search{display:none}
+  .top{padding:0 16px}
+  .content{padding:0 16px 96px}
+}
+@media (max-width:560px){ .top__user div,.pill{display:none} .dock span:last-child{display:none} .dock{padding:6px} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
 </style>
-</head>
-<body>
-<div class="app">
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
-    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
-    <symbol id="i-check-c" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.3 2.3L15.5 9.5"/></symbol>
-    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 7"/></symbol>
-    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
-    <symbol id="i-badge" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5.5"/><path d="M9.7 13.5L8 21l4-2 4 2-1.7-7.5"/></symbol>
-    <symbol id="i-gauge" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1116 0"/><path d="M12 18l4-5"/><circle cx="12" cy="18" r="1"/></symbol>
-    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h5"/></symbol>
-    <symbol id="i-dollar" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M16 7.5c0-1.9-1.8-3-4-3s-4 1.1-4 3 1.8 2.7 4 3.2 4 1.3 4 3.3-1.8 3.2-4 3.2-4-1.3-4-3.2"/></symbol>
-    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0112 0M16 5.5a3.2 3.2 0 010 6M21 20a6 6 0 00-4-5.6"/></symbol>
-    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></symbol>
-    <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
-    <symbol id="i-cleft" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8l-4 4 4 4"/></symbol>
-    <symbol id="i-out" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H6a2 2 0 00-2 2v12a2 2 0 002 2h8M16 8l4 4-4 4M20 12H9"/></symbol>
-    <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5.6 5.6L4.2 4.2M19.8 19.8l-1.4-1.4M18.4 5.6l1.4-1.4M4.2 19.8l1.4-1.4"/></symbol>
-    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1112 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M10 20a2 2 0 004 0"/></symbol>
-    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
-    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></symbol>
-    <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/></symbol>
-    <symbol id="i-plane" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14l-6 2 1-4 11-7a2 2 0 013 2l-7 11-4 1z"/></symbol>
-    <symbol id="i-brief" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M3 12h18"/></symbol>
-    <symbol id="i-award" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5.5"/><path d="M9.7 13.5L8 21l4-2 4 2-1.7-7.5"/></symbol>
-    <symbol id="i-coins" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v5c0 1.7 2.7 3 6 3M15 11a6 3 0 016 3v0M15 14v4c0 1.7 2.7 3 6 3s6-1.3 6-3v-4"/></symbol>
-    <symbol id="i-org" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></symbol>
-    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
-    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 5 8-5"/></symbol>
-  </svg>
 
-  <aside class="side">
-    <div class="side__brand"><span class="side__logo"><svg><use href="#i-shield"/></svg></span><div><b>EswasaOne</b><span>INSTITUTION PORTAL</span></div></div>
-    <div class="side__role"><svg><use href="#i-check-c"/></svg><div><b>HR Manager</b><span>hr@eswasa.co.sz</span></div></div>
-    <nav class="nav">
-      <a href="#"><svg><use href="#i-grid"/></svg>Dashboard</a>
-      <a href="#"><svg><use href="#i-check-c"/></svg>Approvals</a>
-      <a href="#"><svg><use href="#i-badge"/></svg>Certification</a>
-      <a href="#"><svg><use href="#i-gauge"/></svg>Metrology &amp; LIMS</a>
-      <a href="#"><svg><use href="#i-file"/></svg>Standards Dev</a>
-      <a href="#"><svg><use href="#i-dollar"/></svg>Finance</a>
-      <a href="#" class="on"><svg><use href="#i-users"/></svg>HR &amp; People</a>
-      <a href="#"><svg><use href="#i-sliders"/></svg>System Administration</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3 13h5l1.5 3h5L16 13h5"/><path d="M5.5 5h13L21 13v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.700 6 6"/><path d="M16 5a3.2 3.2 0 0 1 0 6.200M18 14.300c1.800.900 3 2.800 3 5.700"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></symbol>
+    <symbol id="i-done" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.500l2.800 2.800L16 9.500"/></symbol>
+    <symbol id="i-approve" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.500 12.300l2.500 2.500 4.700-5.300"/></symbol>
+    <symbol id="i-task" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3.500h6V5M9 11h6M9 15h4"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 15.500H3z"/><path d="M12 10v4M12 17v.200"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.500"/><path d="M16 16l4.500 4.500"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.500 3v5.500c0 4.500-3 8-7.500 9.500-4.500-1.500-7.500-5-7.500-9.500V6z"/><path d="M9 12l2.200 2.200L15 10"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.500 2h-15zM10 20.500h4"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.500" height="6.500" rx="1.500"/><rect x="13.500" y="4" width="6.500" height="6.500" rx="1.500"/><rect x="4" y="13.500" width="6.500" height="6.500" rx="1.500"/><rect x="13.500" y="13.500" width="6.500" height="6.500" rx="1.500"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></symbol>
+    <symbol id="i-case" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2"/></symbol>
+    <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M9 13.500L8 21l4-2 4 2-1-7.500"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4L3 6.500V20l6-2.500 6 2.500 6-2.500V4l-6 2.500zM9 4v13.500M15 6.500V20"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.500 3 14.500 0 18M12 3c-3 3.500-3 14.500 0 18"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16M8 16v-4M12 16V8M16 16v-6"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+    <symbol id="i-chip" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></symbol>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+  <aside class="side" id="side">
+    <div class="side__brand"><span class="side__logo">E1</span><div><b>EswasaOne</b><span>INSTITUTION PORTAL</span></div></div>
+    <nav class="nav" aria-label="Modules">
+      <a href="#overview"><svg><use href="#i-grid"/></svg>Dashboard</a>
+      <a href="#overview"><svg><use href="#i-done"/></svg>Approvals<span class="badge">3</span></a>
+      <a href="#overview"><svg><use href="#i-trend"/></svg>Board &amp; Governance</a>
+      <a href="#overview"><svg><use href="#i-case"/></svg>CRM &amp; Commercial</a>
+      <a href="#overview"><svg><use href="#i-award"/></svg>Certification</a>
+      <a href="#overview"><svg><use href="#i-book"/></svg>Standards Dev</a>
+      <a href="#overview"><svg><use href="#i-gauge"/></svg>Metrology &amp; LIMS</a>
+      <a href="#overview"><svg><use href="#i-map"/></svg>Field Operations</a>
+      <a href="#overview"><svg><use href="#i-globe"/></svg>WTO/TBT Alerts</a>
+      <a href="#overview" class="on" aria-current="page"><svg><use href="#i-users"/></svg>HR &amp; People</a>
+      <a href="#overview"><svg><use href="#i-chart"/></svg>Reports &amp; Analytics</a>
+      <a href="#overview"><svg><use href="#i-sliders"/></svg>System Administration</a>
     </nav>
-    <div class="side__foot"><a href="#"><svg><use href="#i-cleft"/></svg>Collapse</a><a href="#"><svg><use href="#i-out"/></svg>Sign Out</a></div>
   </aside>
 
   <div class="main">
-    <header class="top"><h1>HR &amp; People</h1><span class="pill">HR MANAGER</span></header>
+    <header class="top">
+      <button type="button" class="ibtn top__menu-btn" id="menuBtn" aria-label="Open navigation" aria-expanded="false" aria-controls="side"><svg><use href="#i-menu"/></svg></button>
+      <h1>HR &amp; People</h1>
+      <div class="top-search"><svg><use href="#i-search"/></svg><label class="sr-only" for="topSearch">Ask EswasaOne</label><input id="topSearch" type="text" placeholder="Ask EswasaOne"></div>
+      <div class="top__r">
+        <span class="pill">MOCKUP · SAMPLE DATA</span>
+        <button type="button" class="ibtn" aria-label="Notifications"><svg><use href="#i-bell"/></svg></button>
+        <div class="top__user"><span class="top__av">NS</span><div><b>Nokuthula Shongwe</b><span>HR Manager</span></div></div>
+      </div>
+    </header>
+
     <div class="content">
-      <div class="head">
-        <div><h2>HR &amp; People</h2><p>Plan → hire → onboard → manage → develop → pay · FY2026</p></div>
-        <div class="r">
-          <button class="btn gold"><svg><use href="#i-plus"/></svg>Invite staff</button>
-          <button class="btn ghost" onclick="show('recruitment',document.querySelectorAll('.tab')[3])"><svg><use href="#i-brief"/></svg>Post a job</button>
-          <button class="btn ghost" onclick="toast('Appraisal cycle Q2 opened')"><svg><use href="#i-award"/></svg>Start appraisal</button>
-        </div>
-      </div>
+      <nav class="subtabs" aria-label="HR sections">
+        <a class="subtab on" aria-current="page" href="#overview" data-tab="overview">Overview</a>
+        <a class="subtab" href="#directory" data-tab="directory">Directory</a>
+        <a class="subtab" href="#structure" data-tab="structure">Structure</a>
+        <a class="subtab" href="#timeoff" data-tab="timeoff">Time off</a>
+        <a class="subtab" href="#competence" data-tab="competence">Competence<span class="subtab__badge">4</span></a>
+        <a class="subtab" href="#recruitment" data-tab="recruitment">Recruitment</a>
+        <a class="subtab" href="#performance" data-tab="performance">Performance</a>
+        <a class="subtab" href="#payroll" data-tab="payroll">Payroll<span class="subtab__badge">3</span></a>
+        <a class="subtab" href="#cases" data-tab="cases">Cases</a>
+      </nav>
 
-      <div class="life">
-        <button onclick="show('overview',document.querySelectorAll('.tab')[0])"><svg><use href="#i-org"/></svg>Plan</button>
-        <button onclick="show('recruitment',document.querySelectorAll('.tab')[3])"><svg><use href="#i-brief"/></svg>Hire</button>
-        <button onclick="show('directory',document.querySelectorAll('.tab')[1])"><svg><use href="#i-users"/></svg>Onboard &amp; manage</button>
-        <button onclick="show('performance',document.querySelectorAll('.tab')[4])"><svg><use href="#i-award"/></svg>Develop</button>
-        <button onclick="show('payroll',document.querySelectorAll('.tab')[5])"><svg><use href="#i-coins"/></svg>Pay</button>
-      </div>
-
-      <section class="kpis">
-        <div class="kpi"><div class="l">Headcount</div><div class="v">92</div><div class="d up">↑ 4 this quarter</div></div>
-        <div class="kpi"><div class="l">New hires (Q)</div><div class="v">4</div><div class="d">2 onboarding</div></div>
-        <div class="kpi"><div class="l">On leave today</div><div class="v">5</div><div class="d">of 92</div></div>
-        <div class="kpi"><div class="l">Leave requests</div><div class="v" style="color:var(--amber)">11</div><div class="d warn">pending approval</div></div>
-        <div class="kpi"><div class="l">Appraisal done</div><div class="v" style="color:var(--red)">64%</div><div class="d down">target 100%</div></div>
-        <div class="kpi"><div class="l">Open positions</div><div class="v">3</div><div class="d">28 applicants</div></div>
-      </section>
-
-      <div class="tabs">
-        <button class="tab on" onclick="show('overview',this)">Overview</button>
-        <button class="tab" onclick="show('directory',this)">Directory</button>
-        <button class="tab" onclick="show('timeoff',this)">Time off</button>
-        <button class="tab" onclick="show('recruitment',this)">Recruitment</button>
-        <button class="tab" onclick="show('performance',this)">Performance</button>
-        <button class="tab" onclick="show('payroll',this)">Payroll</button>
-      </div>
-
-      <!-- OVERVIEW -->
-      <section class="panel on" id="overview">
-        <div class="grid c2a">
-          <div class="box"><div class="box__h"><div><h3>Headcount by department</h3><p>92 staff across 8 departments</p></div></div><div class="box__b"><div class="chart"><canvas id="dept"></canvas></div></div></div>
-          <div class="box"><div class="box__h"><div><h3>Workforce today</h3></div></div><div class="box__b"><div class="chart" style="height:190px"><canvas id="today"></canvas></div>
-            <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:12px;color:var(--muted)"><span>● Present 82</span><span style="color:var(--amber)">● On leave 5</span><span style="color:var(--muted-2)">● Remote 5</span></div>
-          </div></div>
-        </div>
-        <div class="grid c2" style="margin-top:16px">
-          <div class="box"><div class="box__h"><div><h3>Out today</h3></div></div><div class="box__b out">
-            <div class="out__i"><span class="av">TM</span><div><b>T. Mabuza</b><span style="font-size:11.5px;color:var(--muted-2)">Metrology</span></div><span class="r">Annual · back 4 Oct</span></div>
-            <div class="out__i"><span class="av">LD</span><div><b>L. Dube</b><span style="font-size:11.5px;color:var(--muted-2)">Standards</span></div><span class="r">Sick · 1 day</span></div>
-            <div class="out__i"><span class="av">PN</span><div><b>P. Nhlabatsi</b><span style="font-size:11.5px;color:var(--muted-2)">Certification</span></div><span class="r">Annual · back 2 Oct</span></div>
-            <div class="out__i"><span class="av">SM</span><div><b>S. Motsa</b><span style="font-size:11.5px;color:var(--muted-2)">Finance</span></div><span class="r">Study leave</span></div>
-          </div></div>
-          <div class="box"><div class="box__h"><div><h3>Recent activity</h3></div></div><div class="box__b out">
-            <div class="out__i"><span style="width:8px;height:8px;border-radius:50%;background:var(--green)"></span><div><b style="font-weight:600;font-size:13px">Leave approved — P. Nhlabatsi (annual)</b></div><span class="r">2h</span></div>
-            <div class="out__i"><span style="width:8px;height:8px;border-radius:50%;background:var(--blue)"></span><div><b style="font-weight:600;font-size:13px">New hire onboarding started — J. Simelane</b></div><span class="r">1d</span></div>
-            <div class="out__i"><span style="width:8px;height:8px;border-radius:50%;background:var(--gold-d)"></span><div><b style="font-weight:600;font-size:13px">Appraisal cycle Q2 opened — 92 reviews</b></div><span class="r">2d</span></div>
-            <div class="out__i"><span style="width:8px;height:8px;border-radius:50%;background:var(--purple)"></span><div><b style="font-weight:600;font-size:13px">Interview scheduled — Cert Officer role</b></div><span class="r">3d</span></div>
-          </div></div>
-        </div>
-      </section>
-
-      <!-- DIRECTORY -->
-      <section class="panel" id="directory">
-        <div class="filters">
-          <select class="sel"><option>All departments</option><option>Certification</option><option>Metrology</option><option>Standards</option><option>Finance</option><option>HR &amp; Admin</option><option>Executive</option></select>
-          <select class="sel"><option>All status</option><option>Active</option><option>On leave</option><option>Probation</option></select>
-          <div class="search"><svg><use href="#i-search"/></svg><input placeholder="Search name, ID, designation…"></div>
-          <button class="btn ghost"><svg><use href="#i-org"/></svg>Org chart</button>
-        </div>
-        <div class="box"><table><thead><tr><th>Employee</th><th>Designation</th><th>Department</th><th>Joined</th><th>Status</th><th style="text-align:right">Action</th></tr></thead><tbody>
-          <tr><td><div class="who"><span class="av">ND</span><div><b>Nomsa Dlamini</b><span class="id">HR-EMP-0007</span></div></div></td><td>Systems Manager</td><td>IT</td><td>2019</td><td><span class="st ok"><span class="d"></span>Active</span></td><td style="text-align:right"><button class="btn ghost sm">View</button></td></tr>
-          <tr><td><div class="who"><span class="av">SN</span><div><b>Sipho Nkambule</b><span class="id">HR-EMP-0012</span></div></div></td><td>Certification Officer</td><td>Certification</td><td>2021</td><td><span class="st ok"><span class="d"></span>Active</span></td><td style="text-align:right"><button class="btn ghost sm">View</button></td></tr>
-          <tr><td><div class="who"><span class="av">TM</span><div><b>Thandi Mabuza</b><span class="id">HR-EMP-0018</span></div></div></td><td>Metrologist</td><td>Metrology</td><td>2018</td><td><span class="st leave"><span class="d"></span>On leave</span></td><td style="text-align:right"><button class="btn ghost sm">View</button></td></tr>
-          <tr><td><div class="who"><span class="av">BS</span><div><b>Bongani Simelane</b><span class="id">HR-EMP-0024</span></div></div></td><td>Accountant</td><td>Finance</td><td>2020</td><td><span class="st ok"><span class="d"></span>Active</span></td><td style="text-align:right"><button class="btn ghost sm">View</button></td></tr>
-          <tr><td><div class="who"><span class="av">LD</span><div><b>Lindiwe Dube</b><span class="id">HR-EMP-0031</span></div></div></td><td>Standards Officer</td><td>Standards</td><td>2022</td><td><span class="st ok"><span class="d"></span>Active</span></td><td style="text-align:right"><button class="btn ghost sm">View</button></td></tr>
-          <tr><td><div class="who"><span class="av">JS</span><div><b>Jabu Simelane</b><span class="id">HR-EMP-0089</span></div></div></td><td>Lab Technician</td><td>Metrology</td><td>2026</td><td><span class="st probation"><span class="d"></span>Probation</span></td><td style="text-align:right"><button class="btn ghost sm">View</button></td></tr>
-        </tbody></table></div>
-      </section>
-
-      <!-- TIME OFF -->
-      <section class="panel" id="timeoff">
-        <div class="box" style="margin-bottom:16px"><div class="box__h"><div><h3>Leave requests</h3><p>Pending your approval</p></div><span class="st leave"><span class="d"></span>11 pending</span></div>
-          <div class="box__b" style="padding:0 0 8px"><table><thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Balance</th><th style="text-align:right">Action</th></tr></thead><tbody id="leaveBody"></tbody></table></div>
-        </div>
-        <div class="grid c2">
-          <div class="box"><div class="box__h"><div><h3>Leave balances (avg)</h3></div></div><div class="box__b">
-            <div class="tl"><div class="tl__row"><div class="tl__top"><span>Annual</span><span class="v mono">14.2 / 21 days</span></div><div class="tl__bar"><div class="tl__fill" style="width:68%;background:var(--navy)"></div></div></div>
-            <div class="tl__row"><div class="tl__top"><span>Sick</span><span class="v mono">9 / 14 days</span></div><div class="tl__bar"><div class="tl__fill" style="width:64%;background:var(--blue)"></div></div></div>
-            <div class="tl__row"><div class="tl__top"><span>Study</span><span class="v mono">4 / 5 days</span></div><div class="tl__bar"><div class="tl__fill" style="width:80%;background:var(--purple)"></div></div></div></div>
-          </div></div>
-          <div class="box"><div class="box__h"><div><h3>Upcoming holidays</h3><p>Eswatini 2026</p></div></div><div class="box__b out">
-            <div class="out__i"><svg style="width:16px;height:16px;stroke:var(--navy)"><use href="#i-cal"/></svg><div><b style="font-size:13px">Somhlolo Day</b></div><span class="r mono">6 Sep</span></div>
-            <div class="out__i"><svg style="width:16px;height:16px;stroke:var(--navy)"><use href="#i-cal"/></svg><div><b style="font-size:13px">Incwala Day</b></div><span class="r mono">Dec</span></div>
-            <div class="out__i"><svg style="width:16px;height:16px;stroke:var(--navy)"><use href="#i-cal"/></svg><div><b style="font-size:13px">Christmas Day</b></div><span class="r mono">25 Dec</span></div>
-          </div></div>
-        </div>
-      </section>
-
-      <!-- RECRUITMENT -->
-      <section class="panel" id="recruitment">
-        <div class="box" style="margin-bottom:16px"><div class="box__h"><div><h3>Open positions</h3><p>3 open · 28 applicants</p></div><button class="btn gold sm"><svg><use href="#i-plus"/></svg>Post a job</button></div>
-          <div class="box__b" style="padding:0 0 8px"><table><thead><tr><th>Role</th><th>Department</th><th>Applicants</th><th>Posted</th><th style="text-align:right"></th></tr></thead><tbody>
-            <tr><td style="font-weight:700">Certification Officer</td><td>Certification</td><td>14</td><td>2 wks ago</td><td style="text-align:right"><button class="btn ghost sm">View</button></td></tr>
-            <tr><td style="font-weight:700">Lab Technician</td><td>Metrology</td><td>9</td><td>3 wks ago</td><td style="text-align:right"><button class="btn ghost sm">View</button></td></tr>
-            <tr><td style="font-weight:700">Standards Officer</td><td>Standards</td><td>5</td><td>1 wk ago</td><td style="text-align:right"><button class="btn ghost sm">View</button></td></tr>
-          </tbody></table></div>
-        </div>
-        <h3 style="font-size:15px;font-weight:800;margin-bottom:12px">Applicant pipeline — Certification Officer</h3>
-        <div class="board" id="pipe"></div>
-      </section>
-
-      <!-- PERFORMANCE -->
-      <section class="panel" id="performance">
-        <div class="box" style="margin-bottom:16px"><div class="box__h"><div><h3>Appraisal cycle · Q2 FY2026</h3><p>Opened 2 days ago · closes 30 Sep</p></div><span class="st leave"><span class="d"></span>64% complete</span></div>
-          <div class="box__b"><div style="display:flex;justify-content:space-between;font-size:13px"><span>59 of 92 reviews submitted</span><span class="mono" style="font-weight:700">64%</span></div><div class="prog"><i style="width:64%"></i></div>
-            <div style="margin-top:14px;display:flex;gap:8px"><button class="btn pri sm" onclick="toast('Reminders sent to 33 managers')"><svg><use href="#i-mail"/></svg>Remind pending</button><button class="btn ghost sm">View cycle</button></div>
-          </div></div>
-        <div class="box"><div class="box__h"><div><h3>Completion by department</h3></div></div><div class="box__b">
-          <div class="tl">
-            <div class="tl__row"><div class="tl__top"><span>Certification</span><span class="v">18/20 · 90% <span class="s" style="background:var(--green)"></span></span></div><div class="tl__bar"><div class="tl__fill" style="width:90%;background:var(--green)"></div></div></div>
-            <div class="tl__row"><div class="tl__top"><span>Metrology</span><span class="v">12/16 · 75% <span class="s" style="background:var(--amber)"></span></span></div><div class="tl__bar"><div class="tl__fill" style="width:75%;background:var(--amber)"></div></div></div>
-            <div class="tl__row"><div class="tl__top"><span>Standards</span><span class="v">9/14 · 64% <span class="s" style="background:var(--amber)"></span></span></div><div class="tl__bar"><div class="tl__fill" style="width:64%;background:var(--amber)"></div></div></div>
-            <div class="tl__row"><div class="tl__top"><span>Finance</span><span class="v">4/10 · 40% <span class="s" style="background:var(--red)"></span></span></div><div class="tl__bar"><div class="tl__fill" style="width:40%;background:var(--red)"></div></div></div>
-            <div class="tl__row"><div class="tl__top"><span>Admin &amp; others</span><span class="v">16/32 · 50% <span class="s" style="background:var(--red)"></span></span></div><div class="tl__bar"><div class="tl__fill" style="width:50%;background:var(--red)"></div></div></div>
+      <!-- ===================== OVERVIEW ===================== -->
+      <section data-panel="overview">
+        <div class="hr-head">
+          <div><h2>People overview</h2><p>As at Friday 9 October 2026. 86 employees in 10 departments.</p></div>
+          <div class="hr-head__r">
+            <button type="button" class="btn ghost" data-toast="Builds the monthly HR pack for the Board: headcount, movements, vacancies, leave liability and competence cover.">Board HR pack</button>
+            <button type="button" class="btn pri" data-toast="Opens the new-employee form: person, position, contract, then onboarding tasks for ICT, Finance and the line manager.">Add employee</button>
           </div>
-        </div></div>
-      </section>
+        </div>
 
-      <!-- PAYROLL -->
-      <section class="panel" id="payroll">
-        <div class="box" style="margin-bottom:16px"><div class="box__h"><div><h3>Payroll run · February 2026</h3><p>92 employees · monthly</p></div><span class="st probation"><span class="d"></span>Draft</span></div>
-          <div class="box__b"><div class="grid" style="grid-template-columns:repeat(3,1fr)">
-            <div><div class="l" style="font-size:10.5px;font-weight:600;color:var(--muted-2);text-transform:uppercase">Gross</div><div class="mono" style="font-size:20px;font-weight:800">SZL 1.28M</div></div>
-            <div><div class="l" style="font-size:10.5px;font-weight:600;color:var(--muted-2);text-transform:uppercase">Deductions</div><div class="mono" style="font-size:20px;font-weight:800">SZL 214K</div></div>
-            <div><div class="l" style="font-size:10.5px;font-weight:600;color:var(--muted-2);text-transform:uppercase">Net pay</div><div class="mono" style="font-size:20px;font-weight:800;color:var(--navy)">SZL 1.07M</div></div>
+        <div class="kpis">
+          <button type="button" class="kpi" data-jump="structure"><span class="l">Headcount</span><span class="v">86 <small>of 96 posts</small></span><span class="d">90% of the approved establishment</span></button>
+          <button type="button" class="kpi" data-jump="recruitment"><span class="l">Vacancies</span><span class="v">10</span><span class="d">4 in recruitment, 2 frozen, 4 not started</span></button>
+          <button type="button" class="kpi" data-jump="timeoff"><span class="l">Away today</span><span class="v">5</span><span class="d">3 on leave, 2 on field work</span></button>
+          <button type="button" class="kpi" data-jump="directory"><span class="l">Turnover, 12 months</span><span class="v">8.4%</span><span class="d">7 leavers, 12 joiners</span></button>
+          <button type="button" class="kpi" data-jump="directory"><span class="l">Ending in 60 days</span><span class="v">5</span><span class="d warn">3 contracts, 2 probations</span></button>
+        </div>
+
+        <div class="hr-grid c2a">
+          <div class="hr-stack">
+            <div class="hr-box">
+              <div class="hr-box__h"><div><h3>Needs attention</h3><p>Ordered by the date something stops working</p></div></div>
+              <div class="hr-box__b flush">
+                <ul class="hr-attn">
+                  <li><span class="hr-st bad"><span class="d"></span>By 13 Oct</span><div><b>Zanele Nkosi is on leave 14 to 16 Oct with no cover</b><span class="s">3 technical reviews in Certification would wait until she is back.</span></div><button type="button" class="hr-lnk" data-jump="timeoff">Time off</button></li>
+                  <li><span class="hr-st leave"><span class="d"></span>By 20 Oct</span><div><b>3 payroll changes are waiting for approval</b><span class="s">October cut-off is 20 Oct. Unapproved changes roll to November.</span></div><button type="button" class="hr-lnk" data-jump="payroll">Payroll</button></li>
+                  <li><span class="hr-st leave"><span class="d"></span>By 31 Oct</span><div><b>2 probation reviews are due</b><span class="s">Bongani Dlamini and one other. No review means automatic confirmation.</span></div><button type="button" class="hr-lnk" data-jump="directory">Directory</button></li>
+                  <li><span class="hr-st leave"><span class="d"></span>From 15 Nov</span><div><b>4 auditor and metrologist authorisations expire</b><span class="s">Once expired, Certification and Metrology can no longer assign these people to that work.</span></div><button type="button" class="hr-lnk" data-jump="competence">Competence</button></li>
+                  <li><span class="hr-st leave"><span class="d"></span>By 30 Nov</span><div><b>3 fixed-term contracts end</b><span class="s">Decide to renew, convert to permanent, or let them end.</span></div><button type="button" class="hr-lnk" data-jump="directory">Directory</button></li>
+                  <li><span class="hr-st info"><span class="d"></span>Open</span><div><b>6 impartiality declarations are outstanding for 2026/27</b><span class="s">80 of 86 signed. Unsigned staff are excluded from audit and decision work.</span></div><button type="button" class="hr-lnk" data-jump="competence">Competence</button></li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="hr-box">
+              <div class="hr-box__h"><div><h3>Establishment by department</h3><p>Filled posts against approved posts</p></div><button type="button" class="hr-lnk" data-jump="structure">Open Structure</button></div>
+              <div class="hr-box__b">
+                <div class="hr-est" id="est"></div>
+                <div class="hr-key"><span><i style="background:var(--navy)"></i>Filled</span><span><i style="background:var(--line)"></i>Approved but vacant</span></div>
+              </div>
+            </div>
+
+            <div class="hr-box">
+              <div class="hr-box__h"><div><h3>Headcount, last 12 months</h3><p>Employees on the payroll at month end</p></div></div>
+              <div class="hr-box__b">
+                <div class="hr-line" id="hcChart" role="img" aria-label="Headcount rose from 81 in November 2025 to 86 in October 2026"></div>
+                <details class="hr-tblview"><summary>Show as table</summary><table id="hcTable"></table></details>
+              </div>
+            </div>
           </div>
-          <div style="margin-top:16px;display:flex;gap:8px"><button class="btn pri sm" onclick="toast('Payroll previewed — 92 slips')"><svg><use href="#i-eye"/></svg>Preview slips</button><button class="btn gold sm" onclick="toast('Payroll submitted for approval')">Submit for approval</button></div>
-          </div></div>
-        <div class="box"><div class="box__h"><div><h3>Recent salary slips</h3></div></div><div class="box__b" style="padding:0 0 8px"><table><thead><tr><th>Employee</th><th>Period</th><th class="mono" style="text-align:right">Net (SZL)</th><th>Status</th></tr></thead><tbody>
-          <tr><td><div class="who"><span class="av">ND</span><div><b>Nomsa Dlamini</b><span class="id">HR-EMP-0007</span></div></div></td><td>Jan 2026</td><td class="mono" style="text-align:right;font-weight:700">24,500</td><td><span class="st ok"><span class="d"></span>Paid</span></td></tr>
-          <tr><td><div class="who"><span class="av">SN</span><div><b>Sipho Nkambule</b><span class="id">HR-EMP-0012</span></div></div></td><td>Jan 2026</td><td class="mono" style="text-align:right;font-weight:700">15,200</td><td><span class="st ok"><span class="d"></span>Paid</span></td></tr>
-          <tr><td><div class="who"><span class="av">BS</span><div><b>Bongani Simelane</b><span class="id">HR-EMP-0024</span></div></div></td><td>Jan 2026</td><td class="mono" style="text-align:right;font-weight:700">16,800</td><td><span class="st ok"><span class="d"></span>Paid</span></td></tr>
-        </tbody></table></div></div>
+
+          <div class="hr-stack">
+            <div class="hr-box">
+              <div class="hr-box__h"><div><h3>Away today</h3><p>5 of 86</p></div><button type="button" class="hr-lnk" data-jump="timeoff">Calendar</button></div>
+              <div class="hr-box__b hr-out">
+                <div class="hr-out__i"><span class="hr-av">ND</span><div><b>Nomsa Dube</b><span class="s">Annual leave, back Tue 13 Oct. Sipho Magagula covers.</span></div></div>
+                <div class="hr-out__i"><span class="hr-av">MZ</span><div><b>Mandla Zwane</b><span class="s">Annual leave, back Mon 12 Oct</span></div></div>
+                <div class="hr-out__i"><span class="hr-av">TM</span><div><b>Thabiso Mkhonta</b><span class="s">Sick leave, day 2</span></div></div>
+                <div class="hr-out__i"><span class="hr-av">LS</span><div><b>Lindiwe Simelane</b><span class="s">Field work, audit in Manzini</span></div></div>
+                <div class="hr-out__i"><span class="hr-av">GM</span><div><b>Gcina Mavuso</b><span class="s">Field work, on-site calibration</span></div></div>
+              </div>
+            </div>
+
+            <div class="hr-box">
+              <div class="hr-box__h"><div><h3>October payroll</h3><p>Pays Fri 23 Oct</p></div><span class="hr-st leave"><span class="d"></span>Step 2 of 6</span></div>
+              <div class="hr-box__b hr-out">
+                <div class="hr-out__i"><div><b>Changes to approve</b><span class="s">1 joiner, 1 promotion, 1 leaver</span></div><span class="r">3 waiting</span></div>
+                <div class="hr-out__i"><div><b>Estimated gross</b><span class="s">1.7% above September</span></div><span class="r mono">E 2,412,600</span></div>
+                <div class="hr-out__i"><div><b>Cut-off</b><span class="s">Changes after this go to November</span></div><span class="r">Tue 20 Oct</span></div>
+              </div>
+            </div>
+
+            <div class="hr-box">
+              <div class="hr-box__h"><div><h3>Movements in October</h3><p>Joiners, leavers and changes</p></div></div>
+              <div class="hr-box__b hr-out">
+                <div class="hr-out__i"><span class="hr-st ok">Joined</span><div><b>Sandile Ndwandwe</b><span class="s">Laboratory Technician, Metrology. Onboarding 5 of 8 tasks.</span></div></div>
+                <div class="hr-out__i"><span class="hr-st info">Promoted</span><div><b>Phindile Motsa</b><span class="s">Standards Officer to Senior Standards Officer, from 1 Oct</span></div></div>
+                <div class="hr-out__i"><span class="hr-st mute">Leaving</span><div><b>Mandla Zwane</b><span class="s">Accountant, Finance. Last day 31 Oct. Offboarding 2 of 7 tasks.</span></div></div>
+              </div>
+            </div>
+
+            <div class="hr-box">
+              <div class="hr-box__h"><div><h3>Record quality</h3><p>What the other modules rely on</p></div></div>
+              <div class="hr-box__b hr-out">
+                <div class="hr-out__i"><div><b>Linked to a portal login</b><span class="s">Without the link, approvals can't route to the person</span></div><span class="r">86 of 86</span></div>
+                <div class="hr-out__i"><div><b>Line manager set</b><span class="s">Drives leave approval and the Team view</span></div><span class="r">86 of 86</span></div>
+                <div class="hr-out__i"><div><b>Required documents on file</b><span class="s">ID, contract, qualifications</span></div><span class="r">77 of 86</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
+      <!-- ===================== DIRECTORY ===================== -->
+      <section data-panel="directory" hidden>
+        <div class="hr-head">
+          <div><h2>Directory</h2><p>Select a row to open the employee record.</p></div>
+          <div class="hr-head__r"><button type="button" class="btn ghost" data-toast="Exports the filtered list. Pay and personal fields are left out unless your role may see them.">Export</button><button type="button" class="btn pri" data-toast="Opens the new-employee form: person, position, contract, then onboarding tasks.">Add employee</button></div>
+        </div>
+        <div class="hr-filters">
+          <div class="hr-search"><svg><use href="#i-search"/></svg><label class="sr-only" for="dQ">Search people</label><input id="dQ" type="search" placeholder="Search by name, position or staff number"></div>
+          <label class="sr-only" for="dDept">Department</label>
+          <select class="hr-sel" id="dDept"><option value="">All departments</option><option>Certification</option><option>Field Operations</option><option>Metrology &amp; Laboratories</option><option>Standards Development</option><option>Finance</option></select>
+          <label class="sr-only" for="dStatus">Status</label>
+          <select class="hr-sel" id="dStatus"><option value="">Any status</option><option>Active</option><option>Probation</option><option>On leave</option><option>Notice</option></select>
+        </div>
+        <div class="hr-box hr-scroll">
+          <table class="hr-table" id="dirTbl">
+            <thead><tr><th>Employee</th><th>Position</th><th>Department</th><th>Reports to</th><th>Contract</th><th>Status</th><th>Started</th></tr></thead>
+            <tbody>
+              <tr data-emp tabindex="0"><td><div class="hr-who"><span class="hr-av">SM</span><div><b>Sipho Magagula</b><span class="id">ESW-0031</span></div></div></td><td>Certification Manager</td><td>Certification</td><td>Nomvula Tsabedze</td><td>Permanent</td><td><span class="hr-st ok"><span class="d"></span>Active</span></td><td>Mar 2019</td></tr>
+              <tr data-emp tabindex="0"><td><div class="hr-who"><span class="hr-av">ND</span><div><b>Nomsa Dube</b><span class="id">ESW-0027</span></div></div></td><td>Certification Manager</td><td>Certification</td><td>Nomvula Tsabedze</td><td>Permanent</td><td><span class="hr-st leave"><span class="d"></span>On leave</span></td><td>Aug 2018</td></tr>
+              <tr data-emp tabindex="0"><td><div class="hr-who"><span class="hr-av">TM</span><div><b>Thandi Mamba</b><span class="id">ESW-0044</span></div></div></td><td>Lead Auditor</td><td>Certification</td><td>Sipho Magagula</td><td>Permanent</td><td><span class="hr-st ok"><span class="d"></span>Active</span></td><td>Jan 2021</td></tr>
+              <tr data-emp tabindex="0"><td><div class="hr-who"><span class="hr-av">ZN</span><div><b>Zanele Nkosi</b><span class="id">ESW-0052</span></div></div></td><td>Technical Reviewer</td><td>Certification</td><td>Sipho Magagula</td><td>Permanent</td><td><span class="hr-st ok"><span class="d"></span>Active</span></td><td>Jun 2022</td></tr>
+              <tr data-emp tabindex="0"><td><div class="hr-who"><span class="hr-av">BD</span><div><b>Bongani Dlamini</b><span class="id">ESW-0079</span></div></div></td><td>Certification Officer</td><td>Certification</td><td>Sipho Magagula</td><td>Permanent</td><td><span class="hr-st probation"><span class="d"></span>Probation</span></td><td>May 2026</td></tr>
+              <tr data-emp tabindex="0"><td><div class="hr-who"><span class="hr-av">LS</span><div><b>Lindiwe Simelane</b><span class="id">ESW-0061</span></div></div></td><td>Auditor</td><td>Field Operations</td><td>Sipho Magagula</td><td>Permanent</td><td><span class="hr-st ok"><span class="d"></span>Active</span></td><td>Sep 2023</td></tr>
+              <tr data-emp tabindex="0"><td><div class="hr-who"><span class="hr-av">SH</span><div><b>Sifiso Hlophe</b><span class="id">ESW-0038</span></div></div></td><td>Senior Metrologist</td><td>Metrology &amp; Laboratories</td><td>Themba Ginindza</td><td>Permanent</td><td><span class="hr-st ok"><span class="d"></span>Active</span></td><td>Feb 2020</td></tr>
+              <tr data-emp tabindex="0"><td><div class="hr-who"><span class="hr-av">GM</span><div><b>Gcina Mavuso</b><span class="id">ESW-0083</span></div></div></td><td>Metrologist</td><td>Metrology &amp; Laboratories</td><td>Sifiso Hlophe</td><td>Fixed-term to 30 Nov</td><td><span class="hr-st ok"><span class="d"></span>Active</span></td><td>Dec 2025</td></tr>
+              <tr data-emp tabindex="0"><td><div class="hr-who"><span class="hr-av">PM</span><div><b>Phindile Motsa</b><span class="id">ESW-0066</span></div></div></td><td>Senior Standards Officer</td><td>Standards Development</td><td>Sibusiso Maseko</td><td>Permanent</td><td><span class="hr-st ok"><span class="d"></span>Active</span></td><td>Apr 2024</td></tr>
+              <tr data-emp tabindex="0"><td><div class="hr-who"><span class="hr-av">MZ</span><div><b>Mandla Zwane</b><span class="id">ESW-0019</span></div></div></td><td>Accountant</td><td>Finance</td><td>Busisiwe Fakudze</td><td>Permanent</td><td><span class="hr-st mute"><span class="d"></span>Notice</span></td><td>Oct 2016</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hr-note" id="dirCount" style="margin-top:10px">Showing 10 of 86 employees.</p>
+      </section>
+
+      <!-- ===================== STRUCTURE ===================== -->
+      <section data-panel="structure" hidden>
+        <div class="hr-head">
+          <div><h2>Structure</h2><p>The approved establishment. A person can only be hired into a post that exists here.</p></div>
+          <div class="hr-head__r"><button type="button" class="btn ghost" data-toast="Starts a request to add, change or freeze a post. It goes to the CEO for approval before the establishment changes.">Request a change</button></div>
+        </div>
+        <div class="hr-stack">
+          <div class="hr-box hr-scroll">
+            <table class="hr-table">
+              <thead><tr><th>Department</th><th>Head</th><th>Approved</th><th>Filled</th><th>Vacant</th><th>In recruitment</th><th>Frozen</th><th>Cost centre</th></tr></thead>
+              <tbody id="estTbl"></tbody>
+              <tfoot><tr><td>Total</td><td></td><td class="num">96</td><td class="num">86</td><td class="num">10</td><td class="num">4</td><td class="num">2</td><td></td></tr></tfoot>
+            </table>
+          </div>
+          <div class="hr-box hr-scroll">
+            <div class="hr-box__h"><div><h3>Posts in Certification</h3><p>16 approved, 14 filled</p></div></div>
+            <table class="hr-table" style="margin-top:10px">
+              <thead><tr><th>Post</th><th>Grade band</th><th>Approved</th><th>Filled</th><th>Held by</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><b>Head of Certification</b></td><td>E</td><td class="num">1</td><td class="num">1</td><td>Nomvula Tsabedze</td><td><span class="hr-st ok">Filled</span></td></tr>
+                <tr><td><b>Certification Manager</b></td><td>D</td><td class="num">2</td><td class="num">2</td><td>Sipho Magagula, Nomsa Dube</td><td><span class="hr-st ok">Filled</span></td></tr>
+                <tr><td><b>Lead Auditor</b></td><td>C</td><td class="num">4</td><td class="num">3</td><td>Thandi Mamba and 2 others</td><td><span class="hr-st info">1 in recruitment</span></td></tr>
+                <tr><td><b>Technical Reviewer</b></td><td>C</td><td class="num">2</td><td class="num">2</td><td>Zanele Nkosi and 1 other</td><td><span class="hr-st ok">Filled</span></td></tr>
+                <tr><td><b>Certification Officer</b></td><td>B</td><td class="num">5</td><td class="num">4</td><td>Bongani Dlamini and 3 others</td><td><span class="hr-st leave">1 vacant, not started</span></td></tr>
+                <tr><td><b>Certification Administrator</b></td><td>A</td><td class="num">2</td><td class="num">2</td><td>2 people</td><td><span class="hr-st ok">Filled</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== TIME OFF ===================== -->
+      <section data-panel="timeoff" hidden>
+        <div class="hr-head"><div><h2>Time off</h2><p>Who is away, what is waiting, and what leave the organisation owes.</p></div></div>
+        <div class="kpis">
+          <button type="button" class="kpi" data-toast="Lists the 5 people away today."><span class="l">Away today</span><span class="v">5</span><span class="d">3 on leave, 2 on field work</span></button>
+          <button type="button" class="kpi" data-toast="Requests are decided in Approvals by the line manager. HR sees them here read-only."><span class="l">Requests waiting</span><span class="v">3</span><span class="d warn">1 waiting more than 3 days</span></button>
+          <button type="button" class="kpi" data-toast="Opens leave balances by department."><span class="l">Leave owed</span><span class="v">1,142 <small>days</small></span><span class="d">13.3 days a person on average</span></button>
+          <button type="button" class="kpi" data-toast="Lists the 4 people above the carry-over limit."><span class="l">Above carry-over limit</span><span class="v">4</span><span class="d warn">Will forfeit days on 31 Mar</span></button>
+        </div>
+        <div class="hr-stack">
+          <div class="hr-box">
+            <div class="hr-box__h"><div><h3>Certification, Field Operations and Metrology</h3><p>12 to 23 October</p></div>
+              <div><label class="sr-only" for="calDept">Team</label><select class="hr-sel" id="calDept"><option>Audit and laboratory teams</option><option>All departments</option></select></div></div>
+            <div class="hr-box__b">
+              <div class="hr-scroll"><div class="hr-cal" id="cal"></div></div>
+              <div class="hr-key"><span><b>A</b> Annual</span><span><b>S</b> Sick</span><span><b>F</b> Field work, not leave</span><span>Dashed: requested, not yet approved</span></div>
+            </div>
+          </div>
+          <div class="hr-box hr-scroll">
+            <div class="hr-box__h"><div><h3>Requests</h3><p>Line managers decide these in Approvals</p></div></div>
+            <table class="hr-table" style="margin-top:10px">
+              <thead><tr><th>Employee</th><th>Kind</th><th>Dates</th><th>Days</th><th>Balance after</th><th>With</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><b>Lindiwe Simelane</b></td><td>Annual</td><td>20 to 24 Oct</td><td class="num">5</td><td class="num">9</td><td>Sipho Magagula</td><td><span class="hr-st leave">Waiting 2 days</span></td></tr>
+                <tr><td><b>Musa Gamedze</b></td><td>Annual</td><td>27 to 28 Oct</td><td class="num">2</td><td class="num">14</td><td>Sipho Magagula</td><td><span class="hr-st leave">Waiting 1 day</span></td></tr>
+                <tr><td><b>Thabiso Mkhonta</b></td><td>Sick</td><td>8 to 9 Oct</td><td class="num">2</td><td class="num">8</td><td>Busisiwe Fakudze</td><td><span class="hr-st bad">Waiting 4 days</span></td></tr>
+                <tr><td><b>Zanele Nkosi</b></td><td>Annual</td><td>14 to 16 Oct</td><td class="num">3</td><td class="num">11</td><td>Sipho Magagula</td><td><span class="hr-st ok">Approved, no cover set</span></td></tr>
+                <tr><td><b>Phindile Motsa</b></td><td>Study</td><td>19 to 23 Oct</td><td class="num">5</td><td class="num">5</td><td>Sibusiso Maseko</td><td><span class="hr-st ok">Approved</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== COMPETENCE ===================== -->
+      <section data-panel="competence" hidden>
+        <div class="hr-head">
+          <div><h2>Competence</h2><p>Who is authorised to do what. Certification and Metrology only offer people who are authorised here on the day of the work.</p></div>
+          <div class="hr-head__r"><button type="button" class="btn ghost" data-toast="Opens the authorisation form: person, competence, evidence, valid from and to, approved by.">Record an authorisation</button></div>
+        </div>
+        <div class="hr-stack">
+          <div class="hr-box hr-scroll">
+            <table class="hr-table hr-mx">
+              <thead><tr><th>Person</th><th class="c">QMS lead auditor<br>ISO 9001</th><th class="c">FSMS lead auditor<br>ISO 22000</th><th class="c">EMS auditor<br>ISO 14001</th><th class="c">OH&amp;S auditor<br>ISO 45001</th><th class="c">Technical reviewer</th><th class="c">Mass calibration</th><th class="c">Volume calibration</th></tr></thead>
+              <tbody id="mx"></tbody>
+              <tfoot><tr><td>Cover</td><td class="c">4 people</td><td class="c"><span class="hr-st leave">2, 1 expiring</span></td><td class="c"><span class="hr-st leave">2, 1 expiring</span></td><td class="c"><span class="hr-st bad">1 person only</span></td><td class="c">2 people</td><td class="c"><span class="hr-st leave">2, 1 expiring</span></td><td class="c"><span class="hr-st bad">1, expiring</span></td></tr></tfoot>
+            </table>
+          </div>
+          <div class="hr-grid c2">
+            <div class="hr-box">
+              <div class="hr-box__h"><div><h3>Expiring in 60 days</h3><p>Renew before the date or the person drops out of assignment</p></div></div>
+              <div class="hr-box__b hr-out">
+                <div class="hr-out__i"><div><b>Sipho Magagula, EMS auditor</b><span class="s">Needs 2 witnessed audits. 1 done.</span></div><span class="r">15 Nov</span></div>
+                <div class="hr-out__i"><div><b>Gcina Mavuso, mass calibration</b><span class="s">Proficiency test booked 3 Nov</span></div><span class="r">20 Nov</span></div>
+                <div class="hr-out__i"><div><b>Thandi Mamba, FSMS lead auditor</b><span class="s">Refresher course not yet booked</span></div><span class="r">30 Nov</span></div>
+                <div class="hr-out__i"><div><b>Sifiso Hlophe, volume calibration</b><span class="s">Only person authorised. Nothing booked.</span></div><span class="r">2 Dec</span></div>
+              </div>
+            </div>
+            <div class="hr-box">
+              <div class="hr-box__h"><div><h3>Impartiality declarations, 2026/27</h3><p>80 of 86 signed</p></div><span class="hr-st info">6 outstanding</span></div>
+              <div class="hr-box__b">
+                <div class="hr-prog"><i style="width:93%"></i></div>
+                <p class="hr-note" style="margin-top:12px">Each declaration lists the organisations a person has worked for or consulted to in the last two years. The audit planner uses that list to keep them off those clients' audits and decisions.</p>
+                <div style="margin-top:10px"><button type="button" class="btn ghost sm" data-toast="Reminder sent to the 6 people who haven't signed.">Remind the 6</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== RECRUITMENT ===================== -->
+      <section data-panel="recruitment" hidden>
+        <div class="hr-head">
+          <div><h2>Recruitment</h2><p>10 vacant posts: 4 in recruitment, 2 frozen, 4 not started.</p></div>
+          <div class="hr-head__r"><button type="button" class="btn pri" data-toast="Opens a requisition for one of the 4 vacant posts not yet started. You can only recruit to an approved post.">Open a requisition</button></div>
+        </div>
+        <div class="hr-box hr-scroll">
+          <table class="hr-table">
+            <thead><tr><th>Requisition</th><th>Department</th><th>Stage</th><th>Candidates</th><th>Days open</th><th>Owner</th></tr></thead>
+            <tbody>
+              <tr><td><b>Laboratory Technician</b><div class="sub mono">REQ-2026-013</div></td><td>Metrology &amp; Laboratories</td><td><span class="hr-st ok">Offer made</span></td><td><div class="hr-funnel"><span><b>31</b>Applied</span><span><b>5</b>Shortlist</span><span><b>3</b>Interview</span><span><b>1</b>Offer</span></div></td><td><span class="hr-st bad">45, target 40</span></td><td>Nokuthula Shongwe</td></tr>
+              <tr><td><b>Lead Auditor, food safety</b><div class="sub mono">REQ-2026-014</div></td><td>Certification</td><td><span class="hr-st info">Interviews</span></td><td><div class="hr-funnel"><span><b>23</b>Applied</span><span><b>6</b>Shortlist</span><span><b>3</b>Interview</span><span><b>0</b>Offer</span></div></td><td class="num">38</td><td>Sipho Magagula</td></tr>
+              <tr><td><b>Metrologist, volume</b><div class="sub mono">REQ-2026-015</div></td><td>Metrology &amp; Laboratories</td><td><span class="hr-st info">Shortlisting</span></td><td><div class="hr-funnel"><span><b>17</b>Applied</span><span><b>4</b>Shortlist</span><span><b>0</b>Interview</span><span><b>0</b>Offer</span></div></td><td class="num">24</td><td>Themba Ginindza</td></tr>
+              <tr><td><b>Standards Officer</b><div class="sub mono">REQ-2026-017</div></td><td>Standards Development</td><td><span class="hr-st mute">Advertised</span></td><td><div class="hr-funnel"><span><b>9</b>Applied</span><span><b>0</b>Shortlist</span><span><b>0</b>Interview</span><span><b>0</b>Offer</span></div></td><td class="num">8</td><td>Sibusiso Maseko</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hr-note" style="margin-top:12px"><b>Why the first two matter:</b> food-safety audits and volume calibration each depend on one or two authorised people today. See Competence.</p>
+      </section>
+
+      <!-- ===================== PERFORMANCE ===================== -->
+      <section data-panel="performance" hidden>
+        <div class="hr-head">
+          <div><h2>Performance</h2><p>Mid-year review 2026/27. Closes Fri 30 Oct.</p></div>
+          <div class="hr-head__r"><button type="button" class="btn ghost" data-toast="Reminder sent to everyone with a step still open.">Remind everyone outstanding</button></div>
+        </div>
+        <div class="kpis">
+          <button type="button" class="kpi" data-toast="Lists the 20 people who haven't finished their self-assessment."><span class="l">Self-assessments</span><span class="v">66 <small>of 86</small></span><span class="d">77% done</span></button>
+          <button type="button" class="kpi" data-toast="Lists the 44 manager reviews still open."><span class="l">Manager reviews</span><span class="v">42 <small>of 86</small></span><span class="d warn">49% done, 15 working days left</span></button>
+          <button type="button" class="kpi" data-toast="Opens the 2026/27 objectives, grouped by the strategic plan goal each one supports."><span class="l">Objectives set</span><span class="v">86 <small>of 86</small></span><span class="d">All linked to a strategic goal</span></button>
+        </div>
+        <div class="hr-box hr-scroll">
+          <table class="hr-table">
+            <thead><tr><th>Department</th><th>Staff</th><th>Self-assessment</th><th></th><th>Manager review</th><th></th></tr></thead>
+            <tbody id="perfTbl"></tbody>
+            <tfoot><tr><td>Total</td><td class="num">86</td><td class="num">66</td><td></td><td class="num">42</td><td></td></tr></tfoot>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================== PAYROLL ===================== -->
+      <section data-panel="payroll" hidden>
+        <div class="hr-head"><div><h2>Payroll</h2><p>October 2026 run. Cut-off Tue 20 Oct, pays Fri 23 Oct.</p></div></div>
+        <div class="hr-stack">
+          <ol class="hr-steps">
+            <li class="done"><em>Step 1</em><b>Inputs open</b><span>Done 1 Oct</span></li>
+            <li class="now"><em>Step 2</em><b>Approve changes</b><span>3 waiting</span></li>
+            <li><em>Step 3</em><b>Calculate</b><span>After cut-off</span></li>
+            <li><em>Step 4</em><b>Review differences</b><span>HR Manager</span></li>
+            <li><em>Step 5</em><b>Approve the run</b><span>Finance Manager</span></li>
+            <li><em>Step 6</em><b>Pay and post</b><span>Fri 23 Oct</span></li>
+          </ol>
+          <div class="hr-grid c2">
+            <div class="hr-box hr-scroll">
+              <div class="hr-box__h"><div><h3>Changes this month</h3><p>Each needs approval before the cut-off</p></div></div>
+              <table class="hr-table" style="margin-top:10px">
+                <thead><tr><th>Change</th><th>From</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td><b>Sandile Ndwandwe joins</b><div class="sub">Laboratory Technician, band B. Bank details not yet on file.</div></td><td>1 Oct</td><td><span class="hr-st bad">Blocked</span></td></tr>
+                  <tr><td><b>Phindile Motsa promoted</b><div class="sub">Band B to band C</div></td><td>1 Oct</td><td><span class="hr-st leave">Waiting for Finance</span></td></tr>
+                  <tr><td><b>Mandla Zwane leaves</b><div class="sub">Final pay with 6 leave days paid out</div></td><td>31 Oct</td><td><span class="hr-st leave">Waiting for Finance</span></td></tr>
+                  <tr><td><b>Acting allowance ends</b><div class="sub">Thandi Mamba, acting Certification Manager cover ended</div></td><td>1 Oct</td><td><span class="hr-st ok">Approved</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="hr-box hr-scroll">
+              <div class="hr-box__h"><div><h3>October estimate against September</h3><p>In emalangeni. Final figures after step 3.</p></div></div>
+              <table class="hr-table" style="margin-top:10px">
+                <thead><tr><th>Line</th><th>September</th><th>October est.</th><th>Change</th></tr></thead>
+                <tbody>
+                  <tr><td>Employees paid</td><td class="num">85</td><td class="num">86</td><td class="num">+1</td></tr>
+                  <tr><td>Gross pay</td><td class="num">2,371,900</td><td class="num">2,412,600</td><td class="num">+1.7%</td></tr>
+                  <tr><td>Statutory deductions</td><td class="num">561,400</td><td class="num">573,000</td><td class="num">+2.1%</td></tr>
+                  <tr><td>Other deductions</td><td class="num">142,300</td><td class="num">142,300</td><td class="num">0%</td></tr>
+                </tbody>
+                <tfoot><tr><td>Net pay</td><td class="num">1,668,200</td><td class="num">1,697,300</td><td class="num">+1.7%</td></tr></tfoot>
+              </table>
+            </div>
+          </div>
+          <p class="hr-note">Individual pay is not shown on this page. It opens per employee, for the HR Manager and Finance only, and each view is logged.</p>
+        </div>
+      </section>
+
+      <!-- ===================== CASES ===================== -->
+      <section data-panel="cases" hidden>
+        <div class="hr-head">
+          <div><h2>Cases</h2><p>Grievances and disciplinary matters. Visible to the HR Manager and the case owner only.</p></div>
+          <div class="hr-head__r"><button type="button" class="btn pri" data-toast="Opens a new case: kind, people involved, what happened, and who owns it.">Open a case</button></div>
+        </div>
+        <div class="hr-box hr-scroll">
+          <table class="hr-table">
+            <thead><tr><th>Case</th><th>Kind</th><th>Opened</th><th>Stage</th><th>Owner</th><th>Next step due</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">HRC-2026-005</td><td>Disciplinary</td><td>29 Sep</td><td><span class="hr-st info">Hearing scheduled</span></td><td>Nokuthula Shongwe</td><td>Hearing, Fri 16 Oct</td></tr>
+              <tr><td class="mono">HRC-2026-004</td><td>Grievance</td><td>18 Sep</td><td><span class="hr-st leave">Investigation</span></td><td>Nokuthula Shongwe</td><td>Report, Wed 14 Oct</td></tr>
+              <tr><td class="mono">HRC-2026-003</td><td>Grievance</td><td>2 Sep</td><td><span class="hr-st ok">Outcome issued</span></td><td>Busisiwe Fakudze</td><td>Appeal window closes Tue 20 Oct</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hr-note" style="margin-top:12px">Names of the people involved appear only inside the case. Counts by kind and time to close go to the Board HR pack; nothing else leaves this page.</p>
+      </section>
     </div>
   </div>
+
+  <!-- Employee record drawer -->
+  <div class="hr-scrim" id="scrim" hidden></div>
+  <aside class="hr-drawer" id="drawer" hidden role="dialog" aria-modal="true" aria-labelledby="dwName">
+    <div class="hr-drawer__h">
+      <span class="hr-av" id="dwAv">TM</span>
+      <div style="flex:1;min-width:0"><h3 id="dwName">Thandi Mamba</h3><p id="dwSub">Lead Auditor · Certification</p></div>
+      <button type="button" class="ibtn" id="dwClose" aria-label="Close record"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="hr-drawer__b">
+      <div class="hr-sec">
+        <h4>Job</h4>
+        <dl class="hr-kv">
+          <div><dt>Staff number</dt><dd class="mono" id="dwId">ESW-0044</dd></div>
+          <div><dt>Status</dt><dd id="dwStatus">Active</dd></div>
+          <div><dt>Reports to</dt><dd id="dwMgr">Sipho Magagula</dd></div>
+          <div><dt>Contract</dt><dd id="dwType">Permanent</dd></div>
+          <div><dt>Started</dt><dd id="dwStart">Jan 2021</dd></div>
+          <div><dt>Location</dt><dd>Head office, Matsapha</dd></div>
+        </dl>
+      </div>
+      <div class="hr-sec">
+        <h4>Personal and pay</h4>
+        <div class="hr-lock"><span>Hidden. Opening these is recorded against your name.</span><button type="button" class="btn ghost sm" data-toast="Shows ID, address, next of kin, bank and pay. The view is written to the access log.">Show details</button></div>
+      </div>
+      <div class="hr-sec">
+        <h4>Leave, 2026/27</h4>
+        <div class="hr-bal"><span>Annual</span><div class="hr-prog"><i style="width:57%"></i></div><b>12 of 21 left</b></div>
+        <div class="hr-bal"><span>Sick</span><div class="hr-prog"><i style="width:86%"></i></div><b>12 of 14 left</b></div>
+        <div class="hr-bal"><span>Study</span><div class="hr-prog"><i style="width:100%"></i></div><b>10 of 10 left</b></div>
+      </div>
+      <div class="hr-sec">
+        <h4>Authorisations</h4>
+        <div class="hr-out">
+          <div class="hr-out__i"><div><b>QMS lead auditor, ISO 9001</b><span class="s">Valid to 14 Jun 2028</span></div><span class="hr-st ok">Current</span></div>
+          <div class="hr-out__i"><div><b>FSMS lead auditor, ISO 22000</b><span class="s">Valid to 30 Nov 2026</span></div><span class="hr-st leave">Expiring</span></div>
+        </div>
+      </div>
+      <div class="hr-sec">
+        <h4>Documents</h4>
+        <div class="hr-out">
+          <div class="hr-out__i"><div><b>Contract of employment</b></div><span class="hr-st ok">On file</span></div>
+          <div class="hr-out__i"><div><b>Qualification certificates</b></div><span class="hr-st ok">On file</span></div>
+          <div class="hr-out__i"><div><b>Impartiality declaration 2026/27</b></div><span class="hr-st ok">Signed 3 Jul</span></div>
+        </div>
+      </div>
+      <div class="hr-sec">
+        <h4>History</h4>
+        <ul class="hr-hist">
+          <li><time>1 Oct 2026</time><span>Acting allowance ended</span></li>
+          <li><time>1 Jul 2026</time><span>Annual pay review, band unchanged</span></li>
+          <li><time>1 Jul 2021</time><span>Probation confirmed</span></li>
+          <li><time id="dwJoined">Jan 2021</time><span>Joined</span></li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <div class="dock" aria-hidden="true"><span class="dock__av"><svg><use href="#i-chip"/></svg></span><span>Ask Esi anything</span></div>
+  <div class="hr-toast" id="toast" role="status" aria-live="polite"></div>
 </div>
-<div class="toast" id="toast"></div>
 
 <script>
-  // leave queue (state-driven: pending → approve/reject)
-  let LEAVE=[
-    {id:1,emp:'Sipho Nkambule',in:'SN',type:'Annual',dates:'2–4 Oct',days:3,bal:11},
-    {id:2,emp:'Lindiwe Dube',in:'LD',type:'Sick',dates:'today',days:1,bal:9},
-    {id:3,emp:'Bongani Simelane',in:'BS',type:'Annual',dates:'10–14 Oct',days:5,bal:18},
-    {id:4,emp:'Jabu Simelane',in:'JS',type:'Study',dates:'20 Oct',days:1,bal:4},
-    {id:5,emp:'S. Motsa',in:'SM',type:'Annual',dates:'6–8 Oct',days:3,bal:7},
-  ];
-  function renderLeave(){document.getElementById('leaveBody').innerHTML=LEAVE.map(l=>`<tr>
-    <td><div class="who"><span class="av">${l.in}</span><div><b>${l.emp}</b></div></div></td>
-    <td>${l.type}</td><td>${l.dates}</td><td class="mono">${l.days}</td><td class="mono">${l.bal} days</td>
-    <td style="text-align:right;white-space:nowrap"><button class="btn pri sm" onclick="leaveAct(${l.id},'Approved')"><svg><use href="#i-check"/></svg>Approve</button> <button class="btn ghost sm" onclick="leaveAct(${l.id},'Rejected')">Reject</button></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No pending requests</td></tr>';}
-  function leaveAct(id,v){const l=LEAVE.find(x=>x.id===id);LEAVE=LEAVE.filter(x=>x.id!==id);toast(`${v} — ${l.emp} (${l.type})`);renderLeave();}
+(function(){
+  var $=function(s,r){return (r||document).querySelector(s)}, $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+  function el(tag,cls,txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
 
-  // recruitment pipeline
-  const PSTAGES=[['Applied','var(--blue)'],['Screening','var(--indigo,#4F46E5)'],['Interview','var(--amber)'],['Offer','var(--purple)'],['Hired','var(--green)']];
-  const APPS=[
-    {n:'Themba Ndlovu',r:'Cert Officer',src:'LinkedIn',stage:0},
-    {n:'Zanele Gama',r:'Cert Officer',src:'Referral',stage:0},
-    {n:'Musa Dlamini',r:'Cert Officer',src:'Website',stage:0},
-    {n:'Precious Vilane',r:'Cert Officer',src:'LinkedIn',stage:1},
-    {n:'Sabelo Maseko',r:'Cert Officer',src:'Referral',stage:1},
-    {n:'Nolwazi Shongwe',r:'Cert Officer',src:'Website',stage:2},
-    {n:'Bhekiwe Nxumalo',r:'Cert Officer',src:'LinkedIn',stage:3},
-  ];
-  function renderPipe(){document.getElementById('pipe').innerHTML=PSTAGES.map((s,si)=>{
-    const items=APPS.filter(a=>a.stage===si);
-    return `<div class="col"><div class="col__h"><span class="dot" style="background:${s[1]}"></span><b>${s[0]}</b><span class="c">${items.length}</span></div>
-    ${items.map((a,ai)=>`<div class="appc"><b>${a.n}</b><div class="role">${a.r}</div><div class="meta"><span>via ${a.src}</span></div>${si<4?`<button class="go" onclick="advApp('${a.n}')">Advance →</button>`:'<div style="margin-top:8px"><span class="st ok"><span class="d"></span>Hired</span></div>'}</div>`).join('')||'<div style="font-size:11px;color:var(--muted-2);padding:6px">—</div>'}</div>`;
-  }).join('');}
-  function advApp(n){const a=APPS.find(x=>x.n===n);if(a.stage<4)a.stage++;toast(`${n} → ${PSTAGES[a.stage][0]}`);renderPipe();}
+  /* ---- toast ---- */
+  var toastEl=$('#toast'), toastT;
+  function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove('show')},4200); }
+  $$('[data-toast]').forEach(function(b){ b.addEventListener('click',function(e){ e.stopPropagation(); toast(b.dataset.toast); }); });
 
-  let charted={};
-  function show(id,el){
-    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id===id));
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-    // sync tab highlight when navigated from life ribbon / quick actions
-    const map={overview:0,directory:1,timeoff:2,recruitment:3,performance:4,payroll:5};
-    document.querySelectorAll('.tab')[map[id]].classList.add('on');
-    if(el&&el.classList.contains('tab')){}
-    if(id==='overview'&&!charted.ov){charted.ov=1;initCharts();}
+  /* ---- sample data (one source for the Overview bars and the Structure table) ---- */
+  var DEPTS=[
+    ['Executive Office','Office of the CEO',4,4,0,0,'Main'],
+    ['Standards Development','Sibusiso Maseko',12,10,1,0,'Main'],
+    ['Certification','Nomvula Tsabedze',16,14,1,0,'Certification'],
+    ['Metrology & Laboratories','Themba Ginindza',18,15,2,1,'Metrology'],
+    ['Field Operations','Sipho Magagula (acting)',10,9,0,1,'Certification'],
+    ['Training','Ntombi Khumalo',6,6,0,0,'Training'],
+    ['Finance','Busisiwe Fakudze',9,9,0,0,'Main'],
+    ['HR & Administration','Nokuthula Shongwe',7,6,0,0,'Main'],
+    ['Marketing & Communications','Sakhile Dludlu',6,5,0,0,'Standards Sales'],
+    ['ICT','Mxolisi Bhembe',8,8,0,0,'Main']
+  ];
+  var PERF=[['Executive Office',4,4,3],['Standards Development',10,8,5],['Certification',14,9,4],['Metrology & Laboratories',15,10,6],['Field Operations',9,5,2],['Training',6,6,5],['Finance',9,8,6],['HR & Administration',6,6,4],['Marketing & Communications',5,3,2],['ICT',8,7,5]];
+  var HC=[['Nov 2025',81],['Dec 2025',81],['Jan 2026',82],['Feb 2026',83],['Mar 2026',83],['Apr 2026',84],['May 2026',83],['Jun 2026',84],['Jul 2026',85],['Aug 2026',85],['Sep 2026',86],['Oct 2026',86]];
+
+  /* ---- establishment bars: every track is scaled to the largest department ---- */
+  var maxPosts=Math.max.apply(null,DEPTS.map(function(d){return d[2]}));
+  var est=$('#est'), estTbl=$('#estTbl');
+  DEPTS.forEach(function(d){
+    var vac=d[2]-d[3];
+    var row=el('div','hr-est__row'); row.appendChild(el('span',null,d[0]));
+    var track=el('div','hr-est__track'); track.style.width=(d[2]/maxPosts*100)+'%'; var fill=el('i'); fill.style.width=(d[3]/d[2]*100)+'%'; track.appendChild(fill);
+    var wrap=el('div','hr-est__bar'); wrap.appendChild(track); row.appendChild(wrap);
+    var n=el('span','hr-est__n'); n.appendChild(document.createTextNode(d[3]+' ')); n.appendChild(el('small',null,'of '+d[2])); row.appendChild(n);
+    row.appendChild(el('span','hr-est__v'+(vac?' has':''),vac?vac+' vacant':'Full'));
+    est.appendChild(row);
+
+    var tr=el('tr'); var c0=el('td'); c0.appendChild(el('b',null,d[0])); tr.appendChild(c0);
+    tr.appendChild(el('td',null,d[1]));
+    [d[2],d[3],vac,d[4],d[5]].forEach(function(v){ tr.appendChild(el('td','num',v===0?'–':String(v))); });
+    tr.appendChild(el('td','sub',d[6])); estTbl.appendChild(tr);
+  });
+
+  /* ---- performance table ---- */
+  var perfTbl=$('#perfTbl');
+  PERF.forEach(function(p){
+    var tr=el('tr'); var c0=el('td'); c0.appendChild(el('b',null,p[0])); tr.appendChild(c0); tr.appendChild(el('td','num',String(p[1])));
+    [p[2],p[3]].forEach(function(v){
+      tr.appendChild(el('td','num',v+' of '+p[1]));
+      var td=el('td'), bar=el('div','hr-prog'), i=el('i'); i.style.width=(v/p[1]*100)+'%'; bar.appendChild(i); td.appendChild(bar); tr.appendChild(td);
+    });
+    perfTbl.appendChild(tr);
+  });
+
+  /* ---- leave calendar ---- */
+  var DAYS=[['Mon',12],['Tue',13],['Wed',14],['Thu',15],['Fri',16],['Mon',19],['Tue',20],['Wed',21],['Thu',22],['Fri',23]];
+  var CAL=[
+    ['Nomsa Dube',        'A.........'],
+    ['Sifiso Hlophe',     'SS........'],
+    ['Zanele Nkosi',      '..AAA.....'],
+    ['Bongani Dlamini',   '...FF.....'],
+    ['Sipho Magagula',    '......AAA.'],
+    ['Lindiwe Simelane',  '.....aaaaa'],
+    ['Gcina Mavuso',      'F....FF...']
+  ];
+  var cal=$('#cal'); cal.appendChild(el('div','h'));
+  DAYS.forEach(function(d,i){ var h=el('div','h'+(i===5?' w2':'')); h.appendChild(document.createTextNode(d[0])); h.appendChild(el('b',null,String(d[1]))); cal.appendChild(h); });
+  var KIND={A:'Annual leave',S:'Sick leave',T:'Study leave',F:'Field work',a:'Annual leave, requested'};
+  CAL.forEach(function(r){
+    cal.appendChild(el('div','n',r[0]));
+    r[1].split('').forEach(function(ch,i){
+      var c=el('div','c'+(i===5?' w2':'')+(ch==='.'?'':ch==='a'?' pend':' on'), ch==='.'?'':ch.toUpperCase());
+      if(ch!=='.'){ c.title=r[0]+', '+DAYS[i][0]+' '+DAYS[i][1]+' Oct: '+KIND[ch]; }
+      cal.appendChild(c);
+    });
+  });
+
+  /* ---- competence matrix: Y current, E:date expiring, T in training, . not held ---- */
+  var MX=[
+    ['Thandi Mamba','Lead Auditor',['Y','E:30 Nov','Y','.','.','.','.']],
+    ['Sipho Magagula','Certification Manager',['Y','.','E:15 Nov','.','Y','.','.']],
+    ['Zanele Nkosi','Technical Reviewer',['Y','Y','.','.','Y','.','.']],
+    ['Lindiwe Simelane','Auditor',['Y','T','.','Y','.','.','.']],
+    ['Bongani Dlamini','Certification Officer',['T','.','.','.','.','.','.']],
+    ['Sifiso Hlophe','Senior Metrologist',['.','.','.','.','.','Y','E:2 Dec']],
+    ['Gcina Mavuso','Metrologist',['.','.','.','.','.','E:20 Nov','T']]
+  ];
+  var mx=$('#mx');
+  MX.forEach(function(r){
+    var tr=el('tr'), c0=el('td'); c0.appendChild(el('b',null,r[0])); c0.appendChild(el('div','sub',r[1])); tr.appendChild(c0);
+    r[2].forEach(function(v){
+      var td=el('td','c');
+      if(v==='Y') td.appendChild(el('span','hr-st ok','Current'));
+      else if(v==='T') td.appendChild(el('span','hr-st info','In training'));
+      else if(v.charAt(0)==='E') td.appendChild(el('span','hr-st leave','To '+v.slice(2)));
+      else td.appendChild(el('span','none','–'));
+      tr.appendChild(td);
+    });
+    mx.appendChild(tr);
+  });
+
+  /* ---- headcount line with crosshair ---- */
+  var chart=$('#hcChart'), NS='http://www.w3.org/2000/svg';
+  function s(tag,attrs){ var e=document.createElementNS(NS,tag); for(var k in attrs) e.setAttribute(k,attrs[k]); return e; }
+  function drawLine(){
+    var W=chart.clientWidth; if(!W) return;
+    var H=190,L=30,R=30,T=20,B=28,lo=78,hi=88;
+    var x=function(i){return L+i*(W-L-R)/(HC.length-1)}, y=function(v){return T+(hi-v)/(hi-lo)*(H-T-B)};
+    chart.textContent='';
+    var svg=s('svg',{viewBox:'0 0 '+W+' '+H,'aria-hidden':'true'});
+    [80,84,88].forEach(function(t){ svg.appendChild(s('line',{class:'grid',x1:L,x2:W-R,y1:y(t),y2:y(t)})); var tx=s('text',{x:L-8,y:y(t)+4,'text-anchor':'end'}); tx.textContent=t; svg.appendChild(tx); });
+    var step=W<520?2:1;
+    HC.forEach(function(d,i){ if((HC.length-1-i)%step) return; var tx=s('text',{x:x(i),y:H-8,'text-anchor':'middle'}); tx.textContent=d[0].slice(0,3); svg.appendChild(tx); });
+    svg.appendChild(s('path',{class:'ln',d:HC.map(function(d,i){return (i?'L':'M')+x(i).toFixed(1)+' '+y(d[1]).toFixed(1)}).join(' ')}));
+    var cross=s('line',{class:'cross',y1:T,y2:H-B,x1:0,x2:0,visibility:'hidden'}); svg.appendChild(cross);
+    var last=HC.length-1;
+    var dot=s('circle',{class:'pt',r:4.5,cx:x(last),cy:y(HC[last][1])}); svg.appendChild(dot);
+    var endT=s('text',{class:'end',x:x(last),y:y(HC[last][1])-10,'text-anchor':'middle'}); endT.textContent=HC[last][1]; svg.appendChild(endT);
+    var hit=s('rect',{x:L,y:0,width:W-L-R,height:H,fill:'transparent',stroke:'none'}); svg.appendChild(hit);
+    chart.appendChild(svg);
+    var tip=el('div','hr-tip'); tip.hidden=true; chart.appendChild(tip);
+    function move(e){
+      var r=svg.getBoundingClientRect(), px=(e.clientX-r.left)/r.width*W;
+      var i=Math.max(0,Math.min(last,Math.round((px-L)/((W-L-R)/last))));
+      cross.setAttribute('x1',x(i)); cross.setAttribute('x2',x(i)); cross.setAttribute('visibility','visible');
+      dot.setAttribute('cx',x(i)); dot.setAttribute('cy',y(HC[i][1]));
+      tip.textContent=HC[i][0]+': '+HC[i][1]+' employees'; tip.hidden=false;
+      tip.style.left=Math.max(70,Math.min(W-70,x(i)))+'px';
+    }
+    function leave(){ cross.setAttribute('visibility','hidden'); dot.setAttribute('cx',x(last)); dot.setAttribute('cy',y(HC[last][1])); tip.hidden=true; }
+    hit.addEventListener('pointermove',move); hit.addEventListener('pointerdown',move); hit.addEventListener('pointerleave',leave);
   }
-  function initCharts(){
-    Chart.defaults.font.family="Plus Jakarta Sans";Chart.defaults.font.size=11;Chart.defaults.color='#8A9AB1';
-    new Chart(document.getElementById('dept'),{type:'bar',data:{labels:['Cert','Metrology','Standards','Finance','HR/Admin','IT','Exec','Mktg'],datasets:[{data:[20,16,14,10,12,8,6,6],backgroundColor:'#313391',borderRadius:5,barPercentage:.65}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#EFF3F8'}}}}});
-    new Chart(document.getElementById('today'),{type:'doughnut',data:{labels:['Present','On leave','Remote'],datasets:[{data:[82,5,5],backgroundColor:['#16A34A','#D97706','#94A3B8'],borderWidth:0,spacing:2}]},options:{maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false}}}});
+  var hcT=$('#hcTable'); HC.forEach(function(d){ var tr=el('tr'); tr.appendChild(el('th',null,d[0])); tr.appendChild(el('td',null,String(d[1]))); hcT.appendChild(tr); });
+  var rz; window.addEventListener('resize',function(){ clearTimeout(rz); rz=setTimeout(drawLine,120); });
+
+  /* ---- tabs ---- */
+  var tabs=$$('.subtab'), panels=$$('[data-panel]');
+  function show(name){
+    if(!panels.some(function(p){return p.dataset.panel===name})) name='overview';
+    tabs.forEach(function(t){ var on=t.dataset.tab===name; t.classList.toggle('on',on); if(on){ t.setAttribute('aria-current','page'); if(t.scrollIntoView) t.scrollIntoView({block:'nearest',inline:'nearest'}); } else t.removeAttribute('aria-current'); });
+    panels.forEach(function(p){ p.hidden=p.dataset.panel!==name; });
+    if(name==='overview') drawLine();
   }
-  let tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1900);}
-  renderLeave();renderPipe();initCharts();charted.ov=1;
+  function go(name){ show(name); try{ history.replaceState(null,'','#'+name); }catch(e){} window.scrollTo(0,0); }
+  tabs.forEach(function(t){ t.addEventListener('click',function(e){ e.preventDefault(); go(t.dataset.tab); }); });
+  $$('[data-jump]').forEach(function(b){ b.addEventListener('click',function(){ go(b.dataset.jump); }); });
+  $$('.nav a').forEach(function(a){ a.addEventListener('click',function(e){ e.preventDefault(); }); });
+  show((location.hash||'#overview').slice(1));
+
+  /* ---- phone navigation ---- */
+  var app=$('#app'), menuBtn=$('#menuBtn');
+  menuBtn.addEventListener('click',function(e){ e.stopPropagation(); var o=app.classList.toggle('nav-open'); menuBtn.setAttribute('aria-expanded',o); });
+  $('.main').addEventListener('click',function(){ app.classList.remove('nav-open'); menuBtn.setAttribute('aria-expanded','false'); });
+
+  /* ---- directory filter ---- */
+  var rows=$$('#dirTbl tbody tr');
+  function filt(){
+    var q=$('#dQ').value.trim().toLowerCase(), d=$('#dDept').value, st=$('#dStatus').value, n=0;
+    rows.forEach(function(r){ var c=r.children, ok=(!q||r.textContent.toLowerCase().indexOf(q)>-1)&&(!d||c[2].textContent===d)&&(!st||c[5].textContent.trim()===st); r.hidden=!ok; if(ok) n++; });
+    $('#dirCount').textContent = n===rows.length ? 'Showing 10 of 86 employees.' : n ? 'Showing '+n+' that match.' : 'Nobody matches. Clear a filter to see more people.';
+  }
+  ['#dQ','#dDept','#dStatus'].forEach(function(id){ $(id).addEventListener('input',filt); });
+
+  /* ---- employee record drawer ---- */
+  var drawer=$('#drawer'), scrim=$('#scrim'), lastFocus;
+  function openRec(r){
+    var c=r.children;
+    $('#dwAv').textContent=$('.hr-av',r).textContent; $('#dwName').textContent=$('b',r).textContent;
+    $('#dwSub').textContent=c[1].textContent+' · '+c[2].textContent; $('#dwId').textContent=$('.id',r).textContent;
+    $('#dwMgr').textContent=c[3].textContent; $('#dwType').textContent=c[4].textContent; $('#dwStatus').textContent=c[5].textContent.trim();
+    $('#dwStart').textContent=c[6].textContent; $('#dwJoined').textContent=c[6].textContent;
+    lastFocus=r; drawer.hidden=false; scrim.hidden=false; $('#dwClose').focus();
+  }
+  function closeRec(){ drawer.hidden=true; scrim.hidden=true; if(lastFocus) lastFocus.focus(); }
+  rows.forEach(function(r){ r.addEventListener('click',function(){ openRec(r); }); r.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openRec(r); } }); });
+  $('#dwClose').addEventListener('click',closeRec); scrim.addEventListener('click',closeRec);
+  drawer.addEventListener('keydown',function(e){ if(e.key==='Escape') closeRec(); });
+})();
 </script>
-</body>
 </html>

@@ -76,6 +76,68 @@ export function useInbox(actor: Actor, queue: TaskQueue, enabledLive: boolean, r
   };
 }
 
+/**
+ * Team queue: live API tasks (all pending) + local store team tasks.
+ * Works even when demo mode is off — live API provides the data.
+ */
+export function useTeamInbox(actor: Actor, enabledLive: boolean, refreshKey: string) {
+  const live = useApiResource<ApprovalsResponse>("/approvals?limit=100", { enabled: enabledLive, refreshKey });
+  const local = useStoreResource([taskStore], () => listTasks(actor, { queue: "team" }), [actor.name]);
+  const tasks = useMemo<InboxTask[]>(() => {
+    const liveRows = (live.data?.items ?? []).map(liveToTask);
+    return [...(local.data ?? []), ...liveRows];
+  }, [local.data, live.data]);
+  const load = useMemo(() => {
+    // Build a simple team load from live tasks (group by assignee if available, otherwise show all as "pool")
+    const byAssignee = new Map<string, InboxTask[]>();
+    for (const t of tasks) {
+      const key = t.assignee ?? "Pool";
+      const arr = byAssignee.get(key) ?? [];
+      arr.push(t);
+      byAssignee.set(key, arr);
+    }
+    return [...byAssignee.entries()].map(([name, items]) => ({
+      name,
+      title: name === "Pool" ? "Unclaimed" : "",
+      team: "",
+      open: items.length,
+      due: items.filter((t) => slaOf(t).status === "due").length,
+      breached: items.filter((t) => slaOf(t).status === "breach").length,
+      avgAgeDays: 0,
+      cap: 10,
+      onLeave: false,
+      leaveNote: undefined,
+    }));
+  }, [tasks]);
+  return {
+    tasks,
+    load,
+    loading: local.loading && !local.data && live.loading,
+    error: local.error,
+    liveError: live.error,
+    liveCount: live.data?.items?.length ?? 0,
+    reload: () => {
+      local.reload();
+      live.reload();
+    },
+  };
+}
+
+/**
+ * Done history: tries local store first (has outcome/closed_at), falls back to
+ * showing a clear "not connected" state when demo mode is off and no live done API exists.
+ */
+export function useDoneTasks(actor: Actor, _enabledLive: boolean, _refreshKey: string) {
+  const local = useStoreResource([taskStore], () => listTasks(actor, { queue: "done" }), [actor.name]);
+  return {
+    tasks: local.data ?? [],
+    loading: local.loading && !local.data,
+    error: local.error,
+    notConnected: local.notConnected,
+    reload: () => local.reload(),
+  };
+}
+
 export function slaOf(t: InboxTask) {
   return taskSla(t);
 }

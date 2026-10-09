@@ -17,6 +17,10 @@
 @import "./crm.css";
 @import "./workflow.css";
 
+/* Sticky layout offsets — top bar + sub-tab bar heights */
+:root { --top-h: 64px; --subtabs-h: 42px; }
+@media (max-width: 520px) { :root { --top-h: 56px; } }
+
 .app {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
@@ -68,14 +72,14 @@
 .side__brand b {
   font-weight: 800;
   font-size: 16px;
-  color: #fff;
+  color: var(--sidebar-strong);
   display: block;
   letter-spacing: -0.01em;
 }
 .side__brand span {
   font-size: 10px;
   letter-spacing: 0.14em;
-  color: var(--sidebar-fg-dim);
+  color: var(--sidebar-fg-muted);
   font-weight: 600;
 }
 .side__authority {
@@ -121,6 +125,9 @@
   flex: 1;
   overflow-y: auto;
   padding: 4px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .nav::-webkit-scrollbar {
   width: 0;
@@ -134,7 +141,6 @@
   color: var(--sidebar-fg-nav);
   font-size: 13.5px;
   font-weight: 500;
-  margin-bottom: 2px;
   transition: background 0.15s, color 0.15s;
 }
 .nav a svg {
@@ -153,7 +159,7 @@
     color-mix(in srgb, var(--gold) 16%, transparent),
     color-mix(in srgb, var(--gold) 4%, transparent)
   );
-  color: #fff;
+  color: var(--sidebar-strong);
   font-weight: 600;
   box-shadow: inset 2px 0 0 var(--gold);
 }
@@ -475,13 +481,13 @@
 
 .content {
   padding: 26px;
-  overflow-y: auto;
+  padding-bottom: 96px;
+  overflow: visible;
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
-
 /* Hero — navy family (parity with Service), institutional layout */
 .hero {
   display: grid;
@@ -1168,7 +1174,7 @@
 
   .content {
     padding: 16px;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   .main {

@@ -783,7 +783,7 @@ async function liveFigures(s: GovState, sec: PackSection): Promise<{ content: st
       try {
         const { listApplications, listCertificates } = await import("../certification/store");
         const year = String(new Date().getFullYear());
-        const apps = listApplications();
+        const apps = await listApplications();
         const certs = listCertificates();
         const issuedYtd = certs.filter((c) => c.issued_at.startsWith(year)).length;
         const open = apps.filter((a) => !["Certified", "Rejected", "Withdrawn"].includes(a.state));
@@ -801,7 +801,7 @@ async function liveFigures(s: GovState, sec: PackSection): Promise<{ content: st
     case "metrology": {
       try {
         const { listJobs, listEquipment } = await import("../metrology/store");
-        const jobs = listJobs();
+        const jobs = await listJobs();
         const done = jobs.filter((j) => j.certificate);
         const onTime = done.filter((j) => !j.due || j.certificate!.issued_at <= j.due).length;
         const active = jobs.filter((j) => !["Certified", "Dispatched", "Cancelled"].includes(j.state)).length;
@@ -817,11 +817,11 @@ async function liveFigures(s: GovState, sec: PackSection): Promise<{ content: st
     case "standards": {
       try {
         const { listWorkItems, listCatalogue } = await import("../standards/store");
-        const wis = listWorkItems();
+        const wis = await listWorkItems();
         const active = wis.filter((w) => !["Published", "Cancelled"].includes(w.state));
         const review = wis.filter((w) => w.state === "Public Review").length;
         const q0 = new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3, 1).toISOString();
-        const published = listCatalogue().filter((c) => c.published_at >= q0).length;
+        const published = (await listCatalogue()).filter((c) => c.published_at >= q0).length;
         return {
           content: `Standards as at ${asOf}: ${active.length} work item(s) active; ${review} draft(s) in public comment; ${published} standard(s) published this quarter.`,
           figures: { "Work items": String(active.length), "Public comment": String(review), Published: String(published) },

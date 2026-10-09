@@ -244,7 +244,7 @@
 /* Horizontal process steps (certification page tabs) */
 .cf-tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line);margin:18px 0 20px}
 .cf-tabs button{border:0;background:transparent;font:inherit;font-size:14px;font-weight:600;color:var(--muted);padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
-.cf-tabs button[aria-selected="true"]{color:var(--navy);border-bottom-color:var(--gold);font-weight:800}
+.cf-tabs button[aria-selected="true"]{color:var(--gold-d);border-bottom-color:var(--gold);font-weight:800}
 .cf-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;counter-reset:cfstep}
 .cf-step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
 .cf-step__n{font-family:var(--font-display);font-size:13px;font-weight:800;color:var(--gold-d)}

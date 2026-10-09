@@ -113,7 +113,7 @@ to {
   opacity:.92}
 .resource-gate__bar {
   position:sticky;
-  top:0;
+  top:var(--top-h, 64px);
   z-index:5;
   margin-bottom:10px;
   padding:8px 12px;

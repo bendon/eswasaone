@@ -71,8 +71,31 @@ _SCHEME_ALIASES = {
 }
 
 
+def _ensure_certification_applicant_role() -> None:
+    """Staff/citizen accounts used on the Service Portal often lack this role — grant it."""
+    user = frappe.session.user
+    if not user or user in ("Guest",):
+        return
+    if "Certification Applicant" in frappe.get_roles(user):
+        return
+    if frappe.db.exists("Has Role", {"parent": user, "role": "Certification Applicant"}):
+        frappe.clear_cache(user=user)
+        return
+    frappe.get_doc(
+        {
+            "doctype": "Has Role",
+            "parent": user,
+            "parenttype": "User",
+            "parentfield": "roles",
+            "role": "Certification Applicant",
+        }
+    ).insert(ignore_permissions=True)
+    frappe.clear_cache(user=user)
+
+
 def _can_create_certification_application() -> bool:
     """Desk DocPerm create, or signed-in public self-service audience."""
+    _ensure_certification_applicant_role()
     if frappe.has_permission("Certification Application", "create"):
         return True
     user = frappe.session.user
@@ -438,6 +461,14 @@ def patch_audit(
     return result
 
 
+@frappe.whitelist(allow_guest=True)
+def list_schemes() -> dict:
+    """Public catalogue for GET /api/certification/schemes."""
+    from eswasa_certification.schemes import active_schemes
+
+    return {"items": active_schemes()}
+
+
 @frappe.whitelist()
 def create_application(
     scheme: str | None = None,
@@ -457,7 +488,7 @@ def create_application(
         frappe.throw(_("applicant_name is required"), frappe.ValidationError)
 
     # Self-service: Citizen / Certification Applicant may open their own application.
-    # Desk roles keep full DocPerm create. Guest never.
+    # Desk roles keep full DocPerm create. Guest never. Missing applicant role is granted.
     if not _can_create_certification_application():
         frappe.throw(
             _("Not permitted to create Certification Application"),

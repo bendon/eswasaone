@@ -133,5 +133,48 @@ class RaiseTests(unittest.TestCase):
             al.decide("ALERT-1", "approve")
 
 
+class ExpiryRecipientTests(unittest.TestCase):
+    """R-H3 recipients: the person, their line manager (or, for an external person, the department head) and HR."""
+
+    def setUp(self):
+        from unittest import mock
+
+        from tests import _fakefrappe as ff
+
+        self.store = {
+            "Employee": [
+                {"name": "EMP-1", "employee_name": "Thandi Mamba", "user_id": "thandi@x", "reports_to": "EMP-2", "department": "Cert"},
+                {"name": "EMP-2", "employee_name": "Sipho Dlamini", "user_id": "sipho@x", "reports_to": None, "department": "Cert"},
+                {"name": "EMP-3", "employee_name": "Head Of Metro", "user_id": "head@x", "reports_to": None, "department": "Metro"},
+            ],
+            "Department": [{"name": "Metro", "custom_head": "EMP-3"}],
+            "External Person": [{"name": "EXT-1", "full_name": "Ayanda Contract", "user": "ayanda@x", "status": "Active"}],
+            "Staff Authorisation": [
+                {"name": "SA-1", "person_type": "Employee", "employee": "EMP-1", "skill": "ISO 9001 lead", "valid_to": "2026-12-11",
+                 "docstatus": 1, "status": "Expiring"},
+                {"name": "SA-2", "person_type": "External", "employee": None, "external_person": "EXT-1", "department": "Metro",
+                 "skill": "Mass calibration", "valid_to": "2026-12-11", "docstatus": 1, "status": "Expiring"},
+            ],
+        }
+        mock.patch("eswasa_hr.recruitment._hr_manager_users", return_value=["hr@x"]).start()
+        self.addCleanup(mock.patch.stopall)
+        self.addCleanup(ff.uninstall)
+        ff.install(self.store, today="2026-10-12", doctypes=("Staff Authorisation", "HR Alert"))
+
+    def _to(self, sa):
+        alert = next(a for a in self.store["HR Alert"] if a["subject_name"] == sa)
+        return sorted(t["allocated_to"] for t in self.store["ToDo"] if t["reference_name"] == alert["name"]), alert
+
+    def test_employee_and_external_each_reach_the_right_people(self):
+        self.assertEqual(al.authorisation_expiry_alerts(), 2)
+        users, alert = self._to("SA-1")
+        self.assertEqual(users, ["hr@x", "sipho@x", "thandi@x"])
+        self.assertEqual(alert["employee"], "EMP-1")
+        users, alert = self._to("SA-2")
+        self.assertEqual(users, ["ayanda@x", "head@x", "hr@x"])  # never someone picked by an empty employee lookup
+        self.assertIsNone(alert["employee"])
+        self.assertIn("Ayanda Contract", alert["message"])
+
+
 if __name__ == "__main__":
     unittest.main()

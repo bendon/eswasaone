@@ -23,6 +23,8 @@ def _cmp(value, op, arg):
         return v.startswith(head) and v.endswith(tail)
     if op == "is":
         return bool(value) == (arg == "set")
+    if op == "between":
+        return str(arg[0]) <= v <= str(arg[1])
     a = str(arg)
     return {"<": v < a, "<=": v <= a, ">": v > a, ">=": v >= a, "!=": v != a}[op]
 

@@ -190,18 +190,26 @@ def authorisation_expiry_alerts() -> int:
     for a in frappe.get_all(
         "Staff Authorisation",
         filters={"docstatus": 1, "status": ["in", ["Current", "Expiring"]], "valid_to": ["between", [day, add_days(day, max(EXPIRY_THRESHOLDS))]]},
-        fields=["name", "employee", "skill", "valid_to"],
+        fields=["name", "person_type", "employee", "external_person", "department", "skill", "valid_to"],
         limit=0,
     ):
         end = _d(a["valid_to"])
         t = expiry_threshold(end, day)
         if t is None:
             continue
-        e = frappe.db.get_value("Employee", a["employee"], ["employee_name", "user_id", "reports_to"], as_dict=True) or {}
-        users = recipients(e.get("user_id"), _user_of(e.get("reports_to")), hr)
-        title = expiry_title(e.get("employee_name") or a["employee"], a["skill"], end, t)
-        mail = ("authorisation_expiring", {"employee_name": e.get("employee_name") or a["employee"], "competence": a["skill"], "valid_to": fmt(end)}) if t == 7 else None
-        n += raise_alert(f"R-H3:{a['name']}:{end.isoformat()}:{t}", "R-H3", title, users, end, a["employee"], ("Staff Authorisation", a["name"]), mail)
+        if a.get("employee"):
+            e = frappe.db.get_value("Employee", a["employee"], ["employee_name", "user_id", "reports_to"], as_dict=True) or {}
+            name, person_user, manager = e.get("employee_name") or a["employee"], e.get("user_id"), _user_of(e.get("reports_to"))
+        else:
+            # Plan 07 step 7: an external person has no line manager; the head of the authorisation's department is told.
+            from eswasa_hr.authorisations import department_head, subject
+
+            who = subject(a)
+            name, person_user, manager = who["name"], who["user"], department_head(who["department"])[1]
+        users = recipients(person_user, manager, hr)
+        title = expiry_title(name, a["skill"], end, t)
+        mail = ("authorisation_expiring", {"employee_name": name, "competence": a["skill"], "valid_to": fmt(end)}) if t == 7 else None
+        n += raise_alert(f"R-H3:{a['name']}:{end.isoformat()}:{t}", "R-H3", title, users, end, a.get("employee"), ("Staff Authorisation", a["name"]), mail)
     return n
 
 

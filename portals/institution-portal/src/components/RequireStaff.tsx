@@ -21,7 +21,7 @@ export function RequireStaff({
       <div className="panel" style={{ padding: 28, maxWidth: 480 }}>
         <h3 style={{ marginTop: 0 }}>Sign in required</h3>
         <p style={{ color: "var(--muted)" }}>
-          Institution modules use your Frappe staff session. Sign in to load live queues and KPIs.
+          Institution modules use your staff session. Sign in to load live queues and KPIs.
         </p>
         <button type="button" className="btn-primary" onClick={() => openAuth(reason)}>
           Sign in

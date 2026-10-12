@@ -14,14 +14,20 @@ import {
   TopBarSearch,
   DialogProvider,
   onEscape,
+  getDemoPersona,
+  setDemoPersona,
   type SessionUser,
 } from "@eswasaone/shared-ui";
+import { caseSla, crmDemoMode, isOpen, listCases, publicCrmConfig } from "@eswasaone/shared-ui/crm";
 import { InstitutionSidebar } from "./InstitutionSidebar";
 import { AccessDeniedPanel } from "../components/AccessDeniedPanel";
 import { titleForPath, type InstitutionRouteId, INSTITUTION_NAV, routeFromAsk } from "../nav";
 import { canAccessRoute, hasStaffRole, primaryStaffLabel } from "../staff";
 import { listPendingAccessRequests } from "../hr/accessRequests";
 import { StaffGate } from "../pages/StaffGate";
+import { StaffBell } from "./StaffBell";
+import { DockNudge } from "../components/DockNudge";
+import { listTasks } from "@eswasaone/shared-ui/tasks";
 
 const SIDE_COLLAPSED_KEY = "eswasaone.institution.sideCollapsed";
 
@@ -67,6 +73,7 @@ export function InstitutionLayout() {
   const [topAskBusy, setTopAskBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
+  const [nudge, setNudge] = useState<{ message: string } | null>(null);
 
   const closeNav = useCallback(() => setNavOpen(false), []);
   const toggleNav = useCallback(() => setNavOpen((v) => !v), []);
@@ -89,6 +96,15 @@ export function InstitutionLayout() {
   }, []);
 
   const refreshUser = useCallback(() => {
+    // Demo persona chosen on the staff gate (Core sign-in unavailable or trying another role).
+    const persona = getDemoPersona();
+    if (persona) {
+      const u: SessionUser = { username: persona.username, full_name: persona.full_name, email: persona.email, roles: persona.roles };
+      setUser((prev) => (prev && sameSessionUser(prev, u) ? prev : u));
+      setGateError(null);
+      setAuthReady(true);
+      return;
+    }
     let settled = false;
     const finish = (fn: () => void) => {
       if (settled) return;
@@ -161,14 +177,20 @@ export function InstitutionLayout() {
     }
     let cancelled = false;
     void Promise.allSettled([
-      apiFetch<{ pending_count: number }>("/approvals?limit=1"),
-      apiFetch<{ new_count: number }>("/tbt/alerts?limit=1"),
-    ]).then((results) => {
+      apiFetch<{ pending_count: number }>("/approvals?limit=1", { quiet: true }),
+      apiFetch<{ new_count: number }>("/tbt/alerts?limit=1", { quiet: true }),
+    ]).then(async (results) => {
       if (cancelled) return;
       const next: BadgePayload = {};
-      if (results[0].status === "fulfilled" && results[0].value.pending_count > 0) {
-        next.approvals = results[0].value.pending_count;
+      const liveCount = results[0].status === "fulfilled" ? results[0].value.pending_count : 0;
+      // Local task store (module + demo tasks) — TODO: wire real — Core pending_count will include these.
+      let localCount = 0;
+      try {
+        localCount = listTasks({ name: user.full_name || user.username, roles: user.roles }, { queue: "mine" }).length + listTasks({ name: user.full_name || user.username, roles: user.roles }, { queue: "unclaimed" }).length;
+      } catch {
+        localCount = 0;
       }
+      if (liveCount + localCount > 0) next.approvals = liveCount + localCount;
       if (results[1].status === "fulfilled" && results[1].value.new_count > 0) {
         next.tbt = results[1].value.new_count;
       }
@@ -177,6 +199,14 @@ export function InstitutionLayout() {
       if (pendingAccess > 0 && canAccessRoute(user.roles, "hr")) {
         next.hr = pendingAccess;
       }
+      // CRM: cases past their SLA. TODO: wire real — breaching_count from GET /cases once Core has it.
+      if (crmDemoMode() && canAccessRoute(user.roles, "crm")) {
+        const cfg = publicCrmConfig();
+        const cases = await listCases().catch(() => []);
+        const breaching = cases.filter((c) => isOpen(c) && caseSla(c, cfg.case_types[c.type]).status === "breach").length;
+        if (breaching > 0) next.crm = breaching;
+      }
+      if (cancelled) return;
       setBadges(next);
     });
     return () => {
@@ -213,12 +243,14 @@ export function InstitutionLayout() {
   const allowedHere = user ? canAccessRoute(user.roles, routeId) : false;
 
   const openAuth = useCallback((reason?: string) => {
+    if (getDemoPersona()) return;
     void logout().catch(() => undefined);
     setUser(null);
     setGateError(reason ?? "Sign in required");
   }, []);
 
   const signOut = useCallback(() => {
+    setDemoPersona(null);
     void logout()
       .then(() => {
         setUser(null);
@@ -232,6 +264,17 @@ export function InstitutionLayout() {
     window.setTimeout(() => setToast(null), 3200);
   }, []);
 
+  // Listen for "esi-nudge" events dispatched from the dashboard (e.g. when a new
+  // application arrives via the live feed). The EsiFeed component dispatches these.
+  useEffect(() => {
+    function onNudge(e: Event) {
+      const detail = (e as CustomEvent<{ message: string }>).detail;
+      if (detail?.message) setNudge(detail);
+    }
+    window.addEventListener("esi-nudge", onNudge as EventListener);
+    return () => window.removeEventListener("esi-nudge", onNudge as EventListener);
+  }, []);
+
   // Top-bar search — same agent + routing as the dock, but surfaces the answer.
   const onTopAsk = useCallback(
     async (message: string) => {
@@ -242,7 +285,7 @@ export function InstitutionLayout() {
         const dest = routeFromAsk(message, res.tools_used);
         if (dest && dest !== "/") navigate(dest);
       } catch (err) {
-        if (err instanceof AuthError && err.authRequired) {
+        if (err instanceof AuthError && err.authRequired && !getDemoPersona()) {
           void logout().catch(() => undefined);
           setUser(null);
           setGateError(err.reason || err.message);
@@ -264,7 +307,7 @@ export function InstitutionLayout() {
         const dest = routeFromAsk(message, res.tools_used);
         if (dest && dest !== "/") navigate(dest);
       } catch (err) {
-        if (err instanceof AuthError && err.authRequired) {
+        if (err instanceof AuthError && err.authRequired && !getDemoPersona()) {
           void logout().catch(() => undefined);
           setUser(null);
           setGateError(err.reason || err.message);
@@ -317,7 +360,7 @@ export function InstitutionLayout() {
   return (
     <DialogProvider>
     <IdleLockGate
-      enabled
+      enabled={!getDemoPersona()}
       identityHint={user.email || user.username}
       onRequireFullLogin={() => {
         void logout().catch(() => undefined);
@@ -354,6 +397,7 @@ export function InstitutionLayout() {
           <TopBar
             title={titleForPath(loc.pathname)}
             center={<TopBarSearch onAsk={onTopAsk} busy={topAskBusy} />}
+            notifications={<StaffBell user={user} />}
             userName={user.full_name || user.username}
             userRole={roleBanner.title}
             userEmail={user.email || user.username}
@@ -376,6 +420,19 @@ export function InstitutionLayout() {
         </div>
         <Toast message={toast} />
       </AppShell>
+      <DockNudge
+        visible={Boolean(nudge)}
+        message={nudge?.message ?? ""}
+        onClaim={() => {
+          setNudge(null);
+          navigate("/approvals");
+        }}
+        onView={() => {
+          setNudge(null);
+          navigate("/");
+        }}
+        onDismiss={() => setNudge(null)}
+      />
       <Dock
         visible
         signedIn

@@ -1,6 +1,6 @@
 import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, Select } from "@eswasaone/shared-ui";
 import {
   actionsRequired,
   bookConsultation,
@@ -42,6 +42,7 @@ import {
   UploadButton,
 } from "../certification/ui";
 import { safeText } from "../lib/safe";
+import { CertActionCards } from "./customer/Certification";
 import { useToast } from "../ui/Toast";
 
 type SheetKind =
@@ -255,6 +256,7 @@ export function CertificationTrackPage() {
               onClose={() => setNotSent(null)}
             />
           ) : null}
+          <CertActionCards id={detail.id} onChange={load} />
           {/* Where you are */}
           <section className="cf-card cf-now">
             <span className="cf-head__kicker">Where you are</span>
@@ -285,22 +287,27 @@ export function CertificationTrackPage() {
             ) : null}
           </section>
 
-          {/* Quote, contract & payment */}
-          {detail.quote ? (
-            <section className="cf-card">
+          {/* Quote, contract & payment — roadmap stage + issued Quotation PDF */}
+          {detail.quote || detail.stage === "quote" ? (
+            <section className="cf-card" id="quote-contract-payment">
               <div className="cf-card__h">
                 <div>
                   <h2>Quote, contract &amp; payment</h2>
                   <p>
-                    {detail.quote.id} · issued {fmtDate(detail.quote.issued_at)} · valid until{" "}
-                    {fmtDate(detail.quote.valid_until)}
+                    {detail.quote
+                      ? `${detail.quote.id} · issued ${fmtDate(detail.quote.issued_at)} · valid until ${fmtDate(detail.quote.valid_until)}`
+                      : "Pricing is provided, and the formal agreement and payment are arranged."}
                   </p>
                 </div>
-                <span className={`cf-chip${detail.quote.status === "accepted" ? " cf-chip--green" : detail.quote.status === "issued" ? " cf-chip--gold" : " cf-chip--muted"}`}>
-                  {detail.quote.status}
-                </span>
+                {detail.quote ? (
+                  <span className={`cf-chip${detail.quote.status === "accepted" ? " cf-chip--green" : detail.quote.status === "issued" ? " cf-chip--gold" : " cf-chip--muted"}`}>
+                    {detail.quote.status}
+                  </span>
+                ) : (
+                  <span className="cf-chip cf-chip--muted">Preparing</span>
+                )}
               </div>
-              {detail.quote.lines?.length ? (
+              {detail.quote?.lines?.length ? (
                 <table className="cf-lines">
                   <tbody>
                     {detail.quote.lines.map((l) => (
@@ -316,9 +323,27 @@ export function CertificationTrackPage() {
                   </tbody>
                 </table>
               ) : (
-                <p className="cf-empty">ESWASA is preparing your quote.</p>
+                <p className="cf-empty">
+                  {detail.quote
+                    ? "ESWASA is preparing your quote."
+                    : "Your quotation will appear here once the certification desk issues it."}
+                </p>
               )}
-              {detail.quote.status === "issued" ? (
+              {detail.quote?.pdf_url ? (
+                <div className="cf-item__act" style={{ marginTop: 12 }}>
+                  <a
+                    className="cf-btn cf-btn--ghost"
+                    href={detail.quote.pdf_url.startsWith("http") || detail.quote.pdf_url.startsWith("/")
+                      ? detail.quote.pdf_url
+                      : `/api/media/${detail.quote.pdf_url}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Icon name="i-file" /> Download quotation PDF
+                  </a>
+                </div>
+              ) : null}
+              {detail.quote?.status === "issued" ? (
                 <div className="cf-item__act">
                   <button
                     type="button"
@@ -347,7 +372,7 @@ export function CertificationTrackPage() {
                     Decline
                   </button>
                 </div>
-              ) : detail.quote.status === "accepted" ? (
+              ) : detail.quote?.status === "accepted" ? (
                 <div className="cf-note" style={{ marginTop: 12 }}>
                   <Icon name="i-dollar" />
                   <span>
@@ -801,7 +826,19 @@ export function CertificationTrackPage() {
               async () => {
                 // Complaints also go to the shared complaints desk (Customer Care).
                 if (sheet.type === "complaint")
-                  await lodgeComplaint({ subject: `Certification ${detail.id}`, detail: text });
+                  await lodgeComplaint({
+                    subject: `Certification ${detail.id}`,
+                    detail: text,
+                    about: { kind: "application", label: `${detail.id} · ${detail.org}`, ref: detail.id },
+                  });
+                // Appeals open a restricted case for the independent appeals panel (CER_PR_002).
+                if (sheet.type === "appeal" && demoMode())
+                  await lodgeComplaint({
+                    type: "appeal",
+                    subject: `Appeal: ${detail.id}`,
+                    detail: text,
+                    about: { kind: "application", label: `${detail.id} decision`, ref: detail.id },
+                  });
                 return sendApplicationRequest(detail.id, sheet.type, text);
               },
               `${REQUEST_COPY[sheet.type].title}: sent`,
@@ -1031,11 +1068,11 @@ function ConsultSheet({
         <TextField label="Preferred date" type="date" min={isoToday()} required value={date} onChange={setDate} />
         <label className="cf-field">
           <span className="lbl">How should we meet?</span>
-          <select value={mode} onChange={(e) => setMode(e.target.value)}>
+          <Select value={mode} onChange={(val) => setMode(val)}>
             {["In person (ESWASA, Matsapha)", "At my premises", "Online (video call)", "Group gap-analysis workshop"].map((m) => (
               <option key={m}>{m}</option>
             ))}
-          </select>
+          </Select>
         </label>
         <TextField label="What would you like help with?" multiline value={topic} onChange={setTopic} />
         <div className="cf-nav">

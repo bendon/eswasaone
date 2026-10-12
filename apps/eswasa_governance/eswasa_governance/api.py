@@ -435,8 +435,8 @@ def _safe_count(doctype: str, filters: dict[str, Any] | None = None) -> int:
 
 
 _FEED_HREF: dict[str, str] = {
-    "Certification Application": "/institution/certification/{name}",
-    "Certificate": "/institution/certification",
+    "Certification Application": "/institution/certification/applications/{name}",
+    "Certificate": "/institution/certification/certificates/{name}",
     "Certification Audit": "/institution/certification",
     "Audit": "/institution/certification",
     "Board Pack": "/institution/board",

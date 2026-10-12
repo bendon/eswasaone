@@ -1,10 +1,16 @@
-/* Certification sub-views — exported individually for the router.
-   The main CertificationPage renders SubTabs + <Outlet/>.
-   Each sub-view is self-contained: fetches its own data. */
-export { PipelineView } from "./PipelineView";
-export { QuotesView } from "./QuotesView";
-export { AuditsView } from "./AuditsView";
-export { FindingsView } from "./FindingsView";
-export { DecisionsView } from "./DecisionsView";
-export { CertificatesView } from "./CertificatesView";
-export { RegisterView } from "./RegisterView";
+export { PipelineView } from "./Pipeline";
+export { ApplicationRecordPage } from "./ApplicationRecord";
+export {
+  AuditorsView,
+  CertificateRecordPage,
+  CertificatesView,
+  CertSettingsView,
+  DecisionsView,
+  FindingsView,
+  MarksView,
+  QuotesView,
+  RegisterView,
+  SurveillanceView,
+  VisitsView,
+  VisitsView as AuditsView,
+} from "./Lists";

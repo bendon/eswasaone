@@ -33,6 +33,7 @@ export { AuthModal, type AuthModalProps } from "./AuthModal";
 export { IdleLockGate, type IdleLockProps } from "./IdleLockGate";
 export {
   STAFF_ROLES,
+  PROVISIONAL_ROLE_MAP,
   FIELD_ESS_ROLES,
   DESK_ONLY_ROLES,
   INSTITUTION_PORTAL_PATH,

@@ -7,7 +7,7 @@ import {
   type FormEvent,
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Icon, type IconName } from "@eswasaone/shared-ui";
+import { Icon, Select, type IconName } from "@eswasaone/shared-ui";
 import {
   LEARNING_PATHS,
   listCourses,
@@ -401,18 +401,13 @@ export function TrainingPage() {
           <label className="sr-only" htmlFor="trackSelect">
             Track
           </label>
-          <select
-            className="searchform__select"
-            id="trackSelect"
-            value={track}
-            onChange={(e) => setTrack(e.target.value)}
-          >
+          <Select className="searchform__select" id="trackSelect" value={track} onChange={(val) => setTrack(val)}>
             {TRACKS.map((t) => (
               <option key={t.value || "all"} value={t.value}>
                 {t.label}
               </option>
             ))}
-          </select>
+          </Select>
           <button type="submit" className="searchform__submit">
             Search
           </button>
@@ -457,12 +452,12 @@ export function TrainingPage() {
             <div className="toolbar__spacer" />
             <div className="toolbar__sort">
               <label htmlFor="trainSort">Sort</label>
-              <select id="trainSort" value={sort} onChange={(e) => setSort(e.target.value)}>
+              <Select id="trainSort" value={sort} onChange={(val) => setSort(val)}>
                 <option value="popular">Most popular</option>
                 <option value="date">Next starting date</option>
                 <option value="duration">Shortest duration</option>
                 <option value="fee">Price: low to high</option>
-              </select>
+              </Select>
             </div>
           </div>
 

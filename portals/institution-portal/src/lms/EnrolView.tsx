@@ -3,7 +3,7 @@ import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
 import { useInstitution } from "../layout/InstitutionLayout";
-import { apiFetch, AuthError, Icon, ModuleHeader } from "@eswasaone/shared-ui";
+import { apiFetch, AuthError, Icon, ModuleHeader, Select } from "@eswasaone/shared-ui";
 import type { TrainingCoursesResponse } from "../api/types";
 
 /** Enrol — Register a participant in a training course. */
@@ -126,21 +126,14 @@ export function EnrolView() {
 
               <label style={{ display: "grid", gap: 6, fontWeight: 600, fontSize: 13 }}>
                 Course
-                <select
+                <Select
+                  block
                   required
                   value={course}
-                  onChange={(e) => setCourse(e.target.value)}
-                  style={{ width: "100%" }}
-                >
-                  <option value="" disabled>
-                    Select a course…
-                  </option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.title} ({c.id})
-                    </option>
-                  ))}
-                </select>
+                  onChange={setCourse}
+                  placeholder="Select a course…"
+                  options={courses.map((c) => ({ value: c.id, label: `${c.title} (${c.id})` }))}
+                />
               </label>
 
               <button

@@ -21,6 +21,9 @@
   "site_address",
   "section_assessment",
   "assigned_auditor",
+  "quotation",
+  "quotation_pdf_key",
+  "quotation_pdf_url",
   "column_break_c",
   "assessment_notes",
   "section_flags",
@@ -67,7 +70,7 @@
    "fieldname": "workflow_state",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Application\nAssessment\nAudit Scheduled\nAudit\nNC Resolution\nCertified\nSurveillance\nRenewal\nWithdraw",
+   "options": "Application\nAssessment\nQuoted\nAudit Scheduled\nAudit\nNC Resolution\nCertified\nSurveillance\nRenewal\nWithdraw",
    "default": "Application",
    "in_list_view": 1,
    "in_standard_filter": 1,
@@ -139,6 +142,31 @@
    "fieldtype": "Link",
    "label": "Assigned Auditor",
    "options": "Auditor"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "quotation",
+   "fieldtype": "Link",
+   "label": "Quotation",
+   "options": "Quotation",
+   "read_only": 1,
+   "description": "ERPNext Quotation issued on Issue Quotation"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "quotation_pdf_key",
+   "fieldtype": "Data",
+   "label": "Quotation PDF Key",
+   "read_only": 1,
+   "description": "S3 / media object key for the citizen PDF"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "quotation_pdf_url",
+   "fieldtype": "Data",
+   "label": "Quotation PDF URL",
+   "read_only": 1,
+   "description": "Citizen-accessible PDF URL (S3 or /api/media/…)"
   },
   {
    "doctype": "DocField",
@@ -278,6 +306,21 @@
    "share": 0,
    "submit": 1,
    "write": 1,
+   "doctype": "DocPerm"
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 0,
+   "role": "Citizen",
+   "share": 0,
+   "submit": 0,
+   "write": 1,
+   "if_owner": 1,
    "doctype": "DocPerm"
   }
  ],

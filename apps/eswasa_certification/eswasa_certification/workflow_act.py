@@ -224,6 +224,7 @@ def _owner_role_for_state(state: str) -> str | None:
     mapping = {
         "Application": "Certification Officer",
         "Assessment": "Certification Officer",
+        "Quoted": "Certification Officer",
         "Audit Scheduled": "Certification Officer",
         "Audit": "Certification Auditor",
         "NC Resolution": "Certification Officer",
@@ -244,6 +245,15 @@ def _apply_side_effects(doc, target: str) -> None:
             rc1_application_submitted(doc)
         except Exception:
             frappe.log_error(title="eswasa_certification R-C1 from act failed")
+    if target == "Quoted":
+        from eswasa_certification.rules import rc_issue_quotation
+
+        try:
+            rc_issue_quotation(doc)
+            # Reload so notify can include quotation number / fee.
+            doc.reload()
+        except Exception:
+            frappe.log_error(title="eswasa_certification quotation from act failed")
     if target == "Audit Scheduled" and doc.get("assigned_auditor"):
         from eswasa_certification.api import _ensure_planned_audit
 
@@ -266,6 +276,101 @@ def _persist(doc, *, insert: bool = False):
 
     return api_persist(doc, insert=insert)
 
+
+# Human-readable transition messages for the citizen notification.
+_TRANSITION_MESSAGES = {
+    "Assessment": "Your application is now in review. We will prepare a quote and contact you about contract and payment.",
+    "Quoted": "A quotation for your certification has been issued. Please review the quote and arrange payment to proceed to audit scheduling.",
+    "Audit Scheduled": "An audit has been scheduled for your application. You will receive the date and details shortly.",
+    "Audit": "Your audit is now in progress. The auditor may contact you for site access or documents.",
+    "NC Resolution": "Non-conformities were found during the audit. Please review the findings and submit corrective actions.",
+    "Certified": "Congratulations! Your certification has been granted. The certificate will be issued shortly.",
+    "Surveillance": "Your certification is now in the surveillance phase. Surveillance audits will be scheduled before renewal.",
+    "Renewal": "Your certification is approaching renewal. We will contact you about the recertification process.",
+    "Withdraw": "Your application has been withdrawn as requested.",
+}
+
+_DISPLAY_STATUS = {
+    "Application": "Submitted",
+    "Assessment": "In Review",
+    "Quoted": "Quote Ready",
+    "Audit Scheduled": "Audit Scheduled",
+    "Audit": "Audit In Progress",
+    "NC Resolution": "NC Resolution",
+    "Certified": "Certified",
+    "Surveillance": "Surveillance",
+    "Renewal": "Renewal",
+    "Withdraw": "Withdrawn",
+}
+
+
+def _notify_applicant(doc, current: str, target: str, action: str) -> None:
+    """Notify the citizen/applicant that their application status changed.
+
+    Sends an email + creates a Notification Log entry (for the service portal
+    notifications inbox) + publishes to the live feed bus targeting the citizen.
+    """
+    app_name = doc.get("name") or doc.name
+    applicant_name = doc.get("applicant_name") or "Applicant"
+    scheme = doc.get("scheme") or ""
+    contact_email = doc.get("contact_email") or ""
+
+    # Resolve the citizen's user account (document owner) for Notification Log targeting
+    owner = frappe.db.get_value(doc.doctype, app_name, "owner") if doc.doctype else None
+    target_user = contact_email or owner
+
+    display = _DISPLAY_STATUS.get(target, target)
+    msg = _TRANSITION_MESSAGES.get(
+        target,
+        f"Your application {app_name} status has been updated to {display}.",
+    )
+    if target == "Quoted":
+        qname = doc.get("quotation")
+        if qname:
+            total = frappe.db.get_value("Quotation", qname, "grand_total")
+            currency = frappe.db.get_value("Quotation", qname, "currency") or "SZL"
+            fee_bit = f" ({currency} {float(total or 0):,.2f})" if total is not None else ""
+            msg = (
+                f"Quotation {qname}{fee_bit} has been issued for your application. "
+                f"Please review it and arrange payment so we can schedule your audit."
+            )
+
+    # 1. Email the applicant
+    if contact_email and "@" in contact_email:
+        try:
+            frappe.sendmail(
+                recipients=[contact_email],
+                subject=f"Application {app_name} — {display}",
+                message=(
+                    f"Dear {applicant_name},\n\n"
+                    f"Your certification application {app_name} for {scheme} "
+                    f"has been updated.\n\n"
+                    f"Previous status: {_DISPLAY_STATUS.get(current, current)}\n"
+                    f"New status: {display}\n\n"
+                    f"{msg}\n\n"
+                    f"You can track your application status on the EswasaOne service portal.\n"
+                ),
+                delayed=True,
+                retry=0,
+            )
+        except Exception:
+            frappe.log_error(title=f"eswasa_certification: citizen email failed for {app_name}")
+
+    # 2. Notification Log + live feed (publish_feed writes Notification Log for for_user)
+    try:
+        from eswasa_certification.rules import publish_feed
+
+        publish_feed(
+            event=f"WF-{target}",
+            subject=f"Application {app_name} — {display}",
+            reference_doctype=doc.doctype,
+            reference_name=app_name,
+            detail=msg,
+            status=display,
+            for_user=target_user,
+        )
+    except Exception:
+        frappe.log_error(title=f"eswasa_certification: publish_feed failed for {app_name}")
 
 @frappe.whitelist()
 def act(
@@ -405,6 +510,7 @@ def act(
 
     if doctype == "Certification Application":
         _apply_side_effects(doc, target)
+        _notify_applicant(doc, current, target, action)
 
     try:
         from eswasa_certification.api import _audit_log

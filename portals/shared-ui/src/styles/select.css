@@ -1,0 +1,61 @@
+/* Select — styled replacement for native <select> (components/Select.tsx) */
+.xsel{position:relative;display:inline-flex;min-width:0;max-width:100%;vertical-align:middle}
+.xsel--block{display:flex;width:100%}
+.xsel__btn{
+  display:flex;align-items:center;gap:8px;width:100%;min-width:0;
+  height:38px;padding:0 10px 0 12px;margin:0;
+  border:1px solid var(--line,#e4eaf2);border-radius:9px;
+  background:#fff;color:var(--ink,#0f172a);
+  font:inherit;font-size:13px;font-weight:500;line-height:1.2;text-align:left;
+  cursor:pointer;transition:border-color .15s,box-shadow .15s;
+}
+.xsel__btn:hover:not(:disabled){border-color:#c7d2e0}
+.xsel__btn:focus-visible,.xsel.is-open .xsel__btn{
+  outline:none;border-color:var(--navy,#2e3191);
+  box-shadow:0 0 0 3px var(--navy-l,#eceefc);
+}
+.xsel__btn:disabled{opacity:.6;cursor:not-allowed;background:var(--bg,#f4f7fa)}
+.xsel__val{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,auto)}
+.xsel__val>span{grid-area:1/1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xsel__val>.xsel__sizer{visibility:hidden;height:0}
+.xsel__val .is-ph{color:var(--muted-2,#8a9ab1)}
+.xsel__btn svg{width:14px;height:14px;stroke:var(--muted,#64748b);transition:transform .2s}
+.xsel.is-open .xsel__btn svg{transform:rotate(180deg)}
+/* Hidden input carries name/required so native form validation still applies. */
+.xsel__req{position:absolute;left:12px;bottom:0;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none}
+
+.xsel-host{position:relative;z-index:2147483000}
+.xsel-pop{
+  position:fixed;z-index:2147483001;
+  max-width:min(420px,calc(100vw - 16px));overflow-y:auto;overscroll-behavior:contain;
+  margin:0;padding:6px;list-style:none;
+  background:var(--card,#fff);border:1px solid var(--line,#e4eaf2);border-radius:12px;
+  box-shadow:var(--sh-md,0 6px 16px -4px rgba(16,24,40,.1),0 2px 6px -2px rgba(16,24,40,.05));
+  font-family:var(--font-sans,inherit);color:var(--ink,#0f172a);
+  animation:xsel-in .14s ease;
+}
+.xsel__opt{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 10px;border-radius:8px;
+  font-size:13px;font-weight:500;cursor:pointer;
+}
+.xsel__opt>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xsel__opt.is-grouped{padding-left:16px}
+.xsel__opt.is-active{background:var(--bg,#f4f7fa)}
+.xsel__opt[aria-selected="true"]{color:var(--navy,#2e3191);font-weight:700}
+.xsel__opt[aria-disabled="true"]{color:var(--muted-2,#8a9ab1);cursor:default;background:none}
+.xsel__opt svg{width:14px;height:14px;stroke:var(--navy,#2e3191);stroke-width:2.4}
+.xsel__grp{
+  padding:10px 10px 4px;font-size:11px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--muted-2,#8a9ab1);
+}
+.xsel__grp:first-child{padding-top:4px}
+@keyframes xsel-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.xsel-pop{animation:none}.xsel__btn svg{transition:none}}
+@media (max-width:640px){.xsel__btn{height:42px;font-size:14px}.xsel__opt{padding:11px 10px;font-size:14px}}
+
+/* Form contexts that used to style a bare <select>: stretch and match their input heights. */
+.field .xsel,.cf-field .xsel,.aud-fld .xsel,.me-field .xsel,.form .xsel,.hr-invite .xsel{display:flex;width:100%}
+.cf-field .xsel__btn,.filters .xsel__btn,.form .xsel__btn{height:44px;border-radius:10px;font-size:14px}
+.cf-field.is-invalid .xsel__btn{border-color:var(--red)}
+.toolbar__sort .xsel__btn{height:36px;font-size:12.5px}

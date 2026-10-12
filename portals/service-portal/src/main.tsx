@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import "@eswasaone/shared-ui/domains";
 import "./index.css";
 
 async function prepare() {

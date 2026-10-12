@@ -145,13 +145,21 @@ def raise_from_frappe(exc: FrappeError) -> None:
     plain = _plain(text)
 
     if "PermissionError" in text or "Insufficient Permission" in text:
+        if re.search(r"Not permitted to create|not permitted to create", plain, re.I):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Your account can’t create this yet. Sign out and sign in again so your "
+                    "self-service roles refresh, then retry. If it still fails, ask a System Manager."
+                ),
+            ) from exc
         m = re.search(r"Insufficient Permission for\s+(.+?)(?:\"|,|\n|$)", plain)
         doc = (m.group(1).strip() if m else "this record").rstrip(".")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=(
                 f"You don't have permission to access {doc}. "
-                "Ask HR or a System Manager to grant the right role, then sign out and sign in again."
+                "Ask a System Manager to grant the right role, then sign out and sign in again."
             ),
         ) from exc
 

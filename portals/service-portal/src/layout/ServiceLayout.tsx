@@ -10,6 +10,7 @@ import {
   type SiteFooterColumn,
 } from "@eswasaone/shared-ui";
 import { useAuth } from "../auth/AuthProvider";
+import { CustomerBell } from "../pages/account/AccountNotificationsPage";
 import { useCartToast } from "../ui/CartToast";
 import { CitizenMenu } from "../components/CitizenMenu";
 import { ESWASA_CONTACT } from "../lib/contact";
@@ -20,6 +21,7 @@ const DESKTOP_NAV = [
   { to: "/goals", label: "Goals" },
   { to: "/standards", label: "Standards" },
   { to: "/certification", label: "Certification" },
+  { to: "/metrology", label: "Calibration" },
   { to: "/training", label: "Training" },
   { to: "/export", label: "Export" },
   { to: "/ai-tech", label: "AI & Tech", dot: true },
@@ -37,6 +39,10 @@ const MORE_LINKS = [
   { to: "/certification", label: "Certification", icon: "i-badge" as IconName },
   { to: "/training", label: "Training", icon: "i-cap" as IconName },
   { to: "/complaints", label: "Complaints", icon: "i-alert-c" as IconName },
+  { to: "/metrology", label: "Calibration", icon: "i-gauge" as IconName },
+  { to: "/standards/drafts", label: "Have your say", icon: "i-file" as IconName },
+  { to: "/tc", label: "TC member area", icon: "i-users" as IconName },
+  { to: "/help", label: "Help", icon: "i-book" as IconName },
   { to: "/applicability", label: "Applicability", icon: "i-shield-c" as IconName },
   { to: "/verify", label: "Verify", icon: "i-eye" as IconName },
   { to: "/account", label: "My account", icon: "i-users" as IconName },
@@ -66,6 +72,9 @@ const FOOTER_COLUMNS: SiteFooterColumn[] = [
       { to: "/applicability", label: "Standards Applicability" },
       { to: "/verify", label: "Verify a certificate" },
       { to: "/complaints", label: "Complaints & Enquiries" },
+      { to: "/help", label: "Help & answers" },
+      { to: "/metrology", label: "Calibration services" },
+      { to: "/standards/drafts", label: "Draft standards for comment" },
       { to: "/account", label: "My account" },
     ],
   },
@@ -206,7 +215,10 @@ export function ServiceLayout() {
                 Sign in
               </button>
             ) : (
-              <CitizenMenu user={user} onSignOut={handleSignOut} />
+              <>
+                <CustomerBell />
+                <CitizenMenu user={user} onSignOut={handleSignOut} />
+              </>
             )}
             <NavLink className="reportbtn" to="/complaints">
               Report an Issue
@@ -232,7 +244,10 @@ export function ServiceLayout() {
               Sign in
             </button>
           ) : (
-            <CitizenMenu user={user} onSignOut={handleSignOut} compact />
+            <>
+              <CustomerBell />
+              <CitizenMenu user={user} onSignOut={handleSignOut} compact />
+            </>
           )}
         </div>
       </header>

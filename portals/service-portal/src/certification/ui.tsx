@@ -1,5 +1,5 @@
 import { useEffect, useId, type ReactNode } from "react";
-import { DateField, Icon, MonthField } from "@eswasaone/shared-ui";
+import { DateField, Icon, MonthField, Select } from "@eswasaone/shared-ui";
 import { FLOW_STAGES, fmtDate, type CertFlow } from "./flows";
 
 /* ---------- Fields ---------- */
@@ -129,7 +129,7 @@ export function SelectField({
 }) {
   return (
     <Field label={label} required={required} hint={hint} error={error} className={className}>
-      <select value={value} onChange={(e) => onChange(e.target.value)} aria-required={required || undefined}>
+      <Select value={value} onChange={(val) => onChange(val)} aria-required={required || undefined}>
         <option value="">{placeholder}</option>
         {options.map((o) => {
           const opt = typeof o === "string" ? { value: o, label: o } : o;
@@ -139,7 +139,7 @@ export function SelectField({
             </option>
           );
         })}
-      </select>
+      </Select>
     </Field>
   );
 }

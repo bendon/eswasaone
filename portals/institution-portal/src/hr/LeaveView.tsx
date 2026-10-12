@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch, AuthError, Icon, RecordDrawer, useDialogs, type DrawerSection } from "@eswasaone/shared-ui";
+import {
+  apiFetch,
+  AuthError,
+  Icon,
+  NotConnectedPanel,
+  RecordDrawer,
+  useDialogs,
+  type DrawerSection,
+  Select,
+} from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
@@ -170,11 +179,35 @@ export function LeaveView() {
         <div className="hr">
           {dialogs.host}
 
+          <div className="hr-head">
+            <div>
+              <h2>Time off</h2>
+              <p>Who is away, what is waiting, and what leave the organisation owes.</p>
+            </div>
+          </div>
+
+          <div className="kpis" role="group" aria-label="Time off KPIs">
+            <div className="kpi">
+              <span className="l">Requests waiting</span>
+              <span className="v">{pending.length}</span>
+              <span className={`d ${pending.length ? "warn" : ""}`}>
+                {pending.length ? "Line managers decide in Approvals" : "Queue clear"}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <NotConnectedPanel
+              what="Leave calendar"
+              detail="Team calendar (approved leave, open requests, Field Visits as F) needs GET /hr/leave/calendar. Requests and balances below are live from HRMS."
+            />
+          </div>
+
           <div className="hr-box" style={{ marginBottom: 16 }}>
             <div className="hr-box__h">
               <div>
-                <h3>Leave requests</h3>
-                <p>Pending approval queue</p>
+                <h3>Requests</h3>
+                <p>Line managers decide these in Approvals</p>
               </div>
               <span className="hr-st leave">
                 <span className="d" />
@@ -183,17 +216,17 @@ export function LeaveView() {
             </div>
             <div className="hr-box__b" style={{ paddingTop: 8 }}>
               <div className="hr-filters" style={{ marginBottom: 8 }}>
-                <select
-                  className="hr-sel"
+                <Select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                  onChange={(v) => setStatusFilter(v as StatusFilter)}
                   aria-label="Filter leave"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="all">All</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
+                  options={[
+                    { value: "pending", label: "Pending" },
+                    { value: "all", label: "All" },
+                    { value: "approved", label: "Approved" },
+                    { value: "rejected", label: "Rejected" },
+                  ]}
+                />
               </div>
 
               {filtered.length === 0 ? (

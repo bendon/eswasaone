@@ -68,13 +68,13 @@ export function DeskLink({
       className={className}
       title={
         available
-          ? `Open ${doctype}${name ? ` / ${name}` : ""} in Frappe Desk`
-          : "Desk is not public on this host. Set VITE_DESK_URL for admins"
+          ? `Open ${doctype}${name ? ` / ${name}` : ""} in admin desk`
+          : "Admin desk is not public on this host. Set VITE_DESK_URL for admins"
       }
       onClick={() => {
         if (openDesk(doctype, name)) return;
         const msg =
-          "Frappe Desk is not public on this host. Use an SSH tunnel to :8020 or set VITE_DESK_URL for admins.";
+          "Admin desk is not public on this host. Use an SSH tunnel to :8020 or set VITE_DESK_URL for admins.";
         if (onUnavailable) onUnavailable(msg);
         else window.alert(msg);
       }}

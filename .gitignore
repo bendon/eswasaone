@@ -37,3 +37,4 @@ engine/.mariadb_root_pass
 .coverage
 htmlcov/
 .local/
+core/.venv

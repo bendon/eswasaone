@@ -16,6 +16,32 @@ import {
 } from "../certification/demoStore";
 
 export { NotConnectedError } from "../certification/demoStore";
+import { isShared, sharedDetail, sharedList } from "../certification/sharedAdapter";
+import { createApplication as createSharedApplication, customerCertificateRequest, customerRespondNc, customerUploadDoc, customerWithdraw, schemeOf } from "@eswasaone/shared-ui/certification";
+import { customerConfirmVisit, customerRequestReschedule } from "@eswasaone/shared-ui/field";
+import { lodgeCase } from "@eswasaone/shared-ui/crm";
+
+export type QuoteStatus = "requested" | "issued" | "accepted" | "declined" | "expired";
+export type QuoteLine = { label: string; amount: number };
+export type Quote = {
+  id: string;
+  status: QuoteStatus;
+  flow: CertFlow;
+  org: string;
+  contact_email: string;
+  standards: string;
+  scope: string;
+  requested_at: string;
+  due_by?: string;
+  issued_at?: string;
+  valid_until?: string;
+  lines?: QuoteLine[];
+  total?: number;
+  application_id?: string;
+  /** S3 / media URL for the formal quotation PDF. */
+  pdf_url?: string;
+  pdf_key?: string;
+};
 
 export type CertificationApplication = {
   id: string;
@@ -24,6 +50,8 @@ export type CertificationApplication = {
   status: string;
   created_at?: string;
   updated_at?: string;
+  /** Present when a Quotation has been issued for this application. */
+  quote?: Quote;
 };
 
 /**
@@ -351,7 +379,15 @@ export type Site = { name: string; address: string; employees: string; shifts: s
 
 export type ProductLine = { name: string; brand: string; model: string; standard: string };
 
-export type UploadedFile = { key: string; name: string; size: number };
+export type UploadedFile = {
+  key: string;
+  name: string;
+  size: number;
+  /** Object key in Core media / S3 when uploaded for real. */
+  media_key?: string;
+  url?: string;
+  backend?: "local" | "s3";
+};
 
 export type ApplicationPayload = {
   scheme: string;
@@ -390,27 +426,6 @@ export type ApplicationPayload = {
 };
 
 /* ===================== Application detail (tracker) ===================== */
-
-export type QuoteStatus = "requested" | "issued" | "accepted" | "declined" | "expired";
-
-export type QuoteLine = { label: string; amount: number };
-
-export type Quote = {
-  id: string;
-  status: QuoteStatus;
-  flow: CertFlow;
-  org: string;
-  contact_email: string;
-  standards: string;
-  scope: string;
-  requested_at: string;
-  due_by: string;
-  issued_at?: string;
-  valid_until?: string;
-  lines?: QuoteLine[];
-  total?: number;
-  application_id?: string;
-};
 
 export type AppDocument = {
   key: string;
@@ -691,7 +706,7 @@ function seedQuotes(): Record<string, Quote> {
 function store() {
   const s = readStore();
   if (!s.seeded) {
-    // Sample cases are fictional: only ever shown with VITE_DEMO_MODE=true.
+    // Sample cases are fictional: only shown while demo data is on (default; VITE_DEMO_MODE=false turns it off).
     if (demoMode()) {
       s.details = seedDetails();
       s.quotes = seedQuotes();
@@ -741,19 +756,30 @@ export async function listApplications(status?: string): Promise<ApplicationDeta
       `/certification/applications${qs}`,
     );
     // TODO: wire real (GET /account/applications) to scope the list to the signed-in applicant.
-    return (res.items ?? []).map((a) => ({ ...blankDetail(a), ...stripLive(localDetail(a.id)), ...a }));
+    const live = (res.items ?? []).map((a) => {
+      const merged: ApplicationDetail = {
+        ...blankDetail(a),
+        ...stripLive(localDetail(a.id)),
+        ...a,
+      };
+      merged.stage = stageFromStatus(merged.flow, a.status);
+      merged.status = a.status;
+      if (a.quote) merged.quote = a.quote;
+      return merged;
+    });
+    // Demo: the shared store holds the records staff are working on — show them alongside Core's.
+    return demoMode() ? [...live, ...sharedList().filter((x) => !live.some((l) => l.id === x.id))] : live;
   } catch (err) {
     if (!demoMode()) throw err;
-    return Object.values(store().details as Record<string, ApplicationDetail>).sort((a, b) =>
-      String(b.created_at).localeCompare(String(a.created_at)),
-    );
+    return sharedList();
   }
 }
 
 /** Keep locally-held detail (documents, NCs…) but let live fields win. */
 function stripLive(d?: ApplicationDetail): Partial<ApplicationDetail> {
   if (!d) return {};
-  const { id: _id, scheme: _s, applicant: _a, status: _st, ...rest } = d;
+  // Never let device-local stage/status override Frappe workflow_state.
+  const { id: _id, scheme: _s, applicant: _a, status: _st, stage: _sg, ...rest } = d;
   return rest;
 }
 
@@ -762,6 +788,7 @@ export async function getApplication(id: string): Promise<CertificationApplicati
 }
 
 export async function getApplicationDetail(id: string): Promise<ApplicationDetail | null> {
+  if (demoMode() && isShared(id)) return sharedDetail(id);
   let live: CertificationApplication | null = null;
   try {
     live = await getApplication(id);
@@ -772,12 +799,41 @@ export async function getApplicationDetail(id: string): Promise<ApplicationDetai
   // TODO: wire real (GET /certification/applications/{id}/timeline).
   const local = localDetail(id);
   if (live) {
+    // Live workflow status always wins for stage; local only keeps docs/activity extras.
     const merged: ApplicationDetail = { ...blankDetail(live), ...stripLive(local), ...live };
     const flow = merged.flow;
-    if (!local) merged.stage = stageFromStatus(flow, live.status);
+    merged.stage = stageFromStatus(flow, live.status);
+    merged.status = live.status;
+    // Prefer live quote (with PDF); fall back to local demo quote.
+    if (live.quote) merged.quote = live.quote;
+    // If quote exists but stage already moved past, keep the card visible by
+    // not forcing stage — Timeline uses stage; the quote section keys off quote.
+    if (live.quote && !merged.quote.pdf_url) {
+      try {
+        const pdf = await ensureQuotePdf(live.quote.id || id);
+        if (pdf?.download_url) {
+          merged.quote = { ...merged.quote, pdf_url: pdf.download_url, pdf_key: pdf.media_key };
+        }
+      } catch {
+        /* PDF may still be generating */
+      }
+    }
     return merged;
   }
   return local ?? null;
+}
+
+/** Ensure quotation PDF is on S3; returns download URL. */
+export async function ensureQuotePdf(
+  id: string,
+): Promise<{ download_url?: string; media_key?: string } | null> {
+  try {
+    return await apiFetch<{ download_url?: string; media_key?: string }>(
+      `/certification/quotes/${encodeURIComponent(id)}/pdf`,
+    );
+  } catch {
+    return null;
+  }
 }
 
 export async function createApplication(payload: ApplicationPayload): Promise<ApplicationDetail> {
@@ -795,7 +851,7 @@ export async function createApplication(payload: ApplicationPayload): Promise<Ap
     details: payload,
   };
   let created: CertificationApplication;
-  let local = false;
+  const local = false;
   try {
     created = await apiFetch<CertificationApplication>("/certification/applications", {
       method: "POST",
@@ -803,14 +859,25 @@ export async function createApplication(payload: ApplicationPayload): Promise<Ap
     });
   } catch (err) {
     if (!demoMode()) throw err;
-    local = true;
-    created = {
-      id: newRef(payload.flow === "ingelo" ? "ING" : "CERT"),
-      scheme: payload.scheme,
-      applicant: body.applicant_name,
-      status: "Submitted",
-      created_at: now,
-    };
+    // Demo: create the record in the shared store so the Institution pipeline sees it at once.
+    const code = schemeOf(payload.scheme) ? payload.scheme : ({ ms: "iso9001", product: "product", ingelo: "ingelo", combined: "combined" } as const)[payload.flow];
+    const employees = Number(payload.org.employees) || payload.sites.reduce((n, x) => n + (Number(x.employees) || 0), 0) || 1;
+    const shared = createSharedApplication(
+      {
+        scheme: code,
+        org: payload.org.name,
+        contact: payload.contact.name || payload.org.name,
+        customer_email: payload.contact.email || "demo",
+        phone: payload.contact.phone,
+        employees,
+        sites: payload.sites.length ? payload.sites.map((x) => ({ name: x.name || "Site", address: x.address, employees: Number(x.employees) || 0 })) : [{ name: "Main site", address: payload.org.address, employees }],
+        scope: payload.scope || payload.standards.join(", ") || schemeTitle(payload.scheme),
+        channel: "portal",
+        uploaded: payload.documents.map((d) => d.key),
+      },
+      payload.contact.name || "Customer",
+    );
+    return sharedDetail(shared.id)!;
   }
   const flow = payload.flow;
   const uploaded = payload.documents.map((d) => d.key);
@@ -989,6 +1056,10 @@ export async function uploadApplicationDocument(
   key: string,
   file: File,
 ): Promise<ApplicationDetail | null> {
+  if (demoMode() && isShared(id)) {
+    customerUploadDoc(id, key, file.name, "Customer");
+    return sharedDetail(id);
+  }
   try {
     // TODO: wire real (POST /certification/applications/{id}/documents). Needs multipart;
     // apiFetch is JSON-only, so metadata goes up until a file transport exists.
@@ -1014,6 +1085,10 @@ export async function submitCorrectiveAction(
   findingId: string,
   response: NonNullable<Finding["response"]>,
 ): Promise<ApplicationDetail | null> {
+  if (demoMode() && isShared(id)) {
+    customerRespondNc(id, findingId, response, "Customer");
+    return sharedDetail(id);
+  }
   try {
     // TODO: wire real (POST /certification/findings/{id}/corrective-action).
     await apiFetch(`/certification/findings/${encodeURIComponent(findingId)}/corrective-action`, {
@@ -1038,6 +1113,11 @@ export async function respondToAudit(
   auditId: string,
   answer: { confirm: true } | { confirm: false; reason: string; preferred: string },
 ): Promise<ApplicationDetail | null> {
+  if (demoMode() && isShared(id)) {
+    if (answer.confirm) await customerConfirmVisit(auditId, "Customer");
+    else await customerRequestReschedule(auditId, answer.preferred, answer.reason, "Customer");
+    return sharedDetail(id);
+  }
   try {
     // TODO: wire real (applicant-side audit confirmation; staff use PATCH /certification/audits/{id}).
     await apiFetch(`/certification/applications/${encodeURIComponent(id)}/audits/${encodeURIComponent(auditId)}`, {
@@ -1088,6 +1168,22 @@ export async function sendApplicationRequest(
   kind: ApplicationRequest["kind"],
   text: string,
 ): Promise<ApplicationDetail | null> {
+  if (demoMode() && isShared(id)) {
+    const d = sharedDetail(id)!;
+    if (kind === "withdraw") customerWithdraw(id, text, "Customer");
+    else if ((kind === "changes" || kind === "scope") && d.certificate) customerCertificateRequest(d.certificate.id, kind, text, "Customer");
+    else
+      // Appeals and complaints live in CRM cases (one store — gap 04 R1).
+      await lodgeCase({
+        type: kind === "appeal" ? "appeal" : kind === "complaint" ? "service_complaint" : "enquiry",
+        subject: `${kind === "appeal" ? "Appeal" : kind === "complaint" ? "Complaint" : kind === "scope" ? "Scope extension" : "Notice of changes"} — ${d.org} (${id})`,
+        description: text,
+        channel: "account",
+        reporter: { anonymous: false, name: d.applicant, organisation: d.org, preferred: "email" },
+        about: { kind: "application", label: `${id} · ${schemeTitle(d.scheme)}`, ref: id },
+      });
+    return sharedDetail(id);
+  }
   try {
     // TODO: wire real (POST /certification/applications/{id}/{changes|scope-extension|appeal|withdraw}).
     await apiFetch(`/certification/applications/${encodeURIComponent(id)}/${REQUEST_PATH[kind]}`, {
@@ -1210,6 +1306,7 @@ export async function listCertificates(entity = "personal"): Promise<Certificate
     );
     return res.items || [];
   } catch {
+    // Demo: the shared register is listed (with links) by AccountSharedCertificates.
     return [];
   }
 }

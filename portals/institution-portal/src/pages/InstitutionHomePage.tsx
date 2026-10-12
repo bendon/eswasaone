@@ -25,6 +25,7 @@ import {
 import { useInstitution } from "../layout/InstitutionLayout";
 import { type PriorityItem } from "../dashboard/fixtures";
 import { buildLiveAttentionQueue } from "../dashboard/attention";
+import { EsiFeed } from "../dashboard/EsiFeed";
 import type {
   ApprovalsResponse,
   AuditSummary,
@@ -76,27 +77,6 @@ function firstName(full: string | undefined, fallback: string): string {
   return raw.split(/\s+/)[0] || "there";
 }
 
-function relativeClock(iso: string): string {
-  const t = new Date(iso);
-  if (Number.isNaN(t.getTime())) return "";
-  const now = new Date();
-  const sameDay =
-    t.getFullYear() === now.getFullYear() &&
-    t.getMonth() === now.getMonth() &&
-    t.getDate() === now.getDate();
-  if (sameDay) {
-    return t.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
-  }
-  return `Yesterday ${t.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })}`;
-}
-
-function feedDot(severity?: string): string {
-  if (severity === "success") return "var(--green)";
-  if (severity === "warn") return "var(--amber)";
-  if (severity === "critical") return "var(--red)";
-  return "var(--navy)";
-}
-
 export function InstitutionHomePage() {
   const { openAuth, user, sessionKey } = useInstitution();
   const navigate = useNavigate();
@@ -107,6 +87,23 @@ export function InstitutionHomePage() {
   const [overdueAudits, setOverdueAudits] = useState<AuditSummary[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+
+  // Track last-visit timestamp for the "From Esi" subtitle.
+  // Reads the previous value on mount, then immediately stores "now" for next visit.
+  const [lastSeen] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem("eswasaone.institution.lastSeen");
+    } catch {
+      return null;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("eswasaone.institution.lastSeen", new Date().toISOString());
+    } catch {
+      /* storage unavailable — non-critical */
+    }
+  }, []);
 
   // Keep the greeting clock current.
   useEffect(() => {
@@ -134,10 +131,12 @@ export function InstitutionHomePage() {
     if (!user) return;
     let cancelled = false;
     void Promise.allSettled([
-      apiFetch<FinanceDashboard>("/finance/kpis"),
-      apiFetch<ApprovalsResponse>("/approvals?limit=5"),
-      apiFetch<TbtNotificationsResponse>("/tbt/alerts?limit=5"),
-      apiFetch<{ items?: AuditSummary[] }>("/certification/audits/overdue"),
+      apiFetch<FinanceDashboard>("/finance/kpis", { quiet: true }),
+      apiFetch<ApprovalsResponse>("/approvals?limit=5", { quiet: true }),
+      apiFetch<TbtNotificationsResponse>("/tbt/alerts?limit=5", { quiet: true }),
+      apiFetch<{ items?: AuditSummary[] }>("/certification/audits/overdue", {
+        quiet: true,
+      }),
     ]).then(([f, a, t, aud]) => {
       if (cancelled) return;
       if (f.status === "fulfilled") setFinance(f.value);
@@ -796,32 +795,13 @@ export function InstitutionHomePage() {
         </section>
       </div>
 
-      <section className="panel" aria-labelledby="actTitle">
-        <div className="panel__h">
-          <div>
-            <h3 id="actTitle">Recent activity</h3>
-            <p>Across your team in the last 24 hours</p>
-          </div>
-        </div>
-        {feed.length === 0 ? (
-          <div className="dash-empty">
-            <Icon name="i-clock" />
-            <b>No recent activity</b>
-            <span>Activity appears as records move through modules.</span>
-          </div>
-        ) : (
-          <ul className="activity">
-            {feed.slice(0, 6).map((item) => (
-              <li key={item.id}>
-                <span className="activity__dot" style={{ background: feedDot(item.severity) }} />
-                <b className="activity__title">{item.title}</b>
-                <span className="activity__body">{item.body ?? ""}</span>
-                <time className="activity__time">{relativeClock(item.created_at)}</time>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <EsiFeed
+        feed={feed}
+        approvals={approvals?.items}
+        lastSeen={lastSeen}
+        onAsk={(q) => showToast(`Esi: "${q}" — routing to assistant…`)}
+        onClaimAll={() => showToast("Claiming all unclaimed applications…")}
+      />
 
       <RecordDrawer
         open={Boolean(selected)}

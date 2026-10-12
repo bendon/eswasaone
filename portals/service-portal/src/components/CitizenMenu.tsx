@@ -13,6 +13,9 @@ type MenuLink = {
 
 const AREA_LINKS: MenuLink[] = [
   { to: "/account", label: "Overview", icon: "i-home", hint: "Alerts, apps & activity" },
+  { to: "/account/applications", label: "Applications", icon: "i-steps", hint: "Certification & services" },
+  { to: "/account/cases", label: "Cases", icon: "i-alert-c", hint: "Complaints & enquiries" },
+  { to: "/account/notifications", label: "Notifications", icon: "i-bell", hint: "Updates from ESWASA" },
   { to: "/account/orders", label: "Orders", icon: "i-cart", hint: "Purchases & invoices" },
   { to: "/account/certificates", label: "Certificates", icon: "i-badge", hint: "Issued marks & licences" },
   { to: "/account/training", label: "Training", icon: "i-cap", hint: "Courses & enrolments" },

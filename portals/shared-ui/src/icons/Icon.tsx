@@ -52,6 +52,7 @@ export type IconName =
   | "i-mail"
   | "i-map"
   | "i-mega"
+  | "i-mic"
   | "i-monitor"
   | "i-more"
   | "i-pin"
@@ -67,7 +68,12 @@ export type IconName =
   | "i-trend"
   | "i-trend-down"
   | "i-users"
-  | "i-warn";
+  | "i-warn"
+  | "i-alert"
+  | "i-swap"
+  | "i-arrow"
+  | "i-done"
+  | "i-case";
 
 const PATHS_BASE = {
   "i-alert-c": (
@@ -250,6 +256,12 @@ const PATHS_BASE = {
       <path d="M9 4v14M15 6v14" />
     </>
   ),
+  "i-mic": (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0014 0M12 18v3M9 21h6" />
+    </>
+  ),
   "i-mega": (
     <>
       <path d="M4 10v4a1 1 0 001 1h2l4 4V5L7 9H5a1 1 0 00-1 1z" />
@@ -347,6 +359,34 @@ const PATHS_BASE = {
     <>
       <path d="M12 4l9 15H3z" />
       <path d="M12 10v4M12 17h.01" />
+    </>
+  ),
+  "i-alert": (
+    <>
+      <path d="M12 4l9 15H3z" />
+      <path d="M12 10v4M12 17h.01" />
+    </>
+  ),
+  "i-swap": (
+    <>
+      <path d="M4 8h14l-3-3M20 16H6l3 3" />
+    </>
+  ),
+  "i-arrow": (
+    <>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </>
+  ),
+  "i-done": (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 12.5l2.8 2.8L16 9.5" />
+    </>
+  ),
+  "i-case": (
+    <>
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M9 7V5h6v2" />
     </>
   ),
 } as const satisfies Record<string, ReactNode>;

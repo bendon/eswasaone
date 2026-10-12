@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, NotConnectedPanel } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
@@ -51,49 +51,43 @@ export function PayrollView() {
               {flash}
             </p>
           ) : null}
-          <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "0 0 12px" }}>
-            Slips and run status come from HRMS via Core. Creating/submitting a payroll run stays in
-            Frappe Desk (deep config) when available on this host.
-          </p>
 
-          <div className="hr-box" style={{ marginBottom: 16 }}>
-            <div className="hr-box__h">
-              <div>
-                <h3>Payroll run · {status?.period || "—"}</h3>
-                <p>{status?.message || `${status?.employees_processed ?? "—"} employees`}</p>
-              </div>
-              <span className="hr-st probation">
-                <span className="d" />
-                {status?.status || "—"}
-              </span>
+          <div className="hr-head">
+            <div>
+              <h2>Payroll</h2>
+              <p>
+                {status?.period || "October 2026"} run
+                {status?.message ? `. ${status.message}` : ". Cut-off Tue 20 Oct, pays Fri 23 Oct."}
+              </p>
             </div>
-            <div className="hr-box__b">
-              <div style={{ marginTop: 0, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  className="btn pri sm"
-                  onClick={() => openDeskOrExplain("payroll-entry", setFlash)}
-                >
-                  <Icon name="i-eye" />
-                  {deskAvailable() ? "Open payroll run in Desk" : "Payroll run (Desk unavailable)"}
-                </button>
-                {deskAvailable() ? (
-                  <button
-                    type="button"
-                    className="btn ghost sm"
-                    onClick={() => openDeskOrExplain("salary-structure", setFlash)}
-                  >
-                    Salary structures
-                  </button>
-                ) : null}
-              </div>
+            <div className="hr-head__r">
+              <button
+                type="button"
+                className="btn ghost sm"
+                onClick={() => openDeskOrExplain("payroll-entry", setFlash)}
+              >
+                <Icon name="i-eye" />
+                {deskAvailable() ? "Open in Desk" : "Desk unavailable"}
+              </button>
             </div>
           </div>
 
-          <div className="hr-box">
+          <div style={{ marginBottom: 16 }}>
+            <NotConnectedPanel
+              what="Payroll run tracker"
+              detail={
+                status?.period
+                  ? `Live status: ${status.period} · ${status.status || "—"}. The six-step change feed and month comparison need GET /hr/payroll/run (and §0.5 payroll-scope decision).`
+                  : "Six-step run tracker and change feed need GET /hr/payroll/run once Finance confirms payroll stays in HRMS (§0.5 #6)."
+              }
+            />
+          </div>
+
+          <div className="hr-box" style={{ marginTop: 16 }}>
             <div className="hr-box__h">
               <div>
                 <h3>Recent salary slips</h3>
+                <p>From HRMS via Core</p>
               </div>
             </div>
             <div className="hr-box__b" style={{ paddingTop: 0, overflowX: "auto" }}>

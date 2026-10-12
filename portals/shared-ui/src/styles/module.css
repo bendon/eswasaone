@@ -76,15 +76,8 @@
   margin-left: auto;
   flex-shrink: 0;
 }
+/* Toolbar filter (Select wrapper; trigger styles live in select.css) */
 .mod-sel {
-  height: 38px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 0 12px;
-  font: inherit;
-  font-size: 13px;
-  background: #fff;
-  color: var(--ink);
   min-width: 0;
   max-width: 100%;
 }
@@ -435,8 +428,9 @@
   }
   .mod-sel {
     width: 100%;
-    min-height: 44px;
-    height: auto;
+  }
+  .mod-sel .xsel__btn {
+    height: 44px;
     font-size: 13.5px;
   }
   .mod-search {

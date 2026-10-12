@@ -50,7 +50,7 @@ class MediaStore:
             import boto3  # type: ignore[import-untyped]
         except ImportError as exc:  # pragma: no cover
             raise RuntimeError(
-                "boto3 is required for S3 media; pip install boto3 or use local MEDIA_LOCAL_PATH"
+                "boto3 is required for S3 media — pip install boto3 or use local MEDIA_LOCAL_PATH"
             ) from exc
         kwargs: dict[str, Any] = {
             "aws_access_key_id": self.settings.s3_access_key,
@@ -62,10 +62,14 @@ class MediaStore:
         self._s3 = boto3.client("s3", **kwargs)
         return self._s3
 
+    def _root_prefix(self) -> str:
+        return (self.settings.s3_prefix or "").strip().strip("/")
+
     def _make_key(self, *, filename: str | None, prefix: str) -> str:
         safe = (filename or "blob").replace("/", "_").replace("\\", "_")
         stamp = datetime.now(timezone.utc).strftime("%Y/%m/%d")
-        return f"{prefix.strip('/')}/{stamp}/{uuid.uuid4().hex[:12]}_{safe}"
+        parts = [p for p in (self._root_prefix(), prefix.strip("/"), stamp) if p]
+        return f"{'/'.join(parts)}/{uuid.uuid4().hex[:12]}_{safe}"
 
     def put_bytes(
         self,

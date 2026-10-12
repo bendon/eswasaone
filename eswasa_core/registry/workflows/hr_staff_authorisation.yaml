@@ -1,0 +1,38 @@
+# Staff Authorisation — custom HR competence record (brief §6.2).
+
+doctype: Staff Authorisation
+module: hr
+workflow_name: Staff Authorisation
+submit_gate: null
+emit: true
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: hr.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  Head of department approves; must differ from employee (four-eyes).
+  Guard: eswasa_hr.competence.is_authorised.
+
+display:
+  customer: {}
+  staff:
+    Draft: In training
+    Approved: Current
+
+states:
+  - {name: Draft, owner_role: HR User, allow_edit: HR User}
+  - {name: Approved, owner_role: HR Manager, allow_edit: HR Manager, style: Success}
+
+transitions:
+  - action: Approve
+    from: Draft
+    to: Approved
+    actor: HR Manager
+    approvals_family: approve
+  - action: Withdraw
+    from: Approved
+    to: Draft
+    actor: HR Manager
+    reason: required
+    approvals_family: do

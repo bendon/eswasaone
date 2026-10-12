@@ -34,14 +34,17 @@ import {
   detList,
   detProducts,
   emptyWizard,
+  readyChecklist,
   SOFT_STEPS,
+  stageIndexFor,
+  stagesFor,
   STEP_LABEL,
   stepsFor,
   validateStep,
   type StepKey,
   type WizardState,
 } from "../certification/wizard";
-import { CHARTER, FLOW_LABEL, FLOW_STAGES, fmtDate } from "../certification/flows";
+import { CHARTER, FLOW_STAGES, fmtDate } from "../certification/flows";
 import { NotSentNotice, Sheet } from "../certification/ui";
 import { useSchemes } from "../certification/useSchemes";
 
@@ -81,6 +84,7 @@ export function CertificationApplyPage() {
     return base;
   });
   const steps = useMemo(() => stepsFor(s.flow), [s.flow]);
+  const stages = useMemo(() => stagesFor(s.flow), [s.flow]);
   const [idx, setIdx] = useState(0);
   const [reached, setReached] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -311,20 +315,36 @@ export function CertificationApplyPage() {
 
   const isLast = idx === steps.length - 1;
   const ineligible = step === "eligibility" && errors.eligibility === "Not eligible for Ingelo.";
+  const stageIdx = stageIndexFor(s.flow, step);
+  const currentStage = stages[stageIdx];
+  const nextStage = stages[stageIdx + 1];
+  const applyTitle =
+    s.flow === "ingelo"
+      ? "Apply for Ingelo certification"
+      : `Apply for ${schemeTitle(s.scheme) || "certification"}`;
+  const ready = readyChecklist(s.flow);
+  const hideStepChrome = step === "scheme";
 
   return (
     <div className="page">
       {crumbs}
       <header className="cf-head">
         <div>
-          <span className="cf-head__kicker">
-            {FLOW_LABEL[s.flow]} · {s.flow === "ingelo" ? "Form CER_FO_002_IPC" : schemeTitle(s.scheme)}
-          </span>
-          <h1>{s.flow === "ingelo" ? "Apply for Ingelo certification" : "Apply for certification"}</h1>
+          <h1>{applyTitle}</h1>
           <p>
-            Step {idx + 1} of {steps.length}. Your answers save on this device as you go. Sign in is only
-            needed to submit.
+            <b>
+              Stage {stageIdx + 1} of {stages.length}.
+            </b>{" "}
+            {currentStage?.label}. Your answers save on this device as you go. Sign in is only needed to
+            submit.
           </p>
+          <div className="cf-progress-stages" aria-hidden="true">
+            <div className="cf-progress-stages__bar">
+              {stages.map((st, i) => (
+                <i key={st.id} className={i <= stageIdx ? "on" : undefined} />
+              ))}
+            </div>
+          </div>
         </div>
         {s.flow === "ingelo" ? (
           <span className="cf-chip cf-chip--green">
@@ -336,29 +356,90 @@ export function CertificationApplyPage() {
       <div className="cf-wrap">
         <nav className="cf-rail" aria-label="Application steps">
           <ol>
-            {steps.map((k, i) => (
-              <li key={k} className={i === idx ? "is-cur" : i < idx ? "is-done" : ""}>
-                <button type="button" disabled={i > reached} onClick={() => go(i)} aria-current={i === idx ? "step" : undefined}>
-                  <span className="n">{i < idx ? <Icon name="i-check" width={12} height={12} /> : i + 1}</span>
-                  <span className="l">{STEP_LABEL[k]}</span>
-                </button>
-              </li>
-            ))}
+            {stages.map((st, si) => {
+              const firstStepIdx = steps.indexOf(st.steps[0]);
+              const stageDone = st.steps.every((k) => steps.indexOf(k) < idx);
+              const isCur = si === stageIdx;
+              return (
+                <li
+                  key={st.id}
+                  className={isCur ? "is-cur" : stageDone ? "is-done" : "is-todo"}
+                >
+                  <button
+                    type="button"
+                    className="step"
+                    disabled={firstStepIdx > reached}
+                    onClick={() => go(Math.min(firstStepIdx, reached))}
+                    aria-current={isCur ? "step" : undefined}
+                  >
+                    <span className="n">
+                      {stageDone ? <Icon name="i-check" width={12} height={12} /> : si + 1}
+                    </span>
+                    <span className="l">{st.label}</span>
+                  </button>
+                  {isCur && st.steps.length > 1 ? (
+                    <ol className="cf-parts">
+                      {st.steps.map((k) => {
+                        const partIdx = steps.indexOf(k);
+                        return (
+                          <li key={k} className={k === step ? "is-cur" : partIdx < idx ? "is-done" : ""}>
+                            <button
+                              type="button"
+                              disabled={partIdx > reached}
+                              onClick={() => go(partIdx)}
+                            >
+                              {STEP_LABEL[k]}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  ) : null}
+                </li>
+              );
+            })}
           </ol>
           <div className="cf-rail__foot">
-            Need help? Call (+268) 2518 4633 or email{" "}
-            <a href="mailto:certification@eswasa.co.sz">certification@eswasa.co.sz</a>.
+            <b>Need help?</b>
+            Call (+268) 2518 4633 or email{" "}
+            <a href="mailto:certification@eswasa.co.sz">certification@eswasa.co.sz</a>
           </div>
         </nav>
 
-        <div>
-          <section className="cf-card">
-            <div className="cf-card__h">
+        <div className="cf-main">
+          <details className="cf-start" open={idx === 0}>
+            <summary>
+              Before you start <span>Takes about 20 minutes</span>
+              <Icon name="i-cev" />
+            </summary>
+            <div className="cf-start__b">
               <div>
-                <h2>{STEP_LABEL[step]}</h2>
-                {STEP_LEAD[step] ? <p>{STEP_LEAD[step]}</p> : null}
+                <h3>Have these ready</h3>
+                <ul>
+                  {ready.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3>Good to know</h3>
+                <ul>
+                  <li>The fee is by quotation. You see it before any audit is booked.</li>
+                  <li>You only sign in when you submit.</li>
+                </ul>
               </div>
             </div>
+          </details>
+
+          <section className="cf-card">
+            {hideStepChrome ? null : (
+              <div className="cf-card__h">
+                <div>
+                  <h2>{STEP_LABEL[step]}</h2>
+                  {STEP_LEAD[step] ? <p>{STEP_LEAD[step]}</p> : null}
+                </div>
+              </div>
+            )}
             {body}
           </section>
 
@@ -369,11 +450,15 @@ export function CertificationApplyPage() {
               </button>
             ) : (
               <Link className="cf-btn cf-btn--ghost" to="/certification">
-                Cancel
+                Back to certification
               </Link>
             )}
             <span className="grow" />
-            <span className="cf-nav__saved">Saved on this device</span>
+            {!isLast && nextStage ? (
+              <span className="cf-nav__next">
+                Next: {steps[idx + 1] ? STEP_LABEL[steps[idx + 1]] : nextStage.label}
+              </span>
+            ) : null}
             {isLast ? (
               <button type="button" className="cf-btn cf-btn--gold" onClick={startSubmit}>
                 <Icon name="i-send" /> Submit application
@@ -383,6 +468,11 @@ export function CertificationApplyPage() {
                 Continue <Icon name="i-cright" />
               </button>
             )}
+          </div>
+
+          <div className="cf-save">
+            <Icon name="i-check" />
+            <span>Draft saved on this device.</span>
           </div>
         </div>
       </div>

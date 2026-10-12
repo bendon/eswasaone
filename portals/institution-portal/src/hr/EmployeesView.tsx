@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { apiFetch, AuthError, RecordDrawer, type DrawerSection } from "@eswasaone/shared-ui";
+import { apiFetch, AuthError, RecordDrawer, type DrawerSection, Select } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
@@ -111,47 +111,99 @@ export function EmployeesView() {
   const drawerSections: DrawerSection[] = selected
     ? [
         {
-          heading: "Employee",
+          heading: "Job",
+          content: (
+            <dl className="hr-kv">
+              <div>
+                <dt>Staff number</dt>
+                <dd className="mono">{selected.id}</dd>
+              </div>
+              <div>
+                <dt>Status</dt>
+                <dd>{labelFor(bucketFor(selected))}</dd>
+              </div>
+              <div>
+                <dt>Position</dt>
+                <dd>{selected.designation || "—"}</dd>
+              </div>
+              <div>
+                <dt>Department</dt>
+                <dd>{selected.department || "—"}</dd>
+              </div>
+              <div>
+                <dt>Email</dt>
+                <dd>{(selected as { email?: string | null }).email || "—"}</dd>
+              </div>
+              <div>
+                <dt>Started</dt>
+                <dd>{(selected as { date_of_joining?: string | null }).date_of_joining || "—"}</dd>
+              </div>
+            </dl>
+          ),
+        },
+        {
+          heading: "Personal and pay",
+          content: (
+            <div className="hr-lock">
+              <span>Hidden. Opening these is recorded against your name.</span>
+              <button type="button" className="btn ghost sm" disabled title="Coming soon">
+                Show details
+              </button>
+            </div>
+          ),
+        },
+        // TODO: wire real — leave balances, authorisations, documents per employee
+        {
+          heading: "Leave, 2026/27",
           content: (
             <>
-              <div className="kv">
-                <b>Employee ID</b>
-                <span className="mono">{selected.id}</span>
+              <div className="hr-bal">
+                <span>Annual</span>
+                <div className="hr-prog">
+                  <i style={{ width: "57%" }} />
+                </div>
+                <b>12 of 21 left</b>
               </div>
-              <div className="kv">
-                <b>Name</b>
-                <span>{selected.employee_name}</span>
+              <div className="hr-bal">
+                <span>Sick</span>
+                <div className="hr-prog">
+                  <i style={{ width: "86%" }} />
+                </div>
+                <b>12 of 14 left</b>
               </div>
-              <div className="kv">
-                <b>Status</b>
-                <span className="stagechip">{labelFor(bucketFor(selected))}</span>
+              <div className="hr-bal">
+                <span>Study</span>
+                <div className="hr-prog">
+                  <i style={{ width: "100%" }} />
+                </div>
+                <b>10 of 10 left</b>
               </div>
             </>
           ),
         },
         {
-          heading: "Role",
+          heading: "Documents",
           content: (
-            <>
-              <div className="kv">
-                <b>Department</b>
-                <span>{selected.department || "—"}</span>
+            <div className="hr-out">
+              <div className="hr-out__i">
+                <div>
+                  <b>Contract of employment</b>
+                </div>
+                <span className="hr-st ok">On file</span>
               </div>
-              <div className="kv">
-                <b>Designation</b>
-                <span>{selected.designation || "—"}</span>
+              <div className="hr-out__i">
+                <div>
+                  <b>Qualification certificates</b>
+                </div>
+                <span className="hr-st ok">On file</span>
               </div>
-              <div className="kv">
-                <b>Email</b>
-                <span>{(selected as { email?: string | null }).email || "—"}</span>
+              <div className="hr-out__i">
+                <div>
+                  <b>Impartiality declaration 2026/27</b>
+                </div>
+                <span className="hr-st ok">Signed</span>
               </div>
-              <div className="kv">
-                <b>Joined</b>
-                <span>
-                  {(selected as { date_of_joining?: string | null }).date_of_joining || "—"}
-                </span>
-              </div>
-            </>
+            </div>
           ),
         },
       ]
@@ -176,25 +228,24 @@ export function EmployeesView() {
           ) : null}
 
           <div className="hr-filters">
-            <select className="hr-sel" value={dept} onChange={(e) => setDept(e.target.value)} aria-label="Department">
-              {departments.map((d) => (
-                <option key={d} value={d}>
-                  {d === "all" ? "All departments" : d}
-                </option>
-              ))}
-            </select>
-            <select
-              className="hr-sel"
+            <Select
+              value={dept}
+              onChange={setDept}
+              aria-label="Department"
+              options={departments.map((d) => ({ value: d, label: d === "all" ? "All departments" : d }))}
+            />
+            <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              onChange={(v) => setStatusFilter(v as StatusFilter)}
               aria-label="Status"
-            >
-              <option value="all">All status</option>
-              <option value="active">Active</option>
-              <option value="on_leave">On leave</option>
-              <option value="probation">Probation</option>
-              <option value="inactive">Inactive</option>
-            </select>
+              options={[
+                { value: "all", label: "All status" },
+                { value: "active", label: "Active" },
+                { value: "on_leave", label: "On leave" },
+                { value: "probation", label: "Probation" },
+                { value: "inactive", label: "Inactive" },
+              ]}
+            />
             <div className="hr-search">
               <input
                 placeholder="Search name, ID, designation…"

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 export { TbtAlertsView } from "./TbtAlertsView";
 export { TbtSubscriptionsView } from "./TbtSubscriptionsView";
+export { TbtOutgoingView } from "./TbtOutgoingView";
 
 /* ---------- Shared helpers for TBT sub-views ---------- */
 

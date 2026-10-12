@@ -1,8 +1,14 @@
 import { Suspense, lazy, type ComponentType, type ReactNode } from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, useParams } from "react-router-dom";
 import { InstitutionLayout } from "./layout/InstitutionLayout";
 import { PageSkeleton } from "./components/PageStates";
 import { ErrorPage } from "./pages/ErrorPage";
+
+/** Redirect /certification/APP-2026-00027 → /certification/applications/APP-2026-00027 */
+function AppRefRedirect() {
+  const { ref } = useParams();
+  return <Navigate to={`/certification/applications/${ref ?? ""}`} replace />;
+}
 
 type PageFactory = () => Promise<{ default: ComponentType }>;
 
@@ -54,8 +60,140 @@ function nest(
   };
 }
 
+
+/** One sub-view route: lazy-load `name` from a module (index route when path is undefined). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function sv(path: string | undefined, load: () => Promise<any>, name: string) {
+  const element = <L factory={() => load().then((m) => ({ default: m[name] as ComponentType }))} />;
+  return path === undefined ? { index: true as const, element } : { path, element };
+}
+
 export const router = createBrowserRouter(
   [
+    {
+      // Board member area (gap 03 G4): own minimal shell, no staff sidebar.
+      path: "/member",
+      errorElement: <ErrorPage standalone />,
+      ...nest(
+        () =>
+          import("./board/MemberArea").then((m) => ({
+            default: m.MemberLayout,
+          })),
+        [
+        {
+          index: true,
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberHome,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "onboarding",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberOnboarding,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "meetings/:id",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberMeeting,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "votes",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberVotes,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "minutes",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberMinutes,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "declarations",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberDeclarations,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "evaluation",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberEvaluation,
+                }))
+              }
+            />
+          ),
+        },
+        {
+          path: "profile",
+          element: (
+            <L
+              factory={() =>
+                import("./board/MemberArea").then((m) => ({
+                  default: m.MemberProfile,
+                }))
+              }
+            />
+          ),
+        },
+        ],
+      ),
+    },
+    {
+      // Printable documents (gap 01 C10) — outside the app shell.
+      path: "/print/:kind/:id",
+      errorElement: <ErrorPage standalone />,
+      element: (
+        <L
+          factory={() =>
+            import("./print/PrintPage").then((m) => ({
+              default: m.PrintPage,
+            }))
+          }
+          skeleton="panel"
+        />
+      ),
+    },
     {
       path: "/",
       element: <InstitutionLayout />,
@@ -81,22 +219,10 @@ export const router = createBrowserRouter(
             },
             {
               path: "approvals",
-              element: (
-                <L
-                  factory={() =>
-                    import("./pages/ApprovalsPage").then((m) => ({
-                      default: m.ApprovalsPage,
-                    }))
-                  }
-                />
-              ),
-            },
-            {
-              path: "certification",
               ...nest(
                 () =>
-                  import("./pages/CertificationPage").then((m) => ({
-                    default: m.CertificationPage,
+                  import("./pages/ApprovalsPage").then((m) => ({
+                    default: m.ApprovalsPage,
                   })),
                 [
                   {
@@ -104,203 +230,130 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./certification/sub-views").then((m) => ({
-                            default: m.PipelineView,
+                          import("./approvals/sub-views").then((m) => ({
+                            default: m.InboxView,
                           }))
                         }
                       />
                     ),
                   },
                   {
-                    path: "audits",
+                    path: "team",
                     element: (
                       <L
                         factory={() =>
-                          import("./certification/sub-views").then((m) => ({
-                            default: m.AuditsView,
+                          import("./approvals/sub-views").then((m) => ({
+                            default: m.TeamView,
                           }))
                         }
                       />
                     ),
                   },
                   {
-                    path: "certificates",
+                    path: "delegations",
                     element: (
                       <L
                         factory={() =>
-                          import("./certification/sub-views").then((m) => ({
-                            default: m.CertificatesView,
+                          import("./approvals/sub-views").then((m) => ({
+                            default: m.DelegationsView,
                           }))
                         }
                       />
                     ),
                   },
                   {
-                    path: "quotes",
+                    path: "done",
                     element: (
                       <L
                         factory={() =>
-                          import("./certification/sub-views").then((m) => ({
-                            default: m.QuotesView,
+                          import("./approvals/sub-views").then((m) => ({
+                            default: m.DoneView,
                           }))
                         }
                       />
                     ),
                   },
-                  {
-                    path: "findings",
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./certification/sub-views").then((m) => ({
-                            default: m.FindingsView,
-                          }))
-                        }
-                      />
-                    ),
-                  },
-                  {
-                    path: "decisions",
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./certification/sub-views").then((m) => ({
-                            default: m.DecisionsView,
-                          }))
-                        }
-                      />
-                    ),
-                  },
-                  {
-                    path: "register",
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./certification/sub-views").then((m) => ({
-                            default: m.RegisterView,
-                          }))
-                        }
-                      />
-                    ),
-                  },
+                ],
+              ),
+            },
+            {
+              path: "certification",
+              ...nest(
+                () => import("./pages/CertificationPage").then((m) => ({ default: m.CertificationPage })),
+                [
+                  sv(undefined, () => import("./certification/sub-views"), "PipelineView"),
+                  // Redirect legacy deep-links: /certification/APP-2026-00027 → /certification/applications/APP-2026-00027
+                  { path: ":ref", element: <AppRefRedirect /> },
+                  sv("applications/:id", () => import("./certification/sub-views"), "ApplicationRecordPage"),
+                  // Legacy redirect: /institution/certification/APP-XXXX-XXXXX → /applications/APP-XXXX-XXXXX
+                  { path: ":ref", element: <Navigate to="../applications/:ref" replace /> },
+                  sv("quotes", () => import("./certification/sub-views"), "QuotesView"),
+                  sv("audits", () => import("./certification/sub-views"), "AuditsView"),
+                  sv("findings", () => import("./certification/sub-views"), "FindingsView"),
+                  sv("decisions", () => import("./certification/sub-views"), "DecisionsView"),
+                  sv("certificates", () => import("./certification/sub-views"), "CertificatesView"),
+                  sv("certificates/:id", () => import("./certification/sub-views"), "CertificateRecordPage"),
+                  sv("surveillance", () => import("./certification/sub-views"), "SurveillanceView"),
+                  sv("register", () => import("./certification/sub-views"), "RegisterView"),
+                  sv("marks", () => import("./certification/sub-views"), "MarksView"),
+                  sv("auditors", () => import("./certification/sub-views"), "AuditorsView"),
+                  sv("settings", () => import("./certification/sub-views"), "CertSettingsView"),
                 ],
               ),
             },
             {
               path: "standards",
               ...nest(
-                () =>
-                  import("./pages/StandardsPage").then((m) => ({
-                    default: m.StandardsPage,
-                  })),
+                () => import("./pages/StandardsPage").then((m) => ({ default: m.StandardsPage })),
                 [
-                  {
-                    index: true,
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./standards/sub-views").then((m) => ({
-                            default: m.CatalogueView,
-                          }))
-                        }
-                      />
-                    ),
-                  },
-                  {
-                    path: "drafts",
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./standards/sub-views").then((m) => ({
-                            default: m.DraftsView,
-                          }))
-                        }
-                      />
-                    ),
-                  },
-                  {
-                    path: "workitems",
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./standards/sub-views").then((m) => ({
-                            default: m.WorkItemsView,
-                          }))
-                        }
-                      />
-                    ),
-                  },
-                  {
-                    path: "ballots",
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./standards/sub-views").then((m) => ({
-                            default: m.BallotsView,
-                          }))
-                        }
-                      />
-                    ),
-                  },
-                  {
-                    path: "comments",
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./standards/sub-views").then((m) => ({
-                            default: m.CommentsView,
-                          }))
-                        }
-                      />
-                    ),
-                  },
+                  sv(undefined, () => import("./standards/sub-views"), "ProgrammeView"),
+                  sv("proposals", () => import("./standards/sub-views"), "ProposalsView"),
+                  sv("proposals/:id", () => import("./standards/sub-views"), "ProposalRecordPage"),
+                  sv("workitems", () => import("./standards/sub-views"), "WorkItemsView"),
+                  sv("workitems/:id", () => import("./standards/sub-views"), "WorkItemRecordPage"),
+                  sv("comments", () => import("./standards/sub-views"), "PublicReviewView"),
+                  sv("ballots", () => import("./standards/sub-views"), "BallotsView"),
+                  sv("ballots/:id", () => import("./standards/sub-views"), "BallotRecordPage"),
+                  sv("catalogue", () => import("./standards/sub-views"), "CatalogueView"),
+                  sv("catalogue/:id", () => import("./standards/sub-views"), "CatalogueEditorPage"),
+                  sv("committees", () => import("./standards/sub-views"), "CommitteesView"),
+                  sv("committees/:tc", () => import("./standards/sub-views"), "CommitteeRecordPage"),
+                  sv("reviews", () => import("./standards/sub-views"), "ReviewsView"),
+                  sv("settings", () => import("./standards/sub-views"), "StdSettingsView"),
+                  { path: "drafts", element: <Navigate to="../workitems" replace /> },
                 ],
               ),
             },
             {
               path: "metrology",
               ...nest(
-                () =>
-                  import("./pages/MetrologyPage").then((m) => ({
-                    default: m.MetrologyPage,
-                  })),
+                () => import("./pages/MetrologyPage").then((m) => ({ default: m.MetrologyPage })),
                 [
-                  {
-                    index: true,
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./metrology/sub-views").then((m) => ({
-                            default: m.JobsView,
-                          }))
-                        }
-                      />
-                    ),
-                  },
-                  {
-                    path: "instruments",
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./metrology/sub-views").then((m) => ({
-                            default: m.InstrumentsView,
-                          }))
-                        }
-                      />
-                    ),
-                  },
-                  {
-                    path: "results",
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./metrology/sub-views").then((m) => ({
-                            default: m.ResultsView,
-                          }))
-                        }
-                      />
-                    ),
-                  },
+                  sv(undefined, () => import("./metrology/sub-views"), "MetOverview"),
+                  sv("requests", () => import("./metrology/sub-views"), "MetRequests"),
+                  sv("receipt", () => import("./metrology/sub-views"), "MetReceipt"),
+                  sv("jobs", () => import("./metrology/sub-views"), "MetJobs"),
+                  sv("jobs/:id", () => import("./metrology/sub-views"), "JobRecordPage"),
+                  sv("review", () => import("./metrology/sub-views"), "MetReview"),
+                  sv("items", () => import("./metrology/sub-views"), "MetItems"),
+                  sv("equipment", () => import("./metrology/sub-views"), "MetEquipment"),
+                  sv("tests", () => import("./metrology/sub-views"), "MetTests"),
+                  sv("tests/:id", () => import("./metrology/sub-views"), "TestRecordPage"),
+                  sv("capacity", () => import("./metrology/sub-views"), "MetCapacity"),
+                  sv("settings", () => import("./metrology/sub-views"), "MetSettings"),
+                  { path: "instruments", element: <Navigate to="../equipment" replace /> },
+                  { path: "results", element: <Navigate to="../tests" replace /> },
+                ],
+              ),
+            },
+            {
+              path: "field",
+              ...nest(
+                () => import("./pages/FieldOpsPage").then((m) => ({ default: m.FieldOpsPage })),
+                [
+                  sv(undefined, () => import("./fieldops/Views"), "PlanningBoard"),
+                  sv("visits/:id", () => import("./fieldops/Views"), "VisitRecordPage"),
+                  sv("receipt", () => import("./fieldops/Views"), "SampleReceiptView"),
                 ],
               ),
             },
@@ -319,6 +372,18 @@ export const router = createBrowserRouter(
                         factory={() =>
                           import("./tbt/sub-views").then((m) => ({
                             default: m.TbtAlertsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "outgoing",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./tbt/sub-views").then((m) => ({
+                            default: m.TbtOutgoingView,
                           }))
                         }
                       />
@@ -468,6 +533,19 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "competence",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({
+                            default: m.CompetenceView,
+                          }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
                     path: "recruitment",
                     element: (
                       <L
@@ -499,6 +577,19 @@ export const router = createBrowserRouter(
                         factory={() =>
                           import("./hr/sub-views").then((m) => ({
                             default: m.PayrollView,
+                          }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "cases",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({
+                            default: m.CasesView,
                           }))
                         }
                         skeleton="panel"
@@ -546,11 +637,10 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
-                            default: m.OverviewView,
+                          import("./board/sub-views").then((m) => ({
+                            default: m.BoardOverview,
                           }))
                         }
-                        skeleton="dashboard"
                       />
                     ),
                   },
@@ -559,8 +649,56 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
-                            default: m.MeetingsView,
+                          import("./board/sub-views").then((m) => ({
+                            default: m.MeetingsList,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "meetings/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.MeetingRecordPage,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "meetings/:id/agenda",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.AgendaBuilderPage,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "meetings/:id/run",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.RunMeetingPage,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "meetings/:id/minutes",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.MinutesEditorPage,
                           }))
                         }
                       />
@@ -571,8 +709,20 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
-                            default: m.BoardPackView,
+                          import("./board/sub-views").then((m) => ({
+                            default: m.PackIndex,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "pack/:meetingId",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.PackBuilderPage,
                           }))
                         }
                       />
@@ -583,8 +733,32 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
+                          import("./board/sub-views").then((m) => ({
                             default: m.ResolutionsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "resolutions/written/new",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.WrittenResolutionNewPage,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "resolutions/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.ResolutionRecordPage,
                           }))
                         }
                       />
@@ -595,11 +769,10 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
+                          import("./board/sub-views").then((m) => ({
                             default: m.CacSessionView,
                           }))
                         }
-                        skeleton="panel"
                       />
                     ),
                   },
@@ -608,8 +781,32 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
+                          import("./board/sub-views").then((m) => ({
                             default: m.RiskRegisterView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "risks/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.RiskRecordPage,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "declarations",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.DeclarationsView,
                           }))
                         }
                       />
@@ -620,11 +817,34 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./governance/sub-views").then((m) => ({
+                          import("./board/sub-views").then((m) => ({
                             default: m.MembersView,
                           }))
                         }
-                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "calendar",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.CalendarView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "settings",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.GovSettingsView,
+                          }))
+                        }
                       />
                     ),
                   },
@@ -645,7 +865,7 @@ export const router = createBrowserRouter(
                       <L
                         factory={() =>
                           import("./crm/sub-views").then((m) => ({
-                            default: m.CrmPipelineView,
+                            default: m.CrmOverviewView,
                           }))
                         }
                         skeleton="dashboard"
@@ -653,29 +873,148 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
-                    path: "leads",
+                    path: "cases",
                     element: (
                       <L
                         factory={() =>
                           import("./crm/sub-views").then((m) => ({
-                            default: m.LeadsView,
+                            default: m.CrmCasesView,
                           }))
                         }
                       />
                     ),
                   },
                   {
-                    path: "deals",
+                    path: "cases/:ref",
                     element: (
                       <L
                         factory={() =>
                           import("./crm/sub-views").then((m) => ({
-                            default: m.DealsView,
+                            default: m.CrmCaseWorkspace,
+                          }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "appeals",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmAppealsView,
                           }))
                         }
                       />
                     ),
                   },
+                  {
+                    path: "clients",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmClientsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "clients/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmClient360,
+                          }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "signals",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmSignalsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "pipeline",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmPipelineView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "quotes",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmQuotesView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "renewals",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmRenewalsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "insights",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmInsightsView,
+                          }))
+                        }
+                        skeleton="dashboard"
+                      />
+                    ),
+                  },
+                  {
+                    path: "settings",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./crm/sub-views").then((m) => ({
+                            default: m.CrmSettingsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  sv("clients/new", () => import("./crm/CrmExtras"), "ClientFormPage"),
+                  sv("clients/:id/edit", () => import("./crm/CrmExtras"), "ClientFormPage"),
+                  sv("contacts", () => import("./crm/CrmExtras"), "ContactsDirectory"),
+                  sv("console", () => import("./crm/CrmExtras"), "ContactConsole"),
+                  sv("knowledge", () => import("./crm/CrmExtras"), "KnowledgeView"),
+                  sv("contracts", () => import("./crm/CrmExtras"), "ContractsView"),
+                  { path: "leads", element: <Navigate to="../pipeline" replace /> },
+                  { path: "deals", element: <Navigate to="../pipeline" replace /> },
                 ],
               ),
             },

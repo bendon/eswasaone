@@ -23,6 +23,8 @@ type Props = {
   avatarInitial?: string;
   avatarGradient?: string;
   extra?: ReactNode;
+  /** Notification bell / dropdown — replaces the dummy bell in `.top__r`. */
+  notifications?: ReactNode;
   /** Centred slot between the title and the account cluster (e.g. global search). */
   center?: ReactNode;
   /** Mobile nav drawer toggle — renders the hamburger when set. */
@@ -45,6 +47,7 @@ export function TopBar({
   avatarInitial,
   avatarGradient = "linear-gradient(140deg,#4A52B0,#313391)",
   extra,
+  notifications,
   center,
   onMenuClick,
   menuOpen = false,
@@ -108,9 +111,11 @@ export function TopBar({
         <button type="button" className="ibtn" aria-label="Theme">
           <Icon name="i-sun" />
         </button>
-        <button type="button" className="ibtn" aria-label="Notifications">
-          <Icon name="i-bell" />
-        </button>
+        {notifications ?? (
+          <button type="button" className="ibtn" aria-label="Notifications">
+            <Icon name="i-bell" />
+          </button>
+        )}
         <div className="top__div" />
         <div className={`top__user-wrap${open ? " is-open" : ""}`} ref={wrapRef}>
           <button

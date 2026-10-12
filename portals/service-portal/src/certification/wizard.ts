@@ -66,22 +66,112 @@ export function stepsFor(flow: CertFlow): StepKey[] {
         "review",
       ];
     case "product":
-      return ["scheme", "organisation", "contacts", "products", "factory", "documents", "declare", "review"];
+      // Certify first (scheme → products → factory), then organisation — matches apply UX.
+      return ["scheme", "products", "factory", "organisation", "contacts", "documents", "declare", "review"];
     case "combined":
       return [
         "scheme",
-        "organisation",
-        "contacts",
         "scope",
         "system",
         "products",
         "factory",
+        "organisation",
+        "contacts",
         "documents",
         "declare",
         "review",
       ];
     default:
-      return ["scheme", "organisation", "contacts", "scope", "system", "documents", "declare", "review"];
+      // Scheme → scope → system, then organisation (apply mock: “what you want certified” first).
+      return ["scheme", "scope", "system", "organisation", "contacts", "documents", "declare", "review"];
+  }
+}
+
+/** Rail stages (4) that group wizard steps for citizen UX — steps themselves stay as StepKey. */
+export type ApplyStage = {
+  id: string;
+  label: string;
+  steps: StepKey[];
+};
+
+export function stagesFor(flow: CertFlow): ApplyStage[] {
+  switch (flow) {
+    case "ingelo":
+      return [
+        { id: "start", label: "Eligibility and consultation", steps: ["eligibility", "consult"] },
+        {
+          id: "org",
+          label: "Your organisation",
+          steps: ["organisation", "business", "requirements", "contacts"],
+        },
+        { id: "docs", label: "Documents", steps: ["documents", "declare"] },
+        { id: "review", label: "Review and submit", steps: ["review"] },
+      ];
+    case "product":
+      return [
+        { id: "cert", label: "What you want certified", steps: ["scheme", "products", "factory"] },
+        { id: "org", label: "Your organisation", steps: ["organisation", "contacts"] },
+        { id: "docs", label: "Documents", steps: ["documents", "declare"] },
+        { id: "review", label: "Review and submit", steps: ["review"] },
+      ];
+    case "combined":
+      return [
+        {
+          id: "cert",
+          label: "What you want certified",
+          steps: ["scheme", "scope", "system", "products", "factory"],
+        },
+        { id: "org", label: "Your organisation", steps: ["organisation", "contacts"] },
+        { id: "docs", label: "Documents", steps: ["documents", "declare"] },
+        { id: "review", label: "Review and submit", steps: ["review"] },
+      ];
+    default:
+      return [
+        { id: "cert", label: "What you want certified", steps: ["scheme", "scope", "system"] },
+        { id: "org", label: "Your organisation", steps: ["organisation", "contacts"] },
+        { id: "docs", label: "Documents", steps: ["documents", "declare"] },
+        { id: "review", label: "Review and submit", steps: ["review"] },
+      ];
+  }
+}
+
+export function stageIndexFor(flow: CertFlow, step: StepKey): number {
+  const stages = stagesFor(flow);
+  const i = stages.findIndex((st) => st.steps.includes(step));
+  return i < 0 ? 0 : i;
+}
+
+/** Checklist shown in “Before you start” — derived from flow, not hardcoded HTML. */
+export function readyChecklist(flow: CertFlow): string[] {
+  switch (flow) {
+    case "product":
+      return [
+        "Company registration details",
+        "The product, its brand name and the standard it follows",
+        "Where it is made",
+        "Recent test reports, if you have them",
+      ];
+    case "ingelo":
+      return [
+        "Proof you are Emaswati-owned and manufacturing in Eswatini",
+        "What you make or offer, and where you sell it",
+        "A passport-size photo of the informant",
+        "Any standards or support you already use",
+      ];
+    case "combined":
+      return [
+        "Company registration details",
+        "The management-system standard(s) and product mark you want",
+        "Sites, employees, and product details",
+        "Your management system manual and recent test reports, if you have them",
+      ];
+    default:
+      return [
+        "Company registration details",
+        "What you want certified, and at which sites",
+        "Number of employees at each site",
+        "Your management system manual, if you have one",
+      ];
   }
 }
 
@@ -164,6 +254,8 @@ export function validateStep(step: StepKey, s: WizardState): Record<string, stri
     case "scheme":
       if (!s.scheme) e.scheme = "Choose a scheme.";
       if (flow === "combined" && !s.standards.length) e.standards = "Choose at least one management-system standard.";
+      if (det(s, "quote_known") === "yes" && !s.quote_ref.trim())
+        e.quote_ref = "Enter your quote number, or choose “Not yet”.";
       break;
     case "eligibility": {
       const r = checkIngeloEligibility(s.eligibility);

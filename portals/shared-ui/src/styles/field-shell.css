@@ -322,8 +322,8 @@ a {
 }
 
 .field-subtab--active {
-  background: var(--field-navy-mid);
-  border-color: var(--field-navy-mid);
+  background: var(--gold-d);
+  border-color: var(--gold-d);
   color: #fff;
 }
 

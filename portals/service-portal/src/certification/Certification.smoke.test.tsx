@@ -37,6 +37,10 @@ function renderAt(path: string, routePath: string, el: JSX.Element) {
   );
 }
 
+// jsdom has no scrolling; the wizard scrolls between steps.
+Element.prototype.scrollIntoView = vi.fn();
+window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+
 beforeEach(() => {
   localStorage.clear();
   requireAuth.mockClear();
@@ -81,19 +85,34 @@ describe("certification screens", () => {
     expect(await screen.findByText(/isn’t the right fit yet/i)).toBeInTheDocument();
   });
 
-  it("shows management-system steps in the rail", () => {
+  it("shows grouped stages in the rail", () => {
     renderAt("/certification/apply?scheme=iso9001", "/certification/apply", <CertificationApplyPage />);
     const rail = screen.getByRole("navigation", { name: /application steps/i });
-    expect(within(rail).getByText("Management system")).toBeInTheDocument();
-    expect(within(rail).getByText("Review & submit")).toBeInTheDocument();
+    expect(within(rail).getByText("What you want certified")).toBeInTheDocument();
+    expect(within(rail).getByText("Review and submit")).toBeInTheDocument();
+    expect(within(rail).getByText("Scheme & quote")).toBeInTheDocument();
+  });
+
+  it("confirms the catalogue scheme on step 1 instead of a bare select", () => {
+    renderAt("/certification/apply?scheme=iso9001", "/certification/apply", <CertificationApplyPage />);
+    expect(screen.getByText(/you're applying for/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /change/i })).toBeInTheDocument();
+    expect(screen.getByText(/do you have a quote from eswasa/i)).toBeInTheDocument();
   });
 
   it("asks for sign-in only at quote submission", async () => {
     renderAt("/certification/quote?flow=ingelo", "/certification/quote", <CertificationQuotePage />);
     expect(screen.getByText(/for ingelo: is the product manufactured in eswatini/i)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /submit request for quotation/i }));
-    expect(requireAuth).not.toHaveBeenCalled(); // validation runs first
+    // The quote is a stepped wizard: each step validates before moving on, and sign-in waits for submit.
+    await userEvent.click(screen.getByRole("button", { name: /continue/i }));
+    expect(screen.getByText(/describe what you want certified/i)).toBeInTheDocument();
+    await userEvent.type(screen.getByRole("textbox", { name: /scope of certification/i }), "Honey");
+    await userEvent.click(within(screen.getByRole("radiogroup", { name: /based in eswatini/i })).getByLabelText("Yes"));
+    await userEvent.click(within(screen.getByRole("radiogroup", { name: /manufactured in eswatini/i })).getByLabelText("Yes"));
+    await userEvent.click(screen.getByRole("button", { name: /continue/i }));
+    await userEvent.click(screen.getByRole("button", { name: /continue/i }));
     expect(screen.getByText(/organisation name is required/i)).toBeInTheDocument();
+    expect(requireAuth).not.toHaveBeenCalled();
   });
 
   describe("demo mode (VITE_DEMO_MODE=true)", () => {
@@ -109,12 +128,15 @@ describe("certification screens", () => {
 
     it("lists sample applications and quotes", async () => {
       renderAt("/account/applications", "/account/applications", <AccountApplicationsPage />);
-      expect(await screen.findByText("CERT-0051", { exact: false })).toBeInTheDocument();
+      // Demo applications come from the shared certification store (same record staff work on).
+      expect(await screen.findByText("CERT-APP-26-0057", { exact: false })).toBeInTheDocument();
       expect(screen.getByText(/QTE-00342/)).toBeInTheDocument();
     });
   });
 
   describe("offline outside demo mode: never fake data or success", () => {
+    // Demo data is on by default now; these cover the explicit opt-out (VITE_DEMO_MODE=false).
+    beforeEach(() => vi.stubEnv("VITE_DEMO_MODE", "false"));
     it("does not invent a case", async () => {
       renderAt("/certification/CERT-0051", "/certification/:id", <CertificationTrackPage />);
       expect(await screen.findByRole("heading", { name: /can’t reach eswasa/i })).toBeInTheDocument();
@@ -136,12 +158,15 @@ describe("certification screens", () => {
       requireAuth.mockReturnValue(true);
       renderAt("/certification/quote?flow=ms", "/certification/quote", <CertificationQuotePage />);
       const type = (name: RegExp, v: string) => userEvent.type(screen.getByRole("textbox", { name }), v);
+      const next = () => userEvent.click(screen.getByRole("button", { name: /continue/i }));
+      await type(/scope of certification/i, "Packing");
+      await userEvent.click(within(screen.getByRole("radiogroup", { name: /based in eswatini/i })).getByLabelText("Yes"));
+      await next();
       await type(/organisation name/i, "Test Co");
       await type(/contact person/i, "T. Test");
       await type(/email address/i, "t@test.sz");
       await type(/phone number/i, "+26876000000");
-      await type(/scope of certification/i, "Packing");
-      await userEvent.click(within(screen.getByRole("radiogroup", { name: /based in eswatini/i })).getByLabelText("Yes"));
+      await next();
       await userEvent.click(screen.getByRole("button", { name: /submit request for quotation/i }));
       expect(await screen.findByText(/your request was not sent/i)).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /send by email instead/i })).toHaveAttribute(

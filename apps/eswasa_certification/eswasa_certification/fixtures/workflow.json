@@ -34,6 +34,16 @@
     "parent": "Certification Application Flow",
     "parentfield": "states",
     "parenttype": "Workflow",
+    "state": "Quoted",
+    "update_field": "workflow_state",
+    "update_value": "Quoted"
+   },
+   {
+    "allow_edit": "Certification Officer",
+    "doc_status": "0",
+    "parent": "Certification Application Flow",
+    "parentfield": "states",
+    "parenttype": "Workflow",
     "state": "Audit Scheduled",
     "update_field": "workflow_state",
     "update_value": "Audit Scheduled"
@@ -111,6 +121,16 @@
     "state": "Application"
    },
    {
+    "action": "Issue Quotation",
+    "allow_self_approval": 0,
+    "allowed": "Certification Officer",
+    "next_state": "Quoted",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Assessment"
+   },
+   {
     "action": "Schedule Audit",
     "allow_self_approval": 0,
     "allowed": "Certification Officer",
@@ -119,6 +139,16 @@
     "parentfield": "transitions",
     "parenttype": "Workflow",
     "state": "Assessment"
+   },
+   {
+    "action": "Schedule Audit",
+    "allow_self_approval": 0,
+    "allowed": "Certification Officer",
+    "next_state": "Audit Scheduled",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Quoted"
    },
    {
     "action": "Start Audit",
@@ -239,6 +269,16 @@
     "parentfield": "transitions",
     "parenttype": "Workflow",
     "state": "Assessment"
+   },
+   {
+    "action": "Withdraw",
+    "allow_self_approval": 0,
+    "allowed": "Certification Manager",
+    "next_state": "Withdraw",
+    "parent": "Certification Application Flow",
+    "parentfield": "transitions",
+    "parenttype": "Workflow",
+    "state": "Quoted"
    },
    {
     "action": "Withdraw",

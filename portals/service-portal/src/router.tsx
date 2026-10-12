@@ -15,10 +15,13 @@ import { TrainingDetailPage } from "./pages/TrainingDetailPage";
 import { ExportPage } from "./pages/ExportPage";
 import { ApplicabilityPage } from "./pages/ApplicabilityPage";
 import { VerifyPage } from "./pages/VerifyPage";
-import { ComplaintsPage } from "./pages/ComplaintsPage";
+import { ComplaintsPage, ContactSalesPage, FeedbackPage, LodgeCasePage, TrackCasePage } from "./pages/ComplaintsPage";
 import { AiTechPage } from "./pages/AiTechPage";
 import {
   AccountApplicationsPage,
+  AccountCaseDetailPage,
+  AccountCasesPage,
+  AccountNotificationsPage,
   AccountCertificatesPage,
   AccountLayout,
   AccountOrdersPage,
@@ -33,6 +36,12 @@ import { ErrorPage } from "./pages/ErrorPage";
 import { GoalsPage } from "./goals/GoalsPage";
 import { AdHocGuidePage, GoalGuidePage } from "./goals/GoalGuidePage";
 import { CheckoutPage, OrderStatusPage } from "./estore";
+import { AccountCertificateDetailPage, AccountVisitsPage, RenewPage, TransferPage } from "./pages/customer/Certification";
+import { ReadinessPage } from "./pages/customer/Readiness";
+import { BadgePage } from "./pages/customer/Badge";
+import { AccountInvoicesPage, AccountQuoteDetailPage, AccountQuotesPage, CustomerPrintPage, HelpPage, PublicQuotePage } from "./pages/customer/Commercial";
+import { AccountCalibrationDetailPage, AccountCalibrationPage, AccountInstrumentsPage, CalRequestPage, MetrologyServicePage, VerifyCalPage } from "./pages/customer/Metrology";
+import { AccountCommentsPage, AccountSubscriptionsPage, CommitteesPage, DraftDetailPage, DraftsPage, JoinTcPage, ProposePage, TcAreaPage, TcBallotPage } from "./pages/customer/Standards";
 
 function Root() {
   return (
@@ -44,6 +53,8 @@ function Root() {
 
 export const router = createBrowserRouter(
   [
+    // Embeddable register badge (05 P3): standalone, no layout, so it fits an iframe on a client's site.
+    { path: "/badge/:token", element: <BadgePage /> },
     {
       path: "/",
       element: <Root />,
@@ -56,7 +67,25 @@ export const router = createBrowserRouter(
           children: [
             { index: true, element: <HomePage /> },
             { path: "standards", element: <StandardsPage /> },
+            { path: "standards/drafts", element: <DraftsPage /> },
+            { path: "standards/drafts/:id", element: <DraftDetailPage /> },
+            { path: "standards/propose", element: <ProposePage /> },
+            { path: "standards/committees", element: <CommitteesPage /> },
+            { path: "standards/committees/:tc/join", element: <JoinTcPage /> },
             { path: "standards/:id", element: <StandardDetailPage /> },
+            { path: "tc", element: <RequireAuth><TcAreaPage /></RequireAuth> },
+            { path: "tc/ballots/:id", element: <RequireAuth><TcBallotPage /></RequireAuth> },
+            { path: "metrology", element: <MetrologyServicePage /> },
+            { path: "calibration", element: <Navigate to="/metrology" replace /> },
+            { path: "metrology/request", element: <CalRequestPage /> },
+            { path: "verify/cal", element: <VerifyCalPage /> },
+            { path: "verify/cal/:token", element: <VerifyCalPage /> },
+            { path: "quotes/:id", element: <PublicQuotePage /> },
+            { path: "help", element: <HelpPage /> },
+            { path: "print/:kind/:id", element: <CustomerPrintPage /> },
+            { path: "certification/transfer", element: <TransferPage /> },
+            { path: "certification/readiness", element: <ReadinessPage /> },
+            { path: "certification/renew/:certId", element: <RequireAuth><RenewPage /></RequireAuth> },
             { path: "estore/checkout", element: <CheckoutPage /> },
             { path: "estore/orders/:id", element: <OrderStatusPage /> },
             { path: "certification", element: <CertificationPage /> },
@@ -79,6 +108,11 @@ export const router = createBrowserRouter(
             { path: "verify", element: <VerifyPage /> },
             { path: "verify/:token", element: <VerifyPage /> },
             { path: "complaints", element: <ComplaintsPage /> },
+            { path: "complaints/new/:type", element: <LodgeCasePage /> },
+            { path: "complaints/track", element: <TrackCasePage /> },
+            { path: "complaints/track/:ref", element: <TrackCasePage /> },
+            { path: "feedback/:ref", element: <FeedbackPage /> },
+            { path: "contact-sales", element: <ContactSalesPage /> },
             { path: "ai-tech", element: <AiTechPage /> },
             { path: "ai-tech/standards", element: <AiTechPage /> },
             { path: "ai-tech/lab", element: <AiTechPage /> },
@@ -99,7 +133,20 @@ export const router = createBrowserRouter(
                 { path: "applications", element: <AccountApplicationsPage /> },
                 { path: "orders", element: <AccountOrdersPage /> },
                 { path: "certificates", element: <AccountCertificatesPage /> },
+                { path: "certificates/:id", element: <AccountCertificateDetailPage /> },
+                { path: "quotes", element: <AccountQuotesPage /> },
+                { path: "quotes/:id", element: <AccountQuoteDetailPage /> },
+                { path: "invoices", element: <AccountInvoicesPage /> },
+                { path: "visits", element: <AccountVisitsPage /> },
+                { path: "calibration", element: <AccountCalibrationPage /> },
+                { path: "calibration/:id", element: <AccountCalibrationDetailPage /> },
+                { path: "instruments", element: <AccountInstrumentsPage /> },
+                { path: "comments", element: <AccountCommentsPage /> },
+                { path: "subscriptions", element: <AccountSubscriptionsPage /> },
                 { path: "training", element: <AccountTrainingPage /> },
+                { path: "cases", element: <AccountCasesPage /> },
+                { path: "cases/:ref", element: <AccountCaseDetailPage /> },
+                { path: "notifications", element: <AccountNotificationsPage /> },
                 { path: "team", element: <AccountTeamPage /> },
                 { path: "settings", element: <AccountSettingsPage /> },
               ],

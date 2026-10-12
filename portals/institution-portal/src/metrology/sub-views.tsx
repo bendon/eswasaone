@@ -1,3 +1,2 @@
-export { JobsView } from "./JobsView";
-export { InstrumentsView } from "./InstrumentsView";
-export { ResultsView } from "./ResultsView";
+export { JobRecordPage } from "./JobRecord";
+export { MetCapacity, MetEquipment, MetItems, MetJobs, MetOverview, MetReceipt, MetRequests, MetReview, MetSettings, MetTests, TestRecordPage } from "./Views";

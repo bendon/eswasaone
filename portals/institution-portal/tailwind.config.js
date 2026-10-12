@@ -13,9 +13,9 @@ export default {
         navy: "var(--navy)",
       },
       fontFamily: {
-        sans: ["Arial", "Helvetica", "sans-serif"],
-        display: ["Arial", "Helvetica", "sans-serif"],
-        mono: ["ui-monospace", "SF Mono", "Menlo", "Consolas", "Liberation Mono", "monospace"],
+        sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        display: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        mono: ["IBM Plex Mono", "ui-monospace", "SF Mono", "Menlo", "Consolas", "monospace"],
       },
       width: {
         sidebar: "248px",

@@ -61,8 +61,13 @@ def publish_feed(
     reference_name: str,
     detail: str | None = None,
     status: str | None = None,
+    for_user: str | None = None,
 ) -> None:
-    """Feed stub Core can consume: realtime + Notification Log + Core /ws/feed webhook."""
+    """Feed stub Core can consume: realtime + Notification Log + Core /ws/feed webhook.
+
+    ``for_user`` targets the Notification Log to a specific user (e.g. the citizen
+    who submitted the application) so it appears in their notification inbox.
+    """
     payload = {
         "source": "eswasa_certification",
         "event": event,
@@ -109,25 +114,45 @@ def publish_feed(
     # Notification Log is the durable feed inbox for Desk / Core pollers
     try:
         if frappe.db.exists("DocType", "Notification Log"):
-            nlog = frappe.get_doc(
-                {
-                    "doctype": "Notification Log",
-                    "subject": f"[{event}] {subject}"[:140],
-                    "email_content": detail or subject,
-                    "document_type": reference_doctype,
-                    "document_name": reference_name,
-                    "type": "Alert",
-                    "from_user": frappe.session.user or "Administrator",
-                }
-            )
+            # Target the notification to the document owner (citizen) so it
+            # shows in their /account/notifications inbox, unless an explicit
+            # for_user was passed by the caller.
+            target_user = for_user
+            if not target_user:
+                try:
+                    target_user = frappe.db.get_value(reference_doctype, reference_name, "owner")
+                except Exception:
+                    pass
+
+            # Notification Log.for_user must be a User name; contact emails often aren't.
+            if target_user and not frappe.db.exists("User", target_user):
+                owner = frappe.db.get_value(reference_doctype, reference_name, "owner")
+                target_user = (
+                    owner if owner and frappe.db.exists("User", owner) else None
+                )
+
+            nlog_data = {
+                "doctype": "Notification Log",
+                "subject": f"[{event}] {subject}"[:140],
+                "email_content": detail or subject,
+                "document_type": reference_doctype,
+                "document_name": reference_name,
+                "type": "Alert",
+                "from_user": frappe.session.user or "Administrator",
+            }
+            if target_user:
+                nlog_data["for_user"] = target_user
+            nlog = frappe.get_doc(nlog_data)
             nlog.insert(ignore_permissions=True)
-    except Exception:
-        _log("feed_notification_log_failed", event)
+    except Exception as exc:
+        import traceback
+
+        _log("feed_notification_log_failed", f"{event}: {exc}\n{traceback.format_exc()}")
 
     _comment(
         reference_doctype,
         reference_name,
-        f"[feed:{event}] {subject}" + (f": {detail}" if detail else ""),
+        f"[feed:{event}] {subject}" + (f" — {detail}" if detail else ""),
     )
 
 
@@ -193,6 +218,53 @@ def _verify_base() -> str:
     ).rstrip("/")
 
 
+# Department → role mapping for application routing.
+# When a scheme has responsible_department set, R-C1 additionally creates
+# ToDos for the department-specific role so the right team sees it in
+# their "Needs your attention" queue.
+_DEPT_ROLE_MAP: dict[str, str] = {
+    "Product Certification": "Certification Officer",
+    "Management Systems Certification": "Certification Officer",
+    "Metrology & Calibration": "Metrology Officer",
+    "Standards Development": "Standards Officer",
+    "TBT & Trade": "TBT Officer",
+    "Finance & Administration": "Accounts Manager",
+    "Certification": "Certification Officer",
+}
+
+# Department → notification email (internal department inbox).
+# Override via site_config keys like `dept_email_product_certification`.
+_DEPT_EMAIL_MAP: dict[str, str] = {
+    "Product Certification": "certification@eswasa.org.sz",
+    "Management Systems Certification": "systems@eswasa.org.sz",
+    "Metrology & Calibration": "metrology@eswasa.org.sz",
+    "Standards Development": "standards@eswasa.org.sz",
+    "TBT & Trade": "tbt@eswasa.org.sz",
+    "Finance & Administration": "finance@eswasa.org.sz",
+    "Certification": "certification@eswasa.org.sz",
+}
+
+
+def _scheme_department(scheme: str | None) -> str:
+    """Read responsible_department from the Certification Scheme."""
+    if not scheme:
+        return "Certification"
+    try:
+        dept = frappe.db.get_value("Certification Scheme", scheme, "responsible_department")
+        return dept or "Certification"
+    except Exception:
+        return "Certification"
+
+
+def _dept_notify_emails(dept: str) -> list[str]:
+    """Department notification email(s), honouring site_config overrides."""
+    config_key = f"dept_email_{dept.lower().replace(' ', '_').replace('&', 'and')}"
+    override = frappe.conf.get(config_key)
+    if override:
+        return [override] if isinstance(override, str) else list(override)
+    return [_DEPT_EMAIL_MAP.get(dept, "certification@eswasa.org.sz")]
+
+
 # ---------------------------------------------------------------------------
 # R-C1 — Application on_submit / Assessment entry
 # ---------------------------------------------------------------------------
@@ -243,9 +315,22 @@ def rc1_application_submitted(doc, method: str | None = None) -> None:
         doctype=doc.doctype,
         name=doc.name,
         role="Certification Manager",
-        description=f"R-C1: Approval queue for {doc.name}",
+        description=f"R-C1: Approval queue — {doc.name}",
     )
 
+    # Department-level routing: create a ToDo for the department-specific
+    # role and notify the department inbox so the right team picks it up.
+    dept = _scheme_department(doc.get("scheme"))
+    dept_role = _DEPT_ROLE_MAP.get(dept, "Certification Officer")
+    if dept_role not in ("Certification Officer", "Certification Manager"):
+        _assign_role_todo(
+            doctype=doc.doctype,
+            name=doc.name,
+            role=dept_role,
+            description=f"R-C1: {dept} — review application {doc.name} ({doc.applicant_name})",
+        )
+
+    # Email the citizen / applicant
     email = doc.get("contact_email")
     _notify_email(
         [email] if email else [],
@@ -253,7 +338,26 @@ def rc1_application_submitted(doc, method: str | None = None) -> None:
         message=(
             f"Dear {doc.applicant_name},\n\n"
             f"Your certification application {doc.name} for scheme {doc.scheme} "
-            f"has been received. Stage-1 audit {audit_name} is scheduled.\n"
+            f"has been received and assigned to the {dept} department. "
+            f"Stage-1 audit {audit_name} is scheduled.\n\n"
+            f"You can track your application status on the EswasaOne service portal.\n"
+        ),
+    )
+
+    # Notify the responsible department inbox
+    dept_emails = _dept_notify_emails(dept)
+    _notify_email(
+        dept_emails,
+        subject=f"[{dept}] New application: {doc.name}",
+        message=(
+            f"A new certification application has been submitted:\n\n"
+            f"  Reference: {doc.name}\n"
+            f"  Applicant: {doc.applicant_name}\n"
+            f"  Organisation: {doc.get('applicant_org') or '—'}\n"
+            f"  Scheme: {doc.scheme}\n"
+            f"  Department: {dept}\n"
+            f"  Stage-1 Audit: {audit_name}\n\n"
+            f"Please review and assign resources for the upcoming assessment.\n"
         ),
     )
     publish_feed(
@@ -261,7 +365,7 @@ def rc1_application_submitted(doc, method: str | None = None) -> None:
         subject=f"Application submitted: {doc.name}",
         reference_doctype=doc.doctype,
         reference_name=doc.name,
-        detail=f"Stage-1 audit={audit_name}",
+        detail=f"Stage-1 audit={audit_name}; dept={dept}",
         status="SUBMITTED",
     )
     if getattr(doc, "flags", None) is not None:
@@ -662,7 +766,7 @@ def _income_account(company: str) -> str | None:
 def _create_sales_invoice(cert) -> str | None:
     """Auto Sales Invoice for cert fee. Returns invoice name or None."""
     if not frappe.db.exists("DocType", "Sales Invoice"):
-        _comment(cert.doctype, cert.name, "[R-C3] Sales Invoice DocType missing; stub skipped")
+        _comment(cert.doctype, cert.name, "[R-C3] Sales Invoice DocType missing — stub skipped")
         return None
     if cert.get("sales_invoice") and frappe.db.exists("Sales Invoice", cert.sales_invoice):
         return cert.sales_invoice
@@ -715,7 +819,7 @@ def _create_sales_invoice(cert) -> str | None:
             "item_code": item_code,
             "qty": 1,
             "rate": fee,
-            "description": f"Certification fee: {cert.certificate_number}",
+            "description": f"Certification fee — {cert.certificate_number}",
         }
         if income:
             item_row["income_account"] = income
@@ -745,6 +849,116 @@ def _create_sales_invoice(cert) -> str | None:
         _log("rc3_sales_invoice_failed", f"{cert.name}: {exc}")
         _comment(cert.doctype, cert.name, f"[R-C3] Sales Invoice failed: {exc}")
         return None
+
+
+def _scheme_fee(scheme: str | None) -> float:
+    fee = 0.0
+    if scheme:
+        fee = float(frappe.db.get_value("Certification Scheme", scheme, "certification_fee") or 0)
+    return fee if fee > 0 else 5000.0
+
+
+def _create_quotation(app) -> str | None:
+    """Draft/submit ERPNext Quotation for the application certification fee. Idempotent."""
+    if not frappe.db.exists("DocType", "Quotation"):
+        _comment(app.doctype, app.name, "[quote] Quotation DocType missing — stub skipped")
+        return None
+
+    if app.get("quotation") and frappe.db.exists("Quotation", app.quotation):
+        return app.quotation
+
+    quote_title = f"Cert quote {app.name}"
+    existing = frappe.db.get_value(
+        "Quotation",
+        {"title": quote_title, "docstatus": ("<", 2)},
+        "name",
+    )
+    if existing:
+        return existing
+
+    company = frappe.db.get_single_value("Global Defaults", "default_company") or frappe.db.get_value(
+        "Company", {}, "name"
+    )
+    if not company:
+        _log("quote_no_company", app.name)
+        return None
+
+    customer_name = app.get("applicant_org") or app.get("applicant_name") or app.name
+    customer = _ensure_customer(customer_name, app.get("contact_email"))
+    if not customer:
+        return None
+
+    item_code = _ensure_cert_fee_item()
+    if not frappe.db.exists("Item", item_code):
+        _log("quote_item_missing", item_code)
+        return None
+
+    fee = _scheme_fee(app.get("scheme"))
+    currency = frappe.db.get_value("Company", company, "default_currency") or "SZL"
+    price_list = (
+        "Standard Selling"
+        if frappe.db.exists("Price List", "Standard Selling")
+        else frappe.db.get_value("Price List", {"selling": 1}, "name")
+    )
+    try:
+        payload: dict[str, Any] = {
+            "doctype": "Quotation",
+            "quotation_to": "Customer",
+            "party_name": customer,
+            "company": company,
+            "currency": currency,
+            "transaction_date": nowdate(),
+            "valid_till": add_days(nowdate(), 30),
+            "order_type": "Sales",
+            "title": quote_title,
+            "terms": f"Certification quotation for {app.name} / {app.get('scheme') or ''}",
+            "items": [
+                {
+                    "item_code": item_code,
+                    "qty": 1,
+                    "rate": fee,
+                    "description": (
+                        f"Certification fee — {app.get('scheme') or 'scheme'} "
+                        f"({app.name})"
+                    ),
+                }
+            ],
+        }
+        if price_list:
+            payload["selling_price_list"] = price_list
+            payload["price_list_currency"] = currency
+            payload["plc_conversion_rate"] = 1
+        quot = frappe.get_doc(payload)
+        # Avoid inheriting Certification Application workflow/form context.
+        quot.flags.ignore_permissions = True
+        quot.insert()
+        try:
+            quot.submit()
+        except Exception:
+            pass
+        return quot.name
+    except Exception as exc:
+        import traceback
+
+        _log("quote_create_failed", f"{app.name}: {exc}\n{traceback.format_exc()}")
+        _comment(app.doctype, app.name, f"[quote] Quotation failed: {exc}")
+        return None
+
+
+def rc_issue_quotation(doc, method: str | None = None) -> str | None:
+    """Side effect for Assessment → Quoted: create Quotation + link on application."""
+    qname = _create_quotation(doc)
+    if not qname:
+        return None
+    updates: dict[str, Any] = {}
+    if frappe.get_meta(doc.doctype).has_field("quotation"):
+        updates["quotation"] = qname
+    if updates:
+        frappe.db.set_value(doc.doctype, doc.name, updates, update_modified=False)
+        if hasattr(doc, "quotation"):
+            doc.quotation = qname
+    _comment(doc.doctype, doc.name, f"[quote] Quotation {qname} issued")
+    return qname
 
 
 def _create_register_and_token(cert) -> tuple[str | None, str | None, str | None]:
@@ -808,7 +1022,7 @@ def _create_register_and_token(cert) -> tuple[str | None, str | None, str | None
         _comment(
             cert.doctype,
             cert.name,
-            "[R-C3] DocType Register Entry not installed (eswasa_verification); stub noted",
+            "[R-C3] DocType Register Entry not installed (eswasa_verification) — stub noted",
         )
 
     if register_name and frappe.db.exists("DocType", "Verification Token"):
@@ -1185,7 +1399,7 @@ def rc7_auditor_competence_expiry() -> int:
             doctype="Auditor",
             name=row.auditor,
             role="Certification Manager",
-            description=f"R-C7: Competence expired for {row.auditor}; renew before assignment",
+            description=f"R-C7: Competence expired for {row.auditor} — renew before assignment",
         )
         _notify_email(
             ["hr@eswasa.org.sz"],
@@ -1202,6 +1416,6 @@ def validate_auditor_assignment(doc, method: str | None = None) -> None:
         return
     if not auditor_competence_valid(auditor, doc.get("scheme")):
         frappe.throw(
-            f"Auditor {auditor} cannot be assigned: competence expired or blocked (R-C7).",
+            f"Auditor {auditor} cannot be assigned — competence expired or blocked (R-C7).",
             frappe.ValidationError,
         )

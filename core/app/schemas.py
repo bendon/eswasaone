@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class Kpi(BaseModel):
@@ -658,6 +658,20 @@ class HrLeaveBalance(BaseModel):
     used: float
     balance: float
     employee: str | None = None
+    pending: float | None = None
+    owed: float | None = None  # balance of an encashable leave type
+    above_carry_over: float | None = None  # balance above the type's carry-over cap
+
+
+class HrLeaveBalances(BaseModel):
+    """GET /hr/leave/balances: Leave Ledger balances. Empty items and None totals mean no Leave Period or
+    allocation yet ("Awaiting ESWASA leave policy (H14)")."""
+
+    items: list[HrLeaveBalance] = Field(default_factory=list)
+    employee: str | None = None
+    owed: float | None = None
+    above_carry_over: float | None = None
+    awaiting: str | None = None
 
 
 class HrPersonRef(BaseModel):
@@ -1816,6 +1830,84 @@ class HrAccessRequestBody(BaseModel):
 class HrAccessReviewBody(BaseModel):
     decision: str  # approved | rejected
     reviewNote: str | None = None
+    confirm: bool = False
+
+
+class HrLeaveRequest(BaseModel):
+    """One row of GET /hr/leave/requests (read-only; no reason text)."""
+
+    id: str
+    employee: str | None = None
+    employee_name: str | None = None
+    department: str | None = None
+    leave_type: str | None = None
+    from_date: str | None = None
+    to_date: str | None = None
+    days: float | None = None
+    status: str
+    approver: str | None = None
+    approver_name: str | None = None
+    sla_date: str | None = None
+    overdue: bool = False
+    escalated: bool = False
+
+
+class HrLeaveRequests(BaseModel):
+    items: list[HrLeaveRequest] = Field(default_factory=list)
+
+
+class HrLeaveCalendarEntry(BaseModel):
+    employee: str
+    kind: str  # leave | field
+    label: str
+    from_date: str
+    to_date: str
+    approved: bool = True
+    style: str  # solid (approved) | dashed (open) | F (field visit)
+
+
+class HrLeaveCalendarPerson(BaseModel):
+    employee: str
+    employee_name: str | None = None
+    department: str | None = None
+
+
+class HrLeaveCalendar(BaseModel):
+    start: str
+    end: str
+    people: list[HrLeaveCalendarPerson] = Field(default_factory=list)
+    entries: list[HrLeaveCalendarEntry] = Field(default_factory=list)
+
+
+class HrLeavePolicyAllocation(BaseModel):
+    policy: str | None = None
+    annual_allocation: float | None = None
+
+
+class HrLeavePolicyType(BaseModel):
+    model_config = ConfigDict(extra="allow")  # the Leave Type policy fields the installed HRMS has
+
+    name: str
+    allocations: list[HrLeavePolicyAllocation] = Field(default_factory=list)
+
+
+class HrLeavePeriod(BaseModel):
+    name: str
+    from_date: str | None = None
+    to_date: str | None = None
+
+
+class HrLeavePolicy(BaseModel):
+    """GET /hr/leave/policy: configured Leave Types (brief §5.2), read-only. Nothing invented (H14)."""
+
+    configured: bool = False
+    awaiting: str | None = None
+    leave_period: HrLeavePeriod | None = None
+    leave_types: list[HrLeavePolicyType] = Field(default_factory=list)
+
+
+class HrLeaveCancelBody(BaseModel):
+    reason: str
     confirm: bool = False
 
 

@@ -13,6 +13,11 @@ guards: [expected_state, idempotency_key]
 notes: >
   ERPNext/HRMS owns this DocType. Registry declares states for display/Approvals
   family only — never overwrite ERPNext fixtures (emit: false).
+  Routing, escalation and cancel live in eswasa_hr.leave (plan 03).
+
+# R-L1, PROVISIONAL (brief §12.1; confirm with ESWASA): decide within 2 working days (public holidays
+# skipped), then one escalation ToDo per named HR Manager. Never a role pool.
+sla: {days: 2, calendar: working, escalate_to: named HR Managers, provisional: true}
 
 display:
   customer: {}
@@ -22,7 +27,7 @@ display:
     Rejected: Rejected
 
 states:
-  - {name: Open, owner_role: Leave Approver, allow_edit: Employee}
+  - {name: Open, sla: 2d working (provisional), owner_role: Leave Approver, allow_edit: Employee}
   - {name: Approved, owner_role: Leave Approver, allow_edit: Leave Approver, style: Success}
   - {name: Rejected, owner_role: Leave Approver, allow_edit: Leave Approver, style: Danger}
   - {name: Cancelled, owner_role: Employee, allow_edit: Employee}
@@ -43,5 +48,13 @@ transitions:
     from: Open
     to: Cancelled
     actor: Employee
+    when: the applicant only
+    reason: required
+    approvals_family: do
+  - action: Cancel
+    from: Approved
+    to: Cancelled
+    actor: Employee
+    when: the applicant only, before from_date; the Leave Ledger entry is reversed and the approver alerted
     reason: required
     approvals_family: do

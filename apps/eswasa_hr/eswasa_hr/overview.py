@@ -225,6 +225,9 @@ def overview_impl() -> dict[str, Any]:
     changes += _count("Contract Change", {"state": "Waiting for approval"})
     items.append(attention("change", changes, "1 promotion, transfer, leaver or contract change waiting", "{n} promotions, transfers, leavers or contract changes waiting", "/hr/directory"))
     items.append(attention("leave", _count("Leave Application", {"docstatus": 0, "status": "Open"}), "1 leave request waiting for a decision", "{n} leave requests waiting for a decision", "/hr/time-off"))
+    overdue_leave = {"reference_type": "Leave Application", "status": "Open", "date": ["<", day], "description": ["not like", "[escalated]%"]}
+    items.append(attention("leave_overdue", _count("ToDo", overdue_leave), "1 leave request past its decision date", "{n} leave requests past their decision date",
+                           "/approvals", _earliest("ToDo", overdue_leave, "date"), "Escalated to the HR Managers in Approvals (provisional 2-working-day SLA).", 2))
     items.append(attention("establishment", _count("Establishment Change", {"state": ["in", list(OPEN_STATES)]}), "1 establishment change waiting for a decision",
                            "{n} establishment changes waiting for a decision", "/hr/structure?tab=establishment"))
     cycles = _cycle_status(day)

@@ -1,4 +1,4 @@
-"""Daily HR jobs: R-H1…R-H6 and lifecycle dates."""
+"""Daily HR jobs: R-H1…R-H6, R-L1 leave escalation and lifecycle dates."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ def daily() -> None:
     rh5_declarations()
     lifecycle_due()
     rh6_appraisal_reminders()
+    rl1_leave_escalation()
 
 
 def rh1_probation_reviews() -> int:
@@ -93,3 +94,10 @@ def lifecycle_due() -> tuple[int, int]:
     from eswasa_hr.lifecycle import process_last_days, submit_due_changes
 
     return submit_due_changes(), process_last_days()
+
+
+def rl1_leave_escalation() -> int:
+    """R-L1 (provisional): an Open leave request past its 2-working-day SLA goes to the named HR Managers, once."""
+    from eswasa_hr.leave import escalate_overdue
+
+    return escalate_overdue()

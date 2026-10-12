@@ -2198,8 +2198,11 @@ paths:
     get:
       tags: [hr]
       operationId: listHrLeave
-      summary: Leave requests the caller can see
+      summary: Leave requests the caller can see (eswasa_hr.leave.requests scope)
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string } }
+        - { name: limit, in: query, required: false, schema: { type: integer, default: 20 } }
       responses:
         "200":
           description: OK
@@ -2254,17 +2257,98 @@ paths:
     get:
       tags: [hr]
       operationId: listHrLeaveBalances
-      summary: Leave balances
+      summary: Leave Ledger balances, own by default (or an employee the caller can see). Empty items and awaiting "H14" when no Leave Period or allocation exists
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLeaveBalances" }
+
+  /hr/leave/requests:
+    get:
+      tags: [hr]
+      operationId: listHrLeaveRequests
+      summary: Read-only leave requests with approver, SLA date and overdue/escalated flags. HR sees all, a manager their reports, everyone their own
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string } }
+        - { name: department, in: query, required: false, schema: { type: string } }
+        - { name: from, in: query, required: false, schema: { type: string, format: date } }
+        - { name: to, in: query, required: false, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLeaveRequests" }
+
+  /hr/leave/calendar:
+    get:
+      tags: [hr]
+      operationId: getHrLeaveCalendar
+      summary: Approved leave (solid), open requests (dashed) and Field Visits (F), up to 62 days, scoped like the request list
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: start, in: query, required: true, schema: { type: string, format: date } }
+        - { name: end, in: query, required: true, schema: { type: string, format: date } }
+        - { name: department, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLeaveCalendar" }
+        "400":
+          description: The range is reversed or longer than two months
+
+  /hr/leave/policy:
+    get:
+      tags: [hr]
+      operationId: getHrLeavePolicy
+      summary: Configured Leave Types and their policy fields, read-only. awaiting is "H14" until ESWASA sets the leave policy
       security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: OK
           content:
             application/json:
+              schema: { $ref: "#/components/schemas/HrLeavePolicy" }
+
+  /hr/leave/{leave_id}/cancel:
+    post:
+      tags: [hr]
+      operationId: cancelHrLeave
+      summary: The applicant cancels an Open request, or Approved leave that hasn't started (the Leave Ledger entry is reversed and the approver alerted). A reason is required
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: leave_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrLeaveCancelBody" }
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
               schema:
                 type: object
                 properties:
-                  items: { type: array, items: { $ref: "#/components/schemas/HrLeaveBalance" } }
+                  ok: { type: boolean }
+                  name: { type: string }
+                  status: { type: string }
+                  message: { type: string }
+        "400":
+          description: confirm must be true
+        "403":
+          description: Not the applicant (plain text)
+        "422":
+          description: No reason, the leave has started, or it isn't open or approved (plain text)
 
   /hr/holidays:
     get:
@@ -7824,29 +7908,342 @@ components:
     HrLeaveBalance:
       properties:
         leave_type:
-          type: string
           title: Leave Type
+          type: string
         allocated:
-          type: number
           title: Allocated
+          type: number
         used:
-          type: number
           title: Used
-        balance:
           type: number
+        balance:
           title: Balance
+          type: number
         employee:
           anyOf:
           - type: string
           - type: 'null'
+          default: null
           title: Employee
-      type: object
+        pending:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Pending
+        owed:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Owed
+        above_carry_over:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Above Carry Over
       required:
       - leave_type
       - allocated
       - used
       - balance
       title: HrLeaveBalance
+      type: object
+    HrLeaveBalances:
+      description: 'GET /hr/leave/balances: Leave Ledger balances. Empty items and None totals mean no Leave Period or
+
+        allocation yet ("Awaiting ESWASA leave policy (H14)").'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/HrLeaveBalance'
+          title: Items
+          type: array
+        employee:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employee
+        owed:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Owed
+        above_carry_over:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Above Carry Over
+        awaiting:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Awaiting
+      title: HrLeaveBalances
+      type: object
+    HrLeaveRequest:
+      description: One row of GET /hr/leave/requests (read-only; no reason text).
+      properties:
+        id:
+          title: Id
+          type: string
+        employee:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employee
+        employee_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employee Name
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Department
+        leave_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Leave Type
+        from_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: From Date
+        to_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: To Date
+        days:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Days
+        status:
+          title: Status
+          type: string
+        approver:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Approver
+        approver_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Approver Name
+        sla_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Sla Date
+        overdue:
+          default: false
+          title: Overdue
+          type: boolean
+        escalated:
+          default: false
+          title: Escalated
+          type: boolean
+      required:
+      - id
+      - status
+      title: HrLeaveRequest
+      type: object
+    HrLeaveRequests:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/HrLeaveRequest'
+          title: Items
+          type: array
+      title: HrLeaveRequests
+      type: object
+    HrLeaveCalendarEntry:
+      properties:
+        employee:
+          title: Employee
+          type: string
+        kind:
+          title: Kind
+          type: string
+        label:
+          title: Label
+          type: string
+        from_date:
+          title: From Date
+          type: string
+        to_date:
+          title: To Date
+          type: string
+        approved:
+          default: true
+          title: Approved
+          type: boolean
+        style:
+          title: Style
+          type: string
+      required:
+      - employee
+      - kind
+      - label
+      - from_date
+      - to_date
+      - style
+      title: HrLeaveCalendarEntry
+      type: object
+    HrLeaveCalendarPerson:
+      properties:
+        employee:
+          title: Employee
+          type: string
+        employee_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employee Name
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Department
+      required:
+      - employee
+      title: HrLeaveCalendarPerson
+      type: object
+    HrLeaveCalendar:
+      properties:
+        start:
+          title: Start
+          type: string
+        end:
+          title: End
+          type: string
+        people:
+          items:
+            $ref: '#/components/schemas/HrLeaveCalendarPerson'
+          title: People
+          type: array
+        entries:
+          items:
+            $ref: '#/components/schemas/HrLeaveCalendarEntry'
+          title: Entries
+          type: array
+      required:
+      - start
+      - end
+      title: HrLeaveCalendar
+      type: object
+    HrLeavePolicyAllocation:
+      properties:
+        policy:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Policy
+        annual_allocation:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Annual Allocation
+      title: HrLeavePolicyAllocation
+      type: object
+    HrLeavePolicyType:
+      additionalProperties: true
+      properties:
+        name:
+          title: Name
+          type: string
+        allocations:
+          items:
+            $ref: '#/components/schemas/HrLeavePolicyAllocation'
+          title: Allocations
+          type: array
+      required:
+      - name
+      title: HrLeavePolicyType
+      type: object
+    HrLeavePeriod:
+      properties:
+        name:
+          title: Name
+          type: string
+        from_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: From Date
+        to_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: To Date
+      required:
+      - name
+      title: HrLeavePeriod
+      type: object
+    HrLeavePolicy:
+      description: "GET /hr/leave/policy: configured Leave Types (brief \xA75.2), read-only. Nothing invented (H14)."
+      properties:
+        configured:
+          default: false
+          title: Configured
+          type: boolean
+        awaiting:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Awaiting
+        leave_period:
+          anyOf:
+          - $ref: '#/components/schemas/HrLeavePeriod'
+          - type: 'null'
+          default: null
+        leave_types:
+          items:
+            $ref: '#/components/schemas/HrLeavePolicyType'
+          title: Leave Types
+          type: array
+      title: HrLeavePolicy
+      type: object
+    HrLeaveCancelBody:
+      properties:
+        reason:
+          title: Reason
+          type: string
+        confirm:
+          default: false
+          title: Confirm
+          type: boolean
+      required:
+      - reason
+      title: HrLeaveCancelBody
+      type: object
     HrLeaveSummary:
       properties:
         id:

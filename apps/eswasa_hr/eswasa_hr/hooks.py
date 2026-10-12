@@ -117,7 +117,7 @@ doc_events = {
     "Leave Application": {
         "after_insert": "eswasa_hr.leave.sync_todo",
         "on_update": "eswasa_hr.leave.sync_todo",
-        "on_submit": "eswasa_hr.leave.sync_todo",
+        "on_submit": ["eswasa_hr.leave.sync_todo", "eswasa_hr.leave.cover_prompt"],
         "on_cancel": "eswasa_hr.leave.sync_todo",
     },
 }

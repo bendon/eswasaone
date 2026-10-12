@@ -153,6 +153,12 @@ from app.schemas import (
     HrPersonRef,
     HrWorkConflict,
     HrLeaveSummary,
+    HrLeaveBalances,
+    HrLeaveCalendar,
+    HrLeaveCancelBody,
+    HrLeavePolicy,
+    HrLeaveRequest,
+    HrLeaveRequests,
     HrLocation,
     HrLocationCreate,
     HrLocationPatch,
@@ -3626,6 +3632,9 @@ async def get_hr_orgchart(
         raise  # pragma: no cover
 
 
+_LEAVE = "eswasa_hr.leave"
+
+
 @router.get("/hr/leave", tags=["hr"])
 async def list_hr_leave(
     auth: Annotated[AuthContext, Depends(require_auth)],
@@ -3633,76 +3642,78 @@ async def list_hr_leave(
     status_filter: Annotated[str | None, Query(alias="status")] = None,
     limit: int = 20,
 ) -> dict[str, list[HrLeaveSummary]]:
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    filters: list[Any] | None = None
-    if status_filter:
-        filters = [["status", "=", status_filter]]
-    try:
-        rows = await _frappe_get_list(
-            auth.frappe(frappe),
-            "Leave Application",
-            fields=["name", "employee", "employee_name", "leave_type", "from_date", "to_date", "status"],
-            filters=filters,
-            limit=limit,
-            order_by="from_date desc",
-            soft=True,
-        )
-        return {"items": [_as_hr_leave(r) for r in rows]}
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+    """Time off queue (H4). Scoped in eswasa_hr.leave.requests: HR all, a manager their reports, else own."""
+    params = {"status": status_filter} if status_filter else None
+    rows = await _hr_call(auth, frappe, f"{_LEAVE}.requests", params=params) or []
+    return {"items": [_as_hr_leave({**r, "name": r.get("id")}) for r in rows[: max(0, limit)]]}
 
 
-@router.get("/hr/leave/balances", tags=["hr"])
+@router.get("/hr/leave/requests", response_model=HrLeaveRequests, tags=["hr"])
+async def list_hr_leave_requests(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+    department: str | None = None,
+    from_date: Annotated[str | None, Query(alias="from")] = None,
+    to_date: Annotated[str | None, Query(alias="to")] = None,
+) -> HrLeaveRequests:
+    """Read-only request list with approver, SLA date and overdue/escalated flags (plan 03)."""
+    params = {k: v for k, v in {"status": status_filter, "department": department, "from_date": from_date, "to_date": to_date}.items() if v}
+    rows = await _hr_call(auth, frappe, f"{_LEAVE}.requests", params=params or None) or []
+    return HrLeaveRequests(items=[HrLeaveRequest.model_validate(r) for r in rows])
+
+
+@router.get("/hr/leave/calendar", response_model=HrLeaveCalendar, tags=["hr"])
+async def get_hr_leave_calendar(
+    start: str,
+    end: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    department: str | None = None,
+) -> HrLeaveCalendar:
+    """Approved leave (solid), open requests (dashed) and Field Visits ("F"), up to 62 days, scoped."""
+    params = {"start": start, "end": end, **({"department": department} if department else {})}
+    return HrLeaveCalendar.model_validate(await _hr_call(auth, frappe, f"{_LEAVE}.calendar", params=params))
+
+
+@router.get("/hr/leave/balances", response_model=HrLeaveBalances, tags=["hr"])
 async def list_hr_leave_balances(
     auth: Annotated[AuthContext, Depends(require_auth)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
     employee: str | None = None,
-    limit: int = 50,
-) -> dict[str, list[HrLeaveBalance]]:
-    """Leave Allocation balances when the DocType is present; soft-empty otherwise."""
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    filters: list[Any] = [["docstatus", "=", 1]]
-    if employee:
-        filters.append(["employee", "=", employee])
-    try:
-        rows = await _frappe_get_list(
-            auth.frappe(frappe),
-            "Leave Allocation",
-            fields=[
-                "name",
-                "employee",
-                "employee_name",
-                "leave_type",
-                "total_leaves_allocated",
-                "unused_leaves",
-                "new_leaves_allocated",
-            ],
-            filters=filters,
-            limit=limit,
-            order_by="modified desc",
-            soft=True,
-        )
-        items: list[HrLeaveBalance] = []
-        for r in rows:
-            allocated = float(r.get("total_leaves_allocated") or r.get("new_leaves_allocated") or 0)
-            balance = float(r.get("unused_leaves") if r.get("unused_leaves") is not None else allocated)
-            used = max(0.0, allocated - balance)
-            items.append(
-                HrLeaveBalance(
-                    leave_type=str(r.get("leave_type") or ""),
-                    allocated=allocated,
-                    used=used,
-                    balance=balance,
-                    employee=str(r.get("employee_name") or r.get("employee") or "") or None,
-                )
-            )
-        return {"items": items}
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+) -> HrLeaveBalances:
+    """Leave Ledger balances (own by default). Rows keep {leave_type, allocated, used, balance};
+    no Leave Period or allocation gives an empty list and ``awaiting: "H14"``."""
+    params = {"employee": employee} if employee else None
+    return HrLeaveBalances.model_validate(await _hr_call(auth, frappe, f"{_LEAVE}.balances", params=params))
+
+
+@router.get("/hr/leave/policy", response_model=HrLeavePolicy, tags=["hr"])
+async def get_hr_leave_policy(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrLeavePolicy:
+    """Configured Leave Types and their policy fields, read-only (brief §5.2; H14 until ESWASA sets them)."""
+    return HrLeavePolicy.model_validate(await _hr_call(auth, frappe, f"{_LEAVE}.policy"))
+
+
+@router.post("/hr/leave/{leave_id}/cancel", tags=["hr"])
+async def cancel_hr_leave(
+    leave_id: str,
+    body: HrLeaveCancelBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    """The applicant cancels an Open request or Approved leave that hasn't started (rules in eswasa_hr.leave)."""
+    _require_confirm(body.confirm)
+    audit_log(
+        action="hr.leave.cancel",
+        actor=auth.user.username,
+        resource=f"Leave Application:{leave_id}",
+        detail={"reason": body.reason},
+        confirmed=True,
+    )
+    return await _hr_write(auth, frappe, f"{_LEAVE}.cancel", json={"name": leave_id, "reason": body.reason, "confirm": True})
 
 
 _LEAVE_APP = "hrms.hr.doctype.leave_application.leave_application"

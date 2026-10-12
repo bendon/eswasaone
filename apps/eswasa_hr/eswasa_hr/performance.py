@@ -17,8 +17,10 @@ Pure rules sit at the top and are tested without Frappe.
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 from typing import Any, Iterable
+
+from eswasa_hr.workdays import working_days_before
 
 CYCLE = "Appraisal Cycle"
 APPRAISAL = "Appraisal"
@@ -37,17 +39,6 @@ def _d(v: Any) -> date | None:
 
 def fmt(d: date) -> str:
     return f"{d.day} {d.strftime('%b %Y')}"
-
-
-def working_days_before(end: date, n: int, holidays: Iterable[date] = ()) -> date:
-    """The date ``n`` working days (Mon–Fri, not a holiday) before ``end``."""
-    off = set(holidays)
-    d, left = end, n
-    while left:
-        d -= timedelta(days=1)
-        if d.weekday() < 5 and d not in off:
-            left -= 1
-    return d
 
 
 def reminder_due(day: date, end: Any, holidays: Iterable[date] = ()) -> int | None:
@@ -335,9 +326,9 @@ def rh6_reminders() -> int:
     day = _today()
     n = 0
     for c in frappe.get_all(CYCLE, filters={"status": "In Progress", "end_date": [">=", day]}, fields=["name", "company", "end_date"], limit=0):
-        hl = frappe.db.get_value("Company", c["company"], "default_holiday_list") if c.get("company") else None
-        holidays = [_d(h["holiday_date"]) for h in frappe.get_all("Holiday", filters={"parent": hl}, fields=["holiday_date"], limit=0)] if hl else []
-        if reminder_due(day, c["end_date"], holidays):
+        from eswasa_hr.workdays import holidays
+
+        if reminder_due(day, c["end_date"], holidays(company=c.get("company")) if c.get("company") else ()):
             n += remind_impl(c["name"])["sent"]
     return n
 

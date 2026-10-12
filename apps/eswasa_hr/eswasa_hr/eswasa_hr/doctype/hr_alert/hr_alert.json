@@ -28,7 +28,7 @@
    "fieldname": "rule",
    "fieldtype": "Select",
    "label": "Rule",
-   "options": "R-H2\nR-H3\nR-H4",
+   "options": "R-H2\nR-H3\nR-H4\nLeave approver\nLeave cancelled\nLeave cover",
    "reqd": 1,
    "in_list_view": 1,
    "read_only": 1
@@ -71,7 +71,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-12 00:00:00.000000",
+ "modified": "2026-10-12 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Eswasa HR",
  "name": "HR Alert",

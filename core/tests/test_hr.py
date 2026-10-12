@@ -168,15 +168,15 @@ async def test_hr_employees_list_soft_empty(
 
 
 @pytest.mark.asyncio
-async def test_hr_leave_balances_soft_empty_missing_doctype(
+async def test_hr_leave_balances_empty_without_a_leave_policy(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     async def _ok_health(self: FrappeClient) -> bool:
         return True
 
     async def _method(self: FrappeClient, method: str, **kwargs: Any) -> Any:
-        if method == "frappe.client.get_list":
-            raise FrappeError("DoesNotExistError: DocType Leave Allocation not found")
+        if method == "eswasa_hr.leave.balances":
+            return {"employee": "EMP-1", "items": [], "owed": None, "above_carry_over": None, "awaiting": "H14"}
         raise AssertionError(f"unexpected {method}")
 
     monkeypatch.setattr(FrappeClient, "health", _ok_health)

@@ -66,4 +66,16 @@ doc_events = {
     "Staff Authorisation": {
         "validate": "eswasa_hr.eswasa_hr.doctype.staff_authorisation.staff_authorisation.validate",
     },
+    # Journey J3: route each leave request to the employee's own leave approver in Approvals.
+    "Leave Application": {
+        "after_insert": "eswasa_hr.leave.sync_todo",
+        "on_update": "eswasa_hr.leave.sync_todo",
+        "on_submit": "eswasa_hr.leave.sync_todo",
+        "on_cancel": "eswasa_hr.leave.sync_todo",
+    },
+}
+
+# Approvals decides DocTypes without a Frappe Workflow through these (eswasa_governance.approvals).
+eswasa_approval_handlers = {
+    "Leave Application": "eswasa_hr.leave.decide",
 }

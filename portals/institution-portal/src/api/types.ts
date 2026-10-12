@@ -26,6 +26,31 @@ export type HrLeaveSummary = components["schemas"]["HrLeaveSummary"];
 export type HrAppraisalSummary = components["schemas"]["HrAppraisalSummary"];
 export type HrEmployeesResponse = { items: HrEmployeeSummary[] };
 export type HrLeaveResponse = { items: HrLeaveSummary[] };
+
+/*
+ * My HR (GET /hr/me, POST /hr/leave/preview). Declared in contracts/openapi.yaml; written by hand
+ * here because contracts/types.ts can't be regenerated until the duplicate CertificationScheme
+ * key in openapi.yaml is fixed. TODO: switch to components["schemas"][...] after regeneration.
+ */
+export type HrPersonRef = { user?: string | null; name?: string | null };
+export type HrLeaveBalanceRow = { leave_type: string; allocated: number; used: number; balance: number };
+export type HrMe = {
+  linked: boolean;
+  employee?: HrEmployeeSummary | null;
+  line_manager?: string | null;
+  leave_approver?: HrPersonRef | null;
+  balances: HrLeaveBalanceRow[];
+  leave: HrLeaveSummary[];
+};
+export type HrWorkConflict = { id: string; title: string; date?: string | null; kind?: string };
+export type HrLeavePreview = {
+  days: number;
+  balance?: number | null;
+  balance_after?: number | null;
+  approver?: HrPersonRef | null;
+  conflicts: HrWorkConflict[];
+  warnings: string[];
+};
 export type HrAppraisalsResponse = { items: HrAppraisalSummary[] };
 
 /** Org-first HR structure schemas */

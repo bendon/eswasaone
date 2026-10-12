@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -77,6 +77,11 @@ from app.schemas import (
     HrJobOpening,
     HrLeaveActBody,
     HrLeaveBalance,
+    HrLeavePreview,
+    HrLeavePreviewBody,
+    HrMe,
+    HrPersonRef,
+    HrWorkConflict,
     HrLeaveSummary,
     HrLocation,
     HrLocationCreate,
@@ -4112,6 +4117,215 @@ async def list_hr_leave_balances(
                 )
             )
         return {"items": items}
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
+
+
+_LEAVE_APP = "hrms.hr.doctype.leave_application.leave_application"
+_EMPLOYEE_SELF_FIELDS = [
+    "name",
+    "employee_name",
+    "department",
+    "designation",
+    "status",
+    "date_of_joining",
+    "user_id",
+    "company_email",
+    "reports_to",
+    "leave_approver",
+]
+
+
+async def _my_employee(session: FrappeClient, username: str) -> dict[str, Any] | None:
+    """The Employee linked to this login through user_id, or None."""
+    rows = await _frappe_get_list(
+        session,
+        "Employee",
+        fields=_EMPLOYEE_SELF_FIELDS,
+        filters={"user_id": username},
+        limit=1,
+        soft=True,
+    )
+    return rows[0] if rows else None
+
+
+async def _leave_details(session: FrappeClient, employee: str, on_date: str) -> dict[str, Any]:
+    """HRMS get_leave_details: allocations per leave type plus the leave approver."""
+    try:
+        raw = await session.method(
+            f"{_LEAVE_APP}.get_leave_details", json={"employee": employee, "date": on_date}
+        )
+    except FrappeError:
+        return {}
+    return raw if isinstance(raw, dict) else {}
+
+
+def _balances_from_details(details: dict[str, Any]) -> list[HrLeaveBalance]:
+    out: list[HrLeaveBalance] = []
+    for leave_type, v in (details.get("leave_allocation") or {}).items():
+        if not isinstance(v, dict):
+            continue
+        out.append(
+            HrLeaveBalance(
+                leave_type=str(leave_type),
+                allocated=float(v.get("total_leaves") or 0),
+                used=float(v.get("leaves_taken") or 0),
+                balance=float(v.get("remaining_leaves") or 0),
+            )
+        )
+    return out
+
+
+async def _person_ref(session: FrappeClient, user: str | None) -> HrPersonRef | None:
+    if not user:
+        return None
+    rows = await _frappe_get_list(
+        session, "User", fields=["full_name"], filters={"name": user}, limit=1, soft=True
+    )
+    name = rows[0].get("full_name") if rows else None
+    return HrPersonRef(user=user, name=name or user)
+
+
+def _weekdays_between(start: date, end: date) -> int:
+    days = 0
+    d = start
+    while d <= end:
+        if d.weekday() < 5:
+            days += 1
+        d += timedelta(days=1)
+    return days
+
+
+@router.get("/hr/me", response_model=HrMe, tags=["hr"])
+async def get_hr_me(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrMe:
+    """The caller's own record, line manager, leave approver, balances and recent leave."""
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    session = auth.frappe(frappe)
+    try:
+        emp = await _my_employee(session, auth.user.username)
+        if not emp:
+            return HrMe(linked=False)
+        manager: str | None = None
+        if emp.get("reports_to"):
+            mgr = await _frappe_get_list(
+                session,
+                "Employee",
+                fields=["employee_name"],
+                filters={"name": emp["reports_to"]},
+                limit=1,
+                soft=True,
+            )
+            manager = mgr[0].get("employee_name") if mgr else None
+        details = await _leave_details(session, emp["name"], _today_iso())
+        approver = await _person_ref(
+            session, emp.get("leave_approver") or details.get("leave_approver")
+        )
+        rows = await _frappe_get_list(
+            session,
+            "Leave Application",
+            fields=["name", "employee", "employee_name", "leave_type", "from_date", "to_date", "status"],
+            filters={"employee": emp["name"]},
+            limit=20,
+            order_by="from_date desc",
+            soft=True,
+        )
+        return HrMe(
+            linked=True,
+            employee=_as_hr_employee(emp),
+            line_manager=manager,
+            leave_approver=approver,
+            balances=_balances_from_details(details),
+            leave=[_as_hr_leave(r) for r in rows],
+        )
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
+
+
+@router.post("/hr/leave/preview", response_model=HrLeavePreview, tags=["hr"])
+async def preview_hr_leave(
+    body: HrLeavePreviewBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrLeavePreview:
+    """Working days, balance after, who decides, and work in those dates. Writes nothing."""
+    try:
+        start = date.fromisoformat(body.from_date[:10])
+        end = date.fromisoformat(body.to_date[:10])
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Dates must be YYYY-MM-DD") from exc
+    if end < start:
+        raise HTTPException(status_code=422, detail="The end date is before the start date")
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    session = auth.frappe(frappe)
+    try:
+        emp = await _my_employee(session, auth.user.username)
+        if not emp:
+            raise HTTPException(
+                status_code=409,
+                detail="Your login isn't linked to an employee record. Ask HR to link it.",
+            )
+        try:
+            raw_days = await session.method(
+                f"{_LEAVE_APP}.get_number_of_leave_days",
+                json={
+                    "employee": emp["name"],
+                    "leave_type": body.leave_type,
+                    "from_date": start.isoformat(),
+                    "to_date": end.isoformat(),
+                },
+            )
+            days = float(raw_days)
+        except (FrappeError, TypeError, ValueError):
+            days = float(_weekdays_between(start, end))
+
+        details = await _leave_details(session, emp["name"], start.isoformat())
+        alloc = (details.get("leave_allocation") or {}).get(body.leave_type)
+        balance = float(alloc.get("remaining_leaves") or 0) if isinstance(alloc, dict) else None
+        approver = await _person_ref(
+            session, emp.get("leave_approver") or details.get("leave_approver")
+        )
+        visits = await _frappe_get_list(
+            session,
+            "Field Visit",
+            fields=["name", "title", "planned_date", "customer"],
+            filters=[
+                ["lead_auditor", "=", auth.user.username],
+                ["planned_date", "between", [start.isoformat(), end.isoformat()]],
+            ],
+            limit=20,
+            order_by="planned_date asc",
+            soft=True,
+        )
+        conflicts = [
+            HrWorkConflict(
+                id=str(v.get("name") or ""),
+                title=str(v.get("title") or v.get("customer") or v.get("name") or "Field visit"),
+                date=v.get("planned_date"),
+            )
+            for v in visits
+        ]
+        warnings: list[str] = []
+        if balance is not None and days > balance:
+            warnings.append(f"This is more than your balance of {balance:g} days.")
+        if alloc is None and details.get("leave_allocation") is not None:
+            warnings.append(f"You have no {body.leave_type} allocated this leave year.")
+        if approver is None:
+            warnings.append("You have no leave approver yet. HR needs to set one before you can apply.")
+        return HrLeavePreview(
+            days=days,
+            balance=balance,
+            balance_after=(balance - days) if balance is not None else None,
+            approver=approver,
+            conflicts=conflicts,
+            warnings=warnings,
+        )
     except FrappeError as exc:
         _raise_from_frappe(exc)
         raise  # pragma: no cover

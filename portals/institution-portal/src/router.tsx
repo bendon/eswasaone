@@ -625,6 +625,47 @@ export const router = createBrowserRouter(
               ),
             },
             {
+              path: "me",
+              ...nest(
+                () =>
+                  import("./pages/MyHrPage").then((m) => ({ default: m.MyHrPage })),
+                [
+                  {
+                    index: true,
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.MyHrHome }))
+                        }
+                        skeleton="dashboard"
+                      />
+                    ),
+                  },
+                  {
+                    path: "leave",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.MyLeave }))
+                        }
+                      />
+                    ),
+                  },
+                  {
+                    path: "leave/new",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.ApplyLeave }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                ],
+              ),
+            },
+            {
               path: "board",
               ...nest(
                 () =>

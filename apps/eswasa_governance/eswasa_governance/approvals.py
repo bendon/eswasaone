@@ -597,6 +597,15 @@ def on_workflow_action_insert(doc, method: str | None = None) -> None:
 	todo.insert(ignore_permissions=True)
 
 
+def approval_handler(doctype: str) -> str | None:
+	"""Dotted path of the decide() function an app registered for this DocType, if any."""
+	hooks = frappe.get_hooks("eswasa_approval_handlers") or {}
+	found = hooks.get(doctype) if isinstance(hooks, dict) else None
+	if isinstance(found, (list, tuple)):
+		found = found[-1] if found else None
+	return found or None
+
+
 def act_on_approval_item(
 	doctype: str,
 	name: str,
@@ -651,6 +660,12 @@ def act_on_approval_item(
 		)
 		frappe.db.commit()
 		return result
+
+	# DocTypes another app decides itself (no Frappe Workflow), e.g. HRMS Leave Application →
+	# eswasa_hr.leave.decide. Registered with the ``eswasa_approval_handlers`` hook.
+	handler = approval_handler(doctype)
+	if handler:
+		return _finish(frappe.get_attr(handler)(name=name, action=action, comment=comment))
 
 	# Alert / task Docs without a Workflow (e.g. Risk Register Entry R-G3):
 	# Acknowledge → close related ToDos. Do not require a workflow.

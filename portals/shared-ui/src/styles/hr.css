@@ -398,3 +398,54 @@
   .hr-steps{grid-template-columns:1fr 1fr}
   .hr-drawer{width:100%}
 }
+
+/* ---------- My HR, journeys (SoT: eswasaone-hr.html #/me; spec: docs/EswasaOne_HR_SCREENS_AND_JOURNEYS.md) ---------- */
+.hr-crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);margin:0 0 6px}
+.hr-crumbs a{font-weight:600;color:var(--navy);text-decoration:none}
+.hr-crumbs a:hover{text-decoration:underline}
+.hr-view{display:flex;flex-direction:column;gap:16px}
+.hr-next{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--navy-l,#eceefc);border:1px solid color-mix(in srgb,var(--navy) 22%,transparent);border-radius:14px;padding:16px 18px}
+.hr-next > div{flex:1;min-width:220px}
+.hr-next b{display:block;font-size:14px}
+.hr-next p{font-size:12.5px;color:var(--muted);margin:2px 0 0}
+.hr-next__k{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--navy);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.hr-banner{display:flex;gap:12px;align-items:flex-start;border-radius:12px;padding:12px 14px;font-size:13px;border:1px solid var(--line);background:#fff}
+.hr-banner svg{width:18px;height:18px;flex-shrink:0;margin-top:1px;stroke:currentColor}
+.hr-banner b{display:block}
+.hr-banner p{margin:2px 0 0}
+.hr-banner.info{background:#e0f2fe;border-color:transparent;color:#075985}
+.hr-banner.warn{background:var(--amber-l);border-color:transparent;color:#92400E}
+.hr-banner.bad{background:var(--red-l);border-color:transparent;color:#9f1239}
+.hr-banner.ok{background:var(--green-l);border-color:transparent;color:#166534}
+.hr-banner.lock{border-style:dashed;color:var(--muted)}
+.hr-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.hr-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:4px;box-shadow:0 1px 2px rgba(16,24,40,.05);color:inherit;text-decoration:none;min-width:0}
+a.hr-card:hover{border-color:var(--navy)}
+.hr-card .l{font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+.hr-card .v{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.hr-card .v small{font-size:13px;font-weight:600;color:var(--muted)}
+.hr-card .d{font-size:12px;color:var(--muted)}
+.hr-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
+.hr-form > .wide{grid-column:1/-1}
+.hr-f{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;min-width:0}
+.hr-f small{font-weight:500;color:var(--muted);font-size:11.5px}
+.hr-in{min-height:40px;border:1px solid var(--line);border-radius:9px;padding:8px 12px;background:#fff;font:inherit;font-size:13px;font-weight:500;width:100%}
+.hr-in:focus{border-color:var(--navy);outline:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--navy) 18%,transparent)}
+.hr-radios{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.hr-radio{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:11px 13px;cursor:pointer;font-size:13px;background:#fff}
+.hr-radio:has(input:checked){border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy);background:var(--navy-l,#eceefc)}
+.hr-radio input{margin-top:3px;accent-color:var(--navy)}
+.hr-radio b{display:block;font-weight:700}
+.hr-radio small{display:block;color:var(--muted);font-size:12px}
+.hr-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hr-actions > :last-child{margin-left:auto}
+.hr-track{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.hr-track li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;position:relative;padding-bottom:14px;font-size:13px}
+.hr-track li::before{content:"";position:absolute;left:10px;top:20px;bottom:0;width:2px;background:var(--line)}
+.hr-track li:last-child::before{display:none}
+.hr-track i{width:22px;height:22px;border-radius:50%;background:var(--line-2,#eff3f8);border:2px solid var(--line);display:block}
+.hr-track li.done i{background:var(--green);border-color:var(--green)}
+.hr-track li.now i{background:#fff;border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-l,#eceefc)}
+.hr-track b{display:block}
+.hr-track span{font-size:12px;color:var(--muted)}
+@media (max-width:700px){ .hr-form{grid-template-columns:minmax(0,1fr)} }

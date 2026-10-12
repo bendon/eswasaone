@@ -660,6 +660,48 @@ class HrLeaveBalance(BaseModel):
     employee: str | None = None
 
 
+class HrPersonRef(BaseModel):
+    """A person named on screen: Frappe User id plus display name."""
+
+    user: str | None = None
+    name: str | None = None
+
+
+class HrMe(BaseModel):
+    """OpenAPI: HrMe — the caller's own HR record for My HR (E1)."""
+
+    linked: bool
+    employee: HrEmployeeSummary | None = None
+    line_manager: str | None = None
+    leave_approver: HrPersonRef | None = None
+    balances: list[HrLeaveBalance] = Field(default_factory=list)
+    leave: list[HrLeaveSummary] = Field(default_factory=list)
+
+
+class HrLeavePreviewBody(BaseModel):
+    leave_type: str
+    from_date: str
+    to_date: str
+
+
+class HrWorkConflict(BaseModel):
+    id: str
+    title: str
+    date: str | None = None
+    kind: str = "Field visit"
+
+
+class HrLeavePreview(BaseModel):
+    """OpenAPI: HrLeavePreview — what a leave request would mean, before it is sent (E2)."""
+
+    days: float
+    balance: float | None = None
+    balance_after: float | None = None
+    approver: HrPersonRef | None = None
+    conflicts: list[HrWorkConflict] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

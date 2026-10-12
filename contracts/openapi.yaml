@@ -729,6 +729,43 @@ paths:
         "200":
           description: Expense claims for current user
 
+  /hr/me:
+    get:
+      tags: [hr]
+      operationId: getHrMe
+      summary: My HR — the caller's own record, line manager, leave approver, balances and recent leave
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Own HR record. linked=false when the login has no Employee record.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrMe" }
+        "503":
+          description: Frappe unavailable
+
+  /hr/leave/preview:
+    post:
+      tags: [hr]
+      operationId: previewHrLeave
+      summary: Working days, balance after, approver and work in those dates. Writes nothing.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrLeavePreviewBody" }
+      responses:
+        "200":
+          description: Preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLeavePreview" }
+        "409":
+          description: Login not linked to an Employee record
+        "422":
+          description: Invalid or reversed dates
+
   /tbt/alerts/{id}/{action}:
     post:
       tags: [ingest]
@@ -4503,6 +4540,57 @@ components:
       - id
       - code
       title: HrGradeBandRef
+    HrPersonRef:
+      type: object
+      properties:
+        user: { anyOf: [{ type: string }, { type: "null" }] }
+        name: { anyOf: [{ type: string }, { type: "null" }] }
+    HrMe:
+      type: object
+      required: [linked]
+      properties:
+        linked: { type: boolean }
+        employee:
+          anyOf: [{ $ref: "#/components/schemas/HrEmployeeSummary" }, { type: "null" }]
+        line_manager: { anyOf: [{ type: string }, { type: "null" }] }
+        leave_approver:
+          anyOf: [{ $ref: "#/components/schemas/HrPersonRef" }, { type: "null" }]
+        balances:
+          type: array
+          items: { $ref: "#/components/schemas/HrLeaveBalance" }
+        leave:
+          type: array
+          items: { $ref: "#/components/schemas/HrLeaveSummary" }
+    HrLeavePreviewBody:
+      type: object
+      required: [leave_type, from_date, to_date]
+      properties:
+        leave_type: { type: string }
+        from_date: { type: string, format: date }
+        to_date: { type: string, format: date }
+    HrWorkConflict:
+      type: object
+      required: [id, title]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        date: { anyOf: [{ type: string }, { type: "null" }] }
+        kind: { type: string, default: Field visit }
+    HrLeavePreview:
+      type: object
+      required: [days]
+      properties:
+        days: { type: number }
+        balance: { anyOf: [{ type: number }, { type: "null" }] }
+        balance_after: { anyOf: [{ type: number }, { type: "null" }] }
+        approver:
+          anyOf: [{ $ref: "#/components/schemas/HrPersonRef" }, { type: "null" }]
+        conflicts:
+          type: array
+          items: { $ref: "#/components/schemas/HrWorkConflict" }
+        warnings:
+          type: array
+          items: { type: string }
     HrHoliday:
       properties:
         date:

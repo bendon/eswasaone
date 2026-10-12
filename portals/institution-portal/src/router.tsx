@@ -585,7 +585,46 @@ export const router = createBrowserRouter(
                       <L
                         factory={() =>
                           import("./hr/sub-views").then((m) => ({
+                            default: m.RequisitionsView,
+                          }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "recruitment/new",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({
+                            default: m.RaiseRequisition,
+                          }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "recruitment/applicants",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({
                             default: m.RecruitmentView,
+                          }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "recruitment/:id/publish",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({
+                            default: m.PublishOpening,
                           }))
                         }
                         skeleton="panel"

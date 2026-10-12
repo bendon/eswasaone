@@ -831,6 +831,81 @@ class HrRenewalBody(BaseModel):
     confirm: bool
 
 
+class HrVacancy(BaseModel):
+    department: str | None = None
+    designation: str
+    approved: int
+    filled: int
+    in_recruitment: int = 0
+    vacant: int
+
+
+class HrOpeningRef(BaseModel):
+    id: str
+    status: str | None = None
+    published: bool = False
+    closes_on: str | None = None
+
+
+class HrRequisition(BaseModel):
+    """OpenAPI: HrRequisition — a requisition with its opening and applicant counts (H6)."""
+
+    id: str
+    designation: str
+    department: str | None = None
+    status: str  # Pending | Open & Approved | Rejected | Filled | On Hold | Cancelled
+    requested_by: str | None = None
+    posting_date: str | None = None
+    expected_by: str | None = None
+    opening: HrOpeningRef | None = None
+    applicants: dict[str, int] = Field(default_factory=dict)
+
+
+class HrRequisitionBody(BaseModel):
+    designation: str
+    department: str
+    description: str
+    reason: str | None = None
+    expected_compensation: float
+    expected_by: str | None = None
+    confirm: bool
+
+
+class HrPublishBody(BaseModel):
+    closes_on: str
+    job_title: str | None = None
+    location: str | None = None
+    confirm: bool
+
+
+class CareerSalary(BaseModel):
+    lower: float | None = None
+    upper: float | None = None
+    currency: str | None = None
+    per: str | None = None
+
+
+class CareerOpening(BaseModel):
+    """OpenAPI: CareerOpening — a published vacancy as the public sees it (P1, P2)."""
+
+    id: str
+    job_title: str
+    department: str | None = None
+    designation: str | None = None
+    location: str | None = None
+    employment_type: str | None = None
+    description: str = ""
+    posted_on: str | None = None
+    closes_on: str | None = None
+    salary: CareerSalary | None = None
+
+
+class CareerApplicationReceipt(BaseModel):
+    reference: str
+    job_title: str | None = None
+    closes_on: str | None = None
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

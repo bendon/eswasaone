@@ -102,7 +102,19 @@ export type HrCompetenceMatrix = {
     cells: Record<string, { id: string; status: HrAuthorisationStatus; valid_to?: string | null }>;
   }>;
 };
-export type HrRemindResult ={ created: number; without_login: number; outstanding: number };
+export type HrRemindResult = { created: number; without_login: number; outstanding: number };
+export type HrVacancy = { department?: string | null; designation: string; approved: number; filled: number; in_recruitment: number; vacant: number };
+export type HrRequisition = {
+  id: string;
+  designation: string;
+  department?: string | null;
+  status: "Pending" | "Open & Approved" | "Rejected" | "Filled" | "On Hold" | "Cancelled";
+  requested_by?: string | null;
+  posting_date?: string | null;
+  expected_by?: string | null;
+  opening?: { id: string; status?: string | null; published: boolean; closes_on?: string | null } | null;
+  applicants: Record<string, number>;
+};
 export type HrLeavePreview = {
   days: number;
   balance?: number | null;

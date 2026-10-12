@@ -908,6 +908,136 @@ paths:
             application/json:
               schema: { type: object, properties: { sent_to: { type: integer } } }
 
+  /hr/recruitment/vacancies:
+    get:
+      tags: [hr]
+      operationId: listVacancies
+      summary: Approved posts with a vacancy (Staffing Plan minus active employees minus open requisitions)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Vacant posts
+          content:
+            application/json:
+              schema: { type: object, properties: { items: { type: array, items: { $ref: "#/components/schemas/HrVacancy" } } } }
+
+  /hr/recruitment:
+    get:
+      tags: [hr]
+      operationId: listRequisitions
+      summary: Requisitions with their opening and applicant counts (HR only)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Requisitions
+          content:
+            application/json:
+              schema: { type: object, properties: { items: { type: array, items: { $ref: "#/components/schemas/HrRequisition" } } } }
+
+  /hr/recruitment/requisitions:
+    post:
+      tags: [hr]
+      operationId: raiseRequisition
+      summary: Ask to fill an approved, vacant post (head of department or HR). HR Managers decide in Approvals.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrRequisitionBody" }
+      responses:
+        "201":
+          description: Raised and routed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrRequisition" }
+        "422":
+          description: No approved vacancy, or no description
+
+  /hr/recruitment/requisitions/{name}/publish:
+    post:
+      tags: [hr]
+      operationId: publishRequisition
+      summary: Advertise an approved requisition on the careers page
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrPublishBody" }
+      responses:
+        "200":
+          description: Published
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrRequisition" }
+
+  /careers/openings:
+    get:
+      tags: [careers]
+      operationId: listCareerOpenings
+      summary: Published, open vacancies (public)
+      responses:
+        "200":
+          description: Openings
+          content:
+            application/json:
+              schema: { type: object, properties: { items: { type: array, items: { $ref: "#/components/schemas/CareerOpening" } } } }
+
+  /careers/openings/{opening}:
+    get:
+      tags: [careers]
+      operationId: getCareerOpening
+      summary: One published vacancy (public)
+      parameters:
+        - { name: opening, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Opening
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CareerOpening" }
+        "404":
+          description: Closed or not found
+
+  /careers/openings/{opening}/apply:
+    post:
+      tags: [careers]
+      operationId: applyForOpening
+      summary: Apply online (public; CV as PDF or Word, max 5 MB; 10 per connection per 10 minutes)
+      parameters:
+        - { name: opening, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [applicant_name, email, consent, cv]
+              properties:
+                applicant_name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+                cover_letter: { type: string }
+                consent: { type: boolean }
+                cv: { type: string, format: binary }
+      responses:
+        "201":
+          description: Received
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CareerApplicationReceipt" }
+        "413":
+          description: CV too large
+        "415":
+          description: CV not PDF or Word
+        "422":
+          description: Missing consent, CV or details; duplicate application
+        "429":
+          description: Too many applications from this connection
+
   /hr/leave/preview:
     post:
       tags: [hr]
@@ -4898,6 +5028,84 @@ components:
         skill: { type: string }
         note: { type: string }
         confirm: { type: boolean }
+    HrVacancy:
+      type: object
+      required: [designation, approved, filled, vacant]
+      properties:
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        designation: { type: string }
+        approved: { type: integer }
+        filled: { type: integer }
+        in_recruitment: { type: integer }
+        vacant: { type: integer }
+    HrOpeningRef:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string }
+        status: { anyOf: [{ type: string }, { type: "null" }] }
+        published: { type: boolean }
+        closes_on: { anyOf: [{ type: string }, { type: "null" }] }
+    HrRequisition:
+      type: object
+      required: [id, designation, status]
+      properties:
+        id: { type: string }
+        designation: { type: string }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        status: { type: string, enum: [Pending, Open & Approved, Rejected, Filled, On Hold, Cancelled] }
+        requested_by: { anyOf: [{ type: string }, { type: "null" }] }
+        posting_date: { anyOf: [{ type: string }, { type: "null" }] }
+        expected_by: { anyOf: [{ type: string }, { type: "null" }] }
+        opening: { anyOf: [{ $ref: "#/components/schemas/HrOpeningRef" }, { type: "null" }] }
+        applicants: { type: object, additionalProperties: { type: integer } }
+    HrRequisitionBody:
+      type: object
+      required: [designation, department, description, expected_compensation, confirm]
+      properties:
+        designation: { type: string }
+        department: { type: string }
+        description: { type: string }
+        reason: { anyOf: [{ type: string }, { type: "null" }] }
+        expected_compensation: { type: number }
+        expected_by: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrPublishBody:
+      type: object
+      required: [closes_on, confirm]
+      properties:
+        closes_on: { type: string, format: date }
+        job_title: { anyOf: [{ type: string }, { type: "null" }] }
+        location: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    CareerSalary:
+      type: object
+      properties:
+        lower: { anyOf: [{ type: number }, { type: "null" }] }
+        upper: { anyOf: [{ type: number }, { type: "null" }] }
+        currency: { anyOf: [{ type: string }, { type: "null" }] }
+        per: { anyOf: [{ type: string }, { type: "null" }] }
+    CareerOpening:
+      type: object
+      required: [id, job_title]
+      properties:
+        id: { type: string }
+        job_title: { type: string }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        designation: { anyOf: [{ type: string }, { type: "null" }] }
+        location: { anyOf: [{ type: string }, { type: "null" }] }
+        employment_type: { anyOf: [{ type: string }, { type: "null" }] }
+        description: { type: string }
+        posted_on: { anyOf: [{ type: string }, { type: "null" }] }
+        closes_on: { anyOf: [{ type: string }, { type: "null" }] }
+        salary: { anyOf: [{ $ref: "#/components/schemas/CareerSalary" }, { type: "null" }] }
+    CareerApplicationReceipt:
+      type: object
+      required: [reference]
+      properties:
+        reference: { type: string }
+        job_title: { anyOf: [{ type: string }, { type: "null" }] }
+        closes_on: { anyOf: [{ type: string }, { type: "null" }] }
     HrHoliday:
       properties:
         date:

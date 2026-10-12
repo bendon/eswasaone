@@ -15,6 +15,7 @@ import { TrainingDetailPage } from "./pages/TrainingDetailPage";
 import { ExportPage } from "./pages/ExportPage";
 import { ApplicabilityPage } from "./pages/ApplicabilityPage";
 import { VerifyPage } from "./pages/VerifyPage";
+import { CareerDetailPage, CareersListPage } from "./pages/careers/CareersPages";
 import { ComplaintsPage, ContactSalesPage, FeedbackPage, LodgeCasePage, TrackCasePage } from "./pages/ComplaintsPage";
 import { AiTechPage } from "./pages/AiTechPage";
 import {
@@ -106,6 +107,8 @@ export const router = createBrowserRouter(
             { path: "export", element: <ExportPage /> },
             { path: "applicability", element: <ApplicabilityPage /> },
             { path: "verify", element: <VerifyPage /> },
+            { path: "careers", element: <CareersListPage /> },
+            { path: "careers/:id", element: <CareerDetailPage /> },
             { path: "verify/:token", element: <VerifyPage /> },
             { path: "complaints", element: <ComplaintsPage /> },
             { path: "complaints/new/:type", element: <LodgeCasePage /> },

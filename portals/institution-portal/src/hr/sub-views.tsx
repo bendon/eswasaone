@@ -12,3 +12,6 @@ export { HrChrome } from "./HrChrome";
 export { DeclarationsView } from "./DeclarationsView";
 export { RecordAuthorisation } from "./competence/RecordAuthorisation";
 export { AuthorisationDetail } from "./competence/AuthorisationDetail";
+export { RequisitionsView } from "./recruitment/RequisitionsView";
+export { RaiseRequisition } from "./recruitment/RaiseRequisition";
+export { PublishOpening } from "./recruitment/PublishOpening";

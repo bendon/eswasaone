@@ -7,7 +7,7 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from pydantic import BaseModel, ValidationError
 
 from app.adapters import RequestToPayRequest, request_to_pay
@@ -18,6 +18,7 @@ from app.frappe_client import FrappeClient, FrappeError, get_frappe_client
 from app.gateway import analytics as analytics_bridge
 from app.gateway import mocks
 from app.identity.deps import AuthContext, get_actor, require_auth, require_auth_csrf, require_staff
+from app.media.store import MediaStore, get_media_store
 from app.identity.errors import AuthRequired
 from app.schemas import (
     AdvanceCertificationBody,
@@ -77,6 +78,8 @@ from app.schemas import (
     HrJobOpening,
     HrLeaveActBody,
     HrLeaveBalance,
+    CareerApplicationReceipt,
+    CareerOpening,
     HrAuthorisationDetail,
     HrAuthorisationRequestBody,
     HrAuthorisationRow,
@@ -87,8 +90,12 @@ from app.schemas import (
     HrMe,
     HrMyDeclaration,
     HrRemindBody,
+    HrPublishBody,
     HrRemindResult,
     HrRenewalBody,
+    HrRequisition,
+    HrRequisitionBody,
+    HrVacancy,
     HrSignDeclarationBody,
     HrPersonRef,
     HrWorkConflict,
@@ -4559,6 +4566,186 @@ async def ask_for_renewal(
         auth, frappe, f"{_AUTH}.ask_renewal", json={"skill": body.skill, "note": body.note, "confirm": 1}
     )
     return {"sent_to": int((raw or {}).get("sent_to", 0))}
+
+
+_REC = "eswasa_hr.recruitment"
+
+
+@router.get("/hr/recruitment/vacancies", tags=["hr"])
+async def list_vacancies(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, list[HrVacancy]]:
+    """Approved posts with a vacancy (Staffing Plan − active employees − open requisitions)."""
+    raw = await _hr_call(auth, frappe, f"{_REC}.vacancies")
+    return {"items": [HrVacancy.model_validate(r) for r in (raw or [])]}
+
+
+@router.get("/hr/recruitment", tags=["hr"])
+async def list_requisitions(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, list[HrRequisition]]:
+    """Requisitions with their opening and applicant counts by status (HR only)."""
+    raw = await _hr_call(auth, frappe, f"{_REC}.requisitions")
+    return {"items": [HrRequisition.model_validate(r) for r in (raw or [])]}
+
+
+@router.post(
+    "/hr/recruitment/requisitions",
+    response_model=HrRequisition,
+    status_code=status.HTTP_201_CREATED,
+    tags=["hr"],
+)
+async def raise_requisition(
+    body: HrRequisitionBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrRequisition:
+    """Head of department or HR asks to fill a vacant, approved post. HR Managers decide in Approvals."""
+    _require_confirm(body.confirm)
+    audit_log(
+        action="hr.requisition.raise",
+        actor=auth.user.username,
+        resource="Job Requisition",
+        detail={"designation": body.designation, "department": body.department},
+        confirmed=True,
+    )
+    payload = body.model_dump(exclude={"confirm"})
+    raw = await _hr_call(auth, frappe, f"{_REC}.raise_requisition", json={**payload, "confirm": 1})
+    return HrRequisition.model_validate(raw)
+
+
+@router.post("/hr/recruitment/requisitions/{name}/publish", response_model=HrRequisition, tags=["hr"])
+async def publish_requisition(
+    name: str,
+    body: HrPublishBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrRequisition:
+    """Advertise an approved requisition on the careers page."""
+    _require_confirm(body.confirm)
+    audit_log(
+        action="hr.requisition.publish",
+        actor=auth.user.username,
+        resource=f"Job Requisition:{name}",
+        detail={"closes_on": body.closes_on},
+        confirmed=True,
+    )
+    raw = await _hr_call(
+        auth,
+        frappe,
+        f"{_REC}.publish",
+        json={"requisition": name, **body.model_dump(exclude={"confirm"}), "confirm": 1},
+    )
+    return HrRequisition.model_validate(raw)
+
+
+# --- Careers (public) -----------------------------------------------------------
+
+_CV_TYPES = {
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+_CV_MAX_BYTES = 5 * 1024 * 1024
+_APPLY_WINDOW_SECONDS = 600
+_APPLY_MAX = 10
+_APPLY_HITS: dict[str, list[float]] = {}
+
+
+def _careers_rate_limit(request: Request) -> None:
+    """At most 10 applications per connection per 10 minutes (in-memory, like the auth limiter)."""
+    import time
+
+    ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    hits = [t for t in _APPLY_HITS.get(ip, []) if now - t < _APPLY_WINDOW_SECONDS]
+    if len(hits) >= _APPLY_MAX:
+        _APPLY_HITS[ip] = hits
+        raise HTTPException(status_code=429, detail="Too many applications from this connection. Try again later.")
+    hits.append(now)
+    _APPLY_HITS[ip] = hits
+
+
+@router.get("/careers/openings", tags=["careers"])
+async def list_career_openings(
+    auth: Annotated[AuthContext, Depends(get_actor)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, list[CareerOpening]]:
+    """Published, open vacancies. No sample fallback: an empty list is the truth when Frappe is up."""
+    raw = await _hr_call(auth, frappe, f"{_REC}.public_openings")
+    return {"items": [CareerOpening.model_validate(r) for r in (raw or [])]}
+
+
+@router.get("/careers/openings/{opening}", response_model=CareerOpening, tags=["careers"])
+async def get_career_opening(
+    opening: str,
+    auth: Annotated[AuthContext, Depends(get_actor)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> CareerOpening:
+    raw = await _hr_call(auth, frappe, f"{_REC}.public_opening_detail", params={"opening": opening})
+    return CareerOpening.model_validate(raw)
+
+
+@router.post(
+    "/careers/openings/{opening}/apply",
+    response_model=CareerApplicationReceipt,
+    status_code=status.HTTP_201_CREATED,
+    tags=["careers"],
+)
+async def apply_for_opening(
+    opening: str,
+    request: Request,
+    auth: Annotated[AuthContext, Depends(get_actor)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    store: Annotated[MediaStore, Depends(get_media_store)],
+    applicant_name: Annotated[str, Form()],
+    email: Annotated[str, Form()],
+    consent: Annotated[bool, Form()],
+    cv: Annotated[UploadFile, File()],
+    phone: Annotated[str | None, Form()] = None,
+    cover_letter: Annotated[str | None, Form()] = None,
+) -> CareerApplicationReceipt:
+    """Online application (P3). The CV is stored privately; the applicant record keeps its key."""
+    _careers_rate_limit(request)
+    if not consent:
+        raise HTTPException(status_code=422, detail="Agree to ESWASA keeping your application to consider it.")
+    data = await cv.read()
+    if not data:
+        raise HTTPException(status_code=422, detail="Attach your CV.")
+    if len(data) > _CV_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Your CV must be 5 MB or smaller.")
+    if (cv.content_type or "") not in _CV_TYPES:
+        raise HTTPException(status_code=415, detail="Send your CV as a PDF or Word document.")
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Applications are closed for a moment. Try again shortly.")
+    try:
+        stored = store.put_bytes(data, filename=cv.filename, content_type=cv.content_type, prefix="careers/cv")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    audit_log(
+        action="careers.apply",
+        actor=auth.user.username,
+        resource=f"Job Opening:{opening}",
+        detail={"cv": stored.key, "size": stored.size},
+        confirmed=True,
+    )
+    raw = await _hr_call(
+        auth,
+        frappe,
+        f"{_REC}.apply",
+        json={
+            "opening": opening,
+            "applicant_name": applicant_name,
+            "email": email,
+            "phone": phone,
+            "cover_letter": cover_letter,
+            "cv_link": stored.key,
+            "consent": 1,
+        },
+    )
+    return CareerApplicationReceipt.model_validate(raw)
 
 
 @router.post(

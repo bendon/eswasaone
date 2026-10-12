@@ -213,6 +213,10 @@ function Linked({ me }: { me: HrMe }) {
       </div>
 
       <p className="hr-note">
+        <Link to="profile">My profile and documents</Link>: check your record, upload documents, ask for a correction.{" "}
+        <Link to="expenses">Expense claims</Link>: claim back money spent for work.
+      </p>
+      <p className="hr-note">
         Something wrong at work? <Link to="concern">Raise a concern in confidence</Link>. Only one HR Manager sees it.
       </p>
       <p className="hr-note">

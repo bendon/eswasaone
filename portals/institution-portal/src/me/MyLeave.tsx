@@ -1,16 +1,47 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
-import type { HrMe } from "../api/types";
-import { leaveStatus, fmtRange, StatusPill } from "./parts";
+import type { HrLeaveSummary, HrMe } from "../api/types";
+import { errorText, hrSend } from "../hr/api";
+import { Banner, leaveStatus, fmtRange, StatusPill } from "./parts";
 
-/** E3 My leave — own requests and their status. Live GET /hr/me only. */
+/** Open requests, and approved leave that hasn't started, can be cancelled; the server has the last word. */
+function cancellable(l: HrLeaveSummary): boolean {
+  const s = (l.status || "").toLowerCase();
+  const today = new Date().toISOString().slice(0, 10);
+  return s === "open" || (s === "approved" && Boolean(l.from_date) && (l.from_date as string) > today);
+}
+
+/** E3 My leave: own requests and their status, and cancel. Live GET /hr/me; POST /hr/leave/{id}/cancel. */
 export function MyLeave() {
   const { user, sessionKey } = useInstitution();
   const me = useApiResource<HrMe>("/hr/me", { enabled: Boolean(user), refreshKey: sessionKey });
   const leave = me.data?.leave ?? [];
+  const [cancelling, setCancelling] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+
+  async function cancel(id: string) {
+    setErr(null);
+    if (!reason.trim()) return setErr("Say why you're cancelling. Your approver sees it.");
+    setBusy(true);
+    try {
+      await hrSend(`/hr/leave/${encodeURIComponent(id)}/cancel`, { reason: reason.trim() });
+      setDone("Cancelled. Your approver has been told, and any days taken from your balance are back.");
+      setCancelling(null);
+      setReason("");
+      me.reload();
+    } catch (e) {
+      setErr(errorText(e, "Not cancelled."));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <ResourceGate loading={me.loading} error={me.error} onRetry={me.reload} refreshing={me.refreshing} hasData={Boolean(me.data)}>
@@ -27,6 +58,16 @@ export function MyLeave() {
             </Link>
           </div>
         </div>
+        {err ? (
+          <Banner kind="bad" title="Not cancelled">
+            {err}
+          </Banner>
+        ) : null}
+        {done ? (
+          <p className="page-note" role="status">
+            {done}
+          </p>
+        ) : null}
         {leave.length ? (
           <div className="hr-box hr-scroll">
             <table className="hr-table">
@@ -35,6 +76,7 @@ export function MyLeave() {
                   <th>Kind</th>
                   <th>Dates</th>
                   <th>Status</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -48,6 +90,26 @@ export function MyLeave() {
                       <td>{fmtRange(l.from_date, l.to_date)}</td>
                       <td>
                         <StatusPill cls={s.cls} label={s.label} />
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {cancellable(l) && cancelling !== l.id ? (
+                          <button type="button" className="btn ghost sm" onClick={() => (setCancelling(l.id), setErr(null), setDone(null))}>
+                            Cancel
+                          </button>
+                        ) : null}
+                        {cancelling === l.id ? (
+                          <div className="hr-view" style={{ gap: 6, minWidth: 240 }}>
+                            <input className="hr-in" aria-label="Why are you cancelling?" placeholder="Why are you cancelling?" value={reason} onChange={(e) => setReason(e.target.value)} disabled={busy} />
+                            <div>
+                              <button type="button" className="btn pri sm" disabled={busy} onClick={() => void cancel(l.id)}>
+                                {busy ? "Cancelling…" : "Cancel this leave"}
+                              </button>{" "}
+                              <button type="button" className="btn ghost sm" disabled={busy} onClick={() => (setCancelling(null), setErr(null))}>
+                                Keep it
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
                       </td>
                     </tr>
                   );

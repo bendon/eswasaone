@@ -1075,6 +1075,14 @@ export const router = createBrowserRouter(
                       />
                     ),
                   },
+                  {
+                    path: "profile",
+                    element: <L factory={() => import("./me/sub-views").then((m) => ({ default: m.MyProfile }))} skeleton="panel" />,
+                  },
+                  {
+                    path: "expenses",
+                    element: <L factory={() => import("./me/sub-views").then((m) => ({ default: m.MyExpenses }))} skeleton="list" />,
+                  },
                 ],
               ),
             },

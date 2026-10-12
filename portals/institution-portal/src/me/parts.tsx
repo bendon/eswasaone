@@ -142,3 +142,16 @@ export function fmtDays(n?: number | null): string {
   const v = Number.isInteger(n) ? String(n) : n.toFixed(1);
   return `${v} ${Math.abs(n) === 1 ? "day" : "days"}`;
 }
+
+/** Section tabs (same look as Structure's). The caller keeps the active id. */
+export function Tabs<T extends string>({ tabs, value, onChange, label }: { tabs: Array<[T, string]>; value: T; onChange: (t: T) => void; label: string }) {
+  return (
+    <nav className="hr-struct-tabs" aria-label={label} role="tablist">
+      {tabs.map(([id, text]) => (
+        <button key={id} type="button" role="tab" aria-selected={value === id} className={value === id ? "on" : undefined} onClick={() => onChange(id)}>
+          {text}
+        </button>
+      ))}
+    </nav>
+  );
+}

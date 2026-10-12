@@ -202,7 +202,7 @@
   "options": "\nHead\nHR\nDone",
   "insert_after": "status",
   "read_only": 1,
-  "description": "Head of department, then HR (brief §12.1). Set by EswasaOne.",
+  "description": "Head of department, then HR (brief \u00a712.1). Set by EswasaOne.",
   "name": "Job Requisition-custom_stage"
  },
  {
@@ -227,5 +227,15 @@
   "read_only": 1,
   "description": "Direct: created by EswasaOne to onboard someone hired outside Recruitment.",
   "name": "Job Applicant-custom_source"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employment Type",
+  "fieldname": "custom_required_documents",
+  "label": "Required Documents",
+  "fieldtype": "Table",
+  "options": "Required Document",
+  "insert_after": "employee_type_name",
+  "name": "Employment Type-custom_required_documents"
  }
 ]

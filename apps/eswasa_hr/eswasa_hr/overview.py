@@ -207,6 +207,7 @@ def overview_impl() -> dict[str, Any]:
         "R-H3": ("1 staff authorisation is expiring", "{n} staff authorisations are expiring", "/hr/competence"),
         "R-H4": ("1 competence has thin cover", "{n} competences have thin cover", "/hr/competence"),
         "Late declaration": ("1 declaration unsigned after 10 days", "{n} declarations unsigned after 10 days", "/hr/competence"),
+        "Document expiry": ("1 employee document is expiring", "{n} employee documents are expiring", "/hr/directory"),
     }.items():
         a = alerts.get(rule, {})
         items.append(attention(rule, a.get("count", 0), one, many, href, a.get("due"), "Acknowledge in Approvals once handled.", 2))
@@ -324,6 +325,12 @@ def _receipt_threshold() -> float | None:
     return threshold()
 
 
+def _required_documents() -> int:
+    from eswasa_hr.documents import required_count
+
+    return required_count()
+
+
 def setup_status_impl() -> dict[str, Any]:
     """H14: where HR setup stands, step by step, from live counts."""
     import frappe
@@ -344,6 +351,7 @@ def setup_status_impl() -> dict[str, Any]:
     levels = _count("Property Setter", {"doc_type": "Employee", "property": "permlevel"})
     expense_types = _count("Expense Claim Type")
     receipt_above = _receipt_threshold() if expense_types else None
+    required_docs = _required_documents()
 
     steps = [
         step("organisation", "Organisation", DONE if _count("Company") else TODO, "The company record ESWASA's departments sit under.", "company", desk=True),
@@ -368,8 +376,10 @@ def setup_status_impl() -> dict[str, Any]:
         step("leave", "Leave policy", DONE if policies else PARTIAL if leave_types else AWAITING, f"{leave_types} leave types, {policies} submitted leave policies.",
              "leave-policy", None if policies else "§0.5 #4", desk=True),
         step("competence", "Competence catalogue", DONE if skills else AWAITING, f"{skills} competences in the catalogue.", "/hr/competence", None if skills else "§0.5 #8"),
-        step("documents", "Required documents", DONE if _has("Employee Document") else TODO,
-             "ID, contract, qualifications and the impartiality declaration are kept per person.", "/hr/directory"),
+        step("documents", "Required documents", DONE if required_docs else AWAITING,
+             f"{required_docs} employment types list the documents staff must hold." if required_docs
+             else "No employment type lists required documents yet. ESWASA HR says which documents each type needs and when they expire.",
+             "employment-type", None if required_docs else "ESWASA HR", desk=True),
         step(
             "approvers",
             "Approvers and privacy",

@@ -9,7 +9,7 @@ required_apps = ["frappe", "erpnext", "hrms"]
 
 fixtures = [
     {"dt": "Role", "filters": [["name", "in", ["Eswasa Executive Director"]]]},
-    {"dt": "Print Format", "filters": [["name", "in", ["ESWASA Offer Letter"]]]},
+    {"dt": "Print Format", "filters": [["name", "in", ["ESWASA Offer Letter", "Certificate of Service"]]]},
     {
         "dt": "Custom Field",
         "filters": [
@@ -39,6 +39,7 @@ fixtures = [
                     "Job Requisition-custom_stage",
                     "HR Settings-custom_offer_signatory_role",
                     "Job Applicant-custom_source",
+                    "Employment Type-custom_required_documents",
                 ],
             ]
         ],
@@ -92,6 +93,9 @@ permission_query_conditions = {
     "Appraisal": "eswasa_hr.scope.appraisal_query",
     "Staff Authorisation": "eswasa_hr.scope.authorisation_query",
     "Employee Document": "eswasa_hr.scope.document_query",
+    # Plan 06: HR and the person; exit interviews like cases (HR Managers and the interviewer).
+    "Profile Change Request": "eswasa_hr.profile_changes.query",
+    "Exit Interview": "eswasa_hr.lifecycle.exit_interview_query",
 }
 has_permission = {
     "Employee Grievance": "eswasa_hr.cases.has_permission",
@@ -101,12 +105,14 @@ has_permission = {
     "Appraisal": "eswasa_hr.scope.appraisal_has_permission",
     "Staff Authorisation": "eswasa_hr.scope.authorisation_has_permission",
     "Employee Document": "eswasa_hr.scope.document_has_permission",
+    "Profile Change Request": "eswasa_hr.profile_changes.has_permission",
+    "Exit Interview": "eswasa_hr.lifecycle.exit_interview_has_permission",
 }
 
 after_migrate = ["eswasa_hr.setup.after_migrate"]
 
-# Plan 08: the ESWASA Offer Letter print format reads its data through this.
-jinja = {"methods": ["eswasa_hr.hiring.offer_letter_context"]}
+# Plan 08: the ESWASA Offer Letter print format reads its data through this; plan 06 the Certificate of Service.
+jinja = {"methods": ["eswasa_hr.hiring.offer_letter_context", "eswasa_hr.certificate.certificate_context_for"]}
 
 scheduler_events = {
     "daily": [
@@ -164,4 +170,8 @@ eswasa_approval_handlers = {
     "Establishment Change": "eswasa_hr.establishment.decide",
     # Plan 02: module access requests; the HR page's review calls the same review_impl.
     "Module Access Request": "eswasa_hr.access_requests.decide",
+    # Plan 06: staff corrections to their own record (HR other than the person decides; the change is logged).
+    "Profile Change Request": "eswasa_hr.profile_changes.decide",
+    # Plan 06: the interviewer marks the exit interview held, with a summary.
+    "Exit Interview": "eswasa_hr.lifecycle.decide_exit_interview",
 }

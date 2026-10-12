@@ -1,0 +1,45 @@
+# Profile Change Request — staff ask HR to correct their own record (plan 06, E5 My details).
+
+doctype: Profile Change Request
+module: hr
+workflow_name: Profile Change Request
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: null
+guards: [expected_state, idempotency_key]
+notes: >
+  No Frappe Workflow: eswasa_hr.profile_changes.decide is the approval handler. Only level 1 personal
+  fields and the name parts (with evidence) can be asked for; job and pay fields are refused. One ToDo
+  per named HR Manager / HR User except the person (never a role pool). Approval writes the field and
+  an HR Access Log row ("Profile change {name}"); rejection needs a note.
+
+# PROVISIONAL (brief §12.1; confirm with ESWASA): decided within 3 days by a named HR person.
+sla: {days: 3, calendar: calendar, escalate_to: null, provisional: true}
+
+display:
+  customer: {}
+  staff:
+    Pending: Waiting for HR
+    Approved: Changed
+    Rejected: Not changed
+
+states:
+  - {name: Pending, owner_role: HR User, allow_edit: HR User}
+  - {name: Approved, owner_role: HR User, allow_edit: HR Manager, style: Success}
+  - {name: Rejected, owner_role: HR User, allow_edit: HR Manager, style: Danger}
+
+transitions:
+  - action: Approve
+    from: Pending
+    to: Approved
+    actor: HR User
+    approvals_family: approve
+  - action: Reject
+    from: Pending
+    to: Rejected
+    actor: HR User
+    reason: required
+    approvals_family: approve

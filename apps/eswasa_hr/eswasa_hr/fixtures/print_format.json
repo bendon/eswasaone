@@ -15,5 +15,22 @@
   "margin_right": 15,
   "disabled": 0,
   "html": "{%- set c = offer_letter_context(doc.name) -%}\n<div style=\"font-family: Georgia, 'Times New Roman', serif; color: #1a1a1a; max-width: 720px; margin: 0 auto; font-size: 11pt; line-height: 1.5;\">\n  <p style=\"text-align: right;\">{{ frappe.utils.formatdate(c.offer_date) if c.offer_date else \"\" }}</p>\n  <p><strong>{{ c.applicant_name }}</strong></p>\n  <h3 style=\"margin: 1.5rem 0 1rem;\">Offer of employment: {{ c.designation }}</h3>\n  <table style=\"width: 100%; border-collapse: collapse; margin-bottom: 1rem;\">\n    <tr><td style=\"width: 35%; padding: 4px 0; color: #555;\">Post</td><td>{{ c.designation }}</td></tr>\n    <tr><td style=\"padding: 4px 0; color: #555;\">Department</td><td>{{ c.department or \"To be confirmed\" }}</td></tr>\n    <tr><td style=\"padding: 4px 0; color: #555;\">Grade</td><td>{{ c.grade or \"To be confirmed\" }}</td></tr>\n    <tr><td style=\"padding: 4px 0; color: #555;\">Start date</td><td>{{ c.start_date or \"To be agreed\" }}</td></tr>\n    <tr><td style=\"padding: 4px 0; color: #555;\">Please accept by</td><td>{{ c.accept_by or \"See below\" }}</td></tr>\n    {%- for t in c.terms %}\n    <tr><td style=\"padding: 4px 0; color: #555;\">{{ t.label }}</td><td>{{ t.value }}</td></tr>\n    {%- endfor %}\n  </table>\n  {%- if c.wording %}\n  <div>{{ c.wording }}</div>\n  {%- else %}\n  <p style=\"color: #a15c00;\">{{ c.wording_awaiting }}</p>\n  {%- endif %}\n  {%- if doc.terms %}\n  <div style=\"margin-top: 1rem;\">{{ doc.terms }}</div>\n  {%- endif %}\n  <p style=\"margin-top: 2.5rem;\">Yours sincerely,</p>\n  <p style=\"margin-top: 2.5rem;{% if c.signatory_awaiting %} color: #a15c00;{% endif %}\">{{ c.signatory }}</p>\n</div>"
+ },
+ {
+  "doctype": "Print Format",
+  "module": "Eswasa HR",
+  "standard": "No",
+  "custom_format": 1,
+  "print_format_type": "Jinja",
+  "default_print_language": "en",
+  "font": "Default",
+  "margin_top": 15,
+  "margin_bottom": 15,
+  "margin_left": 15,
+  "margin_right": 15,
+  "disabled": 0,
+  "name": "Certificate of Service",
+  "doc_type": "Employee",
+  "html": "{%- set c = certificate_context_for(doc.name) -%}\n<div style=\"font-family: Georgia, 'Times New Roman', serif; color: #1a1a1a; max-width: 720px; margin: 0 auto; font-size: 11pt; line-height: 1.5;\">\n  <p style=\"text-align: right;\">{{ frappe.utils.formatdate(frappe.utils.nowdate()) }}</p>\n  <h3 style=\"margin: 1.5rem 0 1rem;\">Certificate of service</h3>\n  <table style=\"width: 100%; border-collapse: collapse; margin-bottom: 1rem;\">\n    <tr><td style=\"width: 35%; padding: 4px 0; color: #555;\">Name</td><td>{{ c.employee_name }}</td></tr>\n    <tr><td style=\"padding: 4px 0; color: #555;\">Staff number</td><td>{{ c.employee_number }}</td></tr>\n    <tr><td style=\"padding: 4px 0; color: #555;\">Date of joining</td><td>{{ frappe.utils.formatdate(c.date_of_joining) if c.date_of_joining else \"\" }}</td></tr>\n    <tr><td style=\"padding: 4px 0; color: #555;\">Last day of service</td><td>{{ frappe.utils.formatdate(c.relieving_date) if c.relieving_date and not c.still_employed else \"Still employed\" }}</td></tr>\n  </table>\n  <p style=\"margin: 1rem 0 0.25rem; color: #555;\">Posts held</p>\n  <table style=\"width: 100%; border-collapse: collapse; margin-bottom: 1rem;\">\n    {%- for p in c.posts %}\n    <tr>\n      <td style=\"width: 50%; padding: 4px 0;\">{{ p.designation or \"\" }}</td>\n      <td>{{ frappe.utils.formatdate(p.from_date) if p.from_date else \"\" }} to {{ frappe.utils.formatdate(p.to_date) if p.to_date else \"date\" }}</td>\n    </tr>\n    {%- endfor %}\n  </table>\n  {%- if c.wording %}\n  <div>{{ c.wording }}</div>\n  {%- else %}\n  <p style=\"color: #a15c00;\">{{ c.wording_awaiting }}</p>\n  {%- endif %}\n  <p style=\"margin-top: 2.5rem;{% if c.signatory_awaiting %} color: #a15c00;{% endif %}\">{{ c.signatory }}</p>\n</div>\n"
  }
 ]

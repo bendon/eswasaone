@@ -21,6 +21,7 @@ def daily() -> None:
     rl1_leave_escalation()
     expense_escalation()
     recruitment_reminders()
+    document_expiry_alerts()
 
 
 def rh7_integrity() -> dict:
@@ -133,3 +134,10 @@ def recruitment_reminders() -> int:
     from eswasa_hr.hiring import remind_due
 
     return remind_due()
+
+
+def document_expiry_alerts() -> int:
+    """Plan 06: employee documents at their alert days before expiry, and on the day they expire."""
+    from eswasa_hr.documents import expiry_alerts
+
+    return expiry_alerts()

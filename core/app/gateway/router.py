@@ -160,6 +160,11 @@ from app.schemas import (
     HrLeaveCalendar,
     HrExpenseClaim,
     HrExpenseClaimBody,
+    HrEmployeeDocuments,
+    HrEmployeeRecord,
+    HrProfileChange,
+    HrProfileChangeBody,
+    HrProfileChanges,
     HrExpenseClaims,
     HrLeaveCancelBody,
     HrLeavePolicy,
@@ -3493,25 +3498,19 @@ async def list_hr_employees(
         raise  # pragma: no cover
 
 
-@router.get("/hr/employees/{employee_id}", response_model=HrEmployeeSummary, tags=["hr"])
+def _as_hr_record(raw: dict[str, Any]) -> HrEmployeeRecord:
+    """The record keeps HrEmployeeSummary's fields (email, initials, desk_path) as a subset (plan 06)."""
+    return HrEmployeeRecord.model_validate({**raw, **_as_hr_employee(raw).model_dump()})
+
+
+@router.get("/hr/employees/{employee_id}", response_model=HrEmployeeRecord, tags=["hr"])
 async def get_hr_employee(
     employee_id: str,
     auth: Annotated[AuthContext, Depends(require_auth)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-) -> HrEmployeeSummary:
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    try:
-        raw = await _frappe_get_doc(auth.frappe(frappe), "Employee", employee_id)
-        if not raw:
-            raise HTTPException(status_code=404, detail="Employee not found")
-        return _as_hr_employee(raw)
-    except FrappeError as exc:
-        text = str(exc)
-        if "DoesNotExistError" in text or "not found" in text.lower():
-            raise HTTPException(status_code=404, detail="Employee not found") from exc
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+) -> HrEmployeeRecord:
+    """The full person record (H1b, brief §12.2), scoped and job fields only, from eswasa_hr.record."""
+    return _as_hr_record(await _hr_call(auth, frappe, f"{_RECORD}.record", params={"employee": employee_id}))
 
 
 @router.post(
@@ -3784,6 +3783,179 @@ async def submit_my_expense_claim(
     )
     return await _hr_write(auth, frappe, f"{_EXPENSES}.submit",
                            json={"lines": lines, "description": body.description, "attachments": attachments, "confirm": True})
+
+
+_RECORD = "eswasa_hr.record"
+_DOCS = "eswasa_hr.documents"
+_PROFILE = "eswasa_hr.profile_changes"
+_DOC_TYPES = {"application/pdf", "image/jpeg", "image/png"}
+_DOC_MAX_BYTES = 5 * 1024 * 1024  # as the careers CV
+
+
+@router.get("/hr/me/record", response_model=HrEmployeeRecord, tags=["hr"])
+async def get_my_hr_record(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEmployeeRecord:
+    """E5 My details: the caller's own record (job fields only)."""
+    return _as_hr_record(await _hr_call(auth, frappe, f"{_RECORD}.my_record"))
+
+
+async def _store_document(file: UploadFile, store: MediaStore) -> str:
+    """Plan 06 upload pattern (S8 reuses it): PDF or image, 5 MB, kept privately; Frappe keeps the media key."""
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=422, detail="Attach the file.")
+    if len(data) > _DOC_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="The file must be 5 MB or smaller.")
+    if (file.content_type or "") not in _DOC_TYPES:
+        raise HTTPException(status_code=415, detail="Send the document as a PDF or an image (JPEG or PNG).")
+    try:
+        return store.put_bytes(data, filename=file.filename, content_type=file.content_type, prefix="hr/documents").key
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/hr/employees/{employee_id}/documents", response_model=HrEmployeeDocuments, tags=["hr"])
+async def list_employee_documents(
+    employee_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEmployeeDocuments:
+    """A person's documents and the required ones missing. File links only for HR and the person."""
+    return HrEmployeeDocuments.model_validate(await _hr_call(auth, frappe, f"{_DOCS}.documents", params={"employee": employee_id}))
+
+
+@router.post("/hr/employees/{employee_id}/documents", response_model=HrEmployeeDocuments, tags=["hr"])
+async def upload_employee_document(
+    employee_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    store: Annotated[MediaStore, Depends(get_media_store)],
+    document_type: Annotated[str, Form()],
+    file: Annotated[UploadFile, File()],
+    confirm: Annotated[bool, Form()] = False,
+    expires_on: Annotated[str | None, Form()] = None,
+) -> HrEmployeeDocuments:
+    """HR adds a document to someone's record (or the person to their own). Rules live in eswasa_hr.documents."""
+    _require_confirm(confirm)
+    key = await _store_document(file, store)
+    audit_log(action="hr.document.upload", actor=auth.user.username, resource=f"Employee:{employee_id}",
+              detail={"document_type": document_type, "file": key}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_DOCS}.upload",
+                          json={"employee": employee_id, "document_type": document_type, "file": key, "expires_on": expires_on or None, "confirm": True})
+    return HrEmployeeDocuments.model_validate(raw)
+
+
+@router.get("/hr/me/documents", response_model=HrEmployeeDocuments, tags=["hr"])
+async def list_my_documents(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEmployeeDocuments:
+    return HrEmployeeDocuments.model_validate(await _hr_call(auth, frappe, f"{_DOCS}.my_documents"))
+
+
+@router.post("/hr/me/documents", response_model=HrEmployeeDocuments, tags=["hr"])
+async def upload_my_document(
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    store: Annotated[MediaStore, Depends(get_media_store)],
+    document_type: Annotated[str, Form()],
+    file: Annotated[UploadFile, File()],
+    confirm: Annotated[bool, Form()] = False,
+    expires_on: Annotated[str | None, Form()] = None,
+) -> HrEmployeeDocuments:
+    """Add a document to your own record. It shows as "To check" until someone else in HR verifies it."""
+    _require_confirm(confirm)
+    key = await _store_document(file, store)
+    audit_log(action="hr.document.upload_own", actor=auth.user.username, resource="Employee Document",
+              detail={"document_type": document_type, "file": key}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_DOCS}.upload_mine",
+                          json={"document_type": document_type, "file": key, "expires_on": expires_on or None, "confirm": True})
+    return HrEmployeeDocuments.model_validate(raw)
+
+
+@router.post("/hr/documents/{name}/verify", response_model=HrEmployeeDocuments, tags=["hr"])
+async def verify_employee_document(
+    name: str,
+    body: HrConfirmBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEmployeeDocuments:
+    """HR verifies a document someone else uploaded (four-eyes in eswasa_hr.documents)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.document.verify", actor=auth.user.username, resource=f"Employee Document:{name}", detail={}, confirmed=True)
+    return HrEmployeeDocuments.model_validate(await _hr_write(auth, frappe, f"{_DOCS}.verify", json={"name": name, "confirm": True}))
+
+
+@router.get("/hr/documents/{name}/file", tags=["hr"])
+async def download_employee_document(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    store: Annotated[MediaStore, Depends(get_media_store)],
+) -> Response:
+    """The stored file. HR and the person only: eswasa_hr refuses anyone else before the file is read. Audited."""
+    raw = await _hr_call(auth, frappe, f"{_DOCS}.file_link", params={"name": name}) or {}
+    key = str(raw.get("file") or "")
+    if not key:
+        raise HTTPException(status_code=404, detail="No file on this document")
+    if key.startswith(("http://", "https://", "/files/", "/private/")):
+        return Response(status_code=307, headers={"Location": key})
+    try:
+        body, ctype = store.get_bytes(key)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Document file not found") from exc
+    audit_log(action="hr.document.viewed", actor=auth.user.username, resource=f"Employee Document:{name}",
+              detail={"employee": raw.get("employee")}, confirmed=True)
+    return Response(content=body, media_type=ctype,
+                    headers={"Content-Disposition": f'inline; filename="{quote(name)}"', "Cache-Control": "private, no-store"})
+
+
+@router.get("/hr/me/profile-changes", response_model=HrProfileChanges, tags=["hr"])
+async def list_my_profile_changes(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrProfileChanges:
+    """E5: your correction requests and where each one is. HR decides them in Approvals."""
+    return HrProfileChanges(items=[HrProfileChange.model_validate(r) for r in (await _hr_call(auth, frappe, f"{_PROFILE}.mine") or [])])
+
+
+@router.post("/hr/me/profile-changes", response_model=HrProfileChange, tags=["hr"])
+async def request_profile_change(
+    body: HrProfileChangeBody,
+    request: Request,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrProfileChange:
+    """Ask HR to correct a personal detail or the spelling of your name. Job and pay fields are refused in eswasa_hr."""
+    _require_confirm(body.confirm)
+    evidence = _absolute_attachment(body.evidence, request) if body.evidence else None
+    audit_log(action="hr.profile_change.request", actor=auth.user.username, resource="Profile Change Request",
+              detail={"field": body.field, "evidence": bool(evidence)}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_PROFILE}.submit",
+                          json={"field": body.field, "requested_value": body.requested_value, "reason": body.reason, "evidence": evidence, "confirm": True})
+    return HrProfileChange.model_validate(raw)
+
+
+@router.get("/hr/employees/{employee_id}/certificate-of-service", tags=["hr"])
+async def get_certificate_of_service(
+    employee_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> Response:
+    """The certificate of service PDF (print format Certificate of Service). HR only, enforced in eswasa_hr; audited."""
+    raw = await _hr_call(auth, frappe, "eswasa_hr.certificate.certificate", params={"employee": employee_id}) or {}
+    try:
+        pdf = base64.b64decode(str(raw.get("content") or ""), validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(status_code=502, detail="The certificate couldn't be printed.") from exc
+    if not pdf:
+        raise HTTPException(status_code=502, detail="The certificate couldn't be printed.")
+    audit_log(action="hr.certificate_of_service", actor=auth.user.username, resource=f"Employee:{employee_id}", detail={"bytes": len(pdf)}, confirmed=True)
+    filename = str(raw.get("file_name") or f"Certificate of service {employee_id}.pdf")
+    return Response(content=pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'inline; filename="{quote(filename)}"', "Cache-Control": "private, no-store"})
 
 
 _LEAVE_APP = "hrms.hr.doctype.leave_application.leave_application"

@@ -87,6 +87,16 @@ def default_offboarding(hr_user: str | None, manager_user: str | None) -> list[d
     return [{"activity_name": n, "group": g, "user": owners[k]} for k, n, g in DEFAULT_OFFBOARDING]
 
 
+def interview_date(last_day: Any, today: date) -> date:
+    """The working day before the last day, but never in the past."""
+    end = _d(last_day) or today
+    return max(today, date.fromordinal(end.toordinal() - 1))
+
+
+def exit_title(employee_name: str) -> str:
+    return f"Hold exit interview with {employee_name}"
+
+
 def reassigned_description(original: str, leaver: str, last_day: date) -> str:
     return f"{original} [Moved from {leaver}, who left on {last_day.day} {last_day.strftime('%b %Y')}]"
 
@@ -257,6 +267,8 @@ def decide_change(name: str, action: str, comment: str | None = None, doctype: s
         submitted = effective is not None and effective <= _today()
         if submitted:
             doc.submit()
+            if dt == SEPARATION:
+                start_exit_interview(doc)
         state = "Approved" + ("" if submitted else f", takes effect {effective.isoformat()}")
     elif key in ("reject", "return"):
         if not note:
@@ -288,11 +300,121 @@ decide_transfer = _handler(TRANSFER)
 decide_separation = _handler(SEPARATION)
 
 
-def changes_impl(employee: str) -> dict[str, Any]:
-    """Pending and past changes for one person (record History tab)."""
+EXIT = "Exit Interview"  # HRMS DocType
+EXIT_ROLES = ("HR Manager", "System Manager")
+
+
+def start_exit_interview(sep: Any) -> str | None:
+    """On an approved separation: an HRMS Exit Interview with the HR person who prepared the separation as the
+    interviewer (its owner), dated the day before the last day. The questionnaire is ESWASA's to supply; until
+    then the interviewer writes a free-text summary when closing the Approvals card. Fields are set only where
+    the installed HRMS has them."""
     import frappe
 
+    if not frappe.db.exists("DocType", EXIT):
+        return None
+    existing = frappe.db.get_value(EXIT, {"employee": sep.employee, "docstatus": ["<", 2]}, "name")
+    if existing:
+        return existing
+    e = _employee(sep.employee)
+    on = interview_date(e.get("relieving_date"), _today())
+    interviewer = sep.owner
+    meta = frappe.get_meta(EXIT)
+    values = {"doctype": EXIT, "employee": sep.employee, "date": on.isoformat(), "owner": interviewer}
+    for field, value in (("employee_name", e["employee_name"]), ("company", e.get("company")), ("department", e.get("department")),
+                         ("designation", e.get("designation")), ("reports_to", e.get("reports_to")), ("relieving_date", e.get("relieving_date")),
+                         ("ref_doctype", SEPARATION), ("reference_document_name", sep.name)):
+        if value not in (None, "") and meta.has_field(field):
+            values[field] = value
+    d = frappe.get_doc(values)
+    d.insert(ignore_permissions=True)
+    frappe.get_doc(
+        {
+            "doctype": "ToDo",
+            "allocated_to": interviewer,
+            "description": exit_title(e["employee_name"]),
+            "reference_type": EXIT,
+            "reference_name": d.name,
+            "status": "Open",
+            "priority": "Medium",
+            "assigned_by": frappe.session.user,
+            "date": on.isoformat(),
+        }
+    ).insert(ignore_permissions=True)
+    _link_exit_task(sep, d.name)
+    return d.name
+
+
+def _link_exit_task(sep: Any, interview: str) -> None:
+    """Point the offboarding "Exit interview" task at the interview record (best effort: tasks come from HRMS)."""
+    import frappe
+
+    project = sep.get("project") if hasattr(sep, "get") else getattr(sep, "project", None)
+    if not project:
+        return
+    for t in frappe.get_all("Task", filters={"project": project, "subject": ["like", "Exit interview%"]}, fields=["name", "description"], limit=0):
+        note = f"Exit Interview {interview}"
+        if note not in (t.get("description") or ""):
+            frappe.db.set_value("Task", t["name"], "description", ((t.get("description") or "") + f"\n{note}").strip())
+
+
+def decide_exit_interview(name: str, action: str, comment: str | None = None) -> dict[str, Any]:
+    """Approvals handler: the interviewer (or an HR Manager) records that the interview was held, with a summary."""
+    import frappe
+
+    doc = frappe.get_doc(EXIT, name)
+    roles = set(frappe.get_roles())
+    if doc.owner != frappe.session.user and not roles & set(EXIT_ROLES):
+        frappe.throw("Only the interviewer or an HR Manager can close this.", frappe.PermissionError)
+    note = (comment or "").strip()
+    if (action or "").strip().lower() not in ("approve", "done", "acknowledge"):
+        frappe.throw("Mark the interview as held.", frappe.ValidationError)
+    if not note:
+        frappe.throw("Write a short summary of the interview.", frappe.ValidationError)
+    meta = frappe.get_meta(EXIT)
+    changes: dict[str, Any] = {}
+    if meta.has_field("interview_summary"):
+        changes["interview_summary"] = note
+    if meta.has_field("status"):
+        changes["status"] = "Completed"
+    if changes:
+        frappe.db.set_value(EXIT, name, changes)
+    if not meta.has_field("interview_summary"):
+        doc.add_comment("Comment", note)
+    _close(EXIT, name)
+    return {"ok": True, "doctype": EXIT, "name": name, "action": action, "workflow_action": None, "status": "Held", "message": "Exit interview: held"}
+
+
+def exit_interview_query(user: str | None = None, doctype: str | None = None) -> str:
+    """Like cases: HR Managers and the interviewer only; no line-manager or HR User read."""
+    import frappe
+
+    user = user or frappe.session.user
+    if set(frappe.get_roles(user)) & set(EXIT_ROLES):
+        return ""
+    return f"`tab{EXIT}`.`owner` = {frappe.db.escape(user)}"
+
+
+def exit_interview_has_permission(doc: Any, ptype: str | None = None, user: str | None = None, **kwargs: Any) -> bool:
+    import frappe
+
+    user = user or frappe.session.user
+    if set(frappe.get_roles(user)) & set(EXIT_ROLES):
+        return True
+    owner = doc.get("owner") if isinstance(doc, dict) else getattr(doc, "owner", None)
+    return not owner or owner == user
+
+
+def changes_impl(employee: str) -> dict[str, Any]:
+    """Pending and past changes for one person (record History tab). HR only."""
     _require_hr()
+    return history(employee)
+
+
+def history(employee: str) -> dict[str, Any]:
+    """The History rows without the HR check; callers check scope (eswasa_hr.record)."""
+    import frappe
+
     items = []
     for dt, date_field, rows_field in ((PROMOTION, "promotion_date", "promotion_details"), (TRANSFER, "transfer_date", "transfer_details")):
         for r in frappe.get_all(dt, filters={"employee": employee, "docstatus": ["<", 2]}, fields=["name", date_field, "docstatus", "custom_approved_by", "owner"], order_by=f"{date_field} desc", limit=20):

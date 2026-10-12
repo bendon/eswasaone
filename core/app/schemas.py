@@ -1967,6 +1967,104 @@ class HrExpenseClaimBody(BaseModel):
     confirm: bool = False
 
 
+class HrEmployeeDocument(BaseModel):
+    """Plan 06. ``file`` (a private media key) only for HR and the person; None for a line manager."""
+
+    id: str
+    employee: str | None = None
+    document_type: str
+    expires_on: str | None = None
+    status: str  # To check | Verified | Expired
+    required: bool = False
+    uploaded_by: str | None = None
+    uploaded_on: str | None = None
+    verified_by: str | None = None
+    file: str | None = None
+
+
+class HrEmployeeDocuments(BaseModel):
+    employee: str
+    employee_name: str | None = None
+    items: list[HrEmployeeDocument] = Field(default_factory=list)
+    missing: list[str] = Field(default_factory=list)  # required for the person's employment type, not held
+    required_set: bool = False  # False until ESWASA lists required documents for this employment type
+
+
+class HrRecordDocuments(BaseModel):
+    items: list[HrEmployeeDocument] = Field(default_factory=list)
+    missing: list[str] = Field(default_factory=list)
+    required_set: bool = False
+
+
+class HrRecordLeave(BaseModel):
+    balances: list[HrLeaveBalance] = Field(default_factory=list)
+    awaiting: str | None = None
+    next: dict[str, Any] | None = None  # {leave_type, from_date, to_date}
+
+
+class HrRecordContract(BaseModel):
+    employment_type: str | None = None
+    contract_end_date: str | None = None
+    pending: str | None = None
+
+
+class HrRecordOpenItem(BaseModel):
+    kind: str  # probation | declaration | appraisal | change
+    title: str
+    due: str | None = None
+    reference: str | None = None
+
+
+class HrEmployeeRecord(HrEmployeeSummary):
+    """GET /hr/employees/{id}, /hr/me/record (plan 06, brief §12.2). HrEmployeeSummary's fields plus the record.
+    Job fields only: protected fields open through /sensitive with a reason."""
+
+    viewer: str | None = None  # hr | self | manager
+    employee_number: str | None = None
+    grade: str | None = None
+    branch: str | None = None
+    employment_type: str | None = None
+    scheduled_confirmation_date: str | None = None
+    final_confirmation_date: str | None = None
+    contract_end_date: str | None = None
+    relieving_date: str | None = None
+    reports_to_name: str | None = None
+    leave: HrRecordLeave = Field(default_factory=HrRecordLeave)
+    authorisations: list[HrAuthorisationRow] = Field(default_factory=list)
+    documents: HrRecordDocuments = Field(default_factory=HrRecordDocuments)
+    history: list[HrChangeItem] = Field(default_factory=list)
+    contract: HrRecordContract = Field(default_factory=HrRecordContract)
+    open_items: list[HrRecordOpenItem] = Field(default_factory=list)
+
+
+class HrProfileChange(BaseModel):
+    id: str
+    employee: str | None = None
+    employee_name: str | None = None
+    field: str
+    field_label: str | None = None
+    current_value: str | None = None
+    requested_value: str | None = None
+    reason: str | None = None
+    has_evidence: bool = False
+    status: str  # Pending | Approved | Rejected
+    decided_by: str | None = None
+    note: str | None = None
+    requested_on: str | None = None
+
+
+class HrProfileChanges(BaseModel):
+    items: list[HrProfileChange] = Field(default_factory=list)
+
+
+class HrProfileChangeBody(BaseModel):
+    field: str
+    requested_value: str
+    reason: str
+    evidence: str | None = None  # an uploaded file's link (POST /api/media); required for a name change
+    confirm: bool = False
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

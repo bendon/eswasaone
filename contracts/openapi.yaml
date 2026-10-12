@@ -2323,7 +2323,7 @@ paths:
     get:
       tags: [hr]
       operationId: getHrEmployee
-      summary: One person's summary
+      summary: The full person record (H1b, brief §12.2) for HR, the person or their line manager. HrEmployeeSummary's fields plus job, leave, authorisations, documents, history, contract and open items; never protected fields
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: employee_id, in: path, required: true, schema: { type: string } }
@@ -2332,7 +2332,9 @@ paths:
           description: OK
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/HrEmployeeSummary" }
+              schema: { $ref: "#/components/schemas/HrEmployeeRecord" }
+        "403":
+          description: Out of scope (plain text)
         "404":
           description: Not found
     patch:
@@ -2355,6 +2357,226 @@ paths:
               schema: { $ref: "#/components/schemas/HrEmployeeSummary" }
         "422":
           description: Rule failed (plain text)
+
+  /hr/me/record:
+    get:
+      tags: [hr]
+      operationId: getMyHrRecord
+      summary: E5 My details, the caller's own record (job fields only; protected details open through /sensitive with a reason)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: The record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeRecord" }
+        "404":
+          description: Login not linked to an employee (plain text)
+        "503":
+          description: Frappe unavailable
+
+  /hr/employees/{employee_id}/documents:
+    get:
+      tags: [hr]
+      operationId: listHrEmployeeDocuments
+      summary: A person's documents and the required ones missing. HR, the person and their line manager; file links only for HR and the person
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Documents
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeDocuments" }
+        "403":
+          description: Out of scope (plain text)
+        "503":
+          description: Frappe unavailable
+    post:
+      tags: [hr]
+      operationId: uploadHrEmployeeDocument
+      summary: HR adds a document (verified by that HR person); the person adding their own lands as "To check". PDF or image, 5 MB, stored privately
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [document_type, file, confirm]
+              properties:
+                document_type: { type: string, enum: [ID, Contract, Qualification, Impartiality declaration, Work permit, Professional registration, Other] }
+                file: { type: string, format: binary }
+                expires_on: { type: string, format: date }
+                confirm: { type: boolean }
+      responses:
+        "200":
+          description: Documents after the upload
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeDocuments" }
+        "400":
+          description: confirm=true required
+        "403":
+          description: Not HR and not your own record (plain text)
+        "413":
+          description: Larger than 5 MB
+        "415":
+          description: Not a PDF or image
+        "422":
+          description: Rule failed (plain text)
+
+  /hr/me/documents:
+    get:
+      tags: [hr]
+      operationId: listMyHrDocuments
+      summary: The caller's own documents, with file links, and the required ones missing
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Documents
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeDocuments" }
+        "503":
+          description: Frappe unavailable
+    post:
+      tags: [hr]
+      operationId: uploadMyHrDocument
+      summary: Add a document to your own record. It shows as "To check" until someone else in HR verifies it
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [document_type, file, confirm]
+              properties:
+                document_type: { type: string }
+                file: { type: string, format: binary }
+                expires_on: { type: string, format: date }
+                confirm: { type: boolean }
+      responses:
+        "200":
+          description: Documents after the upload
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeDocuments" }
+        "400":
+          description: confirm=true required
+        "413":
+          description: Larger than 5 MB
+        "415":
+          description: Not a PDF or image
+        "422":
+          description: Rule failed (plain text)
+
+  /hr/documents/{name}/verify:
+    post:
+      tags: [hr]
+      operationId: verifyHrDocument
+      summary: HR Manager or HR User verifies a document someone else uploaded
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrConfirmBody" }
+      responses:
+        "200":
+          description: The person's documents
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeDocuments" }
+        "400":
+          description: confirm=true required
+        "403":
+          description: Not HR, or you uploaded it (plain text)
+        "422":
+          description: Already verified (plain text)
+
+  /hr/documents/{name}/file:
+    get:
+      tags: [hr]
+      operationId: getHrDocumentFile
+      summary: The stored file. HR and the person only, checked in eswasa_hr before the file is read; audited
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The file
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+            image/*:
+              schema: { type: string, format: binary }
+        "403":
+          description: Not HR and not the person (plain text)
+        "404":
+          description: No file
+
+  /hr/me/profile-changes:
+    get:
+      tags: [hr]
+      operationId: listMyProfileChanges
+      summary: E5, your correction requests and where each one is (HR decides them in Approvals)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Requests
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrProfileChanges" }
+        "503":
+          description: Frappe unavailable
+    post:
+      tags: [hr]
+      operationId: requestProfileChange
+      summary: Ask HR to correct a personal detail or your name's spelling (evidence required for a name). Job and pay fields are refused
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrProfileChangeBody" }
+      responses:
+        "200":
+          description: Request created and routed to named HR people
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrProfileChange" }
+        "400":
+          description: confirm=true required
+        "422":
+          description: Rule failed (plain text)
+
+  /hr/employees/{employee_id}/certificate-of-service:
+    get:
+      tags: [hr]
+      operationId: getHrCertificateOfService
+      summary: The certificate of service as a PDF (print format Certificate of Service; no pay, no reason for leaving). HR only; audited. Wording reads "awaiting ESWASA HR" until supplied
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "403":
+          description: Not HR (plain text)
+        "502":
+          description: The certificate couldn't be printed
+        "503":
+          description: Frappe unavailable
 
   /hr/leave:
     get:
@@ -8447,6 +8669,440 @@ components:
           type: array
       required: [id, status]
       title: HrExpenseClaim
+      type: object
+    HrEmployeeDocument:
+      description: Plan 06. ``file`` (a private media key) only for HR and the person; None for a line manager.
+      properties:
+        id:
+          title: Id
+          type: string
+        employee:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employee
+        document_type:
+          title: Document Type
+          type: string
+        expires_on:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Expires On
+        status:
+          title: Status
+          type: string
+        required:
+          default: false
+          title: Required
+          type: boolean
+        uploaded_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Uploaded By
+        uploaded_on:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Uploaded On
+        verified_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Verified By
+        file:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: File
+      required:
+      - id
+      - document_type
+      - status
+      title: HrEmployeeDocument
+      type: object
+    HrEmployeeDocuments:
+      properties:
+        employee:
+          title: Employee
+          type: string
+        employee_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employee Name
+        items:
+          items:
+            $ref: '#/components/schemas/HrEmployeeDocument'
+          title: Items
+          type: array
+        missing:
+          items:
+            type: string
+          title: Missing
+          type: array
+        required_set:
+          default: false
+          title: Required Set
+          type: boolean
+      required:
+      - employee
+      title: HrEmployeeDocuments
+      type: object
+    HrRecordDocuments:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/HrEmployeeDocument'
+          title: Items
+          type: array
+        missing:
+          items:
+            type: string
+          title: Missing
+          type: array
+        required_set:
+          default: false
+          title: Required Set
+          type: boolean
+      title: HrRecordDocuments
+      type: object
+    HrRecordLeave:
+      properties:
+        balances:
+          items:
+            $ref: '#/components/schemas/HrLeaveBalance'
+          title: Balances
+          type: array
+        awaiting:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Awaiting
+        next:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          default: null
+          title: Next
+      title: HrRecordLeave
+      type: object
+    HrRecordContract:
+      properties:
+        employment_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employment Type
+        contract_end_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Contract End Date
+        pending:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Pending
+      title: HrRecordContract
+      type: object
+    HrRecordOpenItem:
+      properties:
+        kind:
+          title: Kind
+          type: string
+        title:
+          title: Title
+          type: string
+        due:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Due
+        reference:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Reference
+      required:
+      - kind
+      - title
+      title: HrRecordOpenItem
+      type: object
+    HrEmployeeRecord:
+      description: "GET /hr/employees/{id}, /hr/me/record (plan 06, brief \xA712.2). HrEmployeeSummary's fields plus the record.\nJob fields only: protected fields open through /sensitive with a reason."
+      properties:
+        id:
+          title: Id
+          type: string
+        employee_name:
+          title: Employee Name
+          type: string
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Department
+        designation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Designation
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Status
+        date_of_joining:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Date Of Joining
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        initials:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Initials
+        reports_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Reports To
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: User Id
+        desk_path:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Desk Path
+        viewer:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Viewer
+        employee_number:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employee Number
+        grade:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Grade
+        branch:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Branch
+        employment_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employment Type
+        scheduled_confirmation_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scheduled Confirmation Date
+        final_confirmation_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Final Confirmation Date
+        contract_end_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Contract End Date
+        relieving_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Relieving Date
+        reports_to_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Reports To Name
+        leave:
+          $ref: '#/components/schemas/HrRecordLeave'
+        authorisations:
+          items:
+            $ref: '#/components/schemas/HrAuthorisationRow'
+          title: Authorisations
+          type: array
+        documents:
+          $ref: '#/components/schemas/HrRecordDocuments'
+        history:
+          items:
+            $ref: '#/components/schemas/HrChangeItem'
+          title: History
+          type: array
+        contract:
+          $ref: '#/components/schemas/HrRecordContract'
+        open_items:
+          items:
+            $ref: '#/components/schemas/HrRecordOpenItem'
+          title: Open Items
+          type: array
+      required:
+      - id
+      - employee_name
+      title: HrEmployeeRecord
+      type: object
+    HrProfileChange:
+      properties:
+        id:
+          title: Id
+          type: string
+        employee:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employee
+        employee_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employee Name
+        field:
+          title: Field
+          type: string
+        field_label:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Field Label
+        current_value:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Current Value
+        requested_value:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Requested Value
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Reason
+        has_evidence:
+          default: false
+          title: Has Evidence
+          type: boolean
+        status:
+          title: Status
+          type: string
+        decided_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Decided By
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Note
+        requested_on:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Requested On
+      required:
+      - id
+      - field
+      - status
+      title: HrProfileChange
+      type: object
+    HrProfileChanges:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/HrProfileChange'
+          title: Items
+          type: array
+      title: HrProfileChanges
+      type: object
+    HrProfileChangeBody:
+      properties:
+        field:
+          title: Field
+          type: string
+        requested_value:
+          title: Requested Value
+          type: string
+        reason:
+          title: Reason
+          type: string
+        evidence:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Evidence
+        confirm:
+          default: false
+          title: Confirm
+          type: boolean
+      required:
+      - field
+      - requested_value
+      - reason
+      title: HrProfileChangeBody
       type: object
     HrExpenseClaims:
       properties:

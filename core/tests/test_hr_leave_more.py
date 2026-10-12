@@ -127,3 +127,30 @@ async def test_cancel_refusal_text_reaches_the_screen(client: AsyncClient, monke
     r = await client.post("/api/hr/leave/HR-LAP-002/cancel", json={"reason": "Back early", "confirm": True})
     assert r.status_code == 422, r.text
     assert "has started" in r.text
+
+
+@pytest.mark.asyncio
+async def test_new_request_goes_through_eswasa_hr(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Plan 01 sweep: POST /hr/leave no longer inserts raw; eswasa_hr.leave.apply binds the caller's own record."""
+    created = {"name": "HR-LAP-009", "employee": "EMP-44", "employee_name": "Thandi Mamba", "leave_type": "Annual",
+               "from_date": "2026-11-02", "to_date": "2026-11-03", "status": "Open"}
+    calls = _frappe(monkeypatch, lambda m: created)
+    body = {"leave_type": "Annual", "from_date": "2026-11-02", "to_date": "2026-11-03", "reason": "Family", "confirm": True}
+    r = await client.post("/api/hr/leave", json=body)
+    assert r.status_code == 201, r.text
+    assert r.json() == {"id": "HR-LAP-009", "employee": "Thandi Mamba", "leave_type": "Annual",
+                        "from_date": "2026-11-02", "to_date": "2026-11-03", "status": "Open"}
+    assert calls == [("eswasa_hr.leave.apply", {"leave_type": "Annual", "from_date": "2026-11-02", "to_date": "2026-11-03",
+                                                "reason": "Family", "confirm": True})]
+
+
+@pytest.mark.asyncio
+async def test_new_request_rule_comes_back_as_422(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    def refuse(method: str) -> Any:
+        raise FrappeError('Frappe POST failed: {"exception": "frappe.exceptions.ValidationError: The last day can\'t be before the first day."}',
+                          status_code=417)
+
+    _frappe(monkeypatch, refuse)
+    r = await client.post("/api/hr/leave", json={"leave_type": "Annual", "from_date": "2026-11-03", "to_date": "2026-11-02", "confirm": True})
+    assert r.status_code == 422, r.text
+    assert "last day" in r.text

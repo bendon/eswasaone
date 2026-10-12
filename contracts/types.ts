@@ -2373,7 +2373,7 @@ export interface paths {
         /** Leave requests the caller can see (eswasa_hr.leave.requests scope) */
         get: operations["listHrLeave"];
         put?: never;
-        /** Apply for leave as the signed-in employee */
+        /** Apply for leave as the signed-in employee (eswasa_hr.leave.apply; always their own record and named leave approver; a broken rule is 422 with the reason) */
         post: operations["createHrLeave"];
         delete?: never;
         options?: never;
@@ -12439,6 +12439,20 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HrLeaveSummary"];
                 };
+            };
+            /** @description The login isn't linked to an Active employee record */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rule failed (plain text), from eswasa_hr or HRMS (balance, overlap, holiday) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

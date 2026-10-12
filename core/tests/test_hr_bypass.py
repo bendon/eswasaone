@@ -224,7 +224,6 @@ WRITE_HELPERS = {"_frappe_insert", "_frappe_set_value", "_frappe_delete"}
 WRITE_METHODS = {"frappe.client.insert", "frappe.client.set_value", "frappe.client.delete", "frappe.client.submit", "frappe.client.save"}
 # Each entry says why the raw write is acceptable.
 ALLOWED = {
-    "create_hr_leave": "the applicant's own request; HRMS validation and eswasa_hr.leave.sync_todo apply (plan 03 revisits)",
     "assign_hr_department_head": "the one place a department head is set (plan 01 keeps it)",
     "clear_hr_department_head": "the one place a department head is cleared",
 }

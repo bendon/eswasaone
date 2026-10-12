@@ -2925,7 +2925,7 @@ paths:
     post:
       tags: [hr]
       operationId: createHrLeave
-      summary: Apply for leave as the signed-in employee
+      summary: Apply for leave as the signed-in employee (eswasa_hr.leave.apply; always their own record and named leave approver; a broken rule is 422 with the reason)
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -2938,6 +2938,10 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HrLeaveSummary" }
+        "404":
+          description: The login isn't linked to an Active employee record
+        "422":
+          description: Rule failed (plain text), from eswasa_hr or HRMS (balance, overlap, holiday)
 
   /hr/leave/{leave_id}/act:
     post:

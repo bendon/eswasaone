@@ -159,6 +159,19 @@ def range_error(start: Any, end: Any) -> str | None:
     return None
 
 
+def apply_error(leave_type: str | None, from_date: Any, to_date: Any) -> str | None:
+    """POST /hr/leave: what's wrong with a new request before HRMS checks balance, overlaps and holidays."""
+    if not (leave_type or "").strip():
+        return "Choose a leave type."
+    try:
+        a, b = _as_date(from_date), _as_date(to_date)
+    except (TypeError, ValueError):
+        return "Choose the first and last day of your leave."
+    if b < a:
+        return "The last day can't be before the first day."
+    return None
+
+
 def request_status(status: str | None, docstatus: int | None) -> str:
     return "Cancelled" if int(docstatus or 0) == 2 else (status or "Open")
 
@@ -491,6 +504,31 @@ def cancel_impl(name: str, reason: str) -> dict[str, Any]:
     return {"ok": True, "name": name, "status": "Cancelled", "message": _("Leave cancelled")}
 
 
+def apply_impl(leave_type: str, from_date: str, to_date: str, reason: str | None = None) -> dict[str, Any]:
+    """The caller's own leave request (plan 01: no raw insert from Core). Always for the caller's Employee;
+    the leave approver comes from that record, HRMS validates balance, overlaps and holidays, and
+    ``sync_todo`` (doc_events) routes it to the named approver."""
+    import frappe
+
+    emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user, "status": "Active"},
+                              ["name", "employee_name", "leave_approver", "company"], as_dict=True)
+    if not emp:
+        frappe.throw("Your login isn't linked to an employee record. Ask HR to link it.", frappe.DoesNotExistError)
+    err = apply_error(leave_type, from_date, to_date)
+    if err:
+        frappe.throw(err, frappe.ValidationError)
+    values = {"doctype": DOCTYPE, "employee": emp["name"], "leave_type": leave_type.strip(), "from_date": str(from_date)[:10],
+              "to_date": str(to_date)[:10], "status": "Open", "company": emp.get("company")}
+    if emp.get("leave_approver"):
+        values["leave_approver"] = emp["leave_approver"]
+    if (reason or "").strip():
+        values["description"] = reason.strip()
+    doc = frappe.get_doc(values)
+    doc.insert()
+    return {"name": doc.name, "employee": emp["name"], "employee_name": emp.get("employee_name"), "leave_type": doc.leave_type,
+            "from_date": str(doc.from_date), "to_date": str(doc.to_date), "status": doc.status}
+
+
 def _employee_ref(user_or_employee: str) -> str | None:
     import frappe
 
@@ -692,6 +730,14 @@ def _whitelist(fn):
         return frappe.whitelist()(fn)
     except (ImportError, AttributeError):  # tests without Frappe, or with a stand-in module
         return fn
+
+
+@_whitelist
+def apply(leave_type: str = "", from_date: str = "", to_date: str = "", reason: str | None = None, confirm: Any = False) -> dict[str, Any]:
+    from eswasa_hr.lifecycle import _confirm
+
+    _confirm(confirm)
+    return apply_impl(leave_type, from_date, to_date, reason)
 
 
 @_whitelist

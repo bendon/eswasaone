@@ -5753,32 +5753,12 @@ async def create_hr_leave(
     )
     if auth.mock or not await frappe.health():
         raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    doc: dict[str, Any] = {
-        "doctype": "Leave Application",
-        "leave_type": body.leave_type,
-        "from_date": body.from_date,
-        "to_date": body.to_date,
-    }
-    if body.reason:
-        doc["description"] = body.reason
-    try:
-        # Bind to caller Employee when HRMS links user_id (permission inheritance).
-        employees = await _frappe_get_list(
-            session,
-            "Employee",
-            fields=["name"],
-            filters={"user_id": auth.user.username},
-            limit=1,
-            soft=True,
-        )
-        if employees:
-            doc["employee"] = employees[0]["name"]
-        raw = await _frappe_insert(session, doc)
-        return _as_hr_leave(raw)
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+    # eswasa_hr.leave.apply: always the caller's own Employee and leave approver (no raw insert; plan 01).
+    raw = await _hr_write(auth, frappe, f"{_LEAVE}.apply", json={
+        "leave_type": body.leave_type, "from_date": body.from_date, "to_date": body.to_date,
+        "reason": body.reason, "confirm": True,
+    })
+    return _as_hr_leave(raw)
 
 
 @router.post(

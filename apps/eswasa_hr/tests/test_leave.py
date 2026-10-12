@@ -512,5 +512,44 @@ class GlueTests(unittest.TestCase):
         self.assertEqual(store.rows("HR Alert"), [])
 
 
+class ApplyTests(unittest.TestCase):
+    """POST /hr/leave through eswasa_hr (plan 01 sweep): the caller's own record, their approver, plain refusals."""
+
+    def setUp(self):
+        from tests import _fakefrappe as ff
+
+        self.ff = ff
+        self.store = {"Employee": [
+            {"name": "EMP-44", "employee_name": "Thandi Mamba", "user_id": "thandi@x", "status": "Active",
+             "leave_approver": "sipho@x", "company": "ESWASA"},
+            {"name": "EMP-50", "employee_name": "Gone", "user_id": "gone@x", "status": "Left"},
+        ]}
+        self.addCleanup(ff.uninstall)
+
+    def test_rules(self):
+        self.assertEqual(leave.apply_error("", "2026-11-02", "2026-11-03"), "Choose a leave type.")
+        self.assertEqual(leave.apply_error("Annual", "nope", "2026-11-03"), "Choose the first and last day of your leave.")
+        self.assertEqual(leave.apply_error("Annual", "2026-11-03", "2026-11-02"), "The last day can't be before the first day.")
+        self.assertIsNone(leave.apply_error("Annual", "2026-11-02", "2026-11-02"))
+        self.assertIsNone(leave.apply_error("Maternity", "2026-11-02", "2027-02-01"))  # long leave is HRMS's to check
+
+    def test_binds_the_callers_own_record_and_approver(self):
+        self.ff.install(self.store, user="thandi@x", roles=("Employee",))
+        out = leave.apply_impl(" Annual ", "2026-11-02", "2026-11-03", "  Family  ")
+        [row] = self.store[leave.DOCTYPE]
+        self.assertEqual((row["employee"], row["leave_approver"], row["leave_type"], row["status"], row["description"], row["company"]),
+                         ("EMP-44", "sipho@x", "Annual", "Open", "Family", "ESWASA"))
+        self.assertEqual((out["employee_name"], out["status"]), ("Thandi Mamba", "Open"))
+
+    def test_no_active_record_is_refused(self):
+        f = self.ff.install(self.store, user="gone@x", roles=("Employee",))
+        with self.assertRaisesRegex(f.DoesNotExistError, "isn't linked to an employee record"):
+            leave.apply_impl("Annual", "2026-11-02", "2026-11-03")
+        f = self.ff.install(self.store, user="thandi@x", roles=("Employee",))
+        with self.assertRaisesRegex(f.ValidationError, "before the first day"):
+            leave.apply_impl("Annual", "2026-11-03", "2026-11-02")
+        self.assertFalse(self.store.get(leave.DOCTYPE))
+
+
 if __name__ == "__main__":
     unittest.main()

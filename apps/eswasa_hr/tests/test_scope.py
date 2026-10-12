@@ -200,6 +200,69 @@ class HookRegistrationTests(unittest.TestCase):
                 self.assertTrue(path.startswith("eswasa_hr.scope."), path)
                 self.assertTrue(callable(getattr(sc, path.rsplit(".", 1)[1])), path)
 
+    def test_decider_release_registered(self):
+        tree = ast.parse((Path(sc.__file__).parent / "hooks.py").read_text())
+        events = next(ast.literal_eval(n.value) for n in tree.body
+                      if isinstance(n, ast.Assign) and isinstance(n.targets[0], ast.Name) and n.targets[0].id == "doc_events")
+        self.assertEqual(events["Employee"]["on_update"], "eswasa_hr.scope.on_employee_update")
+        self.assertEqual(events["Department"]["on_update"], "eswasa_hr.scope.on_department_update")
+        self.assertIn("release_deciders()", (Path(sc.__file__).parent / "tasks.py").read_text())
+
+
+LINKED = ["Attendance", "Employee", "Expense Claim", "Leave Application", "Salary Slip"]
+
+
+class DeciderPermissionTests(unittest.TestCase):
+    """A decider's own-record User Permission is narrowed, not removed (plan 02 follow-up)."""
+
+    EMPLOYEES = [
+        {"name": "nt", "user_id": "nt@x", "reports_to": "ed"},
+        {"name": "sm", "user_id": "sm@x", "reports_to": "nt", "leave_approver": "nt@x"},
+        {"name": "tm", "user_id": "tm@x", "reports_to": "sm", "leave_approver": "la@x", "expense_approver": "ea@x"},
+        {"name": "la", "user_id": "la@x"},
+        {"name": "ea", "user_id": "ea@x"},
+        {"name": "ed", "user_id": None},
+        {"name": "self", "user_id": "self@x", "leave_approver": "self@x"},
+        {"name": "hd", "user_id": "hd@x"},
+    ]
+
+    def test_who_decides(self):
+        self.assertEqual(sc.deciders(self.EMPLOYEES, heads=["hd", "ed"]),
+                         {"nt": "nt@x", "sm": "sm@x", "la": "la@x", "ea": "ea@x", "hd": "hd@x"})
+
+    def test_own_approver_and_no_login_are_not_deciders(self):
+        found = sc.deciders(self.EMPLOYEES, heads=[])
+        self.assertNotIn("self", found)  # approving their own leave isn't deciding for someone else
+        self.assertNotIn("ed", found)  # no login
+
+    def test_apply_to_all_is_replaced_by_rows_outside_the_scoped_doctypes(self):
+        perms = [{"name": "UP-1", "user": "sm@x", "allow": "Employee", "for_value": "sm", "apply_to_all_doctypes": 1, "is_default": 1}]
+        drop, add = sc.decider_permissions("sm@x", "sm", perms, LINKED)
+        self.assertEqual(drop, ["UP-1"])
+        self.assertEqual([r["applicable_for"] for r in add], ["Attendance", "Salary Slip"])
+        self.assertTrue(all(r["for_value"] == "sm" and r["user"] == "sm@x" and r["apply_to_all_doctypes"] == 0 for r in add))
+        self.assertEqual([r["is_default"] for r in add], [1, 0])
+
+    def test_a_decider_with_no_permission_gets_the_narrow_rows(self):
+        drop, add = sc.decider_permissions("nt@x", "nt", [], LINKED)
+        self.assertEqual(drop, [])
+        self.assertEqual([r["applicable_for"] for r in add], ["Attendance", "Salary Slip"])
+
+    def test_idempotent_and_leaves_other_permissions_alone(self):
+        perms = [
+            {"name": "UP-2", "user": "sm@x", "allow": "Employee", "for_value": "sm", "apply_to_all_doctypes": 0, "applicable_for": "Attendance", "is_default": 1},
+            {"name": "UP-3", "user": "sm@x", "allow": "Employee", "for_value": "sm", "apply_to_all_doctypes": 0, "applicable_for": "Salary Slip", "is_default": 0},
+            {"name": "UP-4", "user": "sm@x", "allow": "Company", "for_value": "ESWASA", "apply_to_all_doctypes": 1},
+            {"name": "UP-5", "user": "sm@x", "allow": "Employee", "for_value": "tm", "apply_to_all_doctypes": 1},
+        ]
+        self.assertEqual(sc.decider_permissions("sm@x", "sm", perms, LINKED), ([], []))
+
+    def test_a_row_on_a_scoped_doctype_is_dropped(self):
+        perms = [{"name": "UP-6", "user": "sm@x", "allow": "Employee", "for_value": "sm", "apply_to_all_doctypes": 0, "applicable_for": "Leave Application"}]
+        drop, add = sc.decider_permissions("sm@x", "sm", perms, LINKED)
+        self.assertEqual(drop, ["UP-6"])
+        self.assertEqual(len(add), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

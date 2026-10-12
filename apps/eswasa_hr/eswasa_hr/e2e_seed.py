@@ -185,6 +185,9 @@ def _people(out: dict[str, Any], conf: dict[str, Any]) -> dict[str, Any]:
     for key, p in people.items():
         approver = head["user"] if PERSONAS[key][2] else p["user"]  # the line manager approves their own leave (self-approval spec)
         frappe.db.set_value("Employee", p["employee"], {"leave_approver": approver, "expense_approver": approver})
+    from eswasa_hr import scope
+
+    scope.release_deciders()  # set_value skips hooks: the line manager must still see what they decide
     return people
 
 

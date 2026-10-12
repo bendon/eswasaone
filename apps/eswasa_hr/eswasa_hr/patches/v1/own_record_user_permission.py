@@ -5,8 +5,9 @@ Older records were linked without ``create_user_permission``. The new permission
 only (``apply_to_all_doctypes = 0``) and is the person's default, so self-service forms pick their record.
 
 A line manager is skipped: a User Permission on Employee would hide their reports, which eswasa_hr.scope lets
-them see. Their row access comes from the scope hooks alone. Idempotent: anyone who already has a User
-Permission on their Employee record is left alone.
+them see. ``scope.release_deciders`` (daily, and on Employee/Department save) gives every decider the narrowed
+form instead: their own record on each Employee-linked doctype except the scoped ones. Idempotent: anyone who
+already has a User Permission on their Employee record is left alone.
 """
 
 from __future__ import annotations

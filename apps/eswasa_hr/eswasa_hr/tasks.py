@@ -9,6 +9,7 @@ from frappe.utils import getdate, today
 def daily() -> None:
     """Nightly HR HRMS/custom cron entrypoint."""
     rh7_integrity()  # first, so the later steps run on a known picture of the records
+    release_deciders()  # managers and approvers can read what they decide (imports set reports_to without hooks)
     rh1_probation_reviews()
     recompute_authorisation_statuses()  # statuses first, so R-H3/R-H4 see today's Current/Expiring
     rh2_contract_end_alerts()
@@ -22,6 +23,13 @@ def daily() -> None:
     expense_escalation()
     recruitment_reminders()
     document_expiry_alerts()
+
+
+def release_deciders() -> int:
+    """Plan 02 follow-up: narrow each decider's own-record User Permission (eswasa_hr.scope.release_deciders)."""
+    from eswasa_hr.scope import release_deciders as run
+
+    return run()
 
 
 def rh7_integrity() -> dict:

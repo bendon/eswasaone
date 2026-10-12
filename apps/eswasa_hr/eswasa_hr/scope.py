@@ -127,6 +127,54 @@ def conditions(doctype: str, viewer: Viewer, esc: Callable[[str], str]) -> str:
     return ""
 
 
+# Deciders and their own-record User Permission.
+#
+# HRMS's ``create_user_permission`` (set on every hire and import) gives a login a User Permission on its own
+# Employee record that applies to all doctypes. For someone who decides for others (line manager, leave or
+# expense approver, department head) that hides the very records they decide: their reports' Employee rows,
+# leave, appraisals and claims, in Desk, in REST and in Approvals' has_permission check. So for a decider the
+# permission is narrowed instead of removed: one row per Employee-linked doctype, except the ones these hooks
+# (or expenses.py) already scope. Salary Slip, Attendance and the rest stay limited to their own record.
+
+SCOPED_DOCTYPES = DOCTYPES + ("Expense Claim",)
+
+
+def deciders(employees: list[dict[str, Any]], heads: Iterable[str]) -> dict[str, str]:
+    """``{employee: user}`` for Active people with a login who decide for someone else."""
+    user_of = {e["name"]: e["user_id"] for e in employees if e.get("user_id")}
+    employee_of = {u: n for n, u in user_of.items()}
+    out: dict[str, str] = {}
+    for e in employees:
+        boss = e.get("reports_to")
+        if boss in user_of and boss != e["name"]:
+            out[boss] = user_of[boss]
+        for key in ("leave_approver", "expense_approver"):
+            who = employee_of.get(e.get(key) or "")
+            if who and who != e["name"]:
+                out[who] = user_of[who]
+    for head in heads:
+        if head in user_of:
+            out[head] = user_of[head]
+    return out
+
+
+def decider_permissions(user: str, employee: str, perms: list[dict[str, Any]], linked: Iterable[str]) -> tuple[list[str], list[dict[str, Any]]]:
+    """(User Permission names to delete, rows to insert) so ``user`` keeps their own-record limit everywhere
+    except the scoped doctypes. Only the person's own record is touched; other permissions stay."""
+    own = [p for p in perms if p.get("user") == user and p.get("allow") == "Employee" and p.get("for_value") == employee]
+    drop = [p["name"] for p in own if p.get("apply_to_all_doctypes") or p.get("applicable_for") in SCOPED_DOCTYPES]
+    kept = [p for p in own if p["name"] not in drop]
+    have = {p.get("applicable_for") for p in kept}
+    add = [
+        {"doctype": "User Permission", "user": user, "allow": "Employee", "for_value": employee,
+         "apply_to_all_doctypes": 0, "applicable_for": dt, "is_default": 0}
+        for dt in sorted(set(linked) - set(SCOPED_DOCTYPES) - have)
+    ]
+    if add and not any(p.get("is_default") for p in kept):
+        add[0]["is_default"] = 1  # self-service forms still pick the person's own record
+    return drop, add
+
+
 # ---------------------------------------------------------------- Frappe glue
 
 
@@ -250,3 +298,76 @@ def authorisation_has_permission(doc: Any, ptype: str | None = None, user: str |
 
 def document_has_permission(doc: Any, ptype: str | None = None, user: str | None = None, **kwargs: Any) -> bool:
     return _has("Employee Document", doc, user)
+
+
+# Deciders' User Permissions (see decider_permissions): Employee and Department on_update, and the daily job.
+
+
+def linked_doctypes() -> list[str]:
+    """Non-table doctypes with a Link to Employee (standard or custom), like Frappe's apply-to-all expands to."""
+    import frappe
+
+    names = {r["parent"] for r in frappe.get_all("DocField", filters={"fieldtype": "Link", "options": "Employee", "parenttype": "DocType"}, fields=["parent"], limit=0)}
+    names |= {r["dt"] for r in frappe.get_all("Custom Field", filters={"fieldtype": "Link", "options": "Employee"}, fields=["dt"], limit=0)}
+    names.add("Employee")
+    tables = {r["name"] for r in frappe.get_all("DocType", filters={"name": ["in", sorted(names)], "istable": 1}, fields=["name"], limit=0)}
+    return sorted(names - tables)
+
+
+def release(employee: str, user: str, linked: list[str] | None = None) -> int:
+    """Narrow one decider's own-record User Permission. Returns the number of rows changed."""
+    import frappe
+
+    perms = frappe.get_all(
+        "User Permission",
+        filters={"user": user, "allow": "Employee", "for_value": employee},
+        fields=["name", "user", "allow", "for_value", "apply_to_all_doctypes", "applicable_for", "is_default"],
+        limit=0,
+    )
+    drop, add = decider_permissions(user, employee, perms, linked if linked is not None else linked_doctypes())
+    for name in drop:
+        frappe.delete_doc("User Permission", name, ignore_permissions=True)
+    for row in add:
+        frappe.get_doc(row).insert(ignore_permissions=True)
+    return len(drop) + len(add)
+
+
+def _current_deciders() -> dict[str, str]:
+    import frappe
+
+    employees = frappe.get_all("Employee", filters={"status": "Active"},
+                               fields=["name", "user_id", "reports_to", "leave_approver", "expense_approver"], limit=0)
+    heads = [r["custom_head"] for r in frappe.get_all("Department", filters={"custom_head": ["is", "set"]}, fields=["custom_head"], limit=0)]
+    return deciders(employees, heads)
+
+
+def release_deciders() -> int:
+    """Daily (plan 02 follow-up): every current decider's own-record permission narrowed. Idempotent."""
+    linked = linked_doctypes()
+    return sum(release(employee, user, linked) for employee, user in _current_deciders().items())
+
+
+def on_employee_update(doc: Any, method: str | None = None) -> None:
+    """Employee on_update: whoever this record names as manager or approver, and this person if they decide."""
+    import frappe
+
+    names = {_field(doc, "reports_to"), _field(doc, "name")}
+    for key in ("leave_approver", "expense_approver"):
+        if _field(doc, key):
+            names.add(frappe.db.get_value("Employee", {"user_id": _field(doc, key)}, "name"))
+    found = _current_deciders()
+    linked = None
+    for employee in names:
+        if employee and employee in found:
+            linked = linked or linked_doctypes()
+            release(employee, found[employee], linked)
+
+
+def on_department_update(doc: Any, method: str | None = None) -> None:
+    """Department on_update: a newly named head decides authorisations for the department."""
+    import frappe
+
+    head = _field(doc, "custom_head")
+    user = frappe.db.get_value("Employee", head, "user_id") if head else None
+    if user:
+        release(head, user)

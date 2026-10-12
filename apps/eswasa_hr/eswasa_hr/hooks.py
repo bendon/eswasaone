@@ -123,6 +123,9 @@ scheduler_events = {
 }
 
 doc_events = {
+    # Plan 02 follow-up: a manager's or approver's own-record User Permission must not hide what they decide.
+    "Employee": {"on_update": "eswasa_hr.scope.on_employee_update"},
+    "Department": {"on_update": "eswasa_hr.scope.on_department_update"},
     "Staff Authorisation": {
         "validate": "eswasa_hr.eswasa_hr.doctype.staff_authorisation.staff_authorisation.validate",
         # Journey J4: draft → one ToDo for the head of the person's department.

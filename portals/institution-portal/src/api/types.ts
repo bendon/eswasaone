@@ -151,6 +151,31 @@ export type HrOnboarding = {
   line_manager?: string | null;
 };
 export type HrOnboardingDefaults = { employee: string; employee_name: string; date_of_joining?: string | null; job_offer?: string | null; has_login: boolean; activities: HrOnboardingActivity[] };
+export type HrTeamMember = {
+  employee: string;
+  employee_name: string;
+  designation?: string | null;
+  department?: string | null;
+  direct?: boolean | null;
+  on_probation: boolean;
+  probation_review_due?: string | null;
+  contract_ends?: string | null;
+  away_today?: string | null;
+  date_of_joining?: string | null;
+};
+export type HrTeam = { manager: string; members: HrTeamMember[]; summary: Record<string, number> };
+export type HrTeamMemberDetail = HrTeamMember & {
+  line_manager?: string | null;
+  scheduled_confirmation_date?: string | null;
+  balances: HrLeaveBalanceRow[];
+  authorisations: HrAuthorisationRow[];
+};
+export type HrTeamCalendar = {
+  from_date: string;
+  to_date: string;
+  people: Array<{ employee: string; employee_name: string }>;
+  entries: Array<{ employee: string; kind: "leave" | "field"; label: string; from_date: string; to_date: string; approved: boolean }>;
+};
 export type HrVacancy = { department?: string | null; designation: string; approved: number; filled: number; in_recruitment: number; vacant: number };
 export type HrRequisition = {
   id: string;

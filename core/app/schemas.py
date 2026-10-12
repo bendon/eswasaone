@@ -1080,6 +1080,57 @@ class HrConfirmBody(BaseModel):
     confirm: bool
 
 
+class HrTeamMember(BaseModel):
+    employee: str
+    employee_name: str
+    designation: str | None = None
+    department: str | None = None
+    direct: bool | None = None
+    on_probation: bool = False
+    probation_review_due: str | None = None
+    contract_ends: str | None = None
+    away_today: str | None = None
+    date_of_joining: str | None = None
+
+
+class HrTeam(BaseModel):
+    """OpenAPI: HrTeam — a line manager's direct and indirect reports (T1). Job fields only."""
+
+    manager: str
+    members: list[HrTeamMember] = Field(default_factory=list)
+    summary: dict[str, int] = Field(default_factory=dict)
+
+
+class HrTeamMemberDetail(HrTeamMember):
+    line_manager: str | None = None
+    scheduled_confirmation_date: str | None = None
+    balances: list[HrLeaveBalance] = Field(default_factory=list)
+    authorisations: list[HrAuthorisationRow] = Field(default_factory=list)
+
+
+class HrTeamCalendarEntry(BaseModel):
+    employee: str
+    kind: str  # leave | field
+    label: str
+    from_date: str
+    to_date: str
+    approved: bool = True
+
+
+class HrTeamCalendar(BaseModel):
+    from_date: str
+    to_date: str
+    people: list[dict[str, str]] = Field(default_factory=list)
+    entries: list[HrTeamCalendarEntry] = Field(default_factory=list)
+
+
+class HrProbationBody(BaseModel):
+    outcome: str  # confirm | extend | end
+    summary: str
+    extend_to: str | None = None
+    confirm: bool
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

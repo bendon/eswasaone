@@ -740,6 +740,59 @@ export const router = createBrowserRouter(
               ),
             },
             {
+              path: "team",
+              ...nest(
+                () =>
+                  import("./pages/TeamPage").then((m) => ({ default: m.TeamPage })),
+                [
+                  {
+                    index: true,
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./team/sub-views").then((m) => ({ default: m.TeamHome }))
+                        }
+                        skeleton="dashboard"
+                      />
+                    ),
+                  },
+                  {
+                    path: "calendar",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./team/sub-views").then((m) => ({ default: m.TeamCalendar }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: ":employee",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./team/sub-views").then((m) => ({ default: m.TeamMember }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: ":employee/probation",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./team/sub-views").then((m) => ({ default: m.ProbationReview }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                ],
+              ),
+            },
+            {
               path: "me",
               ...nest(
                 () =>

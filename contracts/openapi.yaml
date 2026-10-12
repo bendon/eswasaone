@@ -1339,6 +1339,72 @@ paths:
             application/json:
               schema: { type: object, properties: { onboarding: { anyOf: [{ $ref: "#/components/schemas/HrOnboarding" }, { type: "null" }] } } }
 
+  /hr/team:
+    get:
+      tags: [hr]
+      operationId: getMyTeam
+      summary: My direct and indirect reports with what is due (job fields only)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Team
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTeam" }
+
+  /hr/team/calendar:
+    get:
+      tags: [hr]
+      operationId: getTeamCalendar
+      summary: Leave and field visits for my team (up to two months)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: from_date, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to_date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Calendar
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTeamCalendar" }
+
+  /hr/team/{employee}:
+    get:
+      tags: [hr]
+      operationId: getTeamMember
+      summary: One of my reports (job, leave balances, authorisations; never personal or pay)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Member
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTeamMemberDetail" }
+        "403":
+          description: Not in my team
+
+  /hr/team/{employee}/probation:
+    post:
+      tags: [hr]
+      operationId: reviewProbation
+      summary: Direct line manager confirms, extends, or recommends ending probation (ending goes to HR Managers)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrProbationBody" }
+      responses:
+        "200":
+          description: Reviewed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTeamMemberDetail" }
+
   /hr/leave/preview:
     post:
       tags: [hr]
@@ -5590,6 +5656,62 @@ components:
       type: object
       required: [confirm]
       properties:
+        confirm: { type: boolean }
+    HrTeamMember:
+      type: object
+      required: [employee, employee_name]
+      properties:
+        employee: { type: string }
+        employee_name: { type: string }
+        designation: { anyOf: [{ type: string }, { type: "null" }] }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        direct: { anyOf: [{ type: boolean }, { type: "null" }] }
+        on_probation: { type: boolean }
+        probation_review_due: { anyOf: [{ type: string }, { type: "null" }] }
+        contract_ends: { anyOf: [{ type: string }, { type: "null" }] }
+        away_today: { anyOf: [{ type: string }, { type: "null" }] }
+        date_of_joining: { anyOf: [{ type: string }, { type: "null" }] }
+    HrTeam:
+      type: object
+      required: [manager]
+      properties:
+        manager: { type: string }
+        members: { type: array, items: { $ref: "#/components/schemas/HrTeamMember" } }
+        summary: { type: object, additionalProperties: { type: integer } }
+    HrTeamMemberDetail:
+      allOf:
+        - $ref: "#/components/schemas/HrTeamMember"
+        - type: object
+          properties:
+            line_manager: { anyOf: [{ type: string }, { type: "null" }] }
+            scheduled_confirmation_date: { anyOf: [{ type: string }, { type: "null" }] }
+            balances: { type: array, items: { $ref: "#/components/schemas/HrLeaveBalance" } }
+            authorisations: { type: array, items: { $ref: "#/components/schemas/HrAuthorisationRow" } }
+    HrTeamCalendarEntry:
+      type: object
+      required: [employee, kind, label, from_date, to_date]
+      properties:
+        employee: { type: string }
+        kind: { type: string, enum: [leave, field] }
+        label: { type: string }
+        from_date: { type: string }
+        to_date: { type: string }
+        approved: { type: boolean }
+    HrTeamCalendar:
+      type: object
+      required: [from_date, to_date]
+      properties:
+        from_date: { type: string }
+        to_date: { type: string }
+        people: { type: array, items: { type: object, properties: { employee: { type: string }, employee_name: { type: string } } } }
+        entries: { type: array, items: { $ref: "#/components/schemas/HrTeamCalendarEntry" } }
+    HrProbationBody:
+      type: object
+      required: [outcome, summary, confirm]
+      properties:
+        outcome: { type: string, enum: [confirm, extend, end] }
+        summary: { type: string }
+        extend_to: { anyOf: [{ type: string }, { type: "null" }] }
         confirm: { type: boolean }
     HrHoliday:
       properties:

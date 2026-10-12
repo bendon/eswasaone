@@ -17,28 +17,10 @@ def daily() -> None:
 
 
 def rh1_probation_reviews() -> int:
-    """R-H1: do-ToDo for reports_to 30 days before scheduled_confirmation_date."""
-    target = add_days(today(), 30)
-    rows = frappe.get_all(
-        "Employee",
-        filters={
-            "status": "Active",
-            "scheduled_confirmation_date": target,
-            "final_confirmation_date": ["in", ["", None]],
-        },
-        fields=["name", "employee_name", "reports_to", "user_id"],
-        limit=200,
-    )
-    n = 0
-    for row in rows:
-        if not row.reports_to:
-            continue
-        mgr_user = frappe.db.get_value("Employee", row.reports_to, "user_id")
-        if not mgr_user:
-            continue
-        # TODO: wire real — create do-family ToDo via Approvals registry, not raw ToDo pool
-        n += 1
-    return n
+    """R-H1: a probation-review ToDo for the line manager 30 days before scheduled_confirmation_date."""
+    from eswasa_hr.team import open_probation_reviews
+
+    return open_probation_reviews()
 
 
 def rh2_contract_end_alerts() -> int:

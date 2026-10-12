@@ -94,6 +94,10 @@ from app.schemas import (
     HrOnboarding,
     HrOnboardingDefaults,
     HrStartOnboardingBody,
+    HrProbationBody,
+    HrTeam,
+    HrTeamCalendar,
+    HrTeamMemberDetail,
     HrAuthorisationDetail,
     HrAuthorisationRequestBody,
     HrAuthorisationRow,
@@ -5007,6 +5011,59 @@ async def get_my_onboarding(
     """The new joiner's own checklist while onboarding is open; null otherwise."""
     raw = await _hr_call(auth, frappe, f"{_ONB}.my_onboarding")
     return {"onboarding": HrOnboarding.model_validate(raw) if raw else None}
+
+
+_TEAM = "eswasa_hr.team"
+
+
+@router.get("/hr/team", response_model=HrTeam, tags=["hr"])
+async def get_my_team(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTeam:
+    """My direct and indirect reports with what is due. Job fields only, never personal or pay."""
+    return HrTeam.model_validate(await _hr_call(auth, frappe, f"{_TEAM}.my_team"))
+
+
+@router.get("/hr/team/calendar", response_model=HrTeamCalendar, tags=["hr"])
+async def get_team_calendar(
+    from_date: str,
+    to_date: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTeamCalendar:
+    """Leave (approved and requested) and field visits for my team, up to two months."""
+    return HrTeamCalendar.model_validate(
+        await _hr_call(auth, frappe, f"{_TEAM}.calendar", params={"from_date": from_date, "to_date": to_date})
+    )
+
+
+@router.get("/hr/team/{employee}", response_model=HrTeamMemberDetail, tags=["hr"])
+async def get_team_member(
+    employee: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTeamMemberDetail:
+    return HrTeamMemberDetail.model_validate(await _hr_call(auth, frappe, f"{_TEAM}.member", params={"employee": employee}))
+
+
+@router.post("/hr/team/{employee}/probation", response_model=HrTeamMemberDetail, tags=["hr"])
+async def review_probation(
+    employee: str,
+    body: HrProbationBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTeamMemberDetail:
+    """The direct line manager confirms, extends, or recommends ending probation (ending goes to HR)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.probation.review", actor=auth.user.username, resource=f"Employee:{employee}", detail={"outcome": body.outcome}, confirmed=True)
+    raw = await _hr_call(
+        auth,
+        frappe,
+        f"{_TEAM}.probation_review",
+        json={"employee": employee, "outcome": body.outcome, "summary": body.summary, "extend_to": body.extend_to, "confirm": 1},
+    )
+    return HrTeamMemberDetail.model_validate(raw)
 
 
 @router.post(

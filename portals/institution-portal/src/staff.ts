@@ -16,6 +16,7 @@ const ROUTE_ACCESS: Record<InstitutionRouteId, Access> = {
   dashboard: ANY_STAFF,
   approvals: ANY_STAFF,
   me: ANY_STAFF,
+  team: ANY_STAFF,
   field: ANY_STAFF,
   board: [
     "Eswasa Board Secretary",

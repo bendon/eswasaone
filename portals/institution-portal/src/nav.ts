@@ -4,6 +4,7 @@ export type InstitutionRouteId =
   | "dashboard"
   | "approvals"
   | "me"
+  | "team"
   | "board"
   | "crm"
   | "certification"
@@ -32,6 +33,7 @@ export const INSTITUTION_NAV: InstitutionNavDef[] = [
   { id: "dashboard", path: "/", label: "Dashboard", icon: "i-grid", title: "Dashboards", end: true },
   { id: "approvals", path: "/approvals", label: "Approvals", icon: "i-done", title: "Approvals" },
   { id: "me", path: "/me", label: "My HR", icon: "i-users", title: "My HR" },
+  { id: "team", path: "/team", label: "My team", icon: "i-users", title: "My team" },
   { id: "board", path: "/board", label: "Board & Governance", icon: "i-trend", title: "Board & Governance" },
   { id: "crm", path: "/crm", label: "CRM & Commercial", icon: "i-case", title: "CRM & Commercial" },
   {

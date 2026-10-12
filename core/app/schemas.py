@@ -107,20 +107,6 @@ class CertificationScheme(BaseModel):
     description: str | None = None
 
 
-class CertificationScheme(BaseModel):
-    """Public catalogue entry — ``code`` is what CreateCertificationApplication.scheme takes."""
-
-    code: str
-    name: str
-    standard_ref: str | None = None
-    scheme_type: str
-    accreditation_basis: str | None = None
-    surveillance_interval_months: int | None = None
-    certificate_validity_months: int | None = None
-    fee: float | None = None
-    description: str | None = None
-
-
 class CreateCertificationApplication(BaseModel):
     scheme: str
     applicant_name: str

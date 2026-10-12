@@ -3141,6 +3141,25 @@ paths:
               schema: { $ref: "#/components/schemas/HrOrganisationOverview" }
 
   /hr/departments:
+    get:
+      tags: [hr]
+      operationId: listHrDepartments
+      summary: Live (enabled, non-group) departments with head and head counts
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 100 } }
+      responses:
+        "200":
+          description: OK (empty items when Frappe is unavailable)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/HrDepartment" }
     post:
       tags: [hr]
       operationId: createHrDepartment
@@ -3188,7 +3207,128 @@ paths:
         "422":
           description: Rule failed, e.g. still in use (plain text)
 
+  /hr/departments/{department_id}/head:
+    post:
+      tags: [hr]
+      operationId: assignHrDepartmentHead
+      summary: Name the head of a department (eswasa_hr guard; the head approves requisitions and authorisations). HR Manager only
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: department_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrDepartmentHeadBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrDepartment" }
+        "403":
+          description: Not an HR Manager
+        "422":
+          description: Rule failed (plain text)
+    delete:
+      tags: [hr]
+      operationId: clearHrDepartmentHead
+      summary: Clear the head of a department. HR Manager only
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: department_id, in: path, required: true, schema: { type: string } }
+        - { name: confirm, in: query, required: true, schema: { type: boolean } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrDepartment" }
+        "403":
+          description: Not an HR Manager
+
+  /hr/orgchart:
+    get:
+      tags: [hr]
+      operationId: getHrOrgChart
+      summary: Flat org chart nodes linked by reports_to (soft-empty when not permitted)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 200 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/HrOrgChartNode" }
+        "503":
+          description: Frappe unavailable
+
+  /hr/slips:
+    get:
+      tags: [hr]
+      operationId: listHrSlips
+      summary: Latest salary slips the caller may read (payroll is excluded from the HR plans; read-only, unchanged)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 20 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/HrPayslip" }
+        "503":
+          description: Frappe unavailable
+
+  /hr/payroll/status:
+    get:
+      tags: [hr]
+      operationId: getHrPayrollStatus
+      summary: Latest Payroll Entry status; the run itself stays in Desk (payroll excluded from the HR plans)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrPayrollStatus" }
+        "503":
+          description: Frappe unavailable
+
   /hr/designations:
+    get:
+      tags: [hr]
+      operationId: listHrDesignations
+      summary: Designations, optionally those used in one department
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: department_id, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, default: 100 } }
+      responses:
+        "200":
+          description: OK (empty items when Frappe is unavailable)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/HrDesignation" }
     post:
       tags: [hr]
       operationId: createHrDesignation
@@ -3237,6 +3377,25 @@ paths:
           description: Rule failed, e.g. still in use (plain text)
 
   /hr/locations:
+    get:
+      tags: [hr]
+      operationId: listHrLocations
+      summary: Locations (HRMS Branch)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 100 } }
+      responses:
+        "200":
+          description: OK (empty items when Frappe is unavailable)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/HrLocation" }
     post:
       tags: [hr]
       operationId: createHrLocation
@@ -3285,6 +3444,25 @@ paths:
           description: Rule failed, e.g. still in use (plain text)
 
   /hr/cost-centres:
+    get:
+      tags: [hr]
+      operationId: listHrCostCentres
+      summary: Cost centres
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 100 } }
+      responses:
+        "200":
+          description: OK (empty items when Frappe is unavailable)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/HrCostCentre" }
     post:
       tags: [hr]
       operationId: createHrCostCentre
@@ -3333,6 +3511,25 @@ paths:
           description: Rule failed, e.g. still in use (plain text)
 
   /hr/grade-bands:
+    get:
+      tags: [hr]
+      operationId: listHrGradeBands
+      summary: Grade bands (Employee Grade)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 100 } }
+      responses:
+        "200":
+          description: OK (empty items when Frappe is unavailable)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/HrGradeBand" }
     post:
       tags: [hr]
       operationId: createHrGradeBand
@@ -3893,20 +4090,6 @@ components:
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
         quote: { $ref: "#/components/schemas/CertificationQuote" }
-
-    CertificationScheme:
-      type: object
-      required: [code, name, scheme_type]
-      properties:
-        code: { type: string }
-        name: { type: string }
-        standard_ref: { type: string, nullable: true }
-        scheme_type: { type: string, enum: ["Management System", "Product"] }
-        accreditation_basis: { type: string, nullable: true }
-        surveillance_interval_months: { type: integer, nullable: true }
-        certificate_validity_months: { type: integer, nullable: true }
-        fee: { type: number, nullable: true }
-        description: { type: string, nullable: true }
 
     CertificationScheme:
       type: object
@@ -6608,9 +6791,7 @@ components:
           title: Employee Count
           default: 0
       type: object
-      required:
-      - id
-      - name
+      required: [id, name, status, employee_count]
       title: HrCostCentre
     HrCostCentreCreate:
       properties:
@@ -6749,9 +6930,7 @@ components:
           title: Total Positions
           default: 0
       type: object
-      required:
-      - id
-      - name
+      required: [id, name, status, designation_count, filled_count, total_positions]
       title: HrDepartment
     HrDepartmentCreate:
       properties:
@@ -6885,9 +7064,7 @@ components:
           - type: 'null'
           title: Total
       type: object
-      required:
-      - id
-      - title
+      required: [id, title, filled]
       title: HrDesignation
     HrDesignationCreate:
       properties:
@@ -7331,7 +7508,7 @@ components:
         name: { anyOf: [{ type: string }, { type: "null" }] }
     HrMe:
       type: object
-      required: [linked]
+      required: [linked, balances, leave]
       properties:
         linked: { type: boolean }
         employee:
@@ -7354,7 +7531,7 @@ components:
         to_date: { type: string, format: date }
     HrWorkConflict:
       type: object
-      required: [id, title]
+      required: [id, title, kind]
       properties:
         id: { type: string }
         title: { type: string }
@@ -7362,7 +7539,7 @@ components:
         kind: { type: string, default: Field visit }
     HrLeavePreview:
       type: object
-      required: [days]
+      required: [days, conflicts, warnings]
       properties:
         days: { type: number }
         balance: { anyOf: [{ type: number }, { type: "null" }] }
@@ -7385,7 +7562,7 @@ components:
         to_date: { anyOf: [{ type: string }, { type: "null" }] }
     HrMyDeclaration:
       type: object
-      required: [year, year_label, status]
+      required: [year, year_label, status, nothing_else, interests, relationships, confidentiality_text, wording_confirmed]
       properties:
         employee: { anyOf: [{ type: string }, { type: "null" }] }
         employee_name: { anyOf: [{ type: string }, { type: "null" }] }
@@ -7414,7 +7591,7 @@ components:
         confirm: { type: boolean }
     HrDeclarationOutstanding:
       type: object
-      required: [employee]
+      required: [employee, has_login]
       properties:
         employee: { type: string }
         employee_name: { anyOf: [{ type: string }, { type: "null" }] }
@@ -7423,7 +7600,7 @@ components:
         has_login: { type: boolean }
     HrDeclarationRegister:
       type: object
-      required: [year, year_label, total, signed]
+      required: [year, year_label, total, signed, outstanding]
       properties:
         year: { type: integer }
         year_label: { type: string }
@@ -7439,7 +7616,7 @@ components:
         confirm: { type: boolean }
     HrRemindResult:
       type: object
-      required: [created]
+      required: [created, without_login, outstanding]
       properties:
         created: { type: integer }
         without_login: { type: integer }
@@ -7498,7 +7675,7 @@ components:
         confirm: { type: boolean }
     HrTrainingItem:
       type: object
-      required: [source]
+      required: [source, evidence_type, tagged]
       properties:
         source: { type: string, enum: [Training Result, LMS Certificate, LMS Enrollment] }
         evidence_type: { type: string }
@@ -7512,7 +7689,7 @@ components:
         tagged: { type: boolean, description: "false for LMS courses, not tagged to a competence yet (H7)" }
     HrTrainingEvidence:
       type: object
-      required: [employee]
+      required: [employee, items, lms_installed]
       properties:
         employee: { type: string }
         skill: { anyOf: [{ type: string }, { type: "null" }] }
@@ -7520,7 +7697,7 @@ components:
         lms_installed: { type: boolean }
     HrExternalPerson:
       type: object
-      required: [id, full_name, role]
+      required: [id, full_name, role, status]
       properties:
         id: { type: string }
         full_name: { type: string }
@@ -7533,7 +7710,7 @@ components:
         notes: { anyOf: [{ type: string }, { type: "null" }] }
     HrExternalPeople:
       type: object
-      required: [enabled]
+      required: [enabled, items]
       properties:
         enabled: { type: boolean }
         items: { type: array, items: { $ref: "#/components/schemas/HrExternalPerson" } }
@@ -7567,7 +7744,7 @@ components:
         confirm: { type: boolean }
     HrEvidencePackJob:
       type: object
-      required: [id, status]
+      required: [id, status, scope, people, ready]
       properties:
         id: { type: string }
         status: { type: string, enum: [Queued, Running, Ready, Failed] }
@@ -7583,7 +7760,7 @@ components:
         download: { anyOf: [{ type: string }, { type: "null" }] }
     HrCompetenceSkill:
       type: object
-      required: [name]
+      required: [name, holders, expiring]
       properties:
         name: { type: string }
         kind: { anyOf: [{ type: string }, { type: "null" }] }
@@ -7600,13 +7777,14 @@ components:
         valid_to: { anyOf: [{ type: string }, { type: "null" }] }
     HrCompetencePerson:
       type: object
-      required: [employee]
+      required: [employee, cells]
       properties:
         employee: { type: string }
         employee_name: { anyOf: [{ type: string }, { type: "null" }] }
         cells: { type: object, additionalProperties: { $ref: "#/components/schemas/HrCompetenceCell" } }
     HrCompetenceMatrix:
       type: object
+      required: [skills, people]
       properties:
         skills: { type: array, items: { $ref: "#/components/schemas/HrCompetenceSkill" } }
         people: { type: array, items: { $ref: "#/components/schemas/HrCompetencePerson" } }
@@ -7619,7 +7797,7 @@ components:
         confirm: { type: boolean }
     HrVacancy:
       type: object
-      required: [designation, approved, filled, vacant]
+      required: [designation, approved, filled, vacant, in_recruitment]
       properties:
         department: { anyOf: [{ type: string }, { type: "null" }] }
         designation: { type: string }
@@ -7629,7 +7807,7 @@ components:
         vacant: { type: integer }
     HrOpeningRef:
       type: object
-      required: [id]
+      required: [id, published]
       properties:
         id: { type: string }
         status: { anyOf: [{ type: string }, { type: "null" }] }
@@ -7637,7 +7815,7 @@ components:
         closes_on: { anyOf: [{ type: string }, { type: "null" }] }
     HrRequisition:
       type: object
-      required: [id, designation, status]
+      required: [id, designation, status, applicants]
       properties:
         id: { type: string }
         designation: { type: string }
@@ -7715,7 +7893,7 @@ components:
         offer_state: { anyOf: [{ type: string }, { type: "null" }] }
     HrPipeline:
       type: object
-      required: [opening]
+      required: [opening, applicants]
       properties:
         opening: { type: object, additionalProperties: true }
         applicants: { type: array, items: { $ref: "#/components/schemas/HrPipelineApplicant" } }
@@ -7729,7 +7907,7 @@ components:
         feedback: { anyOf: [{ type: string }, { type: "null" }] }
     HrApplicantInterview:
       type: object
-      required: [id, status]
+      required: [id, status, panel, feedback, waiting_for]
       properties:
         id: { type: string }
         status: { type: string }
@@ -7743,7 +7921,7 @@ components:
         average_rating: { anyOf: [{ type: number }, { type: "null" }] }
     HrOfferState:
       type: object
-      required: [name, state]
+      required: [name, state, docstatus]
       properties:
         name: { type: string }
         status: { anyOf: [{ type: string }, { type: "null" }] }
@@ -7754,7 +7932,7 @@ components:
         state: { type: string }
     HrApplicantDetail:
       type: object
-      required: [id, applicant_name, status, stage]
+      required: [id, applicant_name, status, stage, has_cv, interviews]
       properties:
         id: { type: string }
         applicant_name: { type: string }
@@ -7771,7 +7949,7 @@ components:
         stage: { type: string }
     HrMyInterview:
       type: object
-      required: [id]
+      required: [id, skills]
       properties:
         id: { type: string }
         applicant_name: { anyOf: [{ type: string }, { type: "null" }] }
@@ -7838,7 +8016,7 @@ components:
         confirm: { type: boolean }
     HrOnboardingActivity:
       type: object
-      required: [activity_name]
+      required: [activity_name, mine]
       properties:
         activity_name: { type: string }
         user: { anyOf: [{ type: string }, { type: "null" }] }
@@ -7849,7 +8027,7 @@ components:
         mine: { type: boolean }
     HrOnboarding:
       type: object
-      required: [id, employee_name]
+      required: [id, employee_name, kind, done, total, activities]
       properties:
         id: { type: string }
         kind: { type: string, enum: [onboarding, offboarding] }
@@ -7867,7 +8045,7 @@ components:
         line_manager: { anyOf: [{ type: string }, { type: "null" }] }
     HrOnboardingDefaults:
       type: object
-      required: [employee, employee_name]
+      required: [employee, employee_name, has_login, activities]
       properties:
         employee: { type: string }
         employee_name: { type: string }
@@ -7892,7 +8070,7 @@ components:
         confirm: { type: boolean }
     HrTeamMember:
       type: object
-      required: [employee, employee_name]
+      required: [employee, employee_name, on_probation]
       properties:
         employee: { type: string }
         employee_name: { type: string }
@@ -7906,7 +8084,7 @@ components:
         date_of_joining: { anyOf: [{ type: string }, { type: "null" }] }
     HrTeam:
       type: object
-      required: [manager]
+      required: [manager, members, summary]
       properties:
         manager: { type: string }
         members: { type: array, items: { $ref: "#/components/schemas/HrTeamMember" } }
@@ -7922,7 +8100,7 @@ components:
             authorisations: { type: array, items: { $ref: "#/components/schemas/HrAuthorisationRow" } }
     HrTeamCalendarEntry:
       type: object
-      required: [employee, kind, label, from_date, to_date]
+      required: [employee, kind, label, from_date, to_date, approved]
       properties:
         employee: { type: string }
         kind: { type: string, enum: [leave, field] }
@@ -7932,7 +8110,7 @@ components:
         approved: { type: boolean }
     HrTeamCalendar:
       type: object
-      required: [from_date, to_date]
+      required: [from_date, to_date, people, entries]
       properties:
         from_date: { type: string }
         to_date: { type: string }
@@ -7955,7 +8133,7 @@ components:
         new: { anyOf: [{ type: string }, { type: "null" }] }
     HrChangeItem:
       type: object
-      required: [id, kind, state]
+      required: [id, kind, state, changes]
       properties:
         id: { type: string }
         kind: { type: string, enum: [promotion, transfer, separation, contract] }
@@ -7964,7 +8142,7 @@ components:
         changes: { type: array, items: { $ref: "#/components/schemas/HrChangeLine" } }
     HrChanges:
       type: object
-      required: [employee, employee_name]
+      required: [employee, employee_name, items]
       properties:
         employee: { type: string }
         employee_name: { type: string }
@@ -8004,7 +8182,7 @@ components:
         confirm: { type: boolean }
     HrCaseRow:
       type: object
-      required: [id, kind, stage]
+      required: [id, kind, stage, overdue, closed]
       properties:
         id: { type: string }
         kind: { type: string, enum: [grievance, disciplinary] }
@@ -8023,13 +8201,14 @@ components:
         name: { anyOf: [{ type: string }, { type: "null" }] }
     HrCaseRegister:
       type: object
+      required: [items, can_open, owners]
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/HrCaseRow" } }
         can_open: { type: boolean }
         owners: { type: array, items: { $ref: "#/components/schemas/HrCaseOwner" } }
     HrCaseDetail:
       type: object
-      required: [id, kind, stage]
+      required: [id, kind, stage, stages, next, people, talk_first, notes, owners]
       properties:
         id: { type: string }
         kind: { type: string, enum: [grievance, disciplinary] }
@@ -8105,6 +8284,7 @@ components:
         confirm: { type: boolean }
     HrCaseBoard:
       type: object
+      required: [kinds]
       properties:
         kinds:
           type: array
@@ -8118,6 +8298,7 @@ components:
               avg_days_to_close: { anyOf: [{ type: number }, { type: "null" }] }
     HrMyConcerns:
       type: object
+      required: [items, categories, handlers]
       properties:
         items:
           type: array
@@ -8149,7 +8330,7 @@ components:
         handled_by: { anyOf: [{ type: string }, { type: "null" }] }
     HrPerfCycle:
       type: object
-      required: [name, cycle_name]
+      required: [name, cycle_name, people, objectives_set, self_done, manager_done]
       properties:
         name: { type: string }
         cycle_name: { type: string }
@@ -8162,11 +8343,12 @@ components:
         manager_done: { type: integer }
     HrPerfCycles:
       type: object
+      required: [items]
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/HrPerfCycle" } }
     HrPerfDept:
       type: object
-      required: [department]
+      required: [department, people, objectives_set, self_done, manager_done]
       properties:
         department: { type: string }
         people: { type: integer }
@@ -8175,7 +8357,7 @@ components:
         manager_done: { type: integer }
     HrPerfPerson:
       type: object
-      required: [appraisal, employee, employee_name, step]
+      required: [appraisal, employee, employee_name, step, objectives, self_done, manager_done]
       properties:
         appraisal: { type: string }
         employee: { type: string }
@@ -8189,7 +8371,7 @@ components:
         step: { type: string, enum: [self, manager, done] }
     HrPerfCycleDetail:
       type: object
-      required: [name, cycle_name]
+      required: [name, cycle_name, departments, people]
       properties:
         name: { type: string }
         cycle_name: { type: string }
@@ -8200,6 +8382,7 @@ components:
         people: { type: array, items: { $ref: "#/components/schemas/HrPerfPerson" } }
     HrPerfDefaults:
       type: object
+      required: [templates, departments, reminder_days]
       properties:
         templates:
           type: array
@@ -8238,11 +8421,12 @@ components:
         confirm: { type: boolean }
     HrPerfRemindResult:
       type: object
+      required: [sent]
       properties:
         sent: { type: integer }
     HrAppraisalDetail:
       type: object
-      required: [id, cycle, cycle_name, employee, employee_name, step]
+      required: [id, cycle, cycle_name, employee, employee_name, step, kras, goals, criteria, self_done, manager_done, can_self, can_review, can_add_goals]
       properties:
         id: { type: string }
         cycle: { type: string }
@@ -8321,7 +8505,7 @@ components:
         confirm: { type: boolean }
     HrContractDefaults:
       type: object
-      required: [employee, employee_name]
+      required: [employee, employee_name, employment_types]
       properties:
         employee: { type: string }
         employee_name: { type: string }
@@ -8340,6 +8524,7 @@ components:
         confirm: { type: boolean }
     HrEstCounts:
       type: object
+      required: [approved, frozen, filled, in_recruitment, vacant]
       properties:
         approved: { type: integer }
         frozen: { type: integer }
@@ -8362,7 +8547,7 @@ components:
         name: { type: string }
     HrEstChange:
       type: object
-      required: [id, department, designation, change, summary, state]
+      required: [id, department, designation, change, summary, state, count, council_required]
       properties:
         id: { type: string }
         department: { type: string }
@@ -8386,7 +8571,7 @@ components:
             unplanned: { type: integer, description: Active people in the department beyond its planned posts }
     HrEstablishment:
       type: object
-      required: [totals]
+      required: [totals, departments, has_plans, pending, can_request]
       properties:
         departments: { type: array, items: { $ref: "#/components/schemas/HrEstDepartmentRow" } }
         totals: { $ref: "#/components/schemas/HrEstCounts" }
@@ -8395,7 +8580,7 @@ components:
         can_request: { type: boolean }
     HrEstDepartment:
       type: object
-      required: [department]
+      required: [department, posts, people, cover_warnings, changes, can_request, can_set_head]
       properties:
         department: { type: string }
         parent: { anyOf: [{ type: string }, { type: "null" }] }
@@ -8475,7 +8660,7 @@ components:
         confirm: { type: boolean }
     HrSensitive:
       type: object
-      required: [employee, employee_name, level, level_label, log]
+      required: [employee, employee_name, level, level_label, log, fields]
       properties:
         employee: { type: string }
         employee_name: { type: string }
@@ -8493,7 +8678,7 @@ components:
         log: { type: string, description: HR Access Log row written for this view }
     HrAccessLog:
       type: object
-      required: [employee, employee_name]
+      required: [employee, employee_name, can_open, items]
       properties:
         employee: { type: string }
         employee_name: { type: string }
@@ -8512,7 +8697,7 @@ components:
               viewed_on: { anyOf: [{ type: string }, { type: "null" }] }
     HrAttentionItem:
       type: object
-      required: [kind, count, title, href]
+      required: [kind, count, title, href, weight]
       properties:
         kind: { type: string }
         count: { type: integer }
@@ -8523,13 +8708,14 @@ components:
         weight: { type: integer }
     HrTurnover:
       type: object
+      required: [joiners, leavers]
       properties:
         joiners: { type: integer }
         leavers: { type: integer }
         pct: { anyOf: [{ type: number }, { type: "null" }] }
     HrCycleStatus:
       type: object
-      required: [cycle_name]
+      required: [cycle_name, people, self_done, manager_done]
       properties:
         name: { anyOf: [{ type: string }, { type: "null" }] }
         cycle_name: { type: string }
@@ -8539,7 +8725,7 @@ components:
         manager_done: { type: integer }
     HrLiveOverview:
       type: object
-      required: [as_of]
+      required: [as_of, headcount, departments, establishment, attention, away_today, movements, turnover, ending_soon, record_quality, cycles]
       properties:
         as_of: { type: string, format: date }
         headcount: { type: integer }
@@ -8590,6 +8776,7 @@ components:
         cycles: { type: array, items: { $ref: "#/components/schemas/HrCycleStatus" } }
     HrSetupStatus:
       type: object
+      required: [steps, done, total, pct]
       properties:
         steps:
           type: array
@@ -8609,7 +8796,7 @@ components:
         pct: { type: integer }
     HrBoardPack:
       type: object
-      required: [as_of]
+      required: [as_of, headcount, turnover, establishment_changes]
       properties:
         as_of: { type: string, format: date }
         headcount: { type: integer }
@@ -8642,7 +8829,7 @@ components:
               council_required: { type: boolean }
     HrSeparationDefaults:
       type: object
-      required: [employee, employee_name]
+      required: [employee, employee_name, reasons, activities]
       properties:
         employee: { type: string }
         employee_name: { type: string }
@@ -8671,9 +8858,9 @@ components:
           items: { type: string }
           type: array
         ok: { type: boolean, default: false }
-      required: [pass_no]
       title: HrImportResult
       type: object
+      required: [pass_no, rows, create, update, unchanged, errors, warnings, ok]
     HrImportRun:
       properties:
         id: { type: string }
@@ -8697,9 +8884,9 @@ components:
           nullable: true
           items: { type: string }
           type: array
-      required: [id, status]
       title: HrImportRun
       type: object
+      required: [id, status, rows, created, updated, unchanged, error_count]
     HrImportRuns:
       properties:
         items:
@@ -8723,6 +8910,7 @@ components:
         unchanged: { type: integer, default: 0 }
       title: HrMasterDataCounts
       type: object
+      required: [created, updated, unchanged]
     HrMasterDataResult:
       properties:
         dry_run: { type: boolean }
@@ -8740,9 +8928,9 @@ components:
           items: { type: string }
           type: array
         ok: { type: boolean, default: false }
-      required: [dry_run]
       title: HrMasterDataResult
       type: object
+      required: [dry_run, counts, missing_departments, kept, errors, ok]
     HrHoliday:
       properties:
         date:
@@ -8899,6 +9087,7 @@ components:
           title: Awaiting
       title: HrLeaveBalances
       type: object
+      required: [items]
     HrLeaveRequest:
       description: One row of GET /hr/leave/requests (read-only; no reason text).
       properties:
@@ -8976,11 +9165,9 @@ components:
           default: false
           title: Escalated
           type: boolean
-      required:
-      - id
-      - status
       title: HrLeaveRequest
       type: object
+      required: [id, status, overdue, escalated]
     HrLeaveRequests:
       properties:
         items:
@@ -8990,6 +9177,7 @@ components:
           type: array
       title: HrLeaveRequests
       type: object
+      required: [items]
     HrLeaveCalendarEntry:
       properties:
         employee:
@@ -9014,15 +9202,9 @@ components:
         style:
           title: Style
           type: string
-      required:
-      - employee
-      - kind
-      - label
-      - from_date
-      - to_date
-      - style
       title: HrLeaveCalendarEntry
       type: object
+      required: [employee, kind, label, from_date, to_date, style, approved]
     HrLeaveCalendarPerson:
       properties:
         employee:
@@ -9062,11 +9244,9 @@ components:
             $ref: '#/components/schemas/HrLeaveCalendarEntry'
           title: Entries
           type: array
-      required:
-      - start
-      - end
       title: HrLeaveCalendar
       type: object
+      required: [start, end, people, entries]
     HrLeavePolicyAllocation:
       properties:
         policy:
@@ -9094,10 +9274,9 @@ components:
             $ref: '#/components/schemas/HrLeavePolicyAllocation'
           title: Allocations
           type: array
-      required:
-      - name
       title: HrLeavePolicyType
       type: object
+      required: [name, allocations]
     HrLeavePeriod:
       properties:
         name:
@@ -9144,6 +9323,7 @@ components:
           type: array
       title: HrLeavePolicy
       type: object
+      required: [configured, leave_types]
     HrExpenseLine:
       properties:
         expense_type: { title: Expense Type, type: string }
@@ -9187,9 +9367,9 @@ components:
           nullable: true
           items: { $ref: '#/components/schemas/HrExpenseAttachment' }
           type: array
-      required: [id, status]
       title: HrExpenseClaim
       type: object
+      required: [id, status, total, approval_status, overdue]
     HrEmployeeDocument:
       description: Plan 06. ``file`` (a private media key) only for HR and the person; None for a line manager.
       properties:
@@ -9242,12 +9422,9 @@ components:
           - type: 'null'
           default: null
           title: File
-      required:
-      - id
-      - document_type
-      - status
       title: HrEmployeeDocument
       type: object
+      required: [id, document_type, status, required]
     HrEmployeeDocuments:
       properties:
         employee:
@@ -9273,10 +9450,9 @@ components:
           default: false
           title: Required Set
           type: boolean
-      required:
-      - employee
       title: HrEmployeeDocuments
       type: object
+      required: [employee, items, missing, required_set]
     HrRecordDocuments:
       properties:
         items:
@@ -9295,6 +9471,7 @@ components:
           type: boolean
       title: HrRecordDocuments
       type: object
+      required: [items, missing, required_set]
     HrRecordLeave:
       properties:
         balances:
@@ -9317,6 +9494,7 @@ components:
           title: Next
       title: HrRecordLeave
       type: object
+      required: [balances]
     HrRecordContract:
       properties:
         employment_type:
@@ -9508,11 +9686,9 @@ components:
             $ref: '#/components/schemas/HrRecordOpenItem'
           title: Open Items
           type: array
-      required:
-      - id
-      - employee_name
       title: HrEmployeeRecord
       type: object
+      required: [id, employee_name, leave, authorisations, documents, history, contract, open_items]
     HrProfileChange:
       properties:
         id:
@@ -9582,12 +9758,9 @@ components:
           - type: 'null'
           default: null
           title: Requested On
-      required:
-      - id
-      - field
-      - status
       title: HrProfileChange
       type: object
+      required: [id, field, status, has_evidence]
     HrProfileChanges:
       properties:
         items:
@@ -9597,6 +9770,7 @@ components:
           type: array
       title: HrProfileChanges
       type: object
+      required: [items]
     HrProfileChangeBody:
       properties:
         field:
@@ -9731,9 +9905,7 @@ components:
           title: Employee Count
           default: 0
       type: object
-      required:
-      - id
-      - name
+      required: [id, name, status, employee_count]
       title: HrLocation
     HrLocationCreate:
       properties:
@@ -10271,10 +10443,7 @@ components:
           - type: 'null'
           title: Activity
       type: object
-      required:
-      - headcount
-      - appraisal_completion_pct
-      - open_leave
+      required: [headcount, appraisal_completion_pct, open_leave, new_hires_q, on_leave_today, leave_pending, open_positions, out_today, activity]
       title: HrSummary
       description: GET /hr/summary and GET /hr/overview share this payload.
     InviteStaffRequest:

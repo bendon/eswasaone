@@ -28,65 +28,23 @@ export type HrEmployeesResponse = { items: HrEmployeeSummary[] };
 export type HrLeaveResponse = { items: HrLeaveSummary[] };
 
 /*
- * My HR (GET /hr/me, POST /hr/leave/preview). Declared in contracts/openapi.yaml; written by hand
- * here because contracts/types.ts can't be regenerated until the duplicate CertificationScheme
- * key in openapi.yaml is fixed. TODO: switch to components["schemas"][...] after regeneration.
+ * HR types come from the generated contracts/types.ts where the generated shape fits the screens.
+ * The hand-written ones that remain are aliases the screens rely on: unions narrower than the
+ * contract's string (HrStage, HrAuthorisationStatus, HrSetupStepState), nested rows the contract
+ * declares inline (HrPipeline, HrApplicantDetail, HrEstablishment, HrLiveOverview, HrBoardPack,
+ * HrCompetenceMatrix, HrPerfDefaults, HrSetupStatus, HrTeamCalendar), rows the screens build
+ * themselves (HrOnboardingActivity) and response wrappers with no schema of their own.
  */
-export type HrPersonRef = { user?: string | null; name?: string | null };
+export type HrPersonRef = components["schemas"]["HrPersonRef"];
 export type HrLeaveBalanceRow = { leave_type: string; allocated: number; used: number; balance: number };
-export type HrMe = {
-  linked: boolean;
-  employee?: HrEmployeeSummary | null;
-  line_manager?: string | null;
-  leave_approver?: HrPersonRef | null;
-  balances: HrLeaveBalanceRow[];
-  leave: HrLeaveSummary[];
-};
-export type HrWorkConflict = { id: string; title: string; date?: string | null; kind?: string };
-export type HrDeclarationInterest = {
-  organisation: string;
-  relationship: string;
-  from_date?: string | null;
-  to_date?: string | null;
-};
-export type HrMyDeclaration = {
-  employee?: string | null;
-  employee_name?: string | null;
-  year: number;
-  year_label: string;
-  status: "outstanding" | "draft" | "signed";
-  signed_on?: string | null;
-  nothing_else: boolean;
-  interests: HrDeclarationInterest[];
-  look_back_from?: string | null;
-  relationships: string[];
-  confidentiality_text: string;
-  wording_confirmed: boolean;
-};
-export type HrDeclarationRegister = {
-  year: number;
-  year_label: string;
-  total: number;
-  signed: number;
-  outstanding: Array<{
-    employee: string;
-    employee_name?: string | null;
-    department?: string | null;
-    designation?: string | null;
-    has_login: boolean;
-  }>;
-};
+export type HrMe = components["schemas"]["HrMe"];
+export type HrWorkConflict = components["schemas"]["HrWorkConflict"];
+export type HrDeclarationInterest = components["schemas"]["HrDeclarationInterest"];
+export type HrMyDeclaration = components["schemas"]["HrMyDeclaration"];
+export type HrDeclarationRegister = components["schemas"]["HrDeclarationRegister"];
 export type HrAuthorisationStatus = "In training" | "Current" | "Expiring" | "Expired" | "Withdrawn";
-export type HrAuthorisationRow = {
-  id: string;
-  employee: string;
-  employee_name?: string | null;
-  skill: string;
-  valid_from?: string | null;
-  valid_to?: string | null;
-  status: HrAuthorisationStatus;
-};
-export type HrAuthorisationEvidence = { evidence_type: string; reference?: string | null; notes?: string | null };
+export type HrAuthorisationRow = components["schemas"]["HrAuthorisationRow"];
+export type HrAuthorisationEvidence = components["schemas"]["HrAuthorisationEvidence"];
 export type HrAuthorisationDetail = HrAuthorisationRow & {
   kind?: string | null;
   scheme?: string | null;
@@ -102,24 +60,13 @@ export type HrCompetenceMatrix = {
     cells: Record<string, { id: string; status: HrAuthorisationStatus; valid_to?: string | null }>;
   }>;
 };
-export type HrRemindResult = { created: number; without_login: number; outstanding: number };
+export type HrRemindResult = components["schemas"]["HrRemindResult"];
 export type HrStage = "Applied" | "Shortlist" | "Interview" | "Offer" | "Hired" | "Not taken forward";
 export type HrPipeline = {
   opening: { name: string; job_title?: string; designation?: string; department?: string; closes_on?: string | null; status?: string };
   applicants: Array<{ id: string; applicant_name: string; status: string; applied_on?: string | null; source?: string | null; stage: HrStage; interview_status?: string | null; offer_state?: string | null }>;
 };
-export type HrApplicantInterview = {
-  id: string;
-  status: string;
-  scheduled_on?: string | null;
-  from_time?: string | null;
-  to_time?: string | null;
-  interview_type?: string | null;
-  panel: string[];
-  feedback: Array<{ interviewer: string; result?: string | null; rating?: number | null; feedback?: string | null }>;
-  waiting_for: number;
-  average_rating?: number | null;
-};
+export type HrApplicantInterview = components["schemas"]["HrApplicantInterview"];
 export type HrApplicantDetail = {
   id: string;
   applicant_name: string;
@@ -135,38 +82,12 @@ export type HrApplicantDetail = {
   offer?: { name: string; status?: string | null; docstatus: number; offer_date?: string | null; designation?: string | null; employee?: string | null; state: string } | null;
   stage: HrStage;
 };
-export type HrMyInterview = { id: string; applicant_name?: string | null; designation?: string | null; scheduled_on?: string | null; from_time?: string | null; interview_type?: string | null; skills: string[] };
+export type HrMyInterview = components["schemas"]["HrMyInterview"];
 export type HrOnboardingActivity = { activity_name: string; user?: string | null; user_name?: string | null; group?: string | null; task?: string | null; status?: string | null; mine?: boolean };
-export type HrOnboarding = {
-  id: string;
-  kind?: "onboarding" | "offboarding";
-  last_day?: string | null;
-  reason?: string | null;
-  employee?: string | null;
-  employee_name: string;
-  designation?: string | null;
-  department?: string | null;
-  date_of_joining?: string | null;
-  boarding_status?: string | null;
-  done: number;
-  total: number;
-  activities: HrOnboardingActivity[];
-  line_manager?: string | null;
-};
-export type HrOnboardingDefaults = { employee: string; employee_name: string; date_of_joining?: string | null; job_offer?: string | null; has_login: boolean; activities: HrOnboardingActivity[] };
-export type HrTeamMember = {
-  employee: string;
-  employee_name: string;
-  designation?: string | null;
-  department?: string | null;
-  direct?: boolean | null;
-  on_probation: boolean;
-  probation_review_due?: string | null;
-  contract_ends?: string | null;
-  away_today?: string | null;
-  date_of_joining?: string | null;
-};
-export type HrTeam = { manager: string; members: HrTeamMember[]; summary: Record<string, number> };
+export type HrOnboarding = components["schemas"]["HrOnboarding"];
+export type HrOnboardingDefaults = components["schemas"]["HrOnboardingDefaults"];
+export type HrTeamMember = components["schemas"]["HrTeamMember"];
+export type HrTeam = components["schemas"]["HrTeam"];
 export type HrTeamMemberDetail = HrTeamMember & {
   line_manager?: string | null;
   scheduled_confirmation_date?: string | null;
@@ -179,36 +100,12 @@ export type HrTeamCalendar = {
   people: Array<{ employee: string; employee_name: string }>;
   entries: Array<{ employee: string; kind: "leave" | "field"; label: string; from_date: string; to_date: string; approved: boolean }>;
 };
-export type HrChanges = {
-  employee: string;
-  employee_name: string;
-  status?: string | null;
-  items: Array<{ id: string; kind: "promotion" | "transfer" | "separation" | "contract"; date?: string | null; state: string; changes: Array<{ property: string; current?: string | null; new?: string | null }> }>;
-};
+export type HrChanges = components["schemas"]["HrChanges"];
 export type HrPerfCounts = { people: number; objectives_set: number; self_done: number; manager_done: number };
-export type HrPerfCycle = HrPerfCounts & { name: string; cycle_name: string; start_date?: string | null; end_date?: string | null; status?: string | null };
+export type HrPerfCycle = components["schemas"]["HrPerfCycle"];
 export type HrPerfStep = "self" | "manager" | "done";
-export type HrPerfPerson = {
-  appraisal: string;
-  employee: string;
-  employee_name: string;
-  department?: string | null;
-  designation?: string | null;
-  manager_name?: string | null;
-  objectives: number;
-  self_done: boolean;
-  manager_done: boolean;
-  step: HrPerfStep;
-};
-export type HrPerfCycleDetail = {
-  name: string;
-  cycle_name: string;
-  start_date?: string | null;
-  end_date?: string | null;
-  status?: string | null;
-  departments: Array<HrPerfCounts & { department: string }>;
-  people: HrPerfPerson[];
-};
+export type HrPerfPerson = components["schemas"]["HrPerfPerson"];
+export type HrPerfCycleDetail = components["schemas"]["HrPerfCycleDetail"];
 export type HrPerfDefaults = {
   templates: Array<{ name: string; title: string; criteria: string[]; kras: string[] }>;
   departments: Array<{ name: string; people: number }>;
@@ -240,19 +137,9 @@ export type HrAppraisal = {
   can_add_goals: boolean;
 };
 export type HrCaseKind = "grievance" | "disciplinary";
-export type HrCaseOwner = { user: string; name?: string | null };
-export type HrCaseRow = {
-  id: string;
-  kind: HrCaseKind;
-  opened_on?: string | null;
-  stage: string;
-  owner_name?: string | null;
-  next_step?: string | null;
-  next_step_due?: string | null;
-  overdue: boolean;
-  closed: boolean;
-};
-export type HrCaseRegister = { items: HrCaseRow[]; can_open: boolean; owners: HrCaseOwner[] };
+export type HrCaseOwner = components["schemas"]["HrCaseOwner"];
+export type HrCaseRow = components["schemas"]["HrCaseRow"];
+export type HrCaseRegister = components["schemas"]["HrCaseRegister"];
 export type HrCase = {
   id: string;
   kind: HrCaseKind;
@@ -274,31 +161,13 @@ export type HrCase = {
   notes: Array<{ text: string; by?: string | null; on?: string | null }>;
   owners: HrCaseOwner[];
 };
-export type HrMyConcerns = { items: Array<{ id: string; raised_on?: string | null; status: string }>; categories: string[]; handlers: HrCaseOwner[] };
-export type HrContractDefaults = {
-  employee: string;
-  employee_name: string;
-  employment_type?: string | null;
-  contract_end_date?: string | null;
-  employment_types: string[];
-  pending?: string | null;
-};
-export type HrEstCounts = { approved: number; frozen: number; filled: number; in_recruitment: number; vacant: number };
+export type HrMyConcerns = components["schemas"]["HrMyConcerns"];
+export type HrContractDefaults = components["schemas"]["HrContractDefaults"];
+export type HrEstCounts = components["schemas"]["HrEstCounts"];
 export type HrEstPost = HrEstCounts & { designation: string; grade?: string | null };
-export type HrEstHead = { id: string; name: string };
+export type HrEstHead = components["schemas"]["HrEstHead"];
 export type HrEstChangeKind = "Add" | "Remove" | "Freeze" | "Unfreeze" | "Regrade";
-export type HrEstChange = {
-  id: string;
-  department: string;
-  designation: string;
-  change: HrEstChangeKind;
-  count: number;
-  new_grade?: string | null;
-  summary: string;
-  state: "Waiting for Executive Director" | "Waiting for Council" | "Approved" | "Sent back" | "Not approved";
-  council_required: boolean;
-  date?: string | null;
-};
+export type HrEstChange = components["schemas"]["HrEstChange"];
 export type HrEstablishment = {
   departments: Array<HrEstCounts & { department: string; head?: HrEstHead | null; posts: HrEstPost[]; unplanned: number }>;
   totals: HrEstCounts;
@@ -306,18 +175,8 @@ export type HrEstablishment = {
   pending: HrEstChange[];
   can_request: boolean;
 };
-export type HrEstDepartment = {
-  department: string;
-  parent?: string | null;
-  head?: HrEstHead | null;
-  posts: HrEstPost[];
-  people: Array<{ id: string; name?: string | null; designation?: string | null; reports_to?: string | null }>;
-  cover_warnings: Array<{ skill: string; holders: number }>;
-  changes: HrEstChange[];
-  can_request: boolean;
-  can_set_head: boolean;
-};
-export type HrTrackStep = { title: string; state?: "done" | "now" | null };
+export type HrEstDepartment = components["schemas"]["HrEstDepartment"];
+export type HrTrackStep = components["schemas"]["HrTrackStep"];
 export type HrEstChangeDetail = HrEstChange & {
   reason?: string | null;
   cost_note?: string | null;
@@ -330,23 +189,11 @@ export type HrEstChangeDetail = HrEstChange & {
   deciders: Array<{ user: string; name: string }>;
   track: HrTrackStep[];
 };
-export type HrSensitive = {
-  employee: string;
-  employee_name: string;
-  level: 1 | 2;
-  level_label: string;
-  fields: Array<{ field: string; label: string; value?: string | null }>;
-  log: string;
-};
-export type HrAccessLog = {
-  employee: string;
-  employee_name: string;
-  can_open: number[];
-  items: Array<{ id: string; viewer?: string | null; viewer_name?: string | null; level?: string | null; reason?: string | null; viewed_on?: string | null }>;
-};
-export type HrAttentionItem = { kind: string; count: number; title: string; detail?: string | null; due?: string | null; href: string; weight?: number };
-export type HrTurnover = { joiners: number; leavers: number; pct?: number | null };
-export type HrCycleStatus = { name?: string | null; cycle_name: string; end_date?: string | null; people: number; self_done: number; manager_done: number };
+export type HrSensitive = components["schemas"]["HrSensitive"];
+export type HrAccessLog = components["schemas"]["HrAccessLog"];
+export type HrAttentionItem = components["schemas"]["HrAttentionItem"];
+export type HrTurnover = components["schemas"]["HrTurnover"];
+export type HrCycleStatus = components["schemas"]["HrCycleStatus"];
 export type HrLiveOverview = {
   as_of: string;
   headcount: number;
@@ -378,28 +225,11 @@ export type HrBoardPack = {
   declarations?: { signed?: number; total?: number; year?: string | number } | null;
   establishment_changes: Array<{ summary: string; department: string; state: string; council_required: boolean }>;
 };
-export type HrSeparationDefaults = { employee: string; employee_name: string; reasons: string[]; activities: HrOnboardingActivity[] };
+export type HrSeparationDefaults = components["schemas"]["HrSeparationDefaults"];
 export type HrPickItem = { id: string; name?: string | null; title?: string | null; employee_name?: string | null };
-export type HrVacancy = { department?: string | null; designation: string; approved: number; filled: number; in_recruitment: number; vacant: number };
-export type HrRequisition = {
-  id: string;
-  designation: string;
-  department?: string | null;
-  status: "Pending" | "Open & Approved" | "Rejected" | "Filled" | "On Hold" | "Cancelled";
-  requested_by?: string | null;
-  posting_date?: string | null;
-  expected_by?: string | null;
-  opening?: { id: string; status?: string | null; published: boolean; closes_on?: string | null } | null;
-  applicants: Record<string, number>;
-};
-export type HrLeavePreview = {
-  days: number;
-  balance?: number | null;
-  balance_after?: number | null;
-  approver?: HrPersonRef | null;
-  conflicts: HrWorkConflict[];
-  warnings: string[];
-};
+export type HrVacancy = components["schemas"]["HrVacancy"];
+export type HrRequisition = components["schemas"]["HrRequisition"];
+export type HrLeavePreview = components["schemas"]["HrLeavePreview"];
 export type HrAppraisalsResponse = { items: HrAppraisalSummary[] };
 
 /** Org-first HR structure schemas */

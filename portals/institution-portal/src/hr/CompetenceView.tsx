@@ -32,6 +32,12 @@ export function CompetenceView() {
             <Link className="btn ghost" to="/hr/competence/declarations">
               Declarations
             </Link>
+            <Link className="btn ghost" to="/hr/competence/external">
+              External personnel
+            </Link>
+            <Link className="btn ghost" to="/hr/competence/pack">
+              Evidence pack
+            </Link>
             <Link className="btn pri" to="/hr/competence/new">
               <Icon name="i-plus" />
               Record an authorisation

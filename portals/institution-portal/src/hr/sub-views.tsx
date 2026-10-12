@@ -22,3 +22,5 @@ export { DepartmentDetail, RequestChange, ChangeDetail } from "./establishment/E
 export { LeavePolicyView } from "./LeavePolicy";
 export { EmployeeRecord } from "./record/EmployeeRecord";
 export { ExpensesView, ExpenseDetail } from "./ExpensesView";
+export { ExternalPeople } from "./competence/ExternalPeople";
+export { EvidencePack } from "./competence/EvidencePack";

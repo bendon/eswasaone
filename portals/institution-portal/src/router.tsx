@@ -583,6 +583,14 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "competence/external",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.ExternalPeople }))} skeleton="list" />,
+                  },
+                  {
+                    path: "competence/pack",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.EvidencePack }))} skeleton="panel" />,
+                  },
+                  {
                     path: "competence/new",
                     element: (
                       <L

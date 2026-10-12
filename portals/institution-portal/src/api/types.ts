@@ -50,6 +50,7 @@ export type HrAuthorisationDetail = HrAuthorisationRow & {
   scheme?: string | null;
   approver?: string | null;
   decides?: string | null;
+  person_type?: string | null;
   evidence: HrAuthorisationEvidence[];
 };
 export type HrCompetenceMatrix = {

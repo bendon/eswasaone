@@ -8,6 +8,8 @@ import { useInstitution } from "../../layout/InstitutionLayout";
 import type { HrAuthorisationDetail, HrCompetenceMatrix, HrEmployeesResponse } from "../../api/types";
 import { Banner, Crumbs, NextStep, Track } from "../../me/parts";
 import { EVIDENCE_TYPES } from "./shared";
+import { TrainingEvidence } from "./Training";
+import { errorText } from "../api";
 
 type Ev = { evidence_type: string; reference: string; notes: string };
 const BLANK: Ev = { evidence_type: "", reference: "", notes: "" };
@@ -55,7 +57,7 @@ export function RecordAuthorisation() {
       });
       setSent(res);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Not sent. Try again.");
+      setErr(errorText(e, "Not sent. Try again."));
     } finally {
       setBusy(false);
     }
@@ -190,9 +192,23 @@ export function RecordAuthorisation() {
                   Add evidence
                 </button>
               </div>
-              <p className="hr-note">Attaching files comes next; for now, give a reference HR can find.</p>
+              <p className="hr-note">Files can be attached on the authorisation once it's sent, while it waits for approval.</p>
             </div>
           </div>
+
+          {employee && skill ? (
+            <TrainingEvidence
+              employee={employee}
+              skill={skill}
+              onUse={(t) =>
+                setEvidence((es) => {
+                  const row = { evidence_type: t.evidence_type || "Training Result", reference: t.reference ?? t.title ?? "", notes: [t.title, t.date, t.result].filter(Boolean).join(", ") };
+                  const blank = es.findIndex((e) => !e.evidence_type && !e.reference.trim() && !e.notes.trim());
+                  return blank >= 0 ? es.map((e, j) => (j === blank ? row : e)) : [...es, row];
+                })
+              }
+            />
+          ) : null}
 
           {err ? (
             <Banner kind="bad" title="Not sent">

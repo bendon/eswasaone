@@ -4,7 +4,7 @@ Staff authorisations (brief §6.2; journey J4): who may do which audit, review o
 HR prepares a draft Staff Authorisation (person, competence, validity, evidence). It goes to the head of
 the person's department in Approvals (one ToDo for that person — never a role pool). The head approves
 or rejects through the ``eswasa_approval_handlers`` hook; approving submits it, and from then on
-``competence.is_authorised`` lets Certification and Metrology assign the person until ``valid_to``.
+``competence.assignment_error`` lets Certification and Metrology assign the person until ``valid_to``.
 
 Four-eyes: the approver is never the person authorised, nor whoever prepared it.
 Pure rules sit at the top and are tested without Frappe.

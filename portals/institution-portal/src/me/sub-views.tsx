@@ -6,3 +6,4 @@ export { MyCompetence } from "./MyCompetence";
 export { MyInterviews } from "./MyInterviews";
 export { FirstDays } from "./FirstDays";
 export { MyAppraisal } from "./MyAppraisal";
+export { RaiseConcern } from "./RaiseConcern";

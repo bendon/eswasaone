@@ -1,0 +1,36 @@
+# Employee Grievance — HRMS native (brief §10). Restricted: HR Manager and the named case owner only.
+
+doctype: Employee Grievance
+module: hr
+workflow_name: Employee Grievance
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: hr.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  HRMS owns this DocType (status Open → Investigated → Resolved / Invalid); never overwrite its
+  fixtures. eswasa_hr.cases adds the case owner, next step and permission hooks. Raised in
+  confidence from My HR (E9) or opened by an HR Manager.
+
+display:
+  customer: {}
+  staff:
+    Open: Open
+    Investigated: Investigated
+    Resolved: Resolved
+    Invalid: Invalid
+
+states:
+  - {name: Open, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Investigated, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Resolved, owner_role: HR Manager, allow_edit: HR Manager, style: Success}
+  - {name: Invalid, owner_role: HR Manager, allow_edit: HR Manager}
+
+transitions:
+  - {action: Investigate, from: Open, to: Investigated, actor: HR Manager, reason: required, approvals_family: do}
+  - {action: Resolve, from: Investigated, to: Resolved, actor: HR Manager, reason: required, approvals_family: do}
+  - {action: Mark invalid, from: Open, to: Invalid, actor: HR Manager, reason: required, approvals_family: do}
+  - {action: Mark invalid, from: Investigated, to: Invalid, actor: HR Manager, reason: required, approvals_family: do}

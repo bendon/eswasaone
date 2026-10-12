@@ -111,5 +111,44 @@
   "options": "Resignation\nEnd of fixed-term contract\nRetirement\nDismissal\nDeath in service\nOther",
   "insert_after": "employee_name",
   "name": "Employee Separation-custom_reason"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee Grievance",
+  "fieldname": "custom_case_owner",
+  "label": "Case Owner",
+  "fieldtype": "Link",
+  "options": "User",
+  "insert_after": "status",
+  "description": "Named HR Manager who handles it. Only they and HR Managers can read it.",
+  "name": "Employee Grievance-custom_case_owner"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee Grievance",
+  "fieldname": "custom_next_step",
+  "label": "Next Step",
+  "fieldtype": "Data",
+  "insert_after": "custom_case_owner",
+  "name": "Employee Grievance-custom_next_step"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee Grievance",
+  "fieldname": "custom_next_step_due",
+  "label": "Next Step Due",
+  "fieldtype": "Date",
+  "insert_after": "custom_next_step",
+  "name": "Employee Grievance-custom_next_step_due"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee Grievance",
+  "fieldname": "custom_talk_first",
+  "label": "Talk to HR Before Investigating",
+  "fieldtype": "Check",
+  "insert_after": "custom_next_step_due",
+  "default": "0",
+  "name": "Employee Grievance-custom_talk_first"
  }
 ]

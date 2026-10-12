@@ -26,6 +26,10 @@ fixtures = [
                     "Employee Transfer-custom_approved_by",
                     "Employee Separation-custom_approved_by",
                     "Employee Separation-custom_reason",
+                    "Employee Grievance-custom_case_owner",
+                    "Employee Grievance-custom_next_step",
+                    "Employee Grievance-custom_next_step_due",
+                    "Employee Grievance-custom_talk_first",
                 ],
             ]
         ],
@@ -50,13 +54,16 @@ fixtures = [
     },
 ]
 
-# Permission hooks for Employee (line-manager visibility) — §11
-# permission_query_conditions = {
-#     "Employee": "eswasa_hr.permissions.employee_query",
-# }
-# has_permission = {
-#     "Employee": "eswasa_hr.permissions.employee_has_permission",
-# }
+# Cases (brief §10): only HR Managers and the named case owner (or the appeal owner during an appeal) can read
+# a case, in Desk as well as the portal. These hooks only narrow; HR User and Employee lose access to cases.
+permission_query_conditions = {
+    "Employee Grievance": "eswasa_hr.cases.grievance_query",
+    "Disciplinary Case": "eswasa_hr.cases.disciplinary_query",
+}
+has_permission = {
+    "Employee Grievance": "eswasa_hr.cases.has_permission",
+    "Disciplinary Case": "eswasa_hr.cases.has_permission",
+}
 
 after_migrate = ["eswasa_hr.setup.after_migrate"]
 
@@ -100,4 +107,7 @@ eswasa_approval_handlers = {
     "Appraisal": "eswasa_hr.performance.decide",
     # R-H2…H4 alerts: Acknowledge closes only the acknowledging user's ToDo.
     "HR Alert": "eswasa_hr.alerts.decide",
+    # Cases move on only from the case page (notes, outcome, appeal routing).
+    "Employee Grievance": "eswasa_hr.cases.decide",
+    "Disciplinary Case": "eswasa_hr.cases.decide",
 }

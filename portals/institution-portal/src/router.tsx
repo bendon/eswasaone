@@ -810,6 +810,28 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "cases/new",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.CaseNew }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "cases/:kind/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.CaseDetail }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
                     path: "access",
                     element: (
                       <L
@@ -967,6 +989,17 @@ export const router = createBrowserRouter(
                       <L
                         factory={() =>
                           import("./me/sub-views").then((m) => ({ default: m.MyAppraisal }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "concern",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.RaiseConcern }))
                         }
                         skeleton="panel"
                       />

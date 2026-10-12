@@ -1,0 +1,42 @@
+# Disciplinary Case — brief §10. Restricted: HR Manager and the named case owner only.
+
+doctype: Disciplinary Case
+module: hr
+workflow_name: Disciplinary Case
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: hr.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  No Frappe Workflow: eswasa_hr.cases.act moves a case one step from the case page; Approvals
+  only shows the owner's next-step ToDo (titles carry no names). An appeal never goes to whoever
+  issued the outcome. Not in global search or Ask/Esi; the Board sees counts only.
+
+display:
+  customer: {}
+  staff:
+    Opened: Opened
+    Investigation: Investigation
+    Hearing scheduled: Hearing scheduled
+    Outcome issued: Outcome issued
+    Appeal: Appeal
+    Closed: Closed
+
+states:
+  - {name: Opened, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Investigation, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Hearing scheduled, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Outcome issued, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Appeal, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Closed, owner_role: HR Manager, allow_edit: HR Manager, style: Success}
+
+transitions:
+  - {action: Investigate, from: Opened, to: Investigation, actor: HR Manager, reason: required, approvals_family: do}
+  - {action: Schedule hearing, from: Investigation, to: Hearing scheduled, actor: HR Manager, reason: required, approvals_family: do}
+  - {action: Issue outcome, from: Hearing scheduled, to: Outcome issued, actor: HR Manager, reason: required, approvals_family: do}
+  - {action: Appeal, from: Outcome issued, to: Appeal, actor: HR Manager, reason: required, approvals_family: do}
+  - {action: Close, from: Outcome issued, to: Closed, actor: HR Manager, reason: required, approvals_family: do}
+  - {action: Close, from: Appeal, to: Closed, actor: HR Manager, reason: required, approvals_family: do}

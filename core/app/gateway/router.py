@@ -99,6 +99,16 @@ from app.schemas import (
     HrTeamCalendar,
     HrTeamMemberDetail,
     HrChanges,
+    HrCaseActBody,
+    HrCaseBoard,
+    HrCaseDetail,
+    HrCaseNoteBody,
+    HrCaseOpenBody,
+    HrCaseOwnerBody,
+    HrCaseRegister,
+    HrConcernBody,
+    HrConcernReceipt,
+    HrMyConcerns,
     HrAppraisalDetail,
     HrAppraisalHolder,
     HrGoalBody,
@@ -5158,6 +5168,124 @@ async def prepare_separation(
         },
     )
     return HrChanges.model_validate(raw)
+
+
+_CASES = "eswasa_hr.cases"
+_CASE_KINDS = ("grievance", "disciplinary")
+
+
+def _case_kind(kind: str) -> str:
+    if kind not in _CASE_KINDS:
+        raise HTTPException(status_code=404, detail="Unknown kind of case")
+    return kind
+
+
+@router.get("/hr/cases", response_model=HrCaseRegister, tags=["hr"])
+async def list_hr_cases(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrCaseRegister:
+    """H10 register: cases the caller may read (HR Manager or case owner), without the names of anyone involved."""
+    return HrCaseRegister.model_validate(await _hr_call(auth, frappe, f"{_CASES}.register"))
+
+
+@router.get("/hr/cases/board", response_model=HrCaseBoard, tags=["hr"])
+async def get_hr_case_board(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrCaseBoard:
+    """Counts by kind and time to close, for the Board HR pack. Nothing else."""
+    return HrCaseBoard.model_validate(await _hr_call(auth, frappe, f"{_CASES}.board"))
+
+
+@router.post("/hr/cases", response_model=HrCaseDetail, tags=["hr"])
+async def open_hr_case(
+    body: HrCaseOpenBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrCaseDetail:
+    """Open a grievance or disciplinary case (HR Manager). Restricted from the moment it is saved."""
+    _require_confirm(body.confirm)
+    _case_kind(body.kind)
+    audit_log(action="hr.case.open", actor=auth.user.username, resource=f"case:{body.kind}", detail={}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_CASES}.open_case", json={**body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrCaseDetail.model_validate(raw)
+
+
+@router.get("/hr/cases/{kind}/{name}", response_model=HrCaseDetail, tags=["hr"])
+async def get_hr_case(
+    kind: str,
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrCaseDetail:
+    return HrCaseDetail.model_validate(await _hr_call(auth, frappe, f"{_CASES}.detail", params={"kind": _case_kind(kind), "name": name}))
+
+
+@router.post("/hr/cases/{kind}/{name}/act", response_model=HrCaseDetail, tags=["hr"])
+async def act_on_hr_case(
+    kind: str,
+    name: str,
+    body: HrCaseActBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrCaseDetail:
+    """Move a case one step (owner, appeal owner or HR Manager). An appeal never goes to whoever issued the outcome."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.case.act", actor=auth.user.username, resource=f"{_case_kind(kind)}:{name}", detail={"to_stage": body.to_stage}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_CASES}.act", json={"kind": kind, "name": name, **body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrCaseDetail.model_validate(raw)
+
+
+@router.post("/hr/cases/{kind}/{name}/notes", response_model=HrCaseDetail, tags=["hr"])
+async def add_hr_case_note(
+    kind: str,
+    name: str,
+    body: HrCaseNoteBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrCaseDetail:
+    _require_confirm(body.confirm)
+    audit_log(action="hr.case.note", actor=auth.user.username, resource=f"{_case_kind(kind)}:{name}", detail={}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_CASES}.add_note", json={"kind": kind, "name": name, "text": body.text, "confirm": 1})
+    return HrCaseDetail.model_validate(raw)
+
+
+@router.post("/hr/cases/{kind}/{name}/owner", response_model=HrCaseDetail, tags=["hr"])
+async def reassign_hr_case(
+    kind: str,
+    name: str,
+    body: HrCaseOwnerBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrCaseDetail:
+    """HR Manager hands the case to another named owner (never someone involved)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.case.owner", actor=auth.user.username, resource=f"{_case_kind(kind)}:{name}", detail={"owner": body.owner}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_CASES}.reassign", json={"kind": kind, "name": name, "owner": body.owner, "note": body.note, "confirm": 1})
+    return HrCaseDetail.model_validate(raw)
+
+
+@router.get("/hr/me/concerns", response_model=HrMyConcerns, tags=["hr"])
+async def list_my_concerns(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrMyConcerns:
+    """Concerns I raised (status only), the categories, and the HR Managers who could handle one."""
+    return HrMyConcerns.model_validate(await _hr_call(auth, frappe, f"{_CASES}.my_concerns"))
+
+
+@router.post("/hr/me/concerns", response_model=HrConcernReceipt, tags=["hr"])
+async def raise_my_concern(
+    body: HrConcernBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrConcernReceipt:
+    """E9: raise a concern in confidence. Only one HR Manager the employee didn't exclude sees it."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.case.raise", actor=auth.user.username, resource="case:grievance", detail={}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_CASES}.raise_concern", json={**body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrConcernReceipt.model_validate(raw)
 
 
 _PERF = "eswasa_hr.performance"

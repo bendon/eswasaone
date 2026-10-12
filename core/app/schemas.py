@@ -1373,6 +1373,142 @@ class HrReviewBody(BaseModel):
     confirm: bool
 
 
+class HrCaseRow(BaseModel):
+    """One register row. Never names the people involved."""
+
+    id: str
+    kind: str  # grievance | disciplinary
+    opened_on: str | None = None
+    stage: str
+    owner_name: str | None = None
+    next_step: str | None = None
+    next_step_due: str | None = None
+    overdue: bool = False
+    closed: bool = False
+
+
+class HrCaseOwner(BaseModel):
+    user: str
+    name: str | None = None
+
+
+class HrCaseRegister(BaseModel):
+    """OpenAPI: HrCaseRegister — cases the caller may read (HR Manager, or the case owner)."""
+
+    items: list[HrCaseRow] = Field(default_factory=list)
+    can_open: bool = False
+    owners: list[HrCaseOwner] = Field(default_factory=list)
+
+
+class HrCasePerson(BaseModel):
+    employee: str
+    employee_name: str | None = None
+    role: str
+
+
+class HrCaseNote(BaseModel):
+    text: str
+    by: str | None = None
+    on: str | None = None
+
+
+class HrCaseDetail(BaseModel):
+    """OpenAPI: HrCaseDetail — one case (H10a)."""
+
+    id: str
+    kind: str
+    stage: str
+    stages: list[str] = Field(default_factory=list)
+    next: list[str] = Field(default_factory=list)
+    opened_on: str | None = None
+    owner: str | None = None
+    owner_name: str | None = None
+    people: list[HrCasePerson] = Field(default_factory=list)
+    description: str | None = None
+    next_step: str | None = None
+    next_step_due: str | None = None
+    outcome: str | None = None
+    decided_by: str | None = None
+    decided_by_name: str | None = None
+    appeal_owner_name: str | None = None
+    talk_first: bool = False
+    notes: list[HrCaseNote] = Field(default_factory=list)
+    owners: list[HrCaseOwner] = Field(default_factory=list)
+
+
+class HrCaseOpenBody(BaseModel):
+    kind: str
+    employee: str
+    owner: str
+    description: str
+    next_step: str | None = None
+    next_step_due: str | None = None
+    subject: str | None = None
+    grievance_type: str | None = None
+    confirm: bool
+
+
+class HrCaseActBody(BaseModel):
+    to_stage: str
+    note: str
+    next_step: str | None = None
+    next_step_due: str | None = None
+    outcome: str | None = None
+    appeal_owner: str | None = None
+    confirm: bool
+
+
+class HrCaseNoteBody(BaseModel):
+    text: str
+    confirm: bool
+
+
+class HrCaseOwnerBody(BaseModel):
+    owner: str
+    note: str
+    confirm: bool
+
+
+class HrCaseBoardKind(BaseModel):
+    kind: str
+    open: int = 0
+    closed_this_year: int = 0
+    avg_days_to_close: float | None = None
+
+
+class HrCaseBoard(BaseModel):
+    """OpenAPI: HrCaseBoard — counts only, for the Board HR pack."""
+
+    kinds: list[HrCaseBoardKind] = Field(default_factory=list)
+
+
+class HrMyConcern(BaseModel):
+    id: str
+    raised_on: str | None = None
+    status: str
+
+
+class HrMyConcerns(BaseModel):
+    items: list[HrMyConcern] = Field(default_factory=list)
+    categories: list[str] = Field(default_factory=list)
+    handlers: list[HrCaseOwner] = Field(default_factory=list)
+
+
+class HrConcernBody(BaseModel):
+    description: str
+    grievance_type: str | None = None
+    not_handled_by: list[str] = Field(default_factory=list)
+    talk_first: bool = False
+    confirm: bool
+
+
+class HrConcernReceipt(BaseModel):
+    id: str
+    raised_on: str | None = None
+    status: str
+    handled_by: str | None = None
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

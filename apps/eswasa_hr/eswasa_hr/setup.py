@@ -66,8 +66,26 @@ def apply_hr_settings() -> None:
         doc.save(ignore_permissions=True)
 
 
+CASE_DOCTYPES = ("Employee Grievance", "Disciplinary Case")
+
+
+def keep_cases_out_of_search() -> int:
+    """Brief §10: cases never appear in global search. Removes them from Global Search Settings if listed."""
+    if not frappe.db.exists("DocType", "Global Search DocType"):
+        return 0
+    n = 0
+    for row in frappe.get_all("Global Search DocType", filters={"document_type": ["in", list(CASE_DOCTYPES)]}, fields=["name"]):
+        frappe.db.delete("Global Search DocType", {"name": row.name})
+        n += 1
+    for dt in CASE_DOCTYPES:
+        if frappe.db.exists("DocType", dt):
+            frappe.db.delete("__global_search", {"doctype": dt})
+    return n
+
+
 def after_migrate() -> None:
     apply_hr_settings()
+    keep_cases_out_of_search()
     # Only disable fixtures when no Active employees yet (safe on greenfield).
     if frappe.db.count("Employee", {"status": "Active"}) == 0:
         disable_erpnext_department_fixtures()

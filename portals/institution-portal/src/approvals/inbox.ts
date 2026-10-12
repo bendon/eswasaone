@@ -108,7 +108,7 @@ function inferFamily(item: ApprovalItem): { fam: InboxFamily; verb?: TaskVerb } 
   if (ALERT_DOCTYPES.has(dt) || /alert|blocked|due/i.test(item.title)) {
     return { fam: "alert" };
   }
-  if (TASK_HINT.test(item.title) || /ToDo|Result|Calibration Job|Ingested Document|Appraisal/i.test(dt)) {
+  if (TASK_HINT.test(item.title) || /ToDo|Result|Calibration Job|Ingested Document|Appraisal|Employee Grievance|Disciplinary Case/i.test(dt)) {
     if (/sign-?off/i.test(item.title)) return { fam: "do", verb: "signoff" };
     if (/assign/i.test(item.title)) return { fam: "do", verb: "assign" };
     if (/curate|publish|review/i.test(item.title)) return { fam: "do", verb: "review" };

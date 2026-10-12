@@ -1501,6 +1501,166 @@ paths:
         "422":
           description: Rule failed
 
+  /hr/cases:
+    get:
+      tags: [hr]
+      operationId: listHrCases
+      summary: Cases the caller may read, without the names of anyone involved (H10)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrCaseRegister" }
+    post:
+      tags: [hr]
+      operationId: openHrCase
+      summary: Open a grievance or disciplinary case (HR Manager)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrCaseOpenBody" }
+      responses:
+        "200":
+          description: Opened
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrCaseDetail" }
+        "422":
+          description: Rule failed
+
+  /hr/cases/board:
+    get:
+      tags: [hr]
+      operationId: getHrCaseBoard
+      summary: Counts by kind and time to close, for the Board HR pack
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrCaseBoard" }
+
+  /hr/cases/{kind}/{name}:
+    get:
+      tags: [hr]
+      operationId: getHrCase
+      summary: One case (HR Manager, case owner, or appeal owner during an appeal)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: kind, in: path, required: true, schema: { type: string } }
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrCaseDetail" }
+
+  /hr/cases/{kind}/{name}/act:
+    post:
+      tags: [hr]
+      operationId: actOnHrCase
+      summary: Move a case one step; an appeal never goes to whoever issued the outcome
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: kind, in: path, required: true, schema: { type: string } }
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrCaseActBody" }
+      responses:
+        "200":
+          description: Moved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrCaseDetail" }
+        "422":
+          description: Rule failed
+
+  /hr/cases/{kind}/{name}/notes:
+    post:
+      tags: [hr]
+      operationId: addHrCaseNote
+      summary: Add a note to a case
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: kind, in: path, required: true, schema: { type: string } }
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrCaseNoteBody" }
+      responses:
+        "200":
+          description: Added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrCaseDetail" }
+        "422":
+          description: Rule failed
+
+  /hr/cases/{kind}/{name}/owner:
+    post:
+      tags: [hr]
+      operationId: reassignHrCase
+      summary: Hand a case to another named owner (HR Manager)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: kind, in: path, required: true, schema: { type: string } }
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrCaseOwnerBody" }
+      responses:
+        "200":
+          description: Reassigned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrCaseDetail" }
+        "422":
+          description: Rule failed
+
+  /hr/me/concerns:
+    get:
+      tags: [hr]
+      operationId: listMyConcerns
+      summary: Concerns I raised (status only), categories and possible handlers
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrMyConcerns" }
+    post:
+      tags: [hr]
+      operationId: raiseMyConcern
+      summary: Raise a concern in confidence (E9)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrConcernBody" }
+      responses:
+        "200":
+          description: Received
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrConcernReceipt" }
+        "422":
+          description: Rule failed
+
   /hr/performance:
     get:
       tags: [hr]
@@ -6103,6 +6263,151 @@ components:
         activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" } }
         note: { anyOf: [{ type: string }, { type: "null" }] }
         confirm: { type: boolean }
+    HrCaseRow:
+      type: object
+      required: [id, kind, stage]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [grievance, disciplinary] }
+        opened_on: { anyOf: [{ type: string }, { type: "null" }] }
+        stage: { type: string }
+        owner_name: { anyOf: [{ type: string }, { type: "null" }] }
+        next_step: { anyOf: [{ type: string }, { type: "null" }] }
+        next_step_due: { anyOf: [{ type: string }, { type: "null" }] }
+        overdue: { type: boolean }
+        closed: { type: boolean }
+    HrCaseOwner:
+      type: object
+      required: [user]
+      properties:
+        user: { type: string }
+        name: { anyOf: [{ type: string }, { type: "null" }] }
+    HrCaseRegister:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/HrCaseRow" } }
+        can_open: { type: boolean }
+        owners: { type: array, items: { $ref: "#/components/schemas/HrCaseOwner" } }
+    HrCaseDetail:
+      type: object
+      required: [id, kind, stage]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [grievance, disciplinary] }
+        stage: { type: string }
+        stages: { type: array, items: { type: string } }
+        next: { type: array, items: { type: string } }
+        opened_on: { anyOf: [{ type: string }, { type: "null" }] }
+        owner: { anyOf: [{ type: string }, { type: "null" }] }
+        owner_name: { anyOf: [{ type: string }, { type: "null" }] }
+        people:
+          type: array
+          items:
+            type: object
+            required: [employee, role]
+            properties:
+              employee: { type: string }
+              employee_name: { anyOf: [{ type: string }, { type: "null" }] }
+              role: { type: string }
+        description: { anyOf: [{ type: string }, { type: "null" }] }
+        next_step: { anyOf: [{ type: string }, { type: "null" }] }
+        next_step_due: { anyOf: [{ type: string }, { type: "null" }] }
+        outcome: { anyOf: [{ type: string }, { type: "null" }] }
+        decided_by: { anyOf: [{ type: string }, { type: "null" }] }
+        decided_by_name: { anyOf: [{ type: string }, { type: "null" }] }
+        appeal_owner_name: { anyOf: [{ type: string }, { type: "null" }] }
+        talk_first: { type: boolean }
+        notes:
+          type: array
+          items:
+            type: object
+            required: [text]
+            properties:
+              text: { type: string }
+              by: { anyOf: [{ type: string }, { type: "null" }] }
+              on: { anyOf: [{ type: string }, { type: "null" }] }
+        owners: { type: array, items: { $ref: "#/components/schemas/HrCaseOwner" } }
+    HrCaseOpenBody:
+      type: object
+      required: [kind, employee, owner, description, confirm]
+      properties:
+        kind: { type: string, enum: [grievance, disciplinary] }
+        employee: { type: string }
+        owner: { type: string }
+        description: { type: string }
+        next_step: { anyOf: [{ type: string }, { type: "null" }] }
+        next_step_due: { anyOf: [{ type: string }, { type: "null" }] }
+        subject: { anyOf: [{ type: string }, { type: "null" }] }
+        grievance_type: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrCaseActBody:
+      type: object
+      required: [to_stage, note, confirm]
+      properties:
+        to_stage: { type: string }
+        note: { type: string }
+        next_step: { anyOf: [{ type: string }, { type: "null" }] }
+        next_step_due: { anyOf: [{ type: string }, { type: "null" }] }
+        outcome: { anyOf: [{ type: string }, { type: "null" }] }
+        appeal_owner: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrCaseNoteBody:
+      type: object
+      required: [text, confirm]
+      properties:
+        text: { type: string }
+        confirm: { type: boolean }
+    HrCaseOwnerBody:
+      type: object
+      required: [owner, note, confirm]
+      properties:
+        owner: { type: string }
+        note: { type: string }
+        confirm: { type: boolean }
+    HrCaseBoard:
+      type: object
+      properties:
+        kinds:
+          type: array
+          items:
+            type: object
+            required: [kind]
+            properties:
+              kind: { type: string }
+              open: { type: integer }
+              closed_this_year: { type: integer }
+              avg_days_to_close: { anyOf: [{ type: number }, { type: "null" }] }
+    HrMyConcerns:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [id, status]
+            properties:
+              id: { type: string }
+              raised_on: { anyOf: [{ type: string }, { type: "null" }] }
+              status: { type: string }
+        categories: { type: array, items: { type: string } }
+        handlers: { type: array, items: { $ref: "#/components/schemas/HrCaseOwner" } }
+    HrConcernBody:
+      type: object
+      required: [description, confirm]
+      properties:
+        description: { type: string }
+        grievance_type: { anyOf: [{ type: string }, { type: "null" }] }
+        not_handled_by: { type: array, items: { type: string } }
+        talk_first: { type: boolean }
+        confirm: { type: boolean }
+    HrConcernReceipt:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string }
+        raised_on: { anyOf: [{ type: string }, { type: "null" }] }
+        status: { type: string }
+        handled_by: { anyOf: [{ type: string }, { type: "null" }] }
     HrPerfCycle:
       type: object
       required: [name, cycle_name]

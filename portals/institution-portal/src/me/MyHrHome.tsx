@@ -212,6 +212,10 @@ function Linked({ me }: { me: HrMe }) {
         </div>
       </div>
 
+      <p className="hr-note">
+        Something wrong at work? <Link to="concern">Raise a concern in confidence</Link>. Only one HR Manager sees it.
+      </p>
+
       {waiting.length ? (
         <NextStep
           title={`${approver ?? "Your approver"} decides your request`}

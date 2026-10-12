@@ -239,6 +239,42 @@ export type HrAppraisal = {
   can_review: boolean;
   can_add_goals: boolean;
 };
+export type HrCaseKind = "grievance" | "disciplinary";
+export type HrCaseOwner = { user: string; name?: string | null };
+export type HrCaseRow = {
+  id: string;
+  kind: HrCaseKind;
+  opened_on?: string | null;
+  stage: string;
+  owner_name?: string | null;
+  next_step?: string | null;
+  next_step_due?: string | null;
+  overdue: boolean;
+  closed: boolean;
+};
+export type HrCaseRegister = { items: HrCaseRow[]; can_open: boolean; owners: HrCaseOwner[] };
+export type HrCase = {
+  id: string;
+  kind: HrCaseKind;
+  stage: string;
+  stages: string[];
+  next: string[];
+  opened_on?: string | null;
+  owner?: string | null;
+  owner_name?: string | null;
+  people: Array<{ employee: string; employee_name?: string | null; role: string }>;
+  description?: string | null;
+  next_step?: string | null;
+  next_step_due?: string | null;
+  outcome?: string | null;
+  decided_by?: string | null;
+  decided_by_name?: string | null;
+  appeal_owner_name?: string | null;
+  talk_first: boolean;
+  notes: Array<{ text: string; by?: string | null; on?: string | null }>;
+  owners: HrCaseOwner[];
+};
+export type HrMyConcerns = { items: Array<{ id: string; raised_on?: string | null; status: string }>; categories: string[]; handlers: HrCaseOwner[] };
 export type HrContractDefaults = {
   employee: string;
   employee_name: string;

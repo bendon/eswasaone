@@ -1,0 +1,50 @@
+# Job Offer — approve an offer before it goes to the applicant (brief §7, J3; plan 08).
+
+doctype: Job Offer
+module: hr
+workflow_name: Job Offer
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: null
+guards: [expected_state, idempotency_key]
+notes: >
+  HRMS owns this DocType; no Frappe Workflow. eswasa_hr.hiring routes the draft offer to each named HR
+  Manager other than the preparer (one ToDo each, never a role pool); eswasa_hr.hiring.decide_offer is
+  the approval handler. Approve submits the offer, attaches the ESWASA Offer Letter PDF and emails the
+  applicant through the HR outbox; send back needs a note. Who appoints (ED or HR Manager) is H3.
+
+# PROVISIONAL (brief §12.1; confirm with ESWASA alongside H3): HR decides within 3 days. Applicant
+# reminders run separately (5 working days after the offer date, plan 04).
+sla: {days: 3, calendar: calendar, escalate_to: null, provisional: true}
+
+display:
+  customer: {}
+  staff:
+    Draft: Waiting for approval
+    Awaiting Response: Sent to the applicant
+    Accepted: Accepted
+    Rejected: Declined
+    Sent back: Sent back
+
+states:
+  - {name: Draft, sla: 3d (provisional), owner_role: HR Manager, allow_edit: HR User}
+  - {name: Awaiting Response, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Accepted, owner_role: HR Manager, allow_edit: HR Manager, style: Success}
+  - {name: Rejected, owner_role: HR Manager, allow_edit: HR Manager, style: Danger}
+  - {name: Sent back, owner_role: HR User, allow_edit: HR User, style: Danger}
+
+transitions:
+  - action: Approve
+    from: Draft
+    to: Awaiting Response
+    actor: HR Manager (named, not the preparer)
+    approvals_family: approve
+  - action: Send back
+    from: Draft
+    to: Sent back
+    actor: HR Manager (named, not the preparer)
+    reason: required
+    approvals_family: approve

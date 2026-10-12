@@ -1,0 +1,50 @@
+# Employee Promotion — change of designation or grade (brief §8, J8; slice 7).
+
+doctype: Employee Promotion
+module: hr
+workflow_name: Employee Promotion
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: hr.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  HRMS owns this DocType; no Frappe Workflow. eswasa_hr.lifecycle routes the draft to each named HR
+  Manager other than the preparer (one ToDo each); eswasa_hr.lifecycle.decide_promotion is the approval
+  handler. Approve stamps custom_approved_by and submits on the promotion_date (today or later; a future
+  date stays approved, not submitted, until then). Send back needs a reason, logs it on the employee and
+  discards the draft so HR can prepare a corrected one. Never approved by the preparer or the person.
+
+# PROVISIONAL (brief §12.1; confirm with ESWASA): another HR Manager decides within 3 days.
+sla: {days: 3, calendar: calendar, escalate_to: null, provisional: true}
+
+display:
+  customer: {}
+  staff:
+    Draft: Waiting for approval
+    Approved: Approved
+    Submitted: Done
+
+states:
+  - {name: Draft, sla: 3d (provisional), owner_role: HR Manager, allow_edit: HR User}
+  - {name: Approved, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Submitted, owner_role: HR Manager, allow_edit: HR Manager, style: Success}
+
+transitions:
+  - action: Approve
+    from: Draft
+    to: Approved
+    actor: another HR Manager (named; custom_approved_by)
+    approvals_family: approve
+  - action: Take effect
+    from: Approved
+    to: Submitted
+    actor: system (promotion_date reached)
+  - action: Send back
+    from: Draft
+    to: Draft
+    actor: another HR Manager (named; custom_approved_by)
+    reason: required
+    approvals_family: approve

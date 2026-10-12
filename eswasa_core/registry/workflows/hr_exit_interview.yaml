@@ -1,0 +1,39 @@
+# Exit Interview — held with a leaver before the last day (brief §8, J9; plan 06).
+
+doctype: Exit Interview
+module: hr
+workflow_name: Exit Interview
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: null
+guards: [expected_state, idempotency_key]
+notes: >
+  HRMS owns this DocType; no Frappe Workflow. Created when a separation is approved
+  (eswasa_hr.lifecycle.start_exit_interview), owned by the separation's preparer as interviewer and dated
+  the day before the last day; one ToDo to the interviewer. eswasa_hr.lifecycle.decide_exit_interview
+  closes it: the interviewer or an HR Manager marks it held with a summary. The questionnaire is ESWASA's
+  to supply.
+
+# PROVISIONAL (brief §12.1; confirm with ESWASA): held by the day before the last day.
+sla: {days: null, calendar: calendar, escalate_to: null, provisional: true, due: day before the last day}
+
+display:
+  customer: {}
+  staff:
+    Pending: To hold
+    Completed: Held
+
+states:
+  - {name: Pending, owner_role: interviewer (named), allow_edit: HR Manager}
+  - {name: Completed, owner_role: interviewer (named), allow_edit: HR Manager, style: Success}
+
+transitions:
+  - action: Mark held
+    from: Pending
+    to: Completed
+    actor: interviewer (named) or HR Manager
+    reason: required
+    approvals_family: do

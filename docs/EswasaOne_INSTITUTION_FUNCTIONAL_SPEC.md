@@ -118,7 +118,20 @@ Portal `staff.ts` and Core `STAFF_ROLES` **must match fixture names**. No aliase
 
 ## 5. Rules catalogue (IDs)
 
-Certification R-C1…C7 · Metrology R-M1…M4 · Standards R-S1…S4 · TBT R-T1…T3 · E-store R-E1…E3 · Finance R-F1…F4 · HR R-H1…H4 · Governance R-G1…G3 · Approvals R-A1…A2 · Analytics R-D1…D2.
+Certification R-C1…C7 · Metrology R-M1…M4 · Standards R-S1…S4 · TBT R-T1…T3 · E-store R-E1…E3 · Finance R-F1…F4 · HR R-H1…H7, R-L1 · Governance R-G1…G3 · Approvals R-A1…A2 · Analytics R-D1…D2.
+
+**HR and leave rules** (`eswasa_hr.tasks.daily`, one Frappe scheduler entry; recipients are named users, never a role pool). SLA values marked *provisional* await ESWASA (brief §12.1).
+
+| ID | Trigger | Actor (who gets it) | Family | When it fires |
+|---|---|---|---|---|
+| R-H1 | `Employee.scheduled_confirmation_date` | Line manager (`reports_to`) | do | 30 days before the date; the review confirms, extends or recommends ending (*provisional*) |
+| R-H2 | `Employee.contract_end_date` (fixed term) | HR Managers + line manager | alert | Once, 60 days before the end date (*provisional*) |
+| R-H3 | `Staff Authorisation.valid_to` | The person, line manager, HR Managers | alert | 60, 30 and 7 days before expiry (*provisional*) |
+| R-H4 | A competence with one current holder or none | Heads of the departments that use it (HR Managers if no head) | alert | At most monthly per competence |
+| R-H5 | Impartiality declaration year starts (1 April, H8 *provisional*) | Each employee; after 10 days unsigned, their line manager (HR Managers if none) | do, then alert | Yearly ToDo; hand-off once 10 days pass unsigned (*provisional*) |
+| R-H6 | Appraisal cycle `end_date` with a step still open | The person (self) or line manager (review) | do | 10 and 3 working days before the end date (*provisional*) |
+| R-H7 | Nightly employee integrity check (`eswasa_hr.integrity`) | HR Managers | alert | Every night; snapshot feeds Overview Record quality; one "Record gaps" alert only when the gap count goes up. Missing: department, designation, line manager (except the Executive Director), leave approver, login |
+| R-L1 | Leave Application still Open past its SLA | Each named HR Manager (not the applicant) | approve | SLA 2 working days, skipping the employee's holiday list (*provisional*); one `[escalated]` ToDo each, kept until decided or cancelled. A self-approver or missing approver raises an HR Alert instead |
 
 **R-C3 gate (project):** Certificate `on_submit` → PDF+QR + Register Entry + Sales Invoice + feed "APPROVED".
 

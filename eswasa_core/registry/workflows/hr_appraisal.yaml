@@ -1,0 +1,44 @@
+# Appraisal — self-assessment, then the line manager's review (brief §9, J6; slice 6, R-H6).
+
+doctype: Appraisal
+module: hr
+workflow_name: Appraisal
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: hr.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  HRMS owns this DocType; no Frappe Workflow. A cycle opens one Appraisal per person (eswasa_hr.performance);
+  the person gets a ToDo for the self-assessment, then their line manager (reports_to) gets one for the
+  review. eswasa_hr.performance.decide is the Approvals handler: "Mark done" closes the ToDo only once that
+  step is really done in EswasaOne. R-H6 reminds people with an open step before the cycle ends.
+
+# PROVISIONAL (brief §12.1; confirm with ESWASA): each step by the cycle end date; reminders R-H6.
+sla: {days: null, calendar: working, escalate_to: null, provisional: true, due: cycle end date}
+
+display:
+  customer: {}
+  staff:
+    self: Self-assessment
+    manager: Manager review
+    done: Done
+
+states:
+  - {name: self, owner_role: Employee (the person), allow_edit: Employee}
+  - {name: manager, owner_role: line manager (reports_to, named), allow_edit: Employee}
+  - {name: done, owner_role: HR Manager, allow_edit: HR Manager, style: Success}
+
+transitions:
+  - action: Submit self-assessment
+    from: self
+    to: manager
+    actor: the person
+    approvals_family: do
+  - action: Submit review
+    from: manager
+    to: done
+    actor: line manager (reports_to, named)
+    approvals_family: do

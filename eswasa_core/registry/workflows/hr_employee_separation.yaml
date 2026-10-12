@@ -1,0 +1,44 @@
+# Employee Separation — a leaver's last day and exit steps (brief §8, J9; slice 7).
+
+doctype: Employee Separation
+module: hr
+workflow_name: Employee Separation
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: hr.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  HRMS owns this DocType; no Frappe Workflow. eswasa_hr.lifecycle routes the draft to each named HR
+  Manager other than the preparer (one ToDo each); eswasa_hr.lifecycle.decide_separation is the approval
+  handler. Approve stamps custom_approved_by, submits and opens the Exit Interview (hr_exit_interview).
+  Send back needs a reason, clears relieving_date and discards the draft. On the last day the daily job
+  disables the User and moves open ToDos with the reason (lifecycle.process_last_days).
+
+# PROVISIONAL (brief §12.1; confirm with ESWASA): another HR Manager decides within 2 days.
+sla: {days: 2, calendar: calendar, escalate_to: null, provisional: true}
+
+display:
+  customer: {}
+  staff:
+    Draft: Waiting for approval
+    Submitted: Leaving
+
+states:
+  - {name: Draft, sla: 2d (provisional), owner_role: HR Manager, allow_edit: HR User}
+  - {name: Submitted, owner_role: HR Manager, allow_edit: HR Manager, style: Success}
+
+transitions:
+  - action: Approve
+    from: Draft
+    to: Submitted
+    actor: another HR Manager (named; custom_approved_by)
+    approvals_family: approve
+  - action: Send back
+    from: Draft
+    to: Draft
+    actor: another HR Manager (named; custom_approved_by)
+    reason: required
+    approvals_family: approve

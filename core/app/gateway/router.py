@@ -122,6 +122,9 @@ from app.schemas import (
     HrSelfAssessmentBody,
     HrContractBody,
     HrAccessLog,
+    HrBoardPack,
+    HrLiveOverview,
+    HrSetupStatus,
     HrEstablishment,
     HrSensitive,
     HrSensitiveBody,
@@ -5536,6 +5539,36 @@ async def get_my_access_log(
 ) -> HrAccessLog:
     """Who has opened my protected details."""
     return HrAccessLog.model_validate(await _hr_call(auth, frappe, f"{_SENSITIVE}.my_access_log"))
+
+
+_OVERVIEW = "eswasa_hr.overview"
+
+
+@router.get("/hr/overview/live", response_model=HrLiveOverview, tags=["hr"])
+async def get_hr_live_overview(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrLiveOverview:
+    """H0: needs attention (ranked, each with a link), establishment, away today, movements, record quality."""
+    return HrLiveOverview.model_validate(await _hr_call(auth, frappe, f"{_OVERVIEW}.overview"))
+
+
+@router.get("/hr/setup/status", response_model=HrSetupStatus, tags=["hr"])
+async def get_hr_setup_status(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrSetupStatus:
+    """H14: each HR setup step from live counts; ESWASA inputs show as awaiting, payroll as excluded."""
+    return HrSetupStatus.model_validate(await _hr_call(auth, frappe, f"{_OVERVIEW}.setup_status"))
+
+
+@router.get("/hr/board-pack", response_model=HrBoardPack, tags=["hr"])
+async def get_hr_board_pack(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrBoardPack:
+    """H15: aggregates for the Council HR & Remuneration Committee. No names, pay or case details."""
+    return HrBoardPack.model_validate(await _hr_call(auth, frappe, f"{_OVERVIEW}.board_pack"))
 
 
 @router.get("/hr/offboarding/{name}", response_model=HrOnboarding, tags=["hr"])

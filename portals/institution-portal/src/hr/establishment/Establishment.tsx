@@ -38,9 +38,9 @@ const CHANGE_CHOICES: Array<{ value: HrEstChangeKind; title: string; detail: str
 
 export function changeState(state: HrEstChange["state"]): { label: string; cls: string } {
   if (state === "Approved") return { label: "Approved", cls: "ok" };
-  if (state === "Sent back") return { label: "Sent back", cls: "warn" };
+  if (state === "Sent back") return { label: "Sent back", cls: "leave" };
   if (state === "Not approved") return { label: "Not approved", cls: "bad" };
-  return { label: state === "Waiting for Council" ? "With the Council" : "With the Executive Director", cls: "leave" };
+  return { label: state === "Waiting for Council" ? "With the Council" : "With the Executive Director", cls: "info" };
 }
 
 function ChangeRows({ items }: { items: HrEstChange[] }) {

@@ -108,7 +108,7 @@ export type PackSection = {
   owner: string;
   source: SectionSource;
   /** live_module sections fill themselves from domain stores at assembly. */
-  module?: "crm" | "certification" | "metrology" | "standards" | "finance" | "risk" | "actions";
+  module?: "crm" | "certification" | "metrology" | "standards" | "finance" | "risk" | "actions" | "hr";
   status: "awaiting" | "draft" | "ready";
   included: boolean;
   restricted: boolean;

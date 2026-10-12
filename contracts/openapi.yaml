@@ -1997,6 +1997,46 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/HrAccessLog" }
 
+  /hr/overview/live:
+    get:
+      tags: [hr]
+      operationId: getHrLiveOverview
+      summary: "H0: needs attention (ranked, each with a link), establishment, away today, movements, record quality"
+      description: HR roles. Cases appear only for HR Managers, as a count.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLiveOverview" }
+
+  /hr/setup/status:
+    get:
+      tags: [hr]
+      operationId: getHrSetupStatus
+      summary: "H14: each HR setup step from live counts; ESWASA inputs awaiting, payroll excluded"
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrSetupStatus" }
+
+  /hr/board-pack:
+    get:
+      tags: [hr]
+      operationId: getHrBoardPack
+      summary: "H15: aggregates for the Council HR & Remuneration Committee; no names, pay or case details"
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrBoardPack" }
+
   /hr/offboarding/{name}:
     get:
       tags: [hr]
@@ -6887,6 +6927,135 @@ components:
               level: { anyOf: [{ type: string }, { type: "null" }] }
               reason: { anyOf: [{ type: string }, { type: "null" }] }
               viewed_on: { anyOf: [{ type: string }, { type: "null" }] }
+    HrAttentionItem:
+      type: object
+      required: [kind, count, title, href]
+      properties:
+        kind: { type: string }
+        count: { type: integer }
+        title: { type: string }
+        detail: { anyOf: [{ type: string }, { type: "null" }] }
+        due: { anyOf: [{ type: string, format: date }, { type: "null" }] }
+        href: { type: string, description: Portal path that acts on it }
+        weight: { type: integer }
+    HrTurnover:
+      type: object
+      properties:
+        joiners: { type: integer }
+        leavers: { type: integer }
+        pct: { anyOf: [{ type: number }, { type: "null" }] }
+    HrCycleStatus:
+      type: object
+      required: [cycle_name]
+      properties:
+        name: { anyOf: [{ type: string }, { type: "null" }] }
+        cycle_name: { type: string }
+        end_date: { anyOf: [{ type: string, format: date }, { type: "null" }] }
+        people: { type: integer }
+        self_done: { type: integer }
+        manager_done: { type: integer }
+    HrLiveOverview:
+      type: object
+      required: [as_of]
+      properties:
+        as_of: { type: string, format: date }
+        headcount: { type: integer }
+        departments: { type: integer }
+        establishment:
+          type: object
+          properties:
+            has_plans: { type: boolean }
+            totals: { anyOf: [{ $ref: "#/components/schemas/HrEstCounts" }, { type: "null" }] }
+            departments:
+              type: array
+              items:
+                type: object
+                required: [department]
+                properties:
+                  department: { type: string }
+                  approved: { type: integer }
+                  filled: { type: integer }
+                  vacant: { type: integer }
+                  frozen: { type: integer }
+        attention: { type: array, items: { $ref: "#/components/schemas/HrAttentionItem" } }
+        away_today:
+          type: array
+          items:
+            type: object
+            properties:
+              employee: { anyOf: [{ type: string }, { type: "null" }] }
+              employee_name: { anyOf: [{ type: string }, { type: "null" }] }
+              leave_type: { anyOf: [{ type: string }, { type: "null" }] }
+              back_on: { anyOf: [{ type: string, format: date }, { type: "null" }] }
+        movements:
+          type: object
+          properties:
+            joiners: { type: integer }
+            leavers: { type: integer }
+        turnover: { $ref: "#/components/schemas/HrTurnover" }
+        ending_soon: { type: object, additionalProperties: { type: integer } }
+        record_quality:
+          type: array
+          items:
+            type: object
+            required: [field, label, count]
+            properties:
+              field: { type: string }
+              label: { type: string }
+              count: { type: integer }
+        cycles: { type: array, items: { $ref: "#/components/schemas/HrCycleStatus" } }
+    HrSetupStatus:
+      type: object
+      properties:
+        steps:
+          type: array
+          items:
+            type: object
+            required: [id, title, state, detail]
+            properties:
+              id: { type: string }
+              title: { type: string }
+              state: { type: string, enum: [done, partial, todo, awaiting, excluded] }
+              detail: { type: string }
+              href: { anyOf: [{ type: string }, { type: "null" }], description: Portal path, or a Desk path after /app/ when desk is true }
+              awaiting: { anyOf: [{ type: string }, { type: "null" }], description: ESWASA input still needed (Confirmation Pack or brief §0.5) }
+              desk: { type: boolean }
+        done: { type: integer }
+        total: { type: integer }
+        pct: { type: integer }
+    HrBoardPack:
+      type: object
+      required: [as_of]
+      properties:
+        as_of: { type: string, format: date }
+        headcount: { type: integer }
+        establishment: { anyOf: [{ $ref: "#/components/schemas/HrEstCounts" }, { type: "null" }] }
+        turnover: { $ref: "#/components/schemas/HrTurnover" }
+        appraisals: { anyOf: [{ $ref: "#/components/schemas/HrCycleStatus" }, { type: "null" }] }
+        competence: { anyOf: [{ type: object, additionalProperties: { type: integer } }, { type: "null" }] }
+        cases:
+          anyOf:
+            - type: array
+              items:
+                type: object
+                required: [kind]
+                properties:
+                  kind: { type: string }
+                  open: { type: integer }
+                  closed_this_year: { type: integer }
+                  avg_days_to_close: { anyOf: [{ type: number }, { type: "null" }] }
+            - { type: "null" }
+        declarations: { anyOf: [{ type: object }, { type: "null" }] }
+        establishment_changes:
+          type: array
+          items:
+            type: object
+            required: [summary, department, state]
+            properties:
+              summary: { type: string }
+              department: { type: string }
+              state: { type: string }
+              council_required: { type: boolean }
     HrSeparationDefaults:
       type: object
       required: [employee, employee_name]

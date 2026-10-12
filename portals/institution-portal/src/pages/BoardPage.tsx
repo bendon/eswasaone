@@ -22,6 +22,7 @@ export function BoardPage() {
           { to: "cac", label: "CAC", icon: "i-award" },
           { to: "risks", label: "Risk register", icon: "i-shield" },
           { to: "declarations", label: "Declarations" },
+          { to: "hr-pack", label: "HR pack" },
           { to: "members", label: "Members", icon: "i-users" },
           { to: "calendar", label: "Calendar" },
           { to: "settings", label: "Settings", icon: "i-sliders" },

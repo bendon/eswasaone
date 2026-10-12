@@ -471,3 +471,5 @@ a.hr-card:hover{border-color:var(--navy)}
 .hr-orgtree li{padding:6px 0 0 10px}
 .hr-orgtree li > b{display:block;font-size:13px}
 .hr-orgtree li > span{font-size:12px;color:var(--muted)}
+.hr .kpis.kpis--4{grid-template-columns:repeat(4,1fr)}
+@media (max-width: 900px){.hr .kpis.kpis--4{grid-template-columns:repeat(2,1fr)}}

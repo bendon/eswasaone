@@ -5,3 +5,4 @@ export { ResolutionsView, ResolutionRecordPage, WrittenResolutionNewPage } from 
 export { RiskRegisterView, RiskRecordPage } from "./RiskRegister";
 export { DeclarationsView, MembersView, CalendarView, GovSettingsView } from "./RegisterViews";
 export { CacSessionView } from "../governance/CacSessionView";
+export { BoardHrPack } from "./HrPack";

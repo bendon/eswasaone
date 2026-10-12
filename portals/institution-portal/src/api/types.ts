@@ -344,6 +344,40 @@ export type HrAccessLog = {
   can_open: number[];
   items: Array<{ id: string; viewer?: string | null; viewer_name?: string | null; level?: string | null; reason?: string | null; viewed_on?: string | null }>;
 };
+export type HrAttentionItem = { kind: string; count: number; title: string; detail?: string | null; due?: string | null; href: string; weight?: number };
+export type HrTurnover = { joiners: number; leavers: number; pct?: number | null };
+export type HrCycleStatus = { name?: string | null; cycle_name: string; end_date?: string | null; people: number; self_done: number; manager_done: number };
+export type HrLiveOverview = {
+  as_of: string;
+  headcount: number;
+  departments: number;
+  establishment: { has_plans: boolean; totals?: HrEstCounts | null; departments: Array<{ department: string; approved: number; filled: number; vacant: number; frozen: number }> };
+  attention: HrAttentionItem[];
+  away_today: Array<{ employee?: string | null; employee_name?: string | null; leave_type?: string | null; back_on?: string | null }>;
+  movements: { joiners: number; leavers: number };
+  turnover: HrTurnover;
+  ending_soon: { contracts?: number; probations?: number };
+  record_quality: Array<{ field: string; label: string; count: number }>;
+  cycles: HrCycleStatus[];
+};
+export type HrSetupStepState = "done" | "partial" | "todo" | "awaiting" | "excluded";
+export type HrSetupStatus = {
+  steps: Array<{ id: string; title: string; state: HrSetupStepState; detail: string; href?: string | null; awaiting?: string | null; desk: boolean }>;
+  done: number;
+  total: number;
+  pct: number;
+};
+export type HrBoardPack = {
+  as_of: string;
+  headcount: number;
+  establishment?: HrEstCounts | null;
+  turnover: HrTurnover;
+  appraisals?: HrCycleStatus | null;
+  competence?: { catalogue?: number; at_risk?: number } | null;
+  cases?: Array<{ kind: string; open: number; closed_this_year: number; avg_days_to_close?: number | null }> | null;
+  declarations?: { signed?: number; total?: number; year?: string | number } | null;
+  establishment_changes: Array<{ summary: string; department: string; state: string; council_required: boolean }>;
+};
 export type HrSeparationDefaults = { employee: string; employee_name: string; reasons: string[]; activities: HrOnboardingActivity[] };
 export type HrPickItem = { id: string; name?: string | null; title?: string | null; employee_name?: string | null };
 export type HrVacancy = { department?: string | null; designation: string; approved: number; filled: number; in_recruitment: number; vacant: number };

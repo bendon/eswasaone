@@ -1668,6 +1668,124 @@ class HrAccessLog(BaseModel):
     can_open: list[int] = Field(default_factory=list)
 
 
+class HrAttentionItem(BaseModel):
+    kind: str
+    count: int
+    title: str
+    detail: str | None = None
+    due: str | None = None
+    href: str
+    weight: int = 0
+
+
+class HrEstDeptCount(BaseModel):
+    department: str
+    approved: int = 0
+    filled: int = 0
+    vacant: int = 0
+    frozen: int = 0
+
+
+class HrOverviewEstablishment(BaseModel):
+    has_plans: bool = False
+    totals: HrEstCounts | None = None
+    departments: list[HrEstDeptCount] = Field(default_factory=list)
+
+
+class HrAwayToday(BaseModel):
+    employee: str | None = None
+    employee_name: str | None = None
+    leave_type: str | None = None
+    back_on: str | None = None
+
+
+class HrMovements(BaseModel):
+    joiners: int = 0
+    leavers: int = 0
+
+
+class HrTurnover(HrMovements):
+    pct: float | None = None
+
+
+class HrRecordGap(BaseModel):
+    field: str
+    label: str
+    count: int
+
+
+class HrCycleStatus(BaseModel):
+    name: str | None = None
+    cycle_name: str
+    end_date: str | None = None
+    people: int = 0
+    self_done: int = 0
+    manager_done: int = 0
+
+
+class HrLiveOverview(BaseModel):
+    """GET /hr/overview/live — H0: needs attention, establishment, away today, movements, record quality."""
+
+    as_of: str
+    headcount: int = 0
+    departments: int = 0
+    establishment: HrOverviewEstablishment = Field(default_factory=HrOverviewEstablishment)
+    attention: list[HrAttentionItem] = Field(default_factory=list)
+    away_today: list[HrAwayToday] = Field(default_factory=list)
+    movements: HrMovements = Field(default_factory=HrMovements)
+    turnover: HrTurnover = Field(default_factory=HrTurnover)
+    ending_soon: dict[str, int] = Field(default_factory=dict)
+    record_quality: list[HrRecordGap] = Field(default_factory=list)
+    cycles: list[HrCycleStatus] = Field(default_factory=list)
+
+
+class HrSetupStep(BaseModel):
+    id: str
+    title: str
+    state: Literal["done", "partial", "todo", "awaiting", "excluded"]
+    detail: str
+    href: str | None = None
+    awaiting: str | None = None
+    desk: bool = False
+
+
+class HrSetupStatus(BaseModel):
+    """GET /hr/setup/status — H14 steps from live counts."""
+
+    steps: list[HrSetupStep] = Field(default_factory=list)
+    done: int = 0
+    total: int = 0
+    pct: int = 0
+
+
+class HrBoardCaseKind(BaseModel):
+    kind: str
+    open: int = 0
+    closed_this_year: int = 0
+    avg_days_to_close: float | None = None
+
+
+class HrBoardEstChange(BaseModel):
+    summary: str
+    department: str
+    state: str
+    council_required: bool = False
+
+
+class HrBoardPack(BaseModel):
+    """GET /hr/board-pack — H15 for the Council HR & Remuneration Committee. Aggregates only, no names."""
+
+    as_of: str
+    headcount: int = 0
+    establishment: HrEstCounts | None = None
+    turnover: HrTurnover = Field(default_factory=HrTurnover)
+    appraisals: HrCycleStatus | None = None
+    competence: dict[str, int] | None = None
+    cases: list[HrBoardCaseKind] | None = None
+    declarations: dict[str, Any] | None = None
+    establishment_changes: list[HrBoardEstChange] = Field(default_factory=list)
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

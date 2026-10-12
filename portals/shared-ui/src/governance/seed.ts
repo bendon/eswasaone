@@ -63,6 +63,8 @@ export const SEED_SETTINGS: GovSettings = {
     { title: "Standards development", owner: "Sibusiso Gama", source: "live_module", module: "standards" },
     { title: "Risk register and heat map", owner: "Lungile Mkhabela", source: "live_module", module: "risk" },
     { title: "Resolution action tracker", owner: SEC, source: "live_module", module: "actions" },
+    // H15: aggregates only, filled from the live HR service at assembly (never sample figures).
+    { title: "People and HR (aggregates)", owner: "HR Manager", source: "live_module", module: "hr" },
   ],
 };
 

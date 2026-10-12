@@ -778,6 +778,35 @@ async function liveFigures(s: GovState, sec: PackSection): Promise<{ content: st
         figures: { Open: String(open.length), Overdue: String(overdue.length), Completed: String(acts.length - open.length) },
       };
     }
+    // H15 Board HR pack: live aggregates from Core (no names, pay or case details). No figures if HR is unreachable.
+    case "hr": {
+      try {
+        const { sessionFetch } = await import("../auth/session");
+        const hr = await sessionFetch<{
+          headcount: number;
+          establishment?: { approved: number; vacant: number } | null;
+          turnover: { pct?: number | null; leavers: number; joiners: number };
+          cases?: { open: number }[] | null;
+          declarations?: { signed?: number; total?: number } | null;
+          establishment_changes: { summary: string; department: string; state: string }[];
+        }>("/hr/board-pack", { quiet: true });
+        const est = hr.establishment;
+        const open = hr.cases ? hr.cases.reduce((n, c) => n + c.open, 0) : null;
+        const pending = hr.establishment_changes.map((c) => `• ${c.summary}, ${c.department} (${c.state.toLowerCase()})`).join("\n");
+        return {
+          content: `People and HR as at ${asOf}. Headcount ${hr.headcount}${est ? ` of ${est.approved} approved posts; ${est.vacant} vacant` : ""}. Turnover over 12 months ${hr.turnover.pct ?? "—"}% (${hr.turnover.leavers} leavers, ${hr.turnover.joiners} joiners).${pending ? `\nEstablishment changes:\n${pending}` : ""}`,
+          figures: {
+            Headcount: String(hr.headcount),
+            Vacancies: est ? String(est.vacant) : "—",
+            "Turnover (12m)": hr.turnover.pct != null ? `${hr.turnover.pct}%` : "—",
+            "Open cases": open != null ? String(open) : "—",
+            Declarations: hr.declarations?.total ? `${hr.declarations.signed ?? 0}/${hr.declarations.total}` : "—",
+          },
+        };
+      } catch {
+        return { content: "HR figures unavailable: the HR service could not be reached at assembly. No figures were filled in.", figures: {} };
+      }
+    }
     // Board KPIs straight from the domain stores (03 P3) — frozen into the snapshot at assembly.
     case "certification": {
       try {

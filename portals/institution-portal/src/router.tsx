@@ -1263,6 +1263,19 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "hr-pack",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./board/sub-views").then((m) => ({
+                            default: m.BoardHrPack,
+                          }))
+                        }
+                        skeleton="dashboard"
+                      />
+                    ),
+                  },
+                  {
                     path: "members",
                     element: (
                       <L

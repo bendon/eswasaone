@@ -3,7 +3,7 @@ import { Icon } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
-import type { HrMe } from "../api/types";
+import type { HrMe, HrMyDeclaration } from "../api/types";
 import { Banner, fmtDays, fmtRange, leaveStatus, NextStep, StatusPill } from "./parts";
 
 /** E1 My HR — the signed-in person's own record, balances and leave. Live GET /hr/me only. */
@@ -44,6 +44,9 @@ export function MyHrHome() {
 }
 
 function Linked({ me }: { me: HrMe }) {
+  const { sessionKey } = useInstitution();
+  const decl = useApiResource<HrMyDeclaration>("/hr/me/declaration", { refreshKey: sessionKey });
+  const declDue = decl.data && decl.data.status !== "signed" ? decl.data : null;
   const emp = me.employee;
   const first = (emp?.employee_name ?? "").split(" ")[0] || "there";
   const annual = me.balances.find((b) => /annual/i.test(b.leave_type)) ?? me.balances[0];
@@ -95,6 +98,20 @@ function Linked({ me }: { me: HrMe }) {
           <span className="d">{waiting.length ? `With ${approver ?? "your approver"} in Approvals` : "Nothing waiting"}</span>
         </Link>
       </div>
+
+      {declDue ? (
+        <Banner
+          kind="bad"
+          title={`Sign your ${declDue.year_label} impartiality and confidentiality declaration`}
+          action={
+            <Link className="btn pri sm" to="declaration">
+              Sign now
+            </Link>
+          }
+        >
+          Until you sign, you can't be assigned to audits or decisions. It takes about 3 minutes.
+        </Banner>
+      ) : null}
 
       {!approver ? (
         <Banner kind="warn" title="You have no leave approver yet">

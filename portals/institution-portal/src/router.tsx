@@ -546,6 +546,18 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "competence/declarations",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({
+                            default: m.DeclarationsView,
+                          }))
+                        }
+                      />
+                    ),
+                  },
+                  {
                     path: "recruitment",
                     element: (
                       <L
@@ -657,6 +669,17 @@ export const router = createBrowserRouter(
                       <L
                         factory={() =>
                           import("./me/sub-views").then((m) => ({ default: m.ApplyLeave }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "declaration",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.Declaration }))
                         }
                         skeleton="panel"
                       />

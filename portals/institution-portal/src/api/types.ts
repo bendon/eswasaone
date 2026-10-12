@@ -43,6 +43,40 @@ export type HrMe = {
   leave: HrLeaveSummary[];
 };
 export type HrWorkConflict = { id: string; title: string; date?: string | null; kind?: string };
+export type HrDeclarationInterest = {
+  organisation: string;
+  relationship: string;
+  from_date?: string | null;
+  to_date?: string | null;
+};
+export type HrMyDeclaration = {
+  employee?: string | null;
+  employee_name?: string | null;
+  year: number;
+  year_label: string;
+  status: "outstanding" | "draft" | "signed";
+  signed_on?: string | null;
+  nothing_else: boolean;
+  interests: HrDeclarationInterest[];
+  look_back_from?: string | null;
+  relationships: string[];
+  confidentiality_text: string;
+  wording_confirmed: boolean;
+};
+export type HrDeclarationRegister = {
+  year: number;
+  year_label: string;
+  total: number;
+  signed: number;
+  outstanding: Array<{
+    employee: string;
+    employee_name?: string | null;
+    department?: string | null;
+    designation?: string | null;
+    has_login: boolean;
+  }>;
+};
+export type HrRemindResult = { created: number; without_login: number; outstanding: number };
 export type HrLeavePreview = {
   days: number;
   balance?: number | null;

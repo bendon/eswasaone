@@ -16,6 +16,8 @@ from typing import Any
 import frappe
 from frappe.utils import getdate
 
+from eswasa_hr.declarations import declaration_year
+
 
 def _as_date(value: Any) -> date | None:
     if value is None or value == "":
@@ -96,7 +98,7 @@ def has_conflict(employee: str | None, customer: str | None, on_date: date | str
     if not employee:
         return True
     day = _as_date(on_date) or date.today()
-    year = day.year
+    year = declaration_year(day)
     if not frappe.db.exists("DocType", "Impartiality Declaration"):
         return True
     decl = frappe.db.get_value(

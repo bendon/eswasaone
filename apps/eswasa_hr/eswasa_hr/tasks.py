@@ -12,7 +12,8 @@ def daily() -> None:
     rh2_contract_end_alerts()
     rh3_authorisation_expiry_alerts()
     rh4_single_holder_alerts()
-    # R-H5 / R-H6 need leave-year and appraisal-cycle config from §0.5
+    rh5_declarations()
+    # R-H6 needs appraisal-cycle config from §0.5
 
 
 def rh1_probation_reviews() -> int:
@@ -97,3 +98,10 @@ def recompute_authorisation_statuses() -> int:
             frappe.db.set_value("Staff Authorisation", row.name, "status", new, update_modified=False)
             n += 1
     return n
+
+
+def rh5_declarations() -> int:
+    """R-H5: on the first day of the declaration year, a ToDo for everyone who hasn't signed."""
+    from eswasa_hr.declarations import rh5_open_year
+
+    return rh5_open_year()

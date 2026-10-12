@@ -744,6 +744,76 @@ paths:
         "503":
           description: Frappe unavailable
 
+  /hr/me/declaration:
+    get:
+      tags: [hr]
+      operationId: getMyDeclaration
+      summary: This year's impartiality and confidentiality declaration for the caller
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Declaration (status outstanding | draft | signed)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrMyDeclaration" }
+        "404":
+          description: Login not linked to an Employee record
+    post:
+      tags: [hr]
+      operationId: signMyDeclaration
+      summary: Sign this year's declaration (own record only; rules enforced in eswasa_hr)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrSignDeclarationBody" }
+      responses:
+        "200":
+          description: Signed declaration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrMyDeclaration" }
+        "400":
+          description: confirm=false
+        "422":
+          description: Rule failed (nothing listed, confidentiality not accepted, no signature, already signed)
+
+  /hr/impartiality:
+    get:
+      tags: [hr]
+      operationId: getDeclarationRegister
+      summary: Signed and outstanding declarations for the year (HR roles only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: year, in: query, required: false, schema: { type: integer } }
+      responses:
+        "200":
+          description: Register
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrDeclarationRegister" }
+        "403":
+          description: Not HR
+
+  /hr/impartiality/remind:
+    post:
+      tags: [hr]
+      operationId: remindDeclarations
+      summary: Open a task for everyone who hasn't signed (idempotent; R-H5)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrRemindBody" }
+      responses:
+        "200":
+          description: Tasks opened
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrRemindResult" }
+
   /hr/leave/preview:
     post:
       tags: [hr]
@@ -4591,6 +4661,75 @@ components:
         warnings:
           type: array
           items: { type: string }
+    HrDeclarationInterest:
+      type: object
+      required: [organisation, relationship]
+      properties:
+        organisation: { type: string }
+        relationship: { type: string }
+        from_date: { anyOf: [{ type: string }, { type: "null" }] }
+        to_date: { anyOf: [{ type: string }, { type: "null" }] }
+    HrMyDeclaration:
+      type: object
+      required: [year, year_label, status]
+      properties:
+        employee: { anyOf: [{ type: string }, { type: "null" }] }
+        employee_name: { anyOf: [{ type: string }, { type: "null" }] }
+        year: { type: integer }
+        year_label: { type: string }
+        status: { type: string, enum: [outstanding, draft, signed] }
+        signed_on: { anyOf: [{ type: string }, { type: "null" }] }
+        nothing_else: { type: boolean }
+        interests:
+          type: array
+          items: { $ref: "#/components/schemas/HrDeclarationInterest" }
+        look_back_from: { anyOf: [{ type: string }, { type: "null" }] }
+        relationships: { type: array, items: { type: string } }
+        confidentiality_text: { type: string }
+        wording_confirmed: { type: boolean }
+    HrSignDeclarationBody:
+      type: object
+      required: [confidentiality_accepted, signed_name, confirm]
+      properties:
+        interests:
+          type: array
+          items: { $ref: "#/components/schemas/HrDeclarationInterest" }
+        nothing_else: { type: boolean }
+        confidentiality_accepted: { type: boolean }
+        signed_name: { type: string }
+        confirm: { type: boolean }
+    HrDeclarationOutstanding:
+      type: object
+      required: [employee]
+      properties:
+        employee: { type: string }
+        employee_name: { anyOf: [{ type: string }, { type: "null" }] }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        designation: { anyOf: [{ type: string }, { type: "null" }] }
+        has_login: { type: boolean }
+    HrDeclarationRegister:
+      type: object
+      required: [year, year_label, total, signed]
+      properties:
+        year: { type: integer }
+        year_label: { type: string }
+        total: { type: integer }
+        signed: { type: integer }
+        outstanding:
+          type: array
+          items: { $ref: "#/components/schemas/HrDeclarationOutstanding" }
+    HrRemindBody:
+      type: object
+      required: [confirm]
+      properties:
+        confirm: { type: boolean }
+    HrRemindResult:
+      type: object
+      required: [created]
+      properties:
+        created: { type: integer }
+        without_login: { type: integer }
+        outstanding: { type: integer }
     HrHoliday:
       properties:
         date:

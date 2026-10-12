@@ -38,6 +38,8 @@ const PREVIEW = {
   warnings: [],
 };
 
+const DECL: unknown = { year: 2026, year_label: "2026/27", status: "signed", nothing_else: true, interests: [], relationships: [], confidentiality_text: "", wording_confirmed: false };
+
 type Call = { url: string; method: string; body?: unknown };
 
 function stubCore(me: unknown, preview: unknown = PREVIEW) {
@@ -50,6 +52,7 @@ function stubCore(me: unknown, preview: unknown = PREVIEW) {
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const json = (b: unknown, status = 200) =>
         new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
+      if (url.includes("/hr/me/declaration")) return json(DECL);
       if (url.includes("/hr/me")) return json(me);
       if (url.includes("/hr/leave/preview")) return json(preview);
       if (url.includes("/hr/leave") && method === "POST")

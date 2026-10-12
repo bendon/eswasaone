@@ -77,9 +77,14 @@ from app.schemas import (
     HrJobOpening,
     HrLeaveActBody,
     HrLeaveBalance,
+    HrDeclarationRegister,
     HrLeavePreview,
     HrLeavePreviewBody,
     HrMe,
+    HrMyDeclaration,
+    HrRemindBody,
+    HrRemindResult,
+    HrSignDeclarationBody,
     HrPersonRef,
     HrWorkConflict,
     HrLeaveSummary,
@@ -4329,6 +4334,111 @@ async def preview_hr_leave(
     except FrappeError as exc:
         _raise_from_frappe(exc)
         raise  # pragma: no cover
+
+
+_DECL = "eswasa_hr.declarations"
+
+
+@router.get("/hr/me/declaration", response_model=HrMyDeclaration, tags=["hr"])
+async def get_my_declaration(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrMyDeclaration:
+    """This year's impartiality and confidentiality declaration for the caller (E6)."""
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    try:
+        raw = await auth.frappe(frappe).method(f"{_DECL}.my_declaration")
+        return HrMyDeclaration.model_validate(raw)
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+    except ValidationError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    raise HTTPException(status_code=502, detail="Declaration unavailable")  # pragma: no cover
+
+
+@router.post("/hr/me/declaration", response_model=HrMyDeclaration, tags=["hr"])
+async def sign_my_declaration(
+    body: HrSignDeclarationBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrMyDeclaration:
+    """Sign this year's declaration. Rules (own record, confidentiality, signature) live in eswasa_hr."""
+    _require_confirm(body.confirm)
+    audit_log(
+        action="hr.declaration.sign",
+        actor=auth.user.username,
+        resource="Impartiality Declaration",
+        detail={"interests": len(body.interests), "nothing_else": body.nothing_else},
+        confirmed=True,
+    )
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    try:
+        raw = await auth.frappe(frappe).method(
+            f"{_DECL}.sign",
+            json={
+                "interests": [i.model_dump() for i in body.interests],
+                "nothing_else": int(body.nothing_else),
+                "confidentiality_accepted": int(body.confidentiality_accepted),
+                "signed_name": body.signed_name,
+                "confirm": 1,
+            },
+        )
+        return HrMyDeclaration.model_validate(raw)
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+    except ValidationError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    raise HTTPException(status_code=502, detail="Declaration not saved")  # pragma: no cover
+
+
+@router.get("/hr/impartiality", response_model=HrDeclarationRegister, tags=["hr"])
+async def get_declaration_register(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    year: int | None = None,
+) -> HrDeclarationRegister:
+    """Signed and outstanding declarations for the year (H5c). HR roles only (enforced in Frappe)."""
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    try:
+        raw = await auth.frappe(frappe).method(
+            f"{_DECL}.register", params={"year": year} if year else None
+        )
+        return HrDeclarationRegister.model_validate(raw)
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+    except ValidationError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    raise HTTPException(status_code=502, detail="Register unavailable")  # pragma: no cover
+
+
+@router.post("/hr/impartiality/remind", response_model=HrRemindResult, tags=["hr"])
+async def remind_declarations(
+    body: HrRemindBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrRemindResult:
+    """Open a task for everyone who hasn't signed (idempotent; same as R-H5)."""
+    _require_confirm(body.confirm)
+    audit_log(
+        action="hr.declaration.remind",
+        actor=auth.user.username,
+        resource="Impartiality Declaration",
+        detail={},
+        confirmed=True,
+    )
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    try:
+        raw = await auth.frappe(frappe).method(f"{_DECL}.remind", json={"confirm": 1})
+        return HrRemindResult.model_validate(raw)
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+    except ValidationError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    raise HTTPException(status_code=502, detail="Reminders not sent")  # pragma: no cover
 
 
 @router.post(

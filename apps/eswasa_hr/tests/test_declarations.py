@@ -1,0 +1,183 @@
+"""Yearly declaration (journey J5) — pure rules, plus signing against a fake frappe module."""
+
+from __future__ import annotations
+
+import sys
+import types
+import unittest
+from datetime import date
+from types import SimpleNamespace
+
+from eswasa_hr import declarations as dec
+
+
+class RuleTests(unittest.TestCase):
+    def test_declaration_year_starts_in_april(self):
+        self.assertEqual(dec.declaration_year(date(2026, 10, 12)), 2026)
+        self.assertEqual(dec.declaration_year(date(2027, 3, 31)), 2026)
+        self.assertEqual(dec.declaration_year(date(2027, 4, 1)), 2027)
+        self.assertEqual(dec.year_label(2026), "2026/27")
+
+    def test_look_back_is_two_years(self):
+        self.assertEqual(dec.look_back_from(date(2026, 10, 12)), date(2024, 10, 12))
+        self.assertEqual(dec.look_back_from(date(2028, 2, 29)), date(2026, 2, 28))
+
+    def test_interests_are_cleaned_and_checked(self):
+        rows = dec.clean_interests([
+            {"organisation": " Sample Foods Ltd ", "relationship": "Former employer", "from_date": "2019-01-01", "to_date": "2020-12-31"},
+            {"organisation": "", "relationship": "", "from_date": "", "to_date": ""},
+        ])
+        self.assertEqual(rows, [{"organisation": "Sample Foods Ltd", "relationship": "Former employer", "from_date": "2019-01-01", "to_date": "2020-12-31"}])
+        with self.assertRaisesRegex(ValueError, "Row 1: say what your relationship"):
+            dec.clean_interests([{"organisation": "Acme"}])
+        with self.assertRaisesRegex(ValueError, "end date for Acme is before"):
+            dec.clean_interests([{"organisation": "Acme", "relationship": "Other", "from_date": "2025-05-01", "to_date": "2025-01-01"}])
+
+    def test_signing_rules(self):
+        self.assertIn("nothing else", dec.signing_error([], False, True, "Thandi Mamba"))
+        self.assertIn("confidentiality", dec.signing_error([], True, False, "Thandi Mamba"))
+        self.assertIn("full name", dec.signing_error([], True, True, " "))
+        self.assertIsNone(dec.signing_error([], True, True, "Thandi Mamba"))
+
+
+class _Err(Exception):
+    pass
+
+
+class _Doc(dict):
+    """Minimal Frappe Document stand-in."""
+
+    def __getattr__(self, k):
+        return self.get(k)
+
+    def __setattr__(self, k, v):
+        self[k] = v
+
+    def set(self, k, v):
+        self[k] = v
+
+    def append(self, k, row):
+        self.setdefault(k, []).append(SimpleNamespace(**row))
+
+    def insert(self):
+        self["name"] = f"IMP-{self['employee']}-{self['year']}"
+        dec.validate(self)
+        STORE[self["name"]] = self
+        return self
+
+    def save(self):
+        dec.validate(self)
+        return self
+
+    def submit(self):
+        dec.before_submit(self)
+        self["docstatus"] = 1
+        dec.on_submit(self)
+
+
+STORE: dict[str, _Doc] = {}
+
+
+def _fake(user="thandi@x", roles=("Employee",), todos=None):
+    todos = todos if todos is not None else []
+    f = types.ModuleType("frappe")
+    f.session = SimpleNamespace(user=user)
+    for n in ("ValidationError", "PermissionError", "DoesNotExistError"):
+        setattr(f, n, type(n, (_Err,), {}))
+
+    def throw(msg, exc=_Err):
+        raise exc(msg)
+
+    f.throw = throw
+    f.get_roles = lambda: list(roles)
+    staff = [
+        {"name": "EMP-44", "employee_name": "Thandi Mamba", "department": "Certification", "designation": "Lead Auditor", "user_id": "thandi@x"},
+        {"name": "EMP-61", "employee_name": "Lindiwe Simelane", "department": "Field Operations", "designation": "Auditor", "user_id": "lindiwe@x"},
+        {"name": "EMP-90", "employee_name": "No Login", "department": "ICT", "designation": "Technician", "user_id": None},
+    ]
+
+    def get_all(dt, filters=None, fields=None, limit=None, order_by=None):
+        if dt == "Employee":
+            uid = (filters or {}).get("user_id")
+            return [s for s in staff if uid is None or s["user_id"] == uid]
+        if dt == dec.DOCTYPE:
+            return [{"employee": d["employee"], "signed_on": d.get("signed_on")} for d in STORE.values() if d.get("docstatus") == 1 and d["year"] == filters["year"]]
+        if dt == "ToDo":
+            return [{"name": t["name"]} for t in todos if t["status"] == "Open" and all(t.get(k) == v for k, v in filters.items() if k != "status")]
+        raise AssertionError(dt)
+
+    f.get_all = get_all
+    f.db = SimpleNamespace(
+        exists=lambda dt, key: (key in STORE) if isinstance(key, str) else any(
+            t["status"] == "Open" and all(t.get(k) == v for k, v in key.items() if k != "status") for t in todos),
+        get_value=lambda dt, name, field: next((s[field] for s in staff if s["name"] == name), None),
+        set_value=lambda dt, name, field, val: next(t for t in todos if t["name"] == name).__setitem__(field, val),
+    )
+
+    class _ToDo(dict):
+        def insert(self, ignore_permissions=False):
+            self["name"] = f"TD-{len(todos) + 1}"
+            todos.append(dict(self))
+
+    f.get_doc = lambda d, *a: (_Doc(d) if d.get("doctype") == dec.DOCTYPE else _ToDo(d)) if isinstance(d, dict) else STORE[a[0]]
+    utils = types.ModuleType("frappe.utils")
+    utils.getdate = lambda v: date.fromisoformat(str(v))
+    utils.nowdate = lambda: "2026-10-12"
+    utils.add_days = lambda d, n: date.fromordinal(d.toordinal() + n)
+    f.utils = utils
+    sys.modules["frappe"] = f
+    sys.modules["frappe.utils"] = utils
+    return f, todos
+
+
+class SigningTests(unittest.TestCase):
+    def setUp(self):
+        STORE.clear()
+
+    def tearDown(self):
+        sys.modules.pop("frappe", None)
+        sys.modules.pop("frappe.utils", None)
+
+    def test_hr_reminds_then_employee_signs_and_task_closes(self):
+        f, todos = _fake(user="hr@x", roles=("HR Manager",))
+        res = dec.remind_impl()
+        self.assertEqual((res["created"], res["without_login"], res["outstanding"]), (2, 1, 3))
+        self.assertEqual(todos[0]["description"], "Sign your 2026/27 impartiality and confidentiality declaration")
+        self.assertEqual(dec.remind_impl()["created"], 0)  # idempotent
+
+        _fake(user="thandi@x", todos=todos)
+        mine = dec.my_declaration_impl()
+        self.assertEqual((mine["status"], mine["year_label"], mine["look_back_from"]), ("outstanding", "2026/27", "2024-10-12"))
+        self.assertFalse(mine["wording_confirmed"])
+        out = dec.sign_impl(
+            [{"organisation": "Sample Foods Ltd", "relationship": "Former employer", "from_date": "2019-01-01", "to_date": "2020-12-31"}],
+            False, True, "Thandi Mamba",
+        )
+        self.assertEqual((out["status"], out["signed_on"]), ("signed", "2026-10-12"))
+        thandi_todo = next(t for t in todos if t["allocated_to"] == "thandi@x")
+        self.assertEqual(thandi_todo["status"], "Closed")
+
+        _fake(user="hr@x", roles=("HR Manager",), todos=todos)
+        reg = dec.register_impl()
+        self.assertEqual((reg["total"], reg["signed"]), (3, 1))
+        self.assertEqual([o["employee_name"] for o in reg["outstanding"]], ["Lindiwe Simelane", "No Login"])
+
+    def test_signing_needs_confidentiality_and_cannot_repeat(self):
+        f, _ = _fake()
+        with self.assertRaises(f.ValidationError):
+            dec.sign_impl([], True, False, "Thandi Mamba")
+        dec.sign_impl([], True, True, "Thandi Mamba")
+        with self.assertRaisesRegex(f.ValidationError, "already signed"):
+            dec.sign_impl([], True, True, "Thandi Mamba")
+
+    def test_only_hr_sees_the_register_and_nobody_signs_for_someone_else(self):
+        f, _ = _fake(user="lindiwe@x")
+        with self.assertRaises(f.PermissionError):
+            dec.register_impl()
+        doc = _Doc({"doctype": dec.DOCTYPE, "employee": "EMP-44", "year": 2026, "interests": []})
+        with self.assertRaises(f.PermissionError):
+            dec.validate(doc)
+
+
+if __name__ == "__main__":
+    unittest.main()

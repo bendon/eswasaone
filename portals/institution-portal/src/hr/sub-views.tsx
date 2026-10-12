@@ -9,3 +9,4 @@ export { StructureView } from "./StructureView";
 export { CompetenceView } from "./CompetenceView";
 export { CasesView } from "./CasesView";
 export { HrChrome } from "./HrChrome";
+export { DeclarationsView } from "./DeclarationsView";

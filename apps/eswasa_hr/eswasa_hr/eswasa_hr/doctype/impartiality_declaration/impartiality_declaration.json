@@ -5,7 +5,18 @@
  "creation": "2026-10-09 00:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
- "field_order": ["employee", "year", "signed_on", "section_interests", "interests", "amended_from"],
+ "field_order": [
+  "employee",
+  "year",
+  "signed_on",
+  "section_interests",
+  "nothing_else",
+  "interests",
+  "section_confidentiality",
+  "confidentiality_accepted",
+  "signed_name",
+  "amended_from"
+ ],
  "fields": [
   {
    "fieldname": "employee",
@@ -40,6 +51,31 @@
    "options": "Impartiality Interest"
   },
   {
+   "default": "0",
+   "description": "Ticked when the person has no other organisation to list for the last two years.",
+   "fieldname": "nothing_else",
+   "fieldtype": "Check",
+   "label": "Nothing else to declare"
+  },
+  {
+   "fieldname": "section_confidentiality",
+   "fieldtype": "Section Break",
+   "label": "Confidentiality undertaking"
+  },
+  {
+   "default": "0",
+   "description": "Required by ISO/IEC 17021-1, 17065 and 17025. Wording to be confirmed by ESWASA (Confirmation Pack H9).",
+   "fieldname": "confidentiality_accepted",
+   "fieldtype": "Check",
+   "label": "Confidentiality undertaking accepted"
+  },
+  {
+   "description": "Full name typed by the person when signing.",
+   "fieldname": "signed_name",
+   "fieldtype": "Data",
+   "label": "Signed Name"
+  },
+  {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
@@ -51,7 +87,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-09 00:00:00.000000",
+ "modified": "2026-10-12 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Eswasa HR",
  "name": "Impartiality Declaration",
@@ -83,7 +119,13 @@
    "create": 1,
    "read": 1,
    "role": "Employee",
-   "write": 1
+   "write": 1,
+   "submit": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "HR User"
   }
  ],
  "sort_field": "modified",

@@ -702,6 +702,66 @@ class HrLeavePreview(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
+class HrDeclarationInterest(BaseModel):
+    organisation: str
+    relationship: str
+    from_date: str | None = None
+    to_date: str | None = None
+
+
+class HrMyDeclaration(BaseModel):
+    """OpenAPI: HrMyDeclaration — the caller's impartiality and confidentiality declaration (E6)."""
+
+    employee: str | None = None
+    employee_name: str | None = None
+    year: int
+    year_label: str
+    status: str  # outstanding | draft | signed
+    signed_on: str | None = None
+    nothing_else: bool = False
+    interests: list[HrDeclarationInterest] = Field(default_factory=list)
+    look_back_from: str | None = None
+    relationships: list[str] = Field(default_factory=list)
+    confidentiality_text: str = ""
+    wording_confirmed: bool = False
+
+
+class HrSignDeclarationBody(BaseModel):
+    interests: list[HrDeclarationInterest] = Field(default_factory=list)
+    nothing_else: bool = False
+    confidentiality_accepted: bool
+    signed_name: str
+    confirm: bool
+
+
+class HrDeclarationOutstanding(BaseModel):
+    employee: str
+    employee_name: str | None = None
+    department: str | None = None
+    designation: str | None = None
+    has_login: bool = True
+
+
+class HrDeclarationRegister(BaseModel):
+    """OpenAPI: HrDeclarationRegister — signed and outstanding declarations for the year (H5c)."""
+
+    year: int
+    year_label: str
+    total: int
+    signed: int
+    outstanding: list[HrDeclarationOutstanding] = Field(default_factory=list)
+
+
+class HrRemindBody(BaseModel):
+    confirm: bool
+
+
+class HrRemindResult(BaseModel):
+    created: int
+    without_login: int = 0
+    outstanding: int = 0
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

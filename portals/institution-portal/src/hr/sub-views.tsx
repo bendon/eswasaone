@@ -10,3 +10,5 @@ export { CompetenceView } from "./CompetenceView";
 export { CasesView } from "./CasesView";
 export { HrChrome } from "./HrChrome";
 export { DeclarationsView } from "./DeclarationsView";
+export { RecordAuthorisation } from "./competence/RecordAuthorisation";
+export { AuthorisationDetail } from "./competence/AuthorisationDetail";

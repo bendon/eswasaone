@@ -762,6 +762,75 @@ class HrRemindResult(BaseModel):
     outstanding: int = 0
 
 
+class HrAuthorisationRow(BaseModel):
+    id: str
+    employee: str
+    employee_name: str | None = None
+    skill: str
+    valid_from: str | None = None
+    valid_to: str | None = None
+    status: str  # In training | Current | Expiring | Expired | Withdrawn
+
+
+class HrAuthorisationEvidence(BaseModel):
+    evidence_type: str
+    reference: str | None = None
+    notes: str | None = None
+
+
+class HrAuthorisationDetail(HrAuthorisationRow):
+    """OpenAPI: HrAuthorisationDetail (H5b)."""
+
+    kind: str | None = None
+    scheme: str | None = None
+    approver: str | None = None
+    decides: str | None = None
+    evidence: list[HrAuthorisationEvidence] = Field(default_factory=list)
+
+
+class HrAuthorisationRequestBody(BaseModel):
+    employee: str
+    skill: str
+    valid_from: str
+    valid_to: str | None = None
+    evidence: list[HrAuthorisationEvidence] = Field(default_factory=list)
+    confirm: bool
+
+
+class HrCompetenceSkill(BaseModel):
+    name: str
+    kind: str | None = None
+    scheme: str | None = None
+    validity_months: int | None = None
+    holders: int = 0
+    expiring: int = 0
+
+
+class HrCompetenceCell(BaseModel):
+    id: str
+    status: str
+    valid_to: str | None = None
+
+
+class HrCompetencePerson(BaseModel):
+    employee: str
+    employee_name: str | None = None
+    cells: dict[str, HrCompetenceCell] = Field(default_factory=dict)
+
+
+class HrCompetenceMatrix(BaseModel):
+    """OpenAPI: HrCompetenceMatrix — people × competences with cover per competence (H5)."""
+
+    skills: list[HrCompetenceSkill] = Field(default_factory=list)
+    people: list[HrCompetencePerson] = Field(default_factory=list)
+
+
+class HrRenewalBody(BaseModel):
+    skill: str
+    note: str
+    confirm: bool
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

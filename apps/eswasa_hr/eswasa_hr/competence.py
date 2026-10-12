@@ -4,8 +4,8 @@ Shared competence / impartiality guards.
 Field Visit assignment and Calibration Job assignment must call these —
 never a second source of truth. Brief §6.2 / §6.3.
 
-# TODO: wire real — bridge Auditor Competence → Staff Authorisation for
-certification schemes during migration.
+Certification's auditor_competence_valid asks authorisations.authorised_for_scheme first and falls
+back to Auditor Competence only for schemes HR has no competences for yet.
 """
 
 from __future__ import annotations

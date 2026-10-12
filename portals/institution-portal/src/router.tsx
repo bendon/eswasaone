@@ -546,6 +546,28 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "competence/new",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.RecordAuthorisation }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "competence/authorisations/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.AuthorisationDetail }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
                     path: "competence/declarations",
                     element: (
                       <L
@@ -671,6 +693,17 @@ export const router = createBrowserRouter(
                           import("./me/sub-views").then((m) => ({ default: m.ApplyLeave }))
                         }
                         skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "competence",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.MyCompetence }))
+                        }
+                        skeleton="list"
                       />
                     ),
                   },

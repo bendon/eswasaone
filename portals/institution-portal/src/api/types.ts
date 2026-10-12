@@ -76,7 +76,33 @@ export type HrDeclarationRegister = {
     has_login: boolean;
   }>;
 };
-export type HrRemindResult = { created: number; without_login: number; outstanding: number };
+export type HrAuthorisationStatus = "In training" | "Current" | "Expiring" | "Expired" | "Withdrawn";
+export type HrAuthorisationRow = {
+  id: string;
+  employee: string;
+  employee_name?: string | null;
+  skill: string;
+  valid_from?: string | null;
+  valid_to?: string | null;
+  status: HrAuthorisationStatus;
+};
+export type HrAuthorisationEvidence = { evidence_type: string; reference?: string | null; notes?: string | null };
+export type HrAuthorisationDetail = HrAuthorisationRow & {
+  kind?: string | null;
+  scheme?: string | null;
+  approver?: string | null;
+  decides?: string | null;
+  evidence: HrAuthorisationEvidence[];
+};
+export type HrCompetenceMatrix = {
+  skills: Array<{ name: string; kind?: string | null; scheme?: string | null; validity_months?: number | null; holders: number; expiring: number }>;
+  people: Array<{
+    employee: string;
+    employee_name?: string | null;
+    cells: Record<string, { id: string; status: HrAuthorisationStatus; valid_to?: string | null }>;
+  }>;
+};
+export type HrRemindResult ={ created: number; without_login: number; outstanding: number };
 export type HrLeavePreview = {
   days: number;
   balance?: number | null;

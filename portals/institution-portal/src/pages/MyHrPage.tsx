@@ -8,6 +8,7 @@ export function MyHrPage() {
       tabs={[
         { to: "", label: "Overview", icon: "i-home" },
         { to: "leave", label: "My leave", icon: "i-cal" },
+        { to: "competence", label: "My authorisations", icon: "i-award" },
       ]}
     />
   );

@@ -65,6 +65,11 @@ scheduler_events = {
 doc_events = {
     "Staff Authorisation": {
         "validate": "eswasa_hr.eswasa_hr.doctype.staff_authorisation.staff_authorisation.validate",
+        # Journey J4: draft → one ToDo for the head of the person's department.
+        "after_insert": "eswasa_hr.authorisations.sync_todo",
+        "on_update": "eswasa_hr.authorisations.sync_todo",
+        "on_submit": "eswasa_hr.authorisations.sync_todo",
+        "on_cancel": "eswasa_hr.authorisations.sync_todo",
     },
     # Journey J3: route each leave request to the employee's own leave approver in Approvals.
     "Leave Application": {
@@ -78,4 +83,5 @@ doc_events = {
 # Approvals decides DocTypes without a Frappe Workflow through these (eswasa_governance.approvals).
 eswasa_approval_handlers = {
     "Leave Application": "eswasa_hr.leave.decide",
+    "Staff Authorisation": "eswasa_hr.authorisations.decide",
 }

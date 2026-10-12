@@ -38,7 +38,7 @@ export function DeclarationsView() {
       <ResourceGate loading={reg.loading} error={reg.error} onRetry={reg.reload} refreshing={reg.refreshing} hasData={Boolean(d)}>
         {d ? (
           <div className="hr hr-view">
-            <Crumbs items={[["Competence", ".."], ["Declarations"]]} />
+            <Crumbs items={[["Competence", "/hr/competence"], ["Declarations"]]} />
             <div className="hr-head">
               <div>
                 <h2>Impartiality and confidentiality declarations, {d.year_label}</h2>

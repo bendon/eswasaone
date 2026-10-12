@@ -77,6 +77,10 @@ from app.schemas import (
     HrJobOpening,
     HrLeaveActBody,
     HrLeaveBalance,
+    HrAuthorisationDetail,
+    HrAuthorisationRequestBody,
+    HrAuthorisationRow,
+    HrCompetenceMatrix,
     HrDeclarationRegister,
     HrLeavePreview,
     HrLeavePreviewBody,
@@ -84,6 +88,7 @@ from app.schemas import (
     HrMyDeclaration,
     HrRemindBody,
     HrRemindResult,
+    HrRenewalBody,
     HrSignDeclarationBody,
     HrPersonRef,
     HrWorkConflict,
@@ -4439,6 +4444,121 @@ async def remind_declarations(
     except ValidationError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     raise HTTPException(status_code=502, detail="Reminders not sent")  # pragma: no cover
+
+
+_AUTH = "eswasa_hr.authorisations"
+
+
+async def _hr_call(
+    auth: AuthContext,
+    frappe: FrappeClient,
+    method: str,
+    *,
+    json: dict[str, Any] | None = None,
+    params: dict[str, Any] | None = None,
+) -> Any:
+    """Call an eswasa_hr whitelisted method as the user; rules and permissions live there."""
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    try:
+        return await auth.frappe(frappe).method(method, json=json, params=params)
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
+
+
+@router.get("/hr/competence/matrix", response_model=HrCompetenceMatrix, tags=["hr"])
+async def get_competence_matrix(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrCompetenceMatrix:
+    """People × competences with cover per competence (H5). HR roles only (enforced in eswasa_hr)."""
+    return HrCompetenceMatrix.model_validate(await _hr_call(auth, frappe, f"{_AUTH}.matrix"))
+
+
+@router.get("/hr/competence/expiring", tags=["hr"])
+async def list_expiring_authorisations(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    days: int = 60,
+) -> dict[str, list[HrAuthorisationRow]]:
+    raw = await _hr_call(auth, frappe, f"{_AUTH}.expiring", params={"days": days})
+    return {"items": [HrAuthorisationRow.model_validate(r) for r in (raw or [])]}
+
+
+@router.get("/hr/competence/authorisations/{name}", response_model=HrAuthorisationDetail, tags=["hr"])
+async def get_authorisation(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrAuthorisationDetail:
+    return HrAuthorisationDetail.model_validate(await _hr_call(auth, frappe, f"{_AUTH}.detail", params={"name": name}))
+
+
+@router.post(
+    "/hr/competence/authorisations",
+    response_model=HrAuthorisationDetail,
+    status_code=status.HTTP_201_CREATED,
+    tags=["hr"],
+)
+async def request_authorisation(
+    body: HrAuthorisationRequestBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrAuthorisationDetail:
+    """HR records an authorisation; it goes to the head of the person's department in Approvals."""
+    _require_confirm(body.confirm)
+    audit_log(
+        action="hr.authorisation.request",
+        actor=auth.user.username,
+        resource="Staff Authorisation",
+        detail={"employee": body.employee, "skill": body.skill, "valid_from": body.valid_from},
+        confirmed=True,
+    )
+    raw = await _hr_call(
+        auth,
+        frappe,
+        f"{_AUTH}.request",
+        json={
+            "employee": body.employee,
+            "skill": body.skill,
+            "valid_from": body.valid_from,
+            "valid_to": body.valid_to,
+            "evidence": [e.model_dump() for e in body.evidence],
+            "confirm": 1,
+        },
+    )
+    return HrAuthorisationDetail.model_validate(raw)
+
+
+@router.get("/hr/me/competence", tags=["hr"])
+async def list_my_authorisations(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, list[HrAuthorisationRow]]:
+    raw = await _hr_call(auth, frappe, f"{_AUTH}.mine")
+    return {"items": [HrAuthorisationRow.model_validate(r) for r in (raw or [])]}
+
+
+@router.post("/hr/me/competence/renewal", tags=["hr"])
+async def ask_for_renewal(
+    body: HrRenewalBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, int]:
+    """Employee asks HR to renew an authorisation; each HR Manager gets a task."""
+    _require_confirm(body.confirm)
+    audit_log(
+        action="hr.authorisation.renewal_requested",
+        actor=auth.user.username,
+        resource="Staff Authorisation",
+        detail={"skill": body.skill},
+        confirmed=True,
+    )
+    raw = await _hr_call(
+        auth, frappe, f"{_AUTH}.ask_renewal", json={"skill": body.skill, "note": body.note, "confirm": 1}
+    )
+    return {"sent_to": int((raw or {}).get("sent_to", 0))}
 
 
 @router.post(

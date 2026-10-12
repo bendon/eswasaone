@@ -1346,11 +1346,26 @@ def rc6_assessment_sla_sweep() -> int:
 # ---------------------------------------------------------------------------
 
 
+def _hr_authorised(auditor: str, scheme: str | None) -> bool | None:
+    """Brief §6.2: HR Staff Authorisation is the source once HR has competences for this scheme
+    (Skill.custom_scheme = Certification Scheme name). None → HR has nothing for it; use Auditor Competence."""
+    if not scheme:
+        return None
+    try:
+        from eswasa_hr.authorisations import authorised_for_scheme
+    except ImportError:
+        return None
+    return authorised_for_scheme(frappe.db.get_value("Auditor", auditor, "user"), scheme)
+
+
 def auditor_competence_valid(auditor: str | None, scheme: str | None = None) -> bool:
     if not auditor:
         return True
     if cint(frappe.db.get_value("Auditor", auditor, "assignment_blocked")):
         return False
+    hr = _hr_authorised(auditor, scheme)
+    if hr is not None:
+        return hr
     filters: dict[str, Any] = {"auditor": auditor}
     if scheme:
         filters["scheme"] = scheme

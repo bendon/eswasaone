@@ -1038,6 +1038,216 @@ paths:
         "429":
           description: Too many applications from this connection
 
+  /hr/recruitment/openings/{opening}/pipeline:
+    get:
+      tags: [hr]
+      operationId: getPipeline
+      summary: One opening's applicants by stage (HR only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: opening, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrPipeline" }
+
+  /hr/recruitment/applicants/{name}:
+    get:
+      tags: [hr]
+      operationId: getApplicant
+      summary: One applicant with interviews and offer (HR only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrApplicantDetail" }
+
+  /hr/recruitment/applicants/{name}/cv:
+    get:
+      tags: [hr]
+      operationId: downloadApplicantCv
+      summary: The applicant's CV (HR only; access checked in eswasa_hr before the file is read)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: CV file
+        "404":
+          description: No CV on file
+
+  /hr/recruitment/applicants/{name}/status:
+    post:
+      tags: [hr]
+      operationId: setApplicantStatus
+      summary: Shortlist, hold or decline (a process step, not an approval)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrApplicantStatusBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrApplicantDetail" }
+
+  /hr/recruitment/interview-types:
+    get:
+      tags: [hr]
+      operationId: listInterviewTypes
+      summary: Interview types set up in HRMS
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: object, properties: { items: { type: array, items: { type: string } } } }
+
+  /hr/recruitment/applicants/{name}/interviews:
+    post:
+      tags: [hr]
+      operationId: scheduleInterview
+      summary: Schedule an interview; each interviewer gets a feedback task
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrScheduleInterviewBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrApplicantDetail" }
+
+  /hr/recruitment/interviews/{name}/result:
+    post:
+      tags: [hr]
+      operationId: recordInterviewResult
+      summary: HR marks the interview Cleared or Rejected (submits it)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrInterviewResultBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrApplicantDetail" }
+
+  /hr/recruitment/applicants/{name}/offer:
+    post:
+      tags: [hr]
+      operationId: makeOffer
+      summary: Prepare an offer; another HR Manager approves it in Approvals
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrOfferBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrApplicantDetail" }
+
+  /hr/recruitment/offers/{name}/answer:
+    post:
+      tags: [hr]
+      operationId: recordOfferAnswer
+      summary: Record the candidate's answer (Accepted or Rejected)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrOfferAnswerBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrApplicantDetail" }
+
+  /hr/recruitment/offers/{name}/employee:
+    post:
+      tags: [hr]
+      operationId: createEmployeeFromOffer
+      summary: Create the Employee from an accepted offer
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrCreateEmployeeBody" }
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema: { type: object, properties: { employee: { type: string }, employee_name: { type: string } } }
+
+  /hr/me/interviews:
+    get:
+      tags: [hr]
+      operationId: listMyInterviews
+      summary: Interviews where I'm on the panel and still owe feedback
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: object, properties: { items: { type: array, items: { $ref: "#/components/schemas/HrMyInterview" } } } }
+
+  /hr/me/interviews/{name}/feedback:
+    post:
+      tags: [hr]
+      operationId: recordMyFeedback
+      summary: Record my interview feedback (panel members only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrFeedbackBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: object, properties: { interview: { type: string }, result: { type: string } } }
+
   /hr/leave/preview:
     post:
       tags: [hr]
@@ -5106,6 +5316,141 @@ components:
         reference: { type: string }
         job_title: { anyOf: [{ type: string }, { type: "null" }] }
         closes_on: { anyOf: [{ type: string }, { type: "null" }] }
+    HrPipelineApplicant:
+      type: object
+      required: [id, applicant_name, status, stage]
+      properties:
+        id: { type: string }
+        applicant_name: { type: string }
+        status: { type: string }
+        applied_on: { anyOf: [{ type: string }, { type: "null" }] }
+        source: { anyOf: [{ type: string }, { type: "null" }] }
+        stage: { type: string, enum: [Applied, Shortlist, Interview, Offer, Hired, Not taken forward] }
+        interview_status: { anyOf: [{ type: string }, { type: "null" }] }
+        offer_state: { anyOf: [{ type: string }, { type: "null" }] }
+    HrPipeline:
+      type: object
+      required: [opening]
+      properties:
+        opening: { type: object, additionalProperties: true }
+        applicants: { type: array, items: { $ref: "#/components/schemas/HrPipelineApplicant" } }
+    HrInterviewFeedbackItem:
+      type: object
+      required: [interviewer]
+      properties:
+        interviewer: { type: string }
+        result: { anyOf: [{ type: string }, { type: "null" }] }
+        rating: { anyOf: [{ type: number }, { type: "null" }] }
+        feedback: { anyOf: [{ type: string }, { type: "null" }] }
+    HrApplicantInterview:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string }
+        status: { type: string }
+        scheduled_on: { anyOf: [{ type: string }, { type: "null" }] }
+        from_time: { anyOf: [{ type: string }, { type: "null" }] }
+        to_time: { anyOf: [{ type: string }, { type: "null" }] }
+        interview_type: { anyOf: [{ type: string }, { type: "null" }] }
+        panel: { type: array, items: { type: string } }
+        feedback: { type: array, items: { $ref: "#/components/schemas/HrInterviewFeedbackItem" } }
+        waiting_for: { type: integer }
+        average_rating: { anyOf: [{ type: number }, { type: "null" }] }
+    HrOfferState:
+      type: object
+      required: [name, state]
+      properties:
+        name: { type: string }
+        status: { anyOf: [{ type: string }, { type: "null" }] }
+        docstatus: { type: integer }
+        offer_date: { anyOf: [{ type: string }, { type: "null" }] }
+        designation: { anyOf: [{ type: string }, { type: "null" }] }
+        employee: { anyOf: [{ type: string }, { type: "null" }] }
+        state: { type: string }
+    HrApplicantDetail:
+      type: object
+      required: [id, applicant_name, status, stage]
+      properties:
+        id: { type: string }
+        applicant_name: { type: string }
+        email: { anyOf: [{ type: string }, { type: "null" }] }
+        phone: { anyOf: [{ type: string }, { type: "null" }] }
+        status: { type: string }
+        cover_letter: { anyOf: [{ type: string }, { type: "null" }] }
+        has_cv: { type: boolean }
+        source: { anyOf: [{ type: string }, { type: "null" }] }
+        applied_on: { anyOf: [{ type: string }, { type: "null" }] }
+        opening: { type: object, additionalProperties: true }
+        interviews: { type: array, items: { $ref: "#/components/schemas/HrApplicantInterview" } }
+        offer: { anyOf: [{ $ref: "#/components/schemas/HrOfferState" }, { type: "null" }] }
+        stage: { type: string }
+    HrMyInterview:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string }
+        applicant_name: { anyOf: [{ type: string }, { type: "null" }] }
+        designation: { anyOf: [{ type: string }, { type: "null" }] }
+        scheduled_on: { anyOf: [{ type: string }, { type: "null" }] }
+        from_time: { anyOf: [{ type: string }, { type: "null" }] }
+        interview_type: { anyOf: [{ type: string }, { type: "null" }] }
+        skills: { type: array, items: { type: string } }
+    HrApplicantStatusBody:
+      type: object
+      required: [status, confirm]
+      properties:
+        status: { type: string, enum: [Open, Shortlisted, Hold, Rejected] }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrScheduleInterviewBody:
+      type: object
+      required: [interview_type, scheduled_on, from_time, to_time, interviewers, confirm]
+      properties:
+        interview_type: { type: string }
+        scheduled_on: { type: string, format: date }
+        from_time: { type: string }
+        to_time: { type: string }
+        interviewers: { type: array, items: { type: string } }
+        confirm: { type: boolean }
+    HrFeedbackBody:
+      type: object
+      required: [result, ratings, confirm]
+      properties:
+        result: { type: string, enum: [Cleared, Rejected] }
+        ratings:
+          type: array
+          items: { type: object, required: [skill, stars], properties: { skill: { type: string }, stars: { type: integer, minimum: 1, maximum: 5 } } }
+        feedback: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrInterviewResultBody:
+      type: object
+      required: [status, confirm]
+      properties:
+        status: { type: string, enum: [Cleared, Rejected] }
+        confirm: { type: boolean }
+    HrOfferBody:
+      type: object
+      required: [offer_date, confirm]
+      properties:
+        offer_date: { type: string, format: date }
+        terms: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrOfferAnswerBody:
+      type: object
+      required: [answer, confirm]
+      properties:
+        answer: { type: string, enum: [Accepted, Rejected] }
+        confirm: { type: boolean }
+    HrCreateEmployeeBody:
+      type: object
+      required: [date_of_joining, gender, date_of_birth, confirm]
+      properties:
+        date_of_joining: { type: string, format: date }
+        gender: { type: string }
+        date_of_birth: { type: string, format: date }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        reports_to: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
     HrHoliday:
       properties:
         date:

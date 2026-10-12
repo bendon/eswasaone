@@ -55,7 +55,7 @@ export function PublishOpening() {
           Applications land in Recruitment as they arrive. Email applications to hr@eswasa.co.sz still count; add those
           by hand.
         </Banner>
-        <NextStep title="Screen applicants as they arrive" body="Shortlist or decline each one. Only shortlisted candidates are contacted." to="/hr/recruitment/applicants" label="Applicants" />
+        <NextStep title="Screen applicants as they arrive" body="Shortlist or decline each one. Only shortlisted candidates are contacted." to={done.opening ? `/hr/recruitment/openings/${encodeURIComponent(done.opening.id)}` : "/hr/recruitment"} label="Candidates" />
       </div>
     );
   }

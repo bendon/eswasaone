@@ -906,6 +906,134 @@ class CareerApplicationReceipt(BaseModel):
     closes_on: str | None = None
 
 
+class HrPipelineApplicant(BaseModel):
+    id: str
+    applicant_name: str
+    status: str
+    applied_on: str | None = None
+    source: str | None = None
+    stage: str  # Applied | Shortlist | Interview | Offer | Hired | Not taken forward
+    interview_status: str | None = None
+    offer_state: str | None = None
+
+
+class HrPipeline(BaseModel):
+    """OpenAPI: HrPipeline — one opening's applicants by stage (H6b)."""
+
+    opening: dict[str, Any]
+    applicants: list[HrPipelineApplicant] = Field(default_factory=list)
+
+
+class HrInterviewFeedbackItem(BaseModel):
+    interviewer: str
+    result: str | None = None
+    rating: float | None = None
+    feedback: str | None = None
+
+
+class HrApplicantInterview(BaseModel):
+    id: str
+    status: str
+    scheduled_on: str | None = None
+    from_time: str | None = None
+    to_time: str | None = None
+    interview_type: str | None = None
+    panel: list[str] = Field(default_factory=list)
+    feedback: list[HrInterviewFeedbackItem] = Field(default_factory=list)
+    waiting_for: int = 0
+    average_rating: float | None = None
+
+
+class HrOfferState(BaseModel):
+    name: str
+    status: str | None = None
+    docstatus: int = 0
+    offer_date: str | None = None
+    designation: str | None = None
+    employee: str | None = None
+    state: str
+
+
+class HrApplicantDetail(BaseModel):
+    """OpenAPI: HrApplicantDetail — one applicant with interviews and offer (H6c)."""
+
+    id: str
+    applicant_name: str
+    email: str | None = None
+    phone: str | None = None
+    status: str
+    cover_letter: str | None = None
+    has_cv: bool = False
+    source: str | None = None
+    applied_on: str | None = None
+    opening: dict[str, Any] | None = None
+    interviews: list[HrApplicantInterview] = Field(default_factory=list)
+    offer: HrOfferState | None = None
+    stage: str
+
+
+class HrMyInterview(BaseModel):
+    id: str
+    applicant_name: str | None = None
+    designation: str | None = None
+    scheduled_on: str | None = None
+    from_time: str | None = None
+    interview_type: str | None = None
+    skills: list[str] = Field(default_factory=list)
+
+
+class HrApplicantStatusBody(BaseModel):
+    status: str  # Open | Shortlisted | Hold | Rejected
+    note: str | None = None
+    confirm: bool
+
+
+class HrScheduleInterviewBody(BaseModel):
+    interview_type: str
+    scheduled_on: str
+    from_time: str
+    to_time: str
+    interviewers: list[str]
+    confirm: bool
+
+
+class HrSkillRating(BaseModel):
+    skill: str
+    stars: int
+
+
+class HrFeedbackBody(BaseModel):
+    result: str  # Cleared | Rejected
+    ratings: list[HrSkillRating]
+    feedback: str | None = None
+    confirm: bool
+
+
+class HrInterviewResultBody(BaseModel):
+    status: str  # Cleared | Rejected
+    confirm: bool
+
+
+class HrOfferBody(BaseModel):
+    offer_date: str
+    terms: str | None = None
+    confirm: bool
+
+
+class HrOfferAnswerBody(BaseModel):
+    answer: str  # Accepted | Rejected
+    confirm: bool
+
+
+class HrCreateEmployeeBody(BaseModel):
+    date_of_joining: str
+    gender: str
+    date_of_birth: str
+    department: str | None = None
+    reports_to: str | None = None
+    confirm: bool
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None
@@ -1252,12 +1380,6 @@ class HrApplicant(BaseModel):
     status: str
     job: str | None = None
     stage: str | None = None
-
-
-class AdvanceHrApplicantBody(BaseModel):
-    stage: str
-    confirm: bool
-    note: str | None = None
 
 
 class HrInterview(BaseModel):

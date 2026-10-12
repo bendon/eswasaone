@@ -103,6 +103,39 @@ export type HrCompetenceMatrix = {
   }>;
 };
 export type HrRemindResult = { created: number; without_login: number; outstanding: number };
+export type HrStage = "Applied" | "Shortlist" | "Interview" | "Offer" | "Hired" | "Not taken forward";
+export type HrPipeline = {
+  opening: { name: string; job_title?: string; designation?: string; department?: string; closes_on?: string | null; status?: string };
+  applicants: Array<{ id: string; applicant_name: string; status: string; applied_on?: string | null; source?: string | null; stage: HrStage; interview_status?: string | null; offer_state?: string | null }>;
+};
+export type HrApplicantInterview = {
+  id: string;
+  status: string;
+  scheduled_on?: string | null;
+  from_time?: string | null;
+  to_time?: string | null;
+  interview_type?: string | null;
+  panel: string[];
+  feedback: Array<{ interviewer: string; result?: string | null; rating?: number | null; feedback?: string | null }>;
+  waiting_for: number;
+  average_rating?: number | null;
+};
+export type HrApplicantDetail = {
+  id: string;
+  applicant_name: string;
+  email?: string | null;
+  phone?: string | null;
+  status: string;
+  cover_letter?: string | null;
+  has_cv: boolean;
+  source?: string | null;
+  applied_on?: string | null;
+  opening?: { name: string; job_title?: string; designation?: string; department?: string } | null;
+  interviews: HrApplicantInterview[];
+  offer?: { name: string; status?: string | null; docstatus: number; offer_date?: string | null; designation?: string | null; employee?: string | null; state: string } | null;
+  stage: HrStage;
+};
+export type HrMyInterview = { id: string; applicant_name?: string | null; designation?: string | null; scheduled_on?: string | null; from_time?: string | null; interview_type?: string | null; skills: string[] };
 export type HrVacancy = { department?: string | null; designation: string; approved: number; filled: number; in_recruitment: number; vacant: number };
 export type HrRequisition = {
   id: string;

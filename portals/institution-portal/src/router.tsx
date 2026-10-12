@@ -606,13 +606,22 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
-                    path: "recruitment/applicants",
+                    path: "recruitment/openings/:opening",
                     element: (
                       <L
                         factory={() =>
-                          import("./hr/sub-views").then((m) => ({
-                            default: m.RecruitmentView,
-                          }))
+                          import("./hr/sub-views").then((m) => ({ default: m.PipelineView }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "recruitment/applicants/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.ApplicantView }))
                         }
                         skeleton="panel"
                       />
@@ -741,6 +750,17 @@ export const router = createBrowserRouter(
                       <L
                         factory={() =>
                           import("./me/sub-views").then((m) => ({ default: m.MyCompetence }))
+                        }
+                        skeleton="list"
+                      />
+                    ),
+                  },
+                  {
+                    path: "interviews",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.MyInterviews }))
                         }
                         skeleton="list"
                       />

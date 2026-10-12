@@ -47,9 +47,6 @@ export function RequisitionsView() {
             </p>
           </div>
           <div className="hr-head__r">
-            <Link className="btn ghost" to="/hr/recruitment/applicants">
-              Applicants
-            </Link>
             <Link className="btn pri" to="/hr/recruitment/new">
               <Icon name="i-plus" />
               Raise a requisition
@@ -109,6 +106,10 @@ export function RequisitionsView() {
                           {r.status === "Open & Approved" && !r.opening ? (
                             <Link className="btn pri sm" to={`/hr/recruitment/${encodeURIComponent(r.id)}/publish`}>
                               Publish
+                            </Link>
+                          ) : r.opening ? (
+                            <Link className="btn ghost sm" to={`/hr/recruitment/openings/${encodeURIComponent(r.opening.id)}`}>
+                              Candidates
                             </Link>
                           ) : null}
                         </td>

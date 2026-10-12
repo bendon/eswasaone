@@ -85,4 +85,5 @@ eswasa_approval_handlers = {
     "Leave Application": "eswasa_hr.leave.decide",
     "Staff Authorisation": "eswasa_hr.authorisations.decide",
     "Job Requisition": "eswasa_hr.recruitment.decide",
+    "Job Offer": "eswasa_hr.hiring.decide_offer",
 }

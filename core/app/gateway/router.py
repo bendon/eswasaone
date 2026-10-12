@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import Response
 from pydantic import BaseModel, ValidationError
 
 from app.adapters import RequestToPayRequest, request_to_pay
@@ -45,7 +46,6 @@ from app.schemas import (
     CreateHrEmployeeBody,
     CreateHrJobBody,
     CreateHrLeaveBody,
-    AdvanceHrApplicantBody,
     CrmDealSummary,
     CrmLeadSummary,
     CrmPipeline,
@@ -80,6 +80,16 @@ from app.schemas import (
     HrLeaveBalance,
     CareerApplicationReceipt,
     CareerOpening,
+    HrApplicantDetail,
+    HrApplicantStatusBody,
+    HrCreateEmployeeBody,
+    HrFeedbackBody,
+    HrInterviewResultBody,
+    HrMyInterview,
+    HrOfferAnswerBody,
+    HrOfferBody,
+    HrPipeline,
+    HrScheduleInterviewBody,
     HrAuthorisationDetail,
     HrAuthorisationRequestBody,
     HrAuthorisationRow,
@@ -4748,6 +4758,175 @@ async def apply_for_opening(
     return CareerApplicationReceipt.model_validate(raw)
 
 
+_HIRE = "eswasa_hr.hiring"
+
+
+@router.get("/hr/recruitment/openings/{opening}/pipeline", response_model=HrPipeline, tags=["hr"])
+async def get_pipeline(
+    opening: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrPipeline:
+    """One opening's applicants by stage (HR only)."""
+    return HrPipeline.model_validate(await _hr_call(auth, frappe, f"{_HIRE}.pipeline", params={"opening": opening}))
+
+
+@router.get("/hr/recruitment/applicants/{name}", response_model=HrApplicantDetail, tags=["hr"])
+async def get_applicant(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrApplicantDetail:
+    return HrApplicantDetail.model_validate(await _hr_call(auth, frappe, f"{_HIRE}.applicant", params={"name": name}))
+
+
+@router.get("/hr/recruitment/applicants/{name}/cv", tags=["hr"])
+async def download_applicant_cv(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    store: Annotated[MediaStore, Depends(get_media_store)],
+) -> Response:
+    """The applicant's CV. HR only: eswasa_hr refuses anyone else before the file is read."""
+    key = await _hr_call(auth, frappe, f"{_HIRE}.cv_link", params={"name": name})
+    if not key:
+        raise HTTPException(status_code=404, detail="No CV on file")
+    if str(key).startswith(("http://", "https://", "/files/", "/private/")):
+        return Response(status_code=307, headers={"Location": str(key)})
+    try:
+        body, ctype = store.get_bytes(str(key))
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="CV file not found") from exc
+    audit_log(action="hr.applicant.cv_viewed", actor=auth.user.username, resource=f"Job Applicant:{name}", detail={}, confirmed=True)
+    return Response(
+        content=body,
+        media_type=ctype,
+        headers={"Content-Disposition": f'inline; filename="{name}-cv"', "Cache-Control": "private, no-store"},
+    )
+
+
+@router.post("/hr/recruitment/applicants/{name}/status", response_model=HrApplicantDetail, tags=["hr"])
+async def set_applicant_status(
+    name: str,
+    body: HrApplicantStatusBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrApplicantDetail:
+    """Shortlist, hold or decline an applicant (a process step, not an approval)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.applicant.status", actor=auth.user.username, resource=f"Job Applicant:{name}", detail={"status": body.status}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_HIRE}.set_status", json={"name": name, "status": body.status, "note": body.note, "confirm": 1})
+    return HrApplicantDetail.model_validate(raw)
+
+
+@router.get("/hr/recruitment/interview-types", tags=["hr"])
+async def list_interview_types(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, list[str]]:
+    return {"items": list(await _hr_call(auth, frappe, f"{_HIRE}.interview_types") or [])}
+
+
+@router.post("/hr/recruitment/applicants/{name}/interviews", response_model=HrApplicantDetail, tags=["hr"])
+async def schedule_interview(
+    name: str,
+    body: HrScheduleInterviewBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrApplicantDetail:
+    """Schedule an interview; each interviewer gets a task to record feedback."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.interview.schedule", actor=auth.user.username, resource=f"Job Applicant:{name}", detail={"on": body.scheduled_on, "panel": len(body.interviewers)}, confirmed=True)
+    raw = await _hr_call(
+        auth, frappe, f"{_HIRE}.schedule", json={"applicant": name, **body.model_dump(exclude={"confirm"}), "confirm": 1}
+    )
+    return HrApplicantDetail.model_validate(raw)
+
+
+@router.post("/hr/recruitment/interviews/{name}/result", response_model=HrApplicantDetail, tags=["hr"])
+async def record_interview_result(
+    name: str,
+    body: HrInterviewResultBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrApplicantDetail:
+    _require_confirm(body.confirm)
+    audit_log(action="hr.interview.result", actor=auth.user.username, resource=f"Interview:{name}", detail={"status": body.status}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_HIRE}.interview_result", json={"interview": name, "status": body.status, "confirm": 1})
+    return HrApplicantDetail.model_validate(raw)
+
+
+@router.get("/hr/me/interviews", tags=["hr"])
+async def list_my_interviews(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, list[HrMyInterview]]:
+    """Interviews where I'm on the panel and still owe feedback."""
+    raw = await _hr_call(auth, frappe, f"{_HIRE}.my_interviews")
+    return {"items": [HrMyInterview.model_validate(r) for r in (raw or [])]}
+
+
+@router.post("/hr/me/interviews/{name}/feedback", tags=["hr"])
+async def record_my_feedback(
+    name: str,
+    body: HrFeedbackBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, str]:
+    _require_confirm(body.confirm)
+    audit_log(action="hr.interview.feedback", actor=auth.user.username, resource=f"Interview:{name}", detail={"result": body.result}, confirmed=True)
+    raw = await _hr_call(
+        auth,
+        frappe,
+        f"{_HIRE}.feedback",
+        json={"interview": name, "result": body.result, "ratings": [r.model_dump() for r in body.ratings], "feedback": body.feedback, "confirm": 1},
+    )
+    return {"interview": str((raw or {}).get("interview", name)), "result": str((raw or {}).get("result", body.result))}
+
+
+@router.post("/hr/recruitment/applicants/{name}/offer", response_model=HrApplicantDetail, tags=["hr"])
+async def make_offer(
+    name: str,
+    body: HrOfferBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrApplicantDetail:
+    """Prepare an offer; another HR Manager approves it in Approvals before the letter goes out."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.offer.prepare", actor=auth.user.username, resource=f"Job Applicant:{name}", detail={"offer_date": body.offer_date}, confirmed=True)
+    raw = await _hr_call(
+        auth, frappe, f"{_HIRE}.make_offer", json={"applicant": name, "offer_date": body.offer_date, "terms": body.terms, "confirm": 1}
+    )
+    return HrApplicantDetail.model_validate(raw)
+
+
+@router.post("/hr/recruitment/offers/{name}/answer", response_model=HrApplicantDetail, tags=["hr"])
+async def record_offer_answer(
+    name: str,
+    body: HrOfferAnswerBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrApplicantDetail:
+    _require_confirm(body.confirm)
+    audit_log(action="hr.offer.answer", actor=auth.user.username, resource=f"Job Offer:{name}", detail={"answer": body.answer}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_HIRE}.answer", json={"offer": name, "answer": body.answer, "confirm": 1})
+    return HrApplicantDetail.model_validate(raw)
+
+
+@router.post("/hr/recruitment/offers/{name}/employee", status_code=status.HTTP_201_CREATED, tags=["hr"])
+async def create_employee_from_offer(
+    name: str,
+    body: HrCreateEmployeeBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, str]:
+    """Create the Employee from an accepted offer (HRMS make_employee); details carry over."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.offer.employee", actor=auth.user.username, resource=f"Job Offer:{name}", detail={"date_of_joining": body.date_of_joining}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_HIRE}.create_employee", json={"offer": name, **body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return {"employee": str((raw or {}).get("employee", "")), "employee_name": str((raw or {}).get("employee_name", ""))}
+
+
 @router.post(
     "/hr/leave",
     response_model=HrLeaveSummary,
@@ -5037,17 +5216,6 @@ async def list_hr_appraisals(
         raise  # pragma: no cover
 
 
-_APPLICANT_STAGES = (
-    "Open",
-    "Applied",
-    "Screening",
-    "Interview",
-    "Offer",
-    "Accepted",
-    "Hired",
-)
-
-
 def _as_hr_job(row: dict[str, Any]) -> HrJobOpening:
     vacancies = row.get("planned_no_of_positions") or row.get("vacancies") or row.get("no_of_positions")
     try:
@@ -5089,20 +5257,6 @@ def _as_hr_payslip(row: dict[str, Any]) -> HrPayslip:
         period=str(period) if period else None,
         net_pay=net_f,
     )
-
-
-def _next_applicant_stage(current: str) -> str | None:
-    cur = (current or "Open").strip()
-    # Normalize common HRMS values into pipeline
-    aliases = {"Replied": "Screening", "Hold": "Screening"}
-    cur = aliases.get(cur, cur)
-    try:
-        idx = _APPLICANT_STAGES.index(cur)
-    except ValueError:
-        return "Screening"
-    if idx >= len(_APPLICANT_STAGES) - 1:
-        return None
-    return _APPLICANT_STAGES[idx + 1]
 
 
 @router.get("/hr/jobs", tags=["hr"])
@@ -5204,49 +5358,6 @@ async def list_hr_applicants(
             soft=True,
         )
         return {"items": [_as_hr_applicant(r) for r in rows]}
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
-
-
-@router.post(
-    "/hr/applicants/{applicant_id}/advance",
-    response_model=HrApplicant,
-    tags=["hr"],
-)
-async def advance_hr_applicant(
-    applicant_id: str,
-    body: AdvanceHrApplicantBody,
-    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-) -> HrApplicant:
-    _require_confirm(body.confirm)
-    target = body.stage.strip()
-    audit_log(
-        action="hr.applicants.advance",
-        actor=auth.user.username,
-        resource=f"Job Applicant:{applicant_id}",
-        detail={"stage": target, "note": body.note},
-        confirmed=True,
-    )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    try:
-        doc = await _frappe_get_doc(session, "Job Applicant", applicant_id)
-        if not doc:
-            raise HTTPException(status_code=404, detail="Applicant not found")
-        current = str(doc.get("status") or "Open")
-        # Allow explicit stage, else next legal
-        new_status = target or _next_applicant_stage(current) or current
-        await _frappe_set_value(session, "Job Applicant", applicant_id, "status", new_status)
-        refreshed = await _frappe_get_doc(session, "Job Applicant", applicant_id) or {
-            **doc,
-            "status": new_status,
-        }
-        return _as_hr_applicant(refreshed)
-    except HTTPException:
-        raise
     except FrappeError as exc:
         _raise_from_frappe(exc)
         raise  # pragma: no cover

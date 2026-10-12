@@ -9,10 +9,14 @@ phase: declare
 allow_self_approval_default: 0
 approvals_family: approve
 board_rollup: hr.summary
-guards: [expected_state, idempotency_key]
+guards:
+  [expected_state, idempotency_key, eswasa_hr.authorisations.authorised_reason, eswasa_hr.declarations.can_act, eswasa_hr.leave.on_leave]
 notes: >
-  Head of department approves; must differ from employee (four-eyes).
-  Guard: eswasa_hr.competence.is_authorised.
+  The named head of the person's department (Department.custom_head) approves, as one ToDo, never a
+  role pool; must differ from the employee and the preparer (four-eyes). eswasa_hr.authorisations.decide
+  is the approval handler. Assignment guards (plan 07): eswasa_hr.competence.assignment_error runs the
+  authorisation on the work date, the signed declaration (and declared interests), then approved leave,
+  for Audit, Field Visit, the certification decision (Certificate) and Calibration Job.
 
 # PROVISIONAL (brief §12.1; confirm with ESWASA): the head of department decides within 5 days.
 # No escalation ladder yet; nothing escalates to a role pool.
@@ -32,7 +36,7 @@ transitions:
   - action: Approve
     from: Draft
     to: Approved
-    actor: HR Manager
+    actor: head of department (named)
     approvals_family: approve
   - action: Withdraw
     from: Approved

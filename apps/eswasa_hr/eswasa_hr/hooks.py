@@ -143,6 +143,11 @@ doc_events = {
         "on_submit": "eswasa_hr.expenses.sync_todo",
         "on_cancel": "eswasa_hr.expenses.sync_todo",
     },
+    # Plan 07: the technician must be authorised for the discipline on the job dates, have signed this
+    # year's declaration and not be on leave. Here so eswasa_metrology needs no HR import.
+    "Calibration Job": {
+        "validate": "eswasa_hr.competence.validate_calibration_job",
+    },
 }
 
 # Approvals decides DocTypes without a Frappe Workflow through these (eswasa_governance.approvals).

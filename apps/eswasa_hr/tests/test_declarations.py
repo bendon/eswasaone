@@ -40,6 +40,37 @@ class RuleTests(unittest.TestCase):
         self.assertIsNone(dec.signing_error([], True, True, "Thandi Mamba"))
 
 
+class CanActRuleTests(unittest.TestCase):
+    TODAY = date(2026, 10, 12)
+
+    def test_no_signed_declaration_for_the_work_year(self):
+        self.assertEqual(
+            dec.act_reason("Thandi Mamba", self.TODAY, self.TODAY, set(), []),
+            "Thandi Mamba has no signed impartiality declaration for 2026/27.",
+        )
+        self.assertIsNone(dec.act_reason("T", self.TODAY, self.TODAY, {2026}, []))
+
+    def test_year_boundary_is_1_april(self):
+        # 31 March is still 2026/27; from 1 April the 2027/28 declaration is needed once that year has started
+        self.assertIsNone(dec.act_reason("T", date(2027, 3, 31), date(2027, 3, 31), {2026}, []))
+        self.assertIn("for 2027/28", dec.act_reason("T", date(2027, 4, 1), date(2027, 4, 1), {2026}, []))
+        # planning a visit in next year before it starts: this year's signature is enough (it can't be signed yet)
+        self.assertIsNone(dec.act_reason("T", date(2027, 4, 1), self.TODAY, {2026}, []))
+
+    def test_declared_interest_in_the_client(self):
+        interests = [{"organisation": "Sample Foods Ltd", "from_date": "2019-01-01", "to_date": "2025-06-30"}]
+        self.assertEqual(
+            dec.act_reason("T", self.TODAY, self.TODAY, {2026}, interests, " sample  foods ltd"),
+            "T has declared an interest in sample  foods ltd, so can't act on its work.",
+        )
+        self.assertIsNone(dec.act_reason("T", self.TODAY, self.TODAY, {2026}, interests, "Other Co"))
+        self.assertIsNone(dec.act_reason("T", self.TODAY, self.TODAY, {2026}, interests))
+        # ended more than two years before the work date: outside the look-back
+        self.assertIsNone(dec.act_reason("T", date(2027, 7, 1), date(2027, 7, 1), {2027}, interests, "Sample Foods Ltd"))
+        ongoing = [{"organisation": "Acme", "from_date": None, "to_date": None}]
+        self.assertIn("interest in Acme", dec.act_reason("T", self.TODAY, self.TODAY, {2026}, ongoing, "Acme"))
+
+
 class _Err(Exception):
     pass
 

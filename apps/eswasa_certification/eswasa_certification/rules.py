@@ -1346,7 +1346,7 @@ def rc6_assessment_sla_sweep() -> int:
 # ---------------------------------------------------------------------------
 
 
-def _hr_authorised(auditor: str, scheme: str | None) -> bool | None:
+def _hr_authorised(auditor: str, scheme: str | None, on: Any = None) -> bool | None:
     """Brief §6.2: HR Staff Authorisation is the source once HR has competences for this scheme
     (Skill.custom_scheme = Certification Scheme name). None → HR has nothing for it; use Auditor Competence."""
     if not scheme:
@@ -1355,15 +1355,16 @@ def _hr_authorised(auditor: str, scheme: str | None) -> bool | None:
         from eswasa_hr.authorisations import authorised_for_scheme
     except ImportError:
         return None
-    return authorised_for_scheme(frappe.db.get_value("Auditor", auditor, "user"), scheme)
+    return authorised_for_scheme(frappe.db.get_value("Auditor", auditor, "user"), scheme, on)
 
 
-def auditor_competence_valid(auditor: str | None, scheme: str | None = None) -> bool:
+def auditor_competence_valid(auditor: str | None, scheme: str | None = None, on: Any = None) -> bool:
+    """Valid on ``on`` (the audit or visit date), today when not given."""
     if not auditor:
         return True
     if cint(frappe.db.get_value("Auditor", auditor, "assignment_blocked")):
         return False
-    hr = _hr_authorised(auditor, scheme)
+    hr = _hr_authorised(auditor, scheme, on)
     if hr is not None:
         return hr
     filters: dict[str, Any] = {"auditor": auditor}
@@ -1377,11 +1378,34 @@ def auditor_competence_valid(auditor: str | None, scheme: str | None = None) -> 
     if not rows:
         # No competence record → do not block (competence may be pending)
         return True
-    today_d = getdate(today())
+    day = getdate(on or today())
     for row in rows:
-        if not row.valid_to or getdate(row.valid_to) >= today_d:
+        if not row.valid_to or getdate(row.valid_to) >= day:
             return True
     return False
+
+
+def _hr_assignment_error(
+    user: str | None, on: Any, scheme: str | None = None, party: str | None = None, kind: str | None = None, work: str = "audit"
+) -> str | None:
+    """Plan 07: HR's refusal (authorisation on the work date, impartiality declaration and declared interest
+    in the client, approved leave) as a full sentence, or None. None too on installs without eswasa_hr."""
+    if not user:
+        return None
+    try:
+        from eswasa_hr.competence import assignment_error
+    except ImportError:
+        return None
+    return assignment_error(user, on, scheme=scheme, party=party, kind=kind, work=work)
+
+
+def _assignment_changed(doc, fields: tuple[str, ...]) -> bool:
+    """New, or the person or date changed: later status saves on an assigned record aren't re-checked."""
+    is_new = getattr(doc, "is_new", None)
+    if callable(is_new) and is_new():
+        return True
+    check = getattr(doc, "has_value_changed", None)
+    return True if not callable(check) else any(check(f) for f in fields)
 
 
 def rc7_auditor_competence_expiry() -> int:
@@ -1425,12 +1449,57 @@ def rc7_auditor_competence_expiry() -> int:
 
 
 def validate_auditor_assignment(doc, method: str | None = None) -> None:
-    """R-C7 validate: block Audit save when auditor competence expired."""
+    """R-C7 validate: block Audit save when the auditor isn't competent on the audit date. Plan 07: also
+    refuse an auditor without this year's declaration, with a declared interest in the client, or on leave."""
     auditor = doc.get("auditor")
     if not auditor:
         return
-    if not auditor_competence_valid(auditor, doc.get("scheme")):
+    on = doc.get("planned_date") or doc.get("due_date")
+    if doc.get("status") not in ("Completed", "Cancelled") and _assignment_changed(
+        doc, ("auditor", "planned_date", "due_date", "scheme")
+    ):
+        party = None
+        if doc.get("application"):
+            app = frappe.db.get_value(
+                "Certification Application", doc.get("application"), ["applicant_org", "applicant_name"], as_dict=True
+            ) or {}
+            party = app.get("applicant_org") or app.get("applicant_name")
+        reason = _hr_assignment_error(
+            frappe.db.get_value("Auditor", auditor, "user"), on or today(), scheme=doc.get("scheme"), party=party
+        )
+        if reason:
+            frappe.throw(reason, frappe.ValidationError)
+    if not auditor_competence_valid(auditor, doc.get("scheme"), on):
         frappe.throw(
             f"Auditor {auditor} cannot be assigned — competence expired or blocked (R-C7).",
             frappe.ValidationError,
         )
+
+
+def validate_field_visit_assignment(doc, method: str | None = None) -> None:
+    """Plan 07 step 3: the lead auditor must be authorised for the scheme on the visit date, have signed the
+    declaration, have no declared interest in the customer and not be on leave."""
+    lead = doc.get("lead_auditor")
+    if not lead or not _assignment_changed(doc, ("lead_auditor", "planned_date", "scheme", "customer")):
+        return
+    reason = _hr_assignment_error(
+        lead, doc.get("planned_date") or today(), scheme=doc.get("scheme"), party=doc.get("customer"), work="visit"
+    )
+    if reason:
+        frappe.throw(reason, frappe.ValidationError)
+
+
+def validate_certification_decision(doc, method: str | None = None) -> None:
+    """Plan 07 step 3, Certificate before_submit: whoever records the certification decision must hold a
+    "Technical review" authorisation for the scheme (when HR has one set up), have signed the declaration,
+    have no declared interest in the holder and not be on leave."""
+    reason = _hr_assignment_error(
+        frappe.session.user,
+        doc.get("issued_on") or today(),
+        scheme=doc.get("scheme"),
+        party=doc.get("holder_name"),
+        kind="Technical review",
+        work="certification decision",
+    )
+    if reason:
+        frappe.throw(reason, frappe.ValidationError)

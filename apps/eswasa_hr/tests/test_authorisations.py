@@ -52,6 +52,26 @@ class RuleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "say what it is"):
             au.clean_evidence([{"evidence_type": "File"}])
 
+    def test_authorisation_on_the_visit_date(self):
+        today, visit = date(2026, 10, 12), date(2026, 12, 3)
+        row = {"docstatus": 1, "status": "Current", "valid_from": "2025-12-01", "valid_to": "2026-11-30"}
+        self.assertTrue(au.covers(row, today))
+        self.assertFalse(au.covers(row, visit))
+        self.assertIsNone(au.authorisation_reason("Thandi Mamba", "FSMS", [row], today, today))
+        self.assertEqual(
+            au.authorisation_reason("Thandi Mamba", "FSMS", [row], visit, today),
+            "Thandi Mamba's authorisation for FSMS expires on 30 November 2026, before the audit on 3 December 2026.",
+        )
+        # a multi-day job must be covered to its last day
+        self.assertIn("before the calibration job on 3 December 2026", au.authorisation_reason("T", "Mass", [row], today, today, visit, "calibration job"))
+        self.assertIn("expired on 30 November 2026. Renew it", au.authorisation_reason("T", "FSMS", [row], visit, date(2026, 12, 1)))
+        later = {"docstatus": 1, "status": "Current", "valid_from": "2027-01-01", "valid_to": None}
+        self.assertIn("starts on 1 January 2027, after the audit on 3 December 2026", au.authorisation_reason("T", "FSMS", [later], visit, today))
+        self.assertIsNone(au.authorisation_reason("T", "FSMS", [row, later], date(2027, 2, 1), today))
+        self.assertIn("still in training", au.authorisation_reason("T", "FSMS", [{"docstatus": 0}], today, today))
+        self.assertIn("withdrawn", au.authorisation_reason("T", "FSMS", [{**row, "docstatus": 2}], today, today))
+        self.assertEqual(au.authorisation_reason("T", "FSMS", [], today, today), "T isn't authorised for FSMS.")
+
 
 class _Err(Exception):
     pass

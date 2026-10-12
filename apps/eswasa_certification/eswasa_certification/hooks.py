@@ -135,7 +135,12 @@ doc_events = {
         "on_update": "eswasa_certification.rules.rc2_on_finding_close",
     },
     "Certificate": {
+        # Plan 07: the person recording the decision passes HR's guards (authorisation, declaration, leave).
+        "before_submit": "eswasa_certification.rules.validate_certification_decision",
         "on_submit": "eswasa_certification.rules.rc3_certificate_submitted",
+    },
+    "Field Visit": {
+        "validate": "eswasa_certification.rules.validate_field_visit_assignment",
     },
 }
 

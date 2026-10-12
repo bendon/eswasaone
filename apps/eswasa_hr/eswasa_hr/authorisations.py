@@ -108,6 +108,43 @@ def clean_evidence(rows: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
     return out
 
 
+def _fmt(d: date) -> str:
+    return f"{d.day} {d.strftime('%B %Y')}"
+
+
+def covers(row: dict[str, Any], on: date, until: date | None = None) -> bool:
+    """An approved, unwithdrawn authorisation valid on every day from ``on`` to ``until`` (default ``on``)."""
+    if int(row.get("docstatus") or 0) != 1 or row.get("status") == "Withdrawn":
+        return False
+    start, end = _d(row.get("valid_from")), _d(row.get("valid_to"))
+    return not (start and on < start) and not (end and (until or on) > end)
+
+
+def authorisation_reason(
+    name: str, scheme: str, rows: list[dict[str, Any]], on: date, today: date, until: date | None = None, work: str = "audit"
+) -> str | None:
+    """The refusal text when no authorisation row covers the work dates, else None (plan 07 step 1)."""
+    if any(covers(r, on, until) for r in rows):
+        return None
+    last = until or on
+    approved = [r for r in rows if int(r.get("docstatus") or 0) == 1 and r.get("status") != "Withdrawn"]
+    if not approved:
+        if any(int(r.get("docstatus") or 0) == 0 for r in rows):
+            return f"{name}'s authorisation for {scheme} is still in training and hasn't been approved."
+        if rows:
+            return f"{name}'s authorisation for {scheme} has been withdrawn."
+        return f"{name} isn't authorised for {scheme}."
+    best = max(approved, key=lambda r: _d(r.get("valid_to")) or date.max)
+    start, end = _d(best.get("valid_from")), _d(best.get("valid_to"))
+    if end and end < last:
+        if end < today:
+            return f"{name}'s authorisation for {scheme} expired on {_fmt(end)}. Renew it before assigning this {work}."
+        return f"{name}'s authorisation for {scheme} expires on {_fmt(end)}, before the {work} on {_fmt(last)}."
+    if start and on < start:
+        return f"{name}'s authorisation for {scheme} starts on {_fmt(start)}, after the {work} on {_fmt(on)}."
+    return f"{name} isn't authorised for {scheme} on {_fmt(on)}."
+
+
 # ---------------------------------------------------------------- Frappe glue
 
 
@@ -425,21 +462,42 @@ def ask_renewal_impl(skill: str, note: str) -> dict[str, Any]:
     return {"sent_to": created}
 
 
-def authorised_for_scheme(user: str | None, scheme: str | None, on_date: Any = None) -> bool | None:
-    """Bridge for Certification (Auditor Competence): None when HR has no competence set up for the scheme."""
+def authorised_reason(
+    user: str | None, scheme: str | None, on: Any = None, until: Any = None, kind: str | None = None, work: str = "audit"
+) -> tuple[bool | None, str | None]:
+    """(ok, reason) for the work date(s), not today. ``scheme`` is a Certification Scheme or a calibration
+    discipline (Skill.custom_scheme); ``kind`` narrows to Skill.custom_kind. (None, None) when HR has no
+    competence for it or the user has no Employee record: the caller then uses its own check."""
     import frappe
 
-    from eswasa_hr.competence import is_authorised
-
     if not user or not scheme:
-        return None
-    skills = [s.get("name") for s in frappe.get_all("Skill", filters={"custom_scheme": scheme}, fields=["name"], limit=0)]
+        return None, None
+    filters: dict[str, Any] = {"custom_scheme": scheme}
+    if kind:
+        filters["custom_kind"] = kind
+    skills = [s.get("name") for s in frappe.get_all("Skill", filters=filters, fields=["name"], limit=0)]
     if not skills:
-        return None
-    emp = frappe.db.get_value("Employee", {"user_id": user}, "name")
+        return None, None
+    emp = frappe.db.get_value("Employee", {"user_id": user}, ["name", "employee_name"], as_dict=True)
     if not emp:
-        return None
-    return any(is_authorised(emp, s, on_date) for s in skills)
+        return None, None
+    today = _today()
+    day = _d(str(on)[:10]) if on else today
+    rows = frappe.get_all(
+        DOCTYPE,
+        filters={"employee": emp.get("name"), "skill": ["in", skills]},
+        fields=["docstatus", "status", "valid_from", "valid_to"],
+        limit=0,
+    )
+    reason = authorisation_reason(
+        emp.get("employee_name") or emp.get("name"), scheme, rows, day, today, _d(str(until)[:10]) if until else None, work
+    )
+    return reason is None, reason
+
+
+def authorised_for_scheme(user: str | None, scheme: str | None, on_date: Any = None) -> bool | None:
+    """Bridge for Certification (Auditor Competence): None when HR has no competence set up for the scheme."""
+    return authorised_reason(user, scheme, on=on_date)[0]
 
 
 # ---------------------------------------------------------------- whitelisted API (Core calls these)

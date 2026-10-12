@@ -2,7 +2,8 @@
 Yearly impartiality and confidentiality declaration (brief §6.3, §0.6; journey J5).
 
 One submitted Impartiality Declaration per employee per declaration year. Until it is signed,
-``competence.has_conflict`` refuses every audit and decision assignment for that person.
+``can_act`` (through ``competence.assignment_error``) refuses every audit, visit, decision and calibration
+assignment for that person, as it does for a declared interest in the client.
 R-H5 opens a "do" ToDo per active employee at the start of each declaration year; signing closes it.
 
 Pure rules sit at the top and are tested without Frappe. Whitelisted methods are what Core calls.
@@ -104,6 +105,35 @@ def handoff_due(todo_date: Any, day: date) -> bool:
 
 def late_title(employee_name: str, year: int) -> str:
     return f"{employee_name} hasn't signed their {year_label(year)} impartiality declaration after {HANDOFF_DAYS} days. Remind them"
+
+
+def _day(v: Any) -> date | None:
+    return None if v in (None, "") else v if type(v) is date else date.fromisoformat(str(v)[:10])
+
+
+def _same_party(a: Any, b: Any) -> bool:
+    return " ".join(str(a or "").split()).casefold() == " ".join(str(b or "").split()).casefold()
+
+
+def act_reason(
+    name: str, day: date, today: date, signed_years: set[int], interests: list[dict[str, Any]], party: str | None = None
+) -> str | None:
+    """Plan 07 step 2: refusal text for assigning ``name`` to work on ``day``, or None.
+
+    The declaration year is the work date's, except while that year hasn't started yet (its declaration
+    can't be signed before 1 April), when this year's signed declaration is enough.
+    An interest counts when it overlaps the look-back window ending on the work date."""
+    year = declaration_year(min(day, today))
+    if year not in signed_years:
+        return f"{name} has no signed impartiality declaration for {year_label(year)}."
+    if party and str(party).strip():
+        start = look_back_from(day)
+        for i in interests:
+            if not _same_party(i.get("organisation"), party):
+                continue
+            if (_day(i.get("to_date")) or day) >= start and (_day(i.get("from_date")) or start) <= day:
+                return f"{name} has declared an interest in {str(party).strip()}, so can't act on its work."
+    return None
 
 
 # ---------------------------------------------------------------- Frappe glue
@@ -344,6 +374,44 @@ def on_submit(doc: Any, method: str | None = None) -> None:
     from eswasa_hr.onboarding import on_declaration_signed
 
     on_declaration_signed(doc.employee)
+
+
+def can_act(user_or_employee: str | None, on: Any = None, party: str | None = None) -> tuple[bool, str | None]:
+    """Assignment guard for Certification and Metrology: (ok, reason). Someone with no Employee record isn't
+    tracked by HR, so they pass here (as ``authorisations.authorised_reason`` returns None for them)."""
+    import frappe
+
+    if not user_or_employee or not frappe.db.exists("DocType", DOCTYPE):
+        return True, None
+    fields = ["name", "employee_name"]
+    emp = frappe.db.get_value("Employee", user_or_employee, fields, as_dict=True) or frappe.db.get_value(
+        "Employee", {"user_id": user_or_employee}, fields, as_dict=True
+    )
+    if not emp:
+        return True, None
+    today = _today()
+    day = _day(on) or today
+    decls = frappe.get_all(
+        DOCTYPE,
+        filters={"employee": emp.get("name"), "docstatus": 1, "year": [">=", declaration_year(look_back_from(day))]},
+        fields=["name", "year"],
+        limit=0,
+    )
+    names = [d.get("name") for d in decls]
+    interests = (
+        frappe.get_all(
+            "Impartiality Interest",
+            filters={"parent": ["in", names]},
+            fields=["organisation", "from_date", "to_date"],
+            limit=0,
+        )
+        if names and party
+        else []
+    )
+    reason = act_reason(
+        emp.get("employee_name") or emp.get("name"), day, today, {int(d.get("year")) for d in decls}, interests, party
+    )
+    return reason is None, reason
 
 
 # ---------------------------------------------------------------- whitelisted API (Core calls these)

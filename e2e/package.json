@@ -3,12 +3,16 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "test": "playwright test",
+    "test": "playwright test --project=chromium",
+    "test:hr": "playwright test --project=hr",
+    "typecheck": "tsc --noEmit",
     "test:wave0": "playwright test tests/wave0-smoke.spec.ts",
     "test:wave1": "playwright test tests/w1-workflow-act.spec.ts",
     "report": "playwright show-report"
   },
   "devDependencies": {
-    "@playwright/test": "^1.48.0"
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^22.10.2",
+    "typescript": "^5.6.3"
   }
 }

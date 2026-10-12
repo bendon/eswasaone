@@ -6,6 +6,7 @@
  *
  * Run against staging:
  *   ESWASAONE_BASE_URL=https://eswasaone.aiceafrica.com npm test
+ *   npm run test:hr   (HR acceptance; needs the seed and tokens, see docs/HR_STAGING_RUNBOOK.md)
  *
  * DoD per workflow: drive UI → assert Frappe state via Core → assert rule side-effect.
  * Never commit against fixture data (VITE_DEMO_MODE must be false on staging).
@@ -26,5 +27,9 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // HR acceptance (plan 10, brief §14 items 1–11): staging only, see docs/HR_STAGING_RUNBOOK.md.
+    { name: "hr", testDir: "./hr", use: { ...devices["Desktop Chrome"] } },
+  ],
 });

@@ -1,0 +1,6 @@
+node_modules/
+test-results/
+playwright-report/
+# HR e2e credentials (hr/get-token.mjs, the staging seed's output)
+hr/.tokens.json
+hr_e2e_seed.json

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { apiFetch, AuthError, RecordDrawer, type DrawerSection, Select } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
@@ -152,57 +153,27 @@ export function EmployeesView() {
             </div>
           ),
         },
-        // TODO: wire real — leave balances, authorisations, documents per employee
         {
-          heading: "Leave, 2026/27",
+          heading: "Changes",
           content: (
-            <>
-              <div className="hr-bal">
-                <span>Annual</span>
-                <div className="hr-prog">
-                  <i style={{ width: "57%" }} />
-                </div>
-                <b>12 of 21 left</b>
+            <div className="hr-view" style={{ gap: 8 }}>
+              <p className="hr-note" style={{ margin: 0 }}>
+                Each change is prepared here and approved by another HR Manager in Approvals.
+              </p>
+              <div className="hr-actions" style={{ justifyContent: "flex-start" }}>
+                <Link className="btn ghost sm" to={`/hr/directory/${encodeURIComponent(selected.id)}/promote`}>
+                  Promote
+                </Link>
+                <Link className="btn ghost sm" to={`/hr/directory/${encodeURIComponent(selected.id)}/transfer`}>
+                  Transfer
+                </Link>
+                <Link className="btn ghost sm" to={`/hr/directory/${encodeURIComponent(selected.id)}/leave`}>
+                  Record a leaver
+                </Link>
               </div>
-              <div className="hr-bal">
-                <span>Sick</span>
-                <div className="hr-prog">
-                  <i style={{ width: "86%" }} />
-                </div>
-                <b>12 of 14 left</b>
-              </div>
-              <div className="hr-bal">
-                <span>Study</span>
-                <div className="hr-prog">
-                  <i style={{ width: "100%" }} />
-                </div>
-                <b>10 of 10 left</b>
-              </div>
-            </>
-          ),
-        },
-        {
-          heading: "Documents",
-          content: (
-            <div className="hr-out">
-              <div className="hr-out__i">
-                <div>
-                  <b>Contract of employment</b>
-                </div>
-                <span className="hr-st ok">On file</span>
-              </div>
-              <div className="hr-out__i">
-                <div>
-                  <b>Qualification certificates</b>
-                </div>
-                <span className="hr-st ok">On file</span>
-              </div>
-              <div className="hr-out__i">
-                <div>
-                  <b>Impartiality declaration 2026/27</b>
-                </div>
-                <span className="hr-st ok">Signed</span>
-              </div>
+              <Link className="hr-lnk" to={`/hr/directory/${encodeURIComponent(selected.id)}`}>
+                History and pending changes
+              </Link>
             </div>
           ),
         },

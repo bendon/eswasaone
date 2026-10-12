@@ -13,6 +13,7 @@ def daily() -> None:
     rh3_authorisation_expiry_alerts()
     rh4_single_holder_alerts()
     rh5_declarations()
+    lifecycle_due()
     # R-H6 needs appraisal-cycle config from §0.5
 
 
@@ -87,3 +88,10 @@ def rh5_declarations() -> int:
     from eswasa_hr.declarations import rh5_open_year
 
     return rh5_open_year()
+
+
+def lifecycle_due() -> tuple[int, int]:
+    """Approved promotions/transfers whose date has come are submitted; last days are processed (brief §4)."""
+    from eswasa_hr.lifecycle import process_last_days, submit_due_changes
+
+    return submit_due_changes(), process_last_days()

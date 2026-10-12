@@ -22,6 +22,10 @@ fixtures = [
                     "Skill-custom_validity_months",
                     "Employee-custom_is_demo",
                     "Goal-custom_strategic_goal",
+                    "Employee Promotion-custom_approved_by",
+                    "Employee Transfer-custom_approved_by",
+                    "Employee Separation-custom_approved_by",
+                    "Employee Separation-custom_reason",
                 ],
             ]
         ],
@@ -88,4 +92,7 @@ eswasa_approval_handlers = {
     "Job Offer": "eswasa_hr.hiring.decide_offer",
     # Onboarding tasks are marked done; other Tasks keep the old behaviour (ToDos closed).
     "Task": "eswasa_hr.onboarding.decide_task",
+    "Employee Promotion": "eswasa_hr.lifecycle.decide_promotion",
+    "Employee Transfer": "eswasa_hr.lifecycle.decide_transfer",
+    "Employee Separation": "eswasa_hr.lifecycle.decide_separation",
 }

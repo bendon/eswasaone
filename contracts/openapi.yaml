@@ -1405,6 +1405,117 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/HrTeamMemberDetail" }
 
+  /hr/employees/{employee_id}/changes:
+    get:
+      tags: [hr]
+      operationId: getEmployeeChanges
+      summary: Pending and past promotions, transfers and separation (HR only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrChanges" }
+
+  /hr/employees/{employee_id}/promotion:
+    post:
+      tags: [hr]
+      operationId: preparePromotion
+      summary: Prepare a promotion; another HR Manager approves; it takes effect on its date
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrPromotionBody" }
+      responses:
+        "200":
+          description: Prepared and sent for approval
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrChanges" }
+        "422":
+          description: Rule failed
+
+  /hr/employees/{employee_id}/transfer:
+    post:
+      tags: [hr]
+      operationId: prepareTransfer
+      summary: Prepare a transfer; another HR Manager approves; it takes effect on its date
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrTransferBody" }
+      responses:
+        "200":
+          description: Prepared and sent for approval
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrChanges" }
+        "422":
+          description: Rule failed
+
+  /hr/employees/{employee_id}/separation-defaults:
+    get:
+      tags: [hr]
+      operationId: getSeparationDefaults
+      summary: Reasons and the default offboarding checklist
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrSeparationDefaults" }
+
+  /hr/employees/{employee_id}/separation:
+    post:
+      tags: [hr]
+      operationId: prepareSeparation
+      summary: Record a leaver with an offboarding checklist; another HR Manager approves
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrSeparationBody" }
+      responses:
+        "200":
+          description: Prepared and sent for approval
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrChanges" }
+        "422":
+          description: Rule failed
+
+  /hr/offboarding/{name}:
+    get:
+      tags: [hr]
+      operationId: getOffboarding
+      summary: A leaver's offboarding checklist
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrOnboarding" }
+
   /hr/leave/preview:
     post:
       tags: [hr]
@@ -5624,6 +5735,9 @@ components:
       required: [id, employee_name]
       properties:
         id: { type: string }
+        kind: { type: string, enum: [onboarding, offboarding] }
+        last_day: { anyOf: [{ type: string }, { type: "null" }] }
+        reason: { anyOf: [{ type: string }, { type: "null" }] }
         employee: { anyOf: [{ type: string }, { type: "null" }] }
         employee_name: { type: string }
         designation: { anyOf: [{ type: string }, { type: "null" }] }
@@ -5713,6 +5827,70 @@ components:
         summary: { type: string }
         extend_to: { anyOf: [{ type: string }, { type: "null" }] }
         confirm: { type: boolean }
+    HrChangeLine:
+      type: object
+      required: [property]
+      properties:
+        property: { type: string }
+        current: { anyOf: [{ type: string }, { type: "null" }] }
+        new: { anyOf: [{ type: string }, { type: "null" }] }
+    HrChangeItem:
+      type: object
+      required: [id, kind, state]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [promotion, transfer, separation] }
+        date: { anyOf: [{ type: string }, { type: "null" }] }
+        state: { type: string }
+        changes: { type: array, items: { $ref: "#/components/schemas/HrChangeLine" } }
+    HrChanges:
+      type: object
+      required: [employee, employee_name]
+      properties:
+        employee: { type: string }
+        employee_name: { type: string }
+        status: { anyOf: [{ type: string }, { type: "null" }] }
+        items: { type: array, items: { $ref: "#/components/schemas/HrChangeItem" } }
+    HrPromotionBody:
+      type: object
+      required: [effective, confirm]
+      properties:
+        effective: { type: string, format: date }
+        designation: { anyOf: [{ type: string }, { type: "null" }] }
+        grade: { anyOf: [{ type: string }, { type: "null" }] }
+        reports_to: { anyOf: [{ type: string }, { type: "null" }] }
+        revised_ctc: { anyOf: [{ type: number }, { type: "null" }] }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrTransferBody:
+      type: object
+      required: [effective, confirm]
+      properties:
+        effective: { type: string, format: date }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        designation: { anyOf: [{ type: string }, { type: "null" }] }
+        branch: { anyOf: [{ type: string }, { type: "null" }] }
+        reports_to: { anyOf: [{ type: string }, { type: "null" }] }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrSeparationBody:
+      type: object
+      required: [reason, last_day, activities, confirm]
+      properties:
+        reason: { type: string, enum: [Resignation, End of fixed-term contract, Retirement, Dismissal, Death in service, Other] }
+        last_day: { type: string, format: date }
+        notice_date: { anyOf: [{ type: string }, { type: "null" }] }
+        activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" } }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrSeparationDefaults:
+      type: object
+      required: [employee, employee_name]
+      properties:
+        employee: { type: string }
+        employee_name: { type: string }
+        reasons: { type: array, items: { type: string } }
+        activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" } }
     HrHoliday:
       properties:
         date:

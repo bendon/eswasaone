@@ -16,6 +16,7 @@ from __future__ import annotations
 from typing import Any
 
 ONBOARDING = "Employee Onboarding"
+SEPARATION = "Employee Separation"  # offboarding uses the same checklist machinery
 HR_ROLES = ("HR Manager", "HR User", "System Manager")
 DECLARATION_ACTIVITY = "Sign the impartiality and confidentiality declaration"
 
@@ -158,13 +159,13 @@ def _signed_declaration(employee: str) -> bool:
     return bool(frappe.db.exists("Impartiality Declaration", {"employee": employee, "year": declaration_year(getdate(_today())), "docstatus": 1}))
 
 
-def detail_impl(name: str) -> dict[str, Any]:
+def detail_impl(name: str, doctype: str = ONBOARDING) -> dict[str, Any]:
     import frappe
 
-    o = frappe.get_doc(ONBOARDING, name)
-    joiner_user = frappe.db.get_value("Employee", o.employee, "user_id") if o.employee else None
-    if not (_is_hr() or frappe.session.user == joiner_user):
-        frappe.throw("Only HR and the new joiner can see this onboarding.", frappe.PermissionError)
+    o = frappe.get_doc(doctype, name)
+    person_user = frappe.db.get_value("Employee", o.employee, "user_id") if o.employee else None
+    if not (_is_hr() or frappe.session.user == person_user):
+        frappe.throw("Only HR and the person themselves can see this checklist.", frappe.PermissionError)
     tasks = _tasks(o.project)
     declared = _signed_declaration(o.employee) if o.employee else False
     acts = []
@@ -183,13 +184,17 @@ def detail_impl(name: str) -> dict[str, Any]:
             }
         )
     done, total = progress([a["status"] for a in acts])
+    last_day = frappe.db.get_value("Employee", o.employee, "relieving_date") if doctype == SEPARATION and o.employee else None
     return {
         "id": o.name,
+        "kind": "offboarding" if doctype == SEPARATION else "onboarding",
         "employee": o.employee,
         "employee_name": o.employee_name,
         "designation": o.designation,
         "department": o.department,
-        "date_of_joining": str(o.date_of_joining) if o.date_of_joining else None,
+        "date_of_joining": str(o.get("date_of_joining")) if o.get("date_of_joining") else None,
+        "last_day": str(last_day) if last_day else None,
+        "reason": o.get("custom_reason"),
         "boarding_status": o.boarding_status,
         "done": done,
         "total": total,
@@ -209,19 +214,32 @@ def list_impl() -> list[dict[str, Any]]:
     return out
 
 
-def _onboarding_of_task(task: str) -> str | None:
+def _boarding_of_task(task: str) -> tuple[str, str] | None:
+    """(doctype, name) of the onboarding or separation whose project holds this task."""
     import frappe
 
     project = frappe.db.get_value("Task", task, "project")
-    return frappe.db.get_value(ONBOARDING, {"project": project, "docstatus": 1}, "name") if project else None
+    if not project:
+        return None
+    for dt in (ONBOARDING, SEPARATION):
+        name = frappe.db.get_value(dt, {"project": project, "docstatus": 1}, "name")
+        if name:
+            return dt, name
+    return None
+
+
+def _onboarding_of_task(task: str) -> str | None:
+    hit = _boarding_of_task(task)
+    return hit[1] if hit else None
 
 
 def complete_task_impl(task: str) -> dict[str, Any]:
     import frappe
 
-    onboarding = _onboarding_of_task(task)
-    if not onboarding:
-        frappe.throw("This task isn't part of an onboarding.", frappe.ValidationError)
+    hit = _boarding_of_task(task)
+    if not hit:
+        frappe.throw("This task isn't part of an onboarding or offboarding.", frappe.ValidationError)
+    doctype, onboarding = hit
     owner = frappe.db.get_value("Employee Boarding Activity", {"parent": onboarding, "task": task}, "user")
     if not (_is_hr() or owner == frappe.session.user):
         frappe.throw("Only the task's owner or HR can mark it done.", frappe.PermissionError)
@@ -232,7 +250,7 @@ def complete_task_impl(task: str) -> dict[str, Any]:
         t.save()
     for row in frappe.get_all("ToDo", filters={"reference_type": "Task", "reference_name": task, "status": "Open"}, fields=["name"]):
         frappe.db.set_value("ToDo", row.get("name"), "status", "Closed")
-    o = frappe.get_doc(ONBOARDING, onboarding)
+    o = frappe.get_doc(doctype, onboarding)
     statuses = [s for s in (_tasks(o.project).get(a.task, {}).get("status") for a in o.get("activities") or []) if s]
     done, total = progress(statuses)
     if total and done == total and o.boarding_status != "Completed":
@@ -240,7 +258,7 @@ def complete_task_impl(task: str) -> dict[str, Any]:
     elif done and o.boarding_status == "Pending":
         o.db_set("boarding_status", "In Process")
     try:
-        return detail_impl(onboarding)
+        return detail_impl(onboarding, doctype)
     except frappe.PermissionError:  # an ICT or Finance owner sees their task, not the whole onboarding
         return {"task": task, "status": "Completed"}
 
@@ -250,9 +268,9 @@ def decide_task(name: str, action: str, comment: str | None = None) -> dict[str,
     which is what Approvals did for Tasks before this hook."""
     import frappe
 
-    if _onboarding_of_task(name):
+    if _boarding_of_task(name):
         complete_task_impl(name)
-        message = "Onboarding task done"
+        message = "Boarding task done"
     else:
         for row in frappe.get_all("ToDo", filters={"reference_type": "Task", "reference_name": name, "status": "Open"}, fields=["name"]):
             frappe.db.set_value("ToDo", row.get("name"), "status", "Closed")

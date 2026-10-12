@@ -139,6 +139,9 @@ export type HrMyInterview = { id: string; applicant_name?: string | null; design
 export type HrOnboardingActivity = { activity_name: string; user?: string | null; user_name?: string | null; group?: string | null; task?: string | null; status?: string | null; mine?: boolean };
 export type HrOnboarding = {
   id: string;
+  kind?: "onboarding" | "offboarding";
+  last_day?: string | null;
+  reason?: string | null;
   employee?: string | null;
   employee_name: string;
   designation?: string | null;
@@ -176,6 +179,14 @@ export type HrTeamCalendar = {
   people: Array<{ employee: string; employee_name: string }>;
   entries: Array<{ employee: string; kind: "leave" | "field"; label: string; from_date: string; to_date: string; approved: boolean }>;
 };
+export type HrChanges = {
+  employee: string;
+  employee_name: string;
+  status?: string | null;
+  items: Array<{ id: string; kind: "promotion" | "transfer" | "separation"; date?: string | null; state: string; changes: Array<{ property: string; current?: string | null; new?: string | null }> }>;
+};
+export type HrSeparationDefaults = { employee: string; employee_name: string; reasons: string[]; activities: HrOnboardingActivity[] };
+export type HrPickItem = { id: string; name?: string | null; title?: string | null; employee_name?: string | null };
 export type HrVacancy = { department?: string | null; designation: string; approved: number; filled: number; in_recruitment: number; vacant: number };
 export type HrRequisition = {
   id: string;

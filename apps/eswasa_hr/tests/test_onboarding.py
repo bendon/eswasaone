@@ -89,7 +89,7 @@ def _boarding():
 class FlowTests(unittest.TestCase):
     def setUp(self):
         self._detail = ob.detail_impl
-        ob.detail_impl = lambda name: {"id": name}
+        ob.detail_impl = lambda name, doctype=ob.ONBOARDING: {"id": name}
 
     def tearDown(self):
         ob.detail_impl = self._detail
@@ -114,7 +114,7 @@ class FlowTests(unittest.TestCase):
         todos = [{"name": "TD-1", "reference_name": "TASK-ICT", "status": "Open"}]
         _fake("ict@x", ("Employee",), tasks, todos, _boarding())
         res = ob.decide_task("TASK-ICT", "approve")
-        self.assertEqual((res["message"], tasks["TASK-ICT"]["status"]), ("Onboarding task done", "Completed"))
+        self.assertEqual((res["message"], tasks["TASK-ICT"]["status"]), ("Boarding task done", "Completed"))
 
 
 if __name__ == "__main__":

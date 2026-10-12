@@ -661,6 +661,61 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "directory/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.EmployeeChanges }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "directory/:id/promote",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.PromotionForm }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "directory/:id/transfer",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.TransferForm }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "directory/:id/leave",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.LeaverForm }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "offboarding/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.OffboardingDetail }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
                     path: "recruitment/:id/publish",
                     element: (
                       <L

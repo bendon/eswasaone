@@ -98,6 +98,11 @@ from app.schemas import (
     HrTeam,
     HrTeamCalendar,
     HrTeamMemberDetail,
+    HrChanges,
+    HrPromotionBody,
+    HrSeparationBody,
+    HrSeparationDefaults,
+    HrTransferBody,
     HrAuthorisationDetail,
     HrAuthorisationRequestBody,
     HrAuthorisationRow,
@@ -5064,6 +5069,92 @@ async def review_probation(
         json={"employee": employee, "outcome": body.outcome, "summary": body.summary, "extend_to": body.extend_to, "confirm": 1},
     )
     return HrTeamMemberDetail.model_validate(raw)
+
+
+_LIFE = "eswasa_hr.lifecycle"
+
+
+@router.get("/hr/employees/{employee_id}/changes", response_model=HrChanges, tags=["hr"])
+async def get_employee_changes(
+    employee_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrChanges:
+    """Pending and past promotions, transfers and separation (HR only)."""
+    return HrChanges.model_validate(await _hr_call(auth, frappe, f"{_LIFE}.changes", params={"employee": employee_id}))
+
+
+@router.post("/hr/employees/{employee_id}/promotion", response_model=HrChanges, tags=["hr"])
+async def prepare_promotion(
+    employee_id: str,
+    body: HrPromotionBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrChanges:
+    """Prepare a promotion; another HR Manager approves it in Approvals. It takes effect on its date."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.promotion.prepare", actor=auth.user.username, resource=f"Employee:{employee_id}", detail={"effective": body.effective}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_LIFE}.promote", json={"employee": employee_id, **body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrChanges.model_validate(raw)
+
+
+@router.post("/hr/employees/{employee_id}/transfer", response_model=HrChanges, tags=["hr"])
+async def prepare_transfer(
+    employee_id: str,
+    body: HrTransferBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrChanges:
+    _require_confirm(body.confirm)
+    audit_log(action="hr.transfer.prepare", actor=auth.user.username, resource=f"Employee:{employee_id}", detail={"effective": body.effective}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_LIFE}.transfer", json={"employee": employee_id, **body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrChanges.model_validate(raw)
+
+
+@router.get("/hr/employees/{employee_id}/separation-defaults", response_model=HrSeparationDefaults, tags=["hr"])
+async def get_separation_defaults(
+    employee_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrSeparationDefaults:
+    return HrSeparationDefaults.model_validate(await _hr_call(auth, frappe, f"{_LIFE}.separation_defaults", params={"employee": employee_id}))
+
+
+@router.post("/hr/employees/{employee_id}/separation", response_model=HrChanges, tags=["hr"])
+async def prepare_separation(
+    employee_id: str,
+    body: HrSeparationBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrChanges:
+    """Record a leaver with an offboarding checklist; another HR Manager approves it."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.separation.prepare", actor=auth.user.username, resource=f"Employee:{employee_id}", detail={"reason": body.reason, "last_day": body.last_day}, confirmed=True)
+    raw = await _hr_call(
+        auth,
+        frappe,
+        f"{_LIFE}.separate",
+        json={
+            "employee": employee_id,
+            "reason": body.reason,
+            "last_day": body.last_day,
+            "notice_date": body.notice_date,
+            "activities": [{"activity_name": a.activity_name, "user": a.user} for a in body.activities],
+            "note": body.note,
+            "confirm": 1,
+        },
+    )
+    return HrChanges.model_validate(raw)
+
+
+@router.get("/hr/offboarding/{name}", response_model=HrOnboarding, tags=["hr"])
+async def get_offboarding(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrOnboarding:
+    """A leaver's offboarding checklist (tasks are ticked with /hr/onboarding/tasks/{task}/done)."""
+    return HrOnboarding.model_validate(await _hr_call(auth, frappe, f"{_LIFE}.offboarding", params={"name": name}))
 
 
 @router.post(

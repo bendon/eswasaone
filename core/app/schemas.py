@@ -1048,11 +1048,14 @@ class HrOnboarding(BaseModel):
     """OpenAPI: HrOnboarding — one joiner's checklist (H7, E10)."""
 
     id: str
+    kind: str = "onboarding"  # onboarding | offboarding
     employee: str | None = None
     employee_name: str
     designation: str | None = None
     department: str | None = None
     date_of_joining: str | None = None
+    last_day: str | None = None
+    reason: str | None = None
     boarding_status: str | None = None
     done: int = 0
     total: int = 0
@@ -1129,6 +1132,65 @@ class HrProbationBody(BaseModel):
     summary: str
     extend_to: str | None = None
     confirm: bool
+
+
+class HrChangeLine(BaseModel):
+    property: str
+    current: str | None = None
+    new: str | None = None
+
+
+class HrChangeItem(BaseModel):
+    id: str
+    kind: str  # promotion | transfer | separation
+    date: str | None = None
+    state: str
+    changes: list[HrChangeLine] = Field(default_factory=list)
+
+
+class HrChanges(BaseModel):
+    """OpenAPI: HrChanges — pending and past promotions, transfers and separation for one person."""
+
+    employee: str
+    employee_name: str
+    status: str | None = None
+    items: list[HrChangeItem] = Field(default_factory=list)
+
+
+class HrPromotionBody(BaseModel):
+    effective: str
+    designation: str | None = None
+    grade: str | None = None
+    reports_to: str | None = None
+    revised_ctc: float | None = None
+    note: str | None = None
+    confirm: bool
+
+
+class HrTransferBody(BaseModel):
+    effective: str
+    department: str | None = None
+    designation: str | None = None
+    branch: str | None = None
+    reports_to: str | None = None
+    note: str | None = None
+    confirm: bool
+
+
+class HrSeparationBody(BaseModel):
+    reason: str
+    last_day: str
+    notice_date: str | None = None
+    activities: list[HrOnboardingActivity]
+    note: str | None = None
+    confirm: bool
+
+
+class HrSeparationDefaults(BaseModel):
+    employee: str
+    employee_name: str
+    reasons: list[str] = Field(default_factory=list)
+    activities: list[HrOnboardingActivity] = Field(default_factory=list)
 
 
 class HrHoliday(BaseModel):

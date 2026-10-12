@@ -2065,6 +2065,75 @@ class HrProfileChangeBody(BaseModel):
     confirm: bool = False
 
 
+class HrImportError(BaseModel):
+    """Plan 09: one problem in an import file. ``row`` is the spreadsheet row (1 is the header); None for the whole file."""
+
+    row: int | None = None
+    employee_number: str | None = None
+    field: str | None = None
+    message: str
+
+
+class HrImportResult(BaseModel):
+    """Plan 09: a dry run's findings and counts (pass 1 records, 2 links and logins, 3 opening leave balances)."""
+
+    pass_no: int
+    rows: int = 0
+    create: int = 0
+    update: int = 0
+    unchanged: int = 0
+    errors: list[HrImportError] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    ok: bool = False
+
+
+class HrImportRun(BaseModel):
+    """Plan 09: one recorded import run. A run with any error writes nothing (created/updated stay 0)."""
+
+    id: str
+    pass_no: int | None = None
+    status: str
+    file_name: str | None = None
+    rows: int = 0
+    created: int = 0
+    updated: int = 0
+    unchanged: int = 0
+    error_count: int = 0
+    run_by: str | None = None
+    started_on: str | None = None
+    finished_on: str | None = None
+    go_live: str | None = None
+    errors: list[HrImportError] | None = None
+    warnings: list[str] | None = None
+
+
+class HrImportRuns(BaseModel):
+    items: list[HrImportRun]
+
+
+class HrImportJob(BaseModel):
+    job_id: str
+    run: str
+    status: str
+
+
+class HrMasterDataCounts(BaseModel):
+    created: int = 0
+    updated: int = 0
+    unchanged: int = 0
+
+
+class HrMasterDataResult(BaseModel):
+    """Plan 09: what loading ESWASA's master-data file did (or would do, on a dry run). Nothing is ever deleted."""
+
+    dry_run: bool
+    counts: dict[str, HrMasterDataCounts] = Field(default_factory=dict)
+    missing_departments: list[str] = Field(default_factory=list)
+    kept: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+    ok: bool = False
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eswasa_master_data.schema.json",
+  "title": "ESWASA HR master data (plan 09)",
+  "description": "Loaded by eswasa_hr.setup.load_master_data / POST /api/hr/setup/master-data. ESWASA supplies the real file (H1, H2, \u00a70.5 #1-#2). Nothing is deleted: missing departments are reported, extra skills and holidays are kept.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "example": {
+      "type": "boolean",
+      "description": "true on the committed example; such a file never loads"
+    },
+    "version": {
+      "type": "string"
+    },
+    "signed_off_by": {
+      "type": "string",
+      "description": "Who at ESWASA approved this file"
+    },
+    "signed_off_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "branches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "employment_types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "grades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default_salary_structure": {
+            "type": "string",
+            "description": "Only once payroll (\u00a79) exists"
+          }
+        }
+      }
+    },
+    "departments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parent": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Another department's name in this file or the system; empty = under All Departments"
+          },
+          "is_group": {
+            "type": "boolean",
+            "description": "Set automatically when another department names this one as parent"
+          }
+        }
+      }
+    },
+    "designations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "grade": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Competences from the catalogue (Skill), \u00a76"
+          }
+        }
+      }
+    },
+    "holiday_list": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Reuse the Eswatini list that drives SLAs (L9)"
+        },
+        "from_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "to_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "company_default": {
+          "type": "boolean",
+          "default": true
+        },
+        "holidays": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "date"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "description": {
+                "type": "string"
+              },
+              "weekly_off": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

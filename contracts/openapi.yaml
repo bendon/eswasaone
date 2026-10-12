@@ -2225,6 +2225,166 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/HrSetupStatus" }
 
+  /hr/import/template:
+    get:
+      tags: [hr]
+      operationId: getHrImportTemplate
+      summary: "Plan 09: the column template for an import pass (XLSX), from the same field list the import validates"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: pass, in: query, required: false, schema: { type: integer, enum: [1, 2, 3], default: 1 }, description: "1 records, 2 line managers, approvers and logins, 3 opening leave balances" }
+      responses:
+        "200":
+          description: The template
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "403":
+          description: Not HR
+        "503":
+          description: Frappe unavailable
+
+  /hr/import/dry-run:
+    post:
+      tags: [hr]
+      operationId: dryRunHrImport
+      summary: "Plan 09: check a CSV/XLSX import file and count what a run would do. Writes nothing"
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                pass: { type: integer, enum: [1, 2, 3], default: 1 }
+                go_live: { type: string, format: date, description: "Pass 3: the date the opening allocations start (default today)" }
+      responses:
+        "200":
+          description: Per-row errors, warnings and counts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrImportResult" }
+        "403":
+          description: Not HR
+        "413":
+          description: Larger than the media upload limit (50 MB)
+        "415":
+          description: Not a .csv or .xlsx file
+        "422":
+          description: Empty or unreadable file (plain text)
+        "503":
+          description: Frappe unavailable
+
+  /hr/import/run:
+    post:
+      tags: [hr]
+      operationId: runHrImport
+      summary: "Plan 09: start an import pass in a background job (HR Manager). Any error and nothing is written. Pass 2 and 3 need a finished pass 1"
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, confirm]
+              properties:
+                file: { type: string, format: binary }
+                pass: { type: integer, enum: [1, 2, 3], default: 1 }
+                confirm: { type: boolean }
+                go_live: { type: string, format: date }
+      responses:
+        "202":
+          description: Queued; follow it at /hr/import/runs/{job_id}
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrImportJob" }
+        "400":
+          description: confirm must be true
+        "403":
+          description: Not an HR Manager
+        "413":
+          description: Larger than the media upload limit (50 MB)
+        "415":
+          description: Not a .csv or .xlsx file
+        "422":
+          description: Missing columns, or pass 2/3 before pass 1 (plain text)
+        "503":
+          description: Frappe unavailable
+
+  /hr/import/runs:
+    get:
+      tags: [hr]
+      operationId: listHrImportRuns
+      summary: "Plan 09: import runs, newest first"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: pass, in: query, required: false, schema: { type: integer, enum: [1, 2, 3] } }
+      responses:
+        "200":
+          description: Runs
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrImportRuns" }
+        "503":
+          description: Frappe unavailable
+
+  /hr/import/runs/{name}:
+    get:
+      tags: [hr]
+      operationId: getHrImportRun
+      summary: "Plan 09: one import run with its per-row errors and warnings"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The run
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrImportRun" }
+        "404":
+          description: No such run
+        "503":
+          description: Frappe unavailable
+
+  /hr/setup/master-data:
+    post:
+      tags: [hr]
+      operationId: loadHrMasterData
+      summary: "Plan 09: load ESWASA's signed-off master-data JSON (System Manager). The example file is refused; nothing is deleted or disabled"
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary, description: "JSON following eswasa_core/fixtures/hr/eswasa_master_data.schema.json" }
+                dry_run: { type: boolean, default: true }
+                confirm: { type: boolean, description: "Required when dry_run is false" }
+      responses:
+        "200":
+          description: Created, updated and unchanged per type; departments missing from the file
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrMasterDataResult" }
+        "400":
+          description: confirm must be true for a real load
+        "403":
+          description: Not a System Manager
+        "413":
+          description: Larger than the media upload limit (50 MB)
+        "422":
+          description: Not JSON
+        "503":
+          description: Frappe unavailable
+
   /hr/board-pack:
     get:
       tags: [hr]
@@ -8223,6 +8383,101 @@ components:
         employee_name: { type: string }
         reasons: { type: array, items: { type: string } }
         activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" } }
+    HrImportError:
+      properties:
+        row: { type: integer, nullable: true, description: "Spreadsheet row (1 is the header); null for the whole file" }
+        employee_number: { type: string, nullable: true }
+        field: { type: string, nullable: true }
+        message: { type: string }
+      required: [message]
+      title: HrImportError
+      type: object
+    HrImportResult:
+      properties:
+        pass_no: { type: integer }
+        rows: { type: integer, default: 0 }
+        create: { type: integer, default: 0 }
+        update: { type: integer, default: 0 }
+        unchanged: { type: integer, default: 0 }
+        errors:
+          items: { $ref: '#/components/schemas/HrImportError' }
+          type: array
+        warnings:
+          items: { type: string }
+          type: array
+        ok: { type: boolean, default: false }
+      required: [pass_no]
+      title: HrImportResult
+      type: object
+    HrImportRun:
+      properties:
+        id: { type: string }
+        pass_no: { type: integer, nullable: true }
+        status: { type: string, enum: [Queued, Running, Done, Failed] }
+        file_name: { type: string, nullable: true }
+        rows: { type: integer, default: 0 }
+        created: { type: integer, default: 0 }
+        updated: { type: integer, default: 0 }
+        unchanged: { type: integer, default: 0 }
+        error_count: { type: integer, default: 0 }
+        run_by: { type: string, nullable: true }
+        started_on: { type: string, nullable: true }
+        finished_on: { type: string, nullable: true }
+        go_live: { type: string, nullable: true }
+        errors:
+          nullable: true
+          items: { $ref: '#/components/schemas/HrImportError' }
+          type: array
+        warnings:
+          nullable: true
+          items: { type: string }
+          type: array
+      required: [id, status]
+      title: HrImportRun
+      type: object
+    HrImportRuns:
+      properties:
+        items:
+          items: { $ref: '#/components/schemas/HrImportRun' }
+          type: array
+      required: [items]
+      title: HrImportRuns
+      type: object
+    HrImportJob:
+      properties:
+        job_id: { type: string }
+        run: { type: string }
+        status: { type: string }
+      required: [job_id, run, status]
+      title: HrImportJob
+      type: object
+    HrMasterDataCounts:
+      properties:
+        created: { type: integer, default: 0 }
+        updated: { type: integer, default: 0 }
+        unchanged: { type: integer, default: 0 }
+      title: HrMasterDataCounts
+      type: object
+    HrMasterDataResult:
+      properties:
+        dry_run: { type: boolean }
+        counts:
+          additionalProperties: { $ref: '#/components/schemas/HrMasterDataCounts' }
+          type: object
+          description: "Keyed branches, employment_types, grades, departments, designations, holiday_list"
+        missing_departments:
+          items: { type: string }
+          type: array
+        kept:
+          items: { type: string }
+          type: array
+        errors:
+          items: { type: string }
+          type: array
+        ok: { type: boolean, default: false }
+      required: [dry_run]
+      title: HrMasterDataResult
+      type: object
     HrHoliday:
       properties:
         date:

@@ -15,6 +15,9 @@ from app.media.store import MediaStore, get_media_store
 
 router = APIRouter(prefix="/media", tags=["media"])
 
+# The upload limit every route that takes a file shares (media, the HR import).
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
 
 class MediaObjectOut(BaseModel):
     key: str
@@ -55,7 +58,7 @@ async def upload_media(
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="Empty file")
-    if len(data) > 50 * 1024 * 1024:
+    if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="File too large (max 50MB)")
     try:
         stored = store.put_bytes(

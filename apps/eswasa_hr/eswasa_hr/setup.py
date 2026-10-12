@@ -85,6 +85,23 @@ def keep_cases_out_of_search() -> int:
     return n
 
 
+def load_master_data(path: str, dry_run: bool = False) -> dict:
+    """Plan 09: load ESWASA's signed-off master-data JSON (see eswasa_hr.master_data_load). Refuses the example file.
+
+    bench --site <site> execute eswasa_hr.setup.load_master_data --kwargs '{"path": "...", "dry_run": true}'
+    """
+    import json
+
+    from eswasa_hr.master_data_load import load
+
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+    out = load(data, dry_run=dry_run)
+    if not dry_run and out["ok"]:
+        frappe.db.commit()
+    return out
+
+
 def after_migrate() -> None:
     apply_hr_settings()
     keep_cases_out_of_search()

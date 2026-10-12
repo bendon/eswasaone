@@ -53,6 +53,21 @@ EDITABLE = ("employee_name", "company_email", "status", "department", "designati
 # On an Active record these go through promotion or transfer so they're approved and kept in the history.
 MOVE_FIELDS = {"department": "Department", "designation": "Designation", "grade": "Grade", "reports_to": "Reports to"}
 STATUSES = ("Active", "Inactive", "Suspended", "Left")
+# Optional fields a new record may carry (the employee import, plan 09, sends them; Add person doesn't).
+IMPORT_FIELDS = (
+    "employee_number",
+    "middle_name",
+    "grade",
+    "branch",
+    "employment_type",
+    "holiday_list",
+    "scheduled_confirmation_date",
+    "final_confirmation_date",
+    "contract_end_date",
+    "notice_number_of_days",
+    "payroll_cost_center",
+    "status",
+)
 
 
 def _s(v: Any) -> str:
@@ -93,6 +108,8 @@ def create_errors(row: dict[str, Any], dept: dict[str, Any] | None = None, desig
         errs.append("That designation doesn't exist.")
     if row.get("invite") and not _s(row.get("email") or row.get("company_email")):
         errs.append("Give an email address to send the invitation to.")
+    if _s(row.get("status")) and row["status"] not in STATUSES[:3]:
+        errs.append("A new record is Active, Inactive or Suspended.")
     return errs
 
 
@@ -207,6 +224,9 @@ def create_impl(row: dict[str, Any]) -> dict[str, Any]:
     for key, val in (("department", dept_name), ("designation", desig), ("company_email", _s(row.get("company_email") or row.get("email")).lower()), ("reports_to", _s(row.get("reports_to")))):
         if val:
             doc[key] = val
+    for key in IMPORT_FIELDS:
+        if _s(row.get(key)):
+            doc[key] = row[key]
     if row.get("invite"):
         doc["user_id"] = _invite(email, doc["employee_name"], invite_roles(row.get("roles"), frappe.get_roles()))
         doc["create_user_permission"] = 1

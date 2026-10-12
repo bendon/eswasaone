@@ -389,15 +389,7 @@ def setup_status_impl() -> dict[str, Any]:
             "/hr/directory",
             None if active else "§0.5 #10",
         ),
-        step(
-            "import",
-            "Import employees",
-            DONE if active and linked == len(active) else PARTIAL if active else AWAITING,
-            f"{len(active)} active employees, {linked} with a login." if active else "No employee records yet. Import in two passes: records, then line managers and approvers.",
-            "data-import/new?reference_doctype=Employee",
-            None if active else "§0.5 #3",
-            desk=True,
-        ),
+        _import_step(len(active), linked),
         step(
             "expenses",
             "Expense claims",
@@ -411,6 +403,22 @@ def setup_status_impl() -> dict[str, Any]:
         step("payroll", "Payroll scope", EXCLUDED, "Excluded until ESWASA decides whether payroll runs in EswasaOne.", None, "H15, H16"),
     ]
     return {"steps": steps, **progress(steps)}
+
+
+def _import_step(active: int, linked: int) -> dict[str, Any]:
+    """Plan 09: the state comes from the last HR Import Run per pass (records, then links); the link stays on Desk."""
+    from eswasa_hr.employee_import import import_state, last_runs
+
+    state, detail = import_state(last_runs())
+    return step(
+        "import",
+        "Import employees",
+        {"done": DONE, "partial": PARTIAL}.get(state, PARTIAL if active else AWAITING),
+        (f"{active} active employees, {linked} with a login. " if active else "") + detail,
+        "data-import/new?reference_doctype=Employee",
+        None if active or state != "todo" else "§0.5 #3",
+        desk=True,
+    )
 
 
 # ---------------------------------------------------------------- whitelisted API (Core calls these)

@@ -1,0 +1,40 @@
+{
+  "example": true,
+  "version": "EXAMPLE - shape only, not ESWASA data",
+  "branches": [
+    {
+      "name": "EXAMPLE Branch"
+    }
+  ],
+  "employment_types": [
+    {
+      "name": "EXAMPLE Employment Type"
+    }
+  ],
+  "grades": [
+    {
+      "name": "EXAMPLE-G1"
+    }
+  ],
+  "departments": [
+    {
+      "name": "EXAMPLE Division",
+      "parent": null
+    },
+    {
+      "name": "EXAMPLE Department",
+      "parent": "EXAMPLE Division"
+    }
+  ],
+  "designations": [
+    {
+      "name": "EXAMPLE Post",
+      "grade": "EXAMPLE-G1",
+      "skills": []
+    }
+  ],
+  "holiday_list": {
+    "name": "Eswatini",
+    "company_default": true
+  }
+}

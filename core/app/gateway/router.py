@@ -166,6 +166,11 @@ from app.schemas import (
     HrProfileChangeBody,
     HrProfileChanges,
     HrExpenseClaims,
+    HrImportJob,
+    HrImportResult,
+    HrImportRun,
+    HrImportRuns,
+    HrMasterDataResult,
     HrLeaveCancelBody,
     HrLeavePolicy,
     HrLeaveRequest,
@@ -5412,6 +5417,131 @@ async def get_hr_setup_status(
 ) -> HrSetupStatus:
     """H14: each HR setup step from live counts; ESWASA inputs show as awaiting, payroll as excluded."""
     return HrSetupStatus.model_validate(await _hr_call(auth, frappe, f"{_OVERVIEW}.setup_status"))
+
+
+_IMPORT = "eswasa_hr.employee_import"
+_IMPORT_TYPES = {".csv", ".xlsx"}
+
+
+async def _import_file(file: UploadFile) -> dict[str, str]:
+    """An uploaded CSV/XLSX as eswasa_hr reads it: {file_name, content (base64)}. Limits follow the media upload."""
+    import base64
+
+    from app.media.router import MAX_UPLOAD_BYTES
+
+    name = file.filename or ""
+    if not any(name.lower().endswith(ext) for ext in _IMPORT_TYPES):
+        raise HTTPException(status_code=415, detail="Send a .csv or .xlsx file. Download the template for the columns.")
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=422, detail="The file is empty.")
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="The file must be 50 MB or smaller.")
+    return {"file_name": name, "content": base64.b64encode(data).decode()}
+
+
+@router.get("/hr/import/template", tags=["hr"])
+async def get_hr_import_template(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    pass_no: Annotated[int, Query(alias="pass", ge=1, le=3)] = 1,
+) -> Response:
+    """Plan 09: the pass's column template (XLSX), built from the same field list the import validates."""
+    import base64
+
+    out = await _hr_call(auth, frappe, f"{_IMPORT}.template", params={"pass_no": pass_no}) or {}
+    name = out.get("file_name") or f"eswasa-employee-import-pass-{pass_no}.xlsx"
+    return Response(
+        content=base64.b64decode(out.get("content") or ""),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+    )
+
+
+@router.post("/hr/import/dry-run", response_model=HrImportResult, tags=["hr"])
+async def dry_run_hr_import(
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    file: Annotated[UploadFile, File()],
+    pass_no: Annotated[int, Form(alias="pass", ge=1, le=3)] = 1,
+    go_live: Annotated[str | None, Form()] = None,
+) -> HrImportResult:
+    """Plan 09: check an import file and count what a run would do. Writes nothing in HRMS."""
+    payload = await _import_file(file)
+    audit_log(action="hr.import.dry_run", actor=auth.user.username, resource="HR Import Run",
+              detail={"pass": pass_no, "file": payload["file_name"]}, confirmed=False)
+    out = await _hr_write(auth, frappe, f"{_IMPORT}.dry_run", json={"file": payload, "pass_no": pass_no, "go_live": go_live})
+    return HrImportResult.model_validate(out)
+
+
+@router.post("/hr/import/run", response_model=HrImportJob, status_code=status.HTTP_202_ACCEPTED, tags=["hr"])
+async def run_hr_import(
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    file: Annotated[UploadFile, File()],
+    pass_no: Annotated[int, Form(alias="pass", ge=1, le=3)] = 1,
+    confirm: Annotated[bool, Form()] = False,
+    go_live: Annotated[str | None, Form()] = None,
+) -> HrImportJob:
+    """Plan 09: start the import in a background job (HR Manager). Any error and nothing is written; see /hr/import/runs."""
+    _require_confirm(confirm)
+    payload = await _import_file(file)
+    audit_log(action="hr.import.run", actor=auth.user.username, resource="HR Import Run",
+              detail={"pass": pass_no, "file": payload["file_name"]}, confirmed=True)
+    out = await _hr_write(auth, frappe, f"{_IMPORT}.run", json={"file": payload, "pass_no": pass_no, "go_live": go_live, "confirm": True})
+    return HrImportJob.model_validate(out)
+
+
+@router.get("/hr/import/runs", response_model=HrImportRuns, tags=["hr"])
+async def list_hr_import_runs(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    pass_no: Annotated[int | None, Query(alias="pass", ge=1, le=3)] = None,
+) -> HrImportRuns:
+    """Plan 09: import runs, newest first."""
+    rows = await _hr_call(auth, frappe, f"{_IMPORT}.runs", params={"pass_no": pass_no} if pass_no else None) or []
+    return HrImportRuns(items=[HrImportRun.model_validate(r) for r in rows])
+
+
+@router.get("/hr/import/runs/{name}", response_model=HrImportRun, tags=["hr"])
+async def get_hr_import_run(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrImportRun:
+    """Plan 09: one run with its per-row errors and warnings."""
+    return HrImportRun.model_validate(await _hr_call(auth, frappe, f"{_IMPORT}.run_detail", params={"name": name}))
+
+
+@router.post("/hr/setup/master-data", response_model=HrMasterDataResult, tags=["hr"])
+async def load_hr_master_data(
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    file: Annotated[UploadFile, File()],
+    dry_run: Annotated[bool, Form()] = True,
+    confirm: Annotated[bool, Form()] = False,
+) -> HrMasterDataResult:
+    """Plan 09: load ESWASA's signed-off master-data JSON (System Manager). The example file is refused; nothing is deleted."""
+    import json as _json
+
+    from app.media.router import MAX_UPLOAD_BYTES
+
+    if not set(auth.user.roles or []) & SYSTEM_MANAGER_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only a System Manager can load master data.")
+    if not dry_run:
+        _require_confirm(confirm)
+    raw = await file.read()
+    if len(raw) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="The file must be 50 MB or smaller.")
+    try:
+        data = _json.loads(raw.decode("utf-8-sig"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="The master-data file must be JSON. See eswasa_master_data.schema.json.") from exc
+    audit_log(action="hr.master_data.load", actor=auth.user.username, resource="HR master data",
+              detail={"file": file.filename, "dry_run": dry_run}, confirmed=not dry_run)
+    out = await _hr_write(auth, frappe, "eswasa_hr.master_data_load.load_file",
+                          json={"data": data, "dry_run": dry_run, "confirm": not dry_run})
+    return HrMasterDataResult.model_validate(out)
 
 
 @router.get("/hr/board-pack", response_model=HrBoardPack, tags=["hr"])

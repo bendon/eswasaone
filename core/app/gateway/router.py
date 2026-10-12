@@ -92,6 +92,8 @@ from app.schemas import (
     HrTeam,
     HrTeamCalendar,
     HrTeamMemberDetail,
+    HrAccessRequestBody,
+    HrAccessReviewBody,
     HrChanges,
     HrCaseActBody,
     HrCaseBoard,
@@ -115,6 +117,7 @@ from app.schemas import (
     HrReviewBody,
     HrSelfAssessmentBody,
     HrContractBody,
+    HrModuleAccessRequest,
     HrAccessLog,
     HrBoardPack,
     HrLiveOverview,
@@ -4972,6 +4975,48 @@ async def prepare_contract_change(
     audit_log(action="hr.contract.prepare", actor=auth.user.username, resource=f"Employee:{employee_id}", detail={"kind": body.kind, "new_end": body.new_end}, confirmed=True)
     raw = await _hr_call(auth, frappe, f"{_CONTRACT}.prepare", json={"employee": employee_id, **body.model_dump(exclude={"confirm"}), "confirm": 1})
     return HrChanges.model_validate(raw)
+
+
+_ACCESS = "eswasa_hr.access_requests"
+
+
+@router.get("/hr/access-requests", response_model=list[HrModuleAccessRequest], response_model_exclude_none=True, tags=["hr"])
+async def list_access_requests(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+    module: str | None = None,
+) -> list[HrModuleAccessRequest]:
+    """Module access requests: reviewers (HR, System Manager) get all, everyone else their own."""
+    raw = await _hr_call(auth, frappe, f"{_ACCESS}.list_requests", params={k: v for k, v in {"status": status_filter, "module": module}.items() if v} or None)
+    return [HrModuleAccessRequest.model_validate(r) for r in raw or []]
+
+
+@router.post("/hr/access-requests", response_model=HrModuleAccessRequest, response_model_exclude_none=True, tags=["hr"])
+async def submit_access_request(
+    body: HrAccessRequestBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrModuleAccessRequest:
+    """Ask for access to a module; a pending request for the same module is returned, not duplicated."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.access_request.submit", actor=auth.user.username, resource=f"Module:{body.moduleId}", detail={"module": body.moduleId}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_ACCESS}.submit", json={"module_id": body.moduleId, "module_label": body.moduleLabel, "note": body.note, "confirm": 1})
+    return HrModuleAccessRequest.model_validate(raw)
+
+
+@router.patch("/hr/access-requests/{request_id}", response_model=HrModuleAccessRequest, response_model_exclude_none=True, tags=["hr"])
+async def review_access_request(
+    request_id: str,
+    body: HrAccessReviewBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrModuleAccessRequest:
+    """Approve (grants the module's role) or reject; the same review as the Approvals card."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.access_request.review", actor=auth.user.username, resource=f"Module Access Request:{request_id}", detail={"decision": body.decision}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_ACCESS}.review", json={"name": request_id, "decision": body.decision, "note": body.reviewNote, "confirm": 1})
+    return HrModuleAccessRequest.model_validate(raw)
 
 
 _EST = "eswasa_hr.establishment"

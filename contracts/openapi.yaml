@@ -701,15 +701,25 @@ paths:
 
   /hr/access-requests:
     get:
-      tags: [identity]
+      tags: [hr]
       operationId: listAccessRequests
+      summary: Module access requests; reviewers (HR, System Manager) get all, everyone else their own
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string, enum: [pending, approved, rejected] } }
+        - { name: module, in: query, required: false, schema: { type: string } }
       responses:
         "200":
-          description: Access request queue
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ModuleAccessRequest" }
     post:
-      tags: [identity]
+      tags: [hr]
       operationId: createAccessRequest
+      summary: Ask for access to a module; the requester is the session user; a pending duplicate is returned
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -718,7 +728,36 @@ paths:
             schema: { $ref: "#/components/schemas/AccessRequestBody" }
       responses:
         "200":
-          description: Created
+          description: The new or existing pending request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModuleAccessRequest" }
+        "422":
+          description: Rule failed (unknown module, everyone can open it, already has access)
+
+  /hr/access-requests/{request_id}:
+    patch:
+      tags: [hr]
+      operationId: reviewAccessRequest
+      summary: Approve (grants the module's narrowest role) or reject; same review as the Approvals card
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: request_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccessReviewBody" }
+      responses:
+        "200":
+          description: The request after review (unchanged if it was already decided)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModuleAccessRequest" }
+        "403":
+          description: Not a reviewer, or reviewing your own request
+        "422":
+          description: Rejecting without a note
 
   /hr/expense-claims:
     get:
@@ -3385,13 +3424,39 @@ components:
 
     AccessRequestBody:
       type: object
-      required: [reason, confirm]
+      required: [moduleId, confirm]
       properties:
-        reason: { type: string }
-        requested_roles:
-          type: array
-          items: { type: string }
+        moduleId: { type: string, description: "InstitutionRouteId" }
+        moduleLabel: { anyOf: [{ type: string }, { type: "null" }] }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
         confirm: { type: boolean }
+
+    AccessReviewBody:
+      type: object
+      required: [decision, confirm]
+      properties:
+        decision: { type: string, enum: [approved, rejected] }
+        reviewNote: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+
+    ModuleAccessRequest:
+      type: object
+      description: Same shape as portals/institution-portal/src/hr/accessRequests.ts
+      required: [id, moduleId, moduleLabel, requesterUsername, requesterName, requesterEmail, note, status, createdAt]
+      properties:
+        id: { type: string }
+        moduleId: { type: string }
+        moduleLabel: { type: string }
+        requesterUsername: { type: string }
+        requesterName: { type: string }
+        requesterEmail: { type: string }
+        note: { type: string }
+        status: { type: string, enum: [pending, approved, rejected] }
+        createdAt: { type: string, format: date-time }
+        reviewedAt: { type: string, format: date-time }
+        reviewedBy: { type: string }
+        reviewNote: { type: string }
+        rolesGranted: { type: string }
 
     # --- Board & Governance schemas (WS-I5) ---------------------------------
 

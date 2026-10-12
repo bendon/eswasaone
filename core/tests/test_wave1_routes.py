@@ -19,7 +19,6 @@ def test_wave1_router_paths() -> None:
         "/estore/cart",
         "/estore/orders/{order_id}",
         "/estore/licences/{licence_id}/download",
-        "/hr/access-requests",
         "/ingest/queue",
     ]
     for p in expected:

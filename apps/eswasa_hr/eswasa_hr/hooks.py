@@ -75,13 +75,25 @@ fixtures = [
 
 # Cases (brief §10): only HR Managers and the named case owner (or the appeal owner during an appeal) can read
 # a case, in Desk as well as the portal. These hooks only narrow; HR User and Employee lose access to cases.
+# Plan 02 (brief §11, §14.8): HR sees everyone; others see their own record, their reports, and what they decide
+# (eswasa_hr.scope). These also only narrow.
 permission_query_conditions = {
     "Employee Grievance": "eswasa_hr.cases.grievance_query",
     "Disciplinary Case": "eswasa_hr.cases.disciplinary_query",
+    "Employee": "eswasa_hr.scope.employee_query",
+    "Leave Application": "eswasa_hr.scope.leave_query",
+    "Appraisal": "eswasa_hr.scope.appraisal_query",
+    "Staff Authorisation": "eswasa_hr.scope.authorisation_query",
+    "Employee Document": "eswasa_hr.scope.document_query",
 }
 has_permission = {
     "Employee Grievance": "eswasa_hr.cases.has_permission",
     "Disciplinary Case": "eswasa_hr.cases.has_permission",
+    "Employee": "eswasa_hr.scope.employee_has_permission",
+    "Leave Application": "eswasa_hr.scope.leave_has_permission",
+    "Appraisal": "eswasa_hr.scope.appraisal_has_permission",
+    "Staff Authorisation": "eswasa_hr.scope.authorisation_has_permission",
+    "Employee Document": "eswasa_hr.scope.document_has_permission",
 }
 
 after_migrate = ["eswasa_hr.setup.after_migrate"]
@@ -131,4 +143,6 @@ eswasa_approval_handlers = {
     "Disciplinary Case": "eswasa_hr.cases.decide",
     # J11: the Executive Director decides; the Board Secretary records the Council decision when needed.
     "Establishment Change": "eswasa_hr.establishment.decide",
+    # Plan 02: module access requests; the HR page's review calls the same review_impl.
+    "Module Access Request": "eswasa_hr.access_requests.decide",
 }

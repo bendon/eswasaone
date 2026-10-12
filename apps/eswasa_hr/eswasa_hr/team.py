@@ -16,31 +16,14 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any
 
+from eswasa_hr.scope import employee_tree, report_tree  # noqa: F401  (report_tree re-exported for callers)
+
 PROBATION_NOTICE_DAYS = 30  # brief §4 R-H1
 CONTRACT_NOTICE_DAYS = 60  # brief §4 R-H2
 OUTCOMES = ("confirm", "extend", "end")
 
 
 # ---------------------------------------------------------------- pure rules
-
-
-def report_tree(manager: str, edges: list[tuple[str, str | None]]) -> list[str]:
-    """Everyone under ``manager`` in (employee, reports_to) edges, breadth first, cycle-safe."""
-    children: dict[str, list[str]] = {}
-    for emp, boss in edges:
-        if boss:
-            children.setdefault(boss, []).append(emp)
-    out: list[str] = []
-    seen = {manager}
-    queue = list(children.get(manager, []))
-    while queue:
-        e = queue.pop(0)
-        if e in seen:
-            continue
-        seen.add(e)
-        out.append(e)
-        queue.extend(children.get(e, []))
-    return out
 
 
 def _d(v: Any) -> date | None:
@@ -93,10 +76,7 @@ def _me() -> str | None:
 
 
 def _tree(manager: str) -> list[str]:
-    import frappe
-
-    edges = [(r["name"], r.get("reports_to")) for r in frappe.get_all("Employee", filters={"status": "Active"}, fields=["name", "reports_to"], limit=0)]
-    return report_tree(manager, edges)
+    return employee_tree(manager)
 
 
 def _require_in_team(employee: str) -> str:

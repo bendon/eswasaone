@@ -8,7 +8,6 @@ do not regenerate types.ts from the thin yaml alone.
 from __future__ import annotations
 
 import logging
-import uuid
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
@@ -377,42 +376,8 @@ async def estore_licence_download(
         raise_from_frappe(exc)
 
 
-# --- HR access-requests + expense claims list -------------------------------
+# --- HR expense claims list (access requests moved to router.py, plan 02) -------
 
-
-@router.get("/hr/access-requests")
-async def list_access_requests(
-    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
-) -> dict[str, Any]:
-    _ = auth
-    return {"items": []}
-
-
-class AccessRequestBody(BaseModel):
-    reason: str
-    requested_roles: list[str] = Field(default_factory=list)
-    confirm: bool = False
-
-
-@router.post("/hr/access-requests")
-async def create_access_request(
-    body: AccessRequestBody,
-    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
-) -> dict[str, Any]:
-    _need_confirm(body.confirm)
-    audit_log(
-        action="hr.access_requests.create",
-        actor=auth.user.username,
-        resource="Access Request",
-        detail=body.model_dump(),
-        confirmed=True,
-    )
-    return {
-        "id": f"AR-{uuid.uuid4().hex[:8].upper()}",
-        "status": "Open",
-        "reason": body.reason,
-        "requested_roles": body.requested_roles,
-    }
 
 @router.get("/hr/expense-claims")
 async def list_expense_claims(

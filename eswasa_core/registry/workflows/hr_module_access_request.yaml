@@ -1,0 +1,44 @@
+# Module Access Request — a staff member asks to open a module they can't use (AccessDeniedPanel; plan 02).
+
+doctype: Module Access Request
+module: hr
+workflow_name: Module Access Request
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: null
+guards: [expected_state, idempotency_key]
+notes: >
+  No Frappe Workflow: eswasa_hr.access_requests.decide is the approval handler, and the HR page's
+  PATCH /hr/access-requests/{id} calls the same review_impl. One ToDo per named HR Manager (never
+  the requester). Reviewers are HR Manager, HR User or System Manager, never the requester; rejecting
+  needs a note. Approval grants the module's narrowest role (access_requests.grant_role), never
+  System Manager, Administrator or Desk User. PROVISIONAL: the role per module and the 3-day SLA
+  are proposals awaiting ESWASA.
+
+display:
+  customer: {}
+  staff:
+    Pending: Waiting for review
+    Approved: Access given
+    Rejected: Not given
+
+states:
+  - {name: Pending, sla: 3d, owner_role: HR Manager, allow_edit: HR Manager}  # SLA provisional
+  - {name: Approved, owner_role: HR Manager, allow_edit: HR Manager, style: Success}
+  - {name: Rejected, owner_role: HR Manager, allow_edit: HR Manager, style: Danger}
+
+transitions:
+  - action: Approve
+    from: Pending
+    to: Approved
+    actor: HR Manager
+    approvals_family: do
+  - action: Reject
+    from: Pending
+    to: Rejected
+    actor: HR Manager
+    reason: required
+    approvals_family: do

@@ -1786,6 +1786,39 @@ class HrBoardPack(BaseModel):
     establishment_changes: list[HrBoardEstChange] = Field(default_factory=list)
 
 
+class HrModuleAccessRequest(BaseModel):
+    """OpenAPI: ModuleAccessRequest — the portal's hr/accessRequests.ts shape (camelCase on purpose)."""
+
+    id: str
+    moduleId: str
+    moduleLabel: str
+    requesterUsername: str
+    requesterName: str
+    requesterEmail: str = ""
+    note: str = ""
+    status: str  # pending | approved | rejected
+    createdAt: str | None = None
+    reviewedAt: str | None = None
+    reviewedBy: str | None = None
+    reviewNote: str | None = None
+    rolesGranted: str | None = None
+
+
+class HrAccessRequestBody(BaseModel):
+    """POST /hr/access-requests — the requester is the session user, never a body field."""
+
+    moduleId: str
+    moduleLabel: str | None = None
+    note: str | None = None
+    confirm: bool = False
+
+
+class HrAccessReviewBody(BaseModel):
+    decision: str  # approved | rejected
+    reviewNote: str | None = None
+    confirm: bool = False
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

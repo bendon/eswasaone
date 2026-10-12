@@ -995,6 +995,17 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "access-log",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.MyAccessLog }))
+                        }
+                        skeleton="list"
+                      />
+                    ),
+                  },
+                  {
                     path: "competence",
                     element: (
                       <L

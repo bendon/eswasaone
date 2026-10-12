@@ -330,6 +330,20 @@ export type HrEstChangeDetail = HrEstChange & {
   deciders: Array<{ user: string; name: string }>;
   track: HrTrackStep[];
 };
+export type HrSensitive = {
+  employee: string;
+  employee_name: string;
+  level: 1 | 2;
+  level_label: string;
+  fields: Array<{ field: string; label: string; value?: string | null }>;
+  log: string;
+};
+export type HrAccessLog = {
+  employee: string;
+  employee_name: string;
+  can_open: number[];
+  items: Array<{ id: string; viewer?: string | null; viewer_name?: string | null; level?: string | null; reason?: string | null; viewed_on?: string | null }>;
+};
 export type HrSeparationDefaults = { employee: string; employee_name: string; reasons: string[]; activities: HrOnboardingActivity[] };
 export type HrPickItem = { id: string; name?: string | null; title?: string | null; employee_name?: string | null };
 export type HrVacancy = { department?: string | null; designation: string; approved: number; filled: number; in_recruitment: number; vacant: number };

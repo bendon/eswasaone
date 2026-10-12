@@ -8,6 +8,7 @@ import { useInstitution } from "../../layout/InstitutionLayout";
 import type { HrChanges, HrContractDefaults, HrEmployeesResponse, HrOnboarding, HrOnboardingActivity, HrPickItem, HrSeparationDefaults } from "../../api/types";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill, Track } from "../../me/parts";
 import { Checklist } from "../onboarding/Onboarding";
+import { AccessLogSection, SensitivePanel } from "../sensitive/Sensitive";
 
 /**
  * Lifecycle (journeys J8, J9; screens H2a, H7b). HR prepares a promotion, transfer or separation; another
@@ -21,6 +22,7 @@ const KIND_LABEL = { promotion: "Promotion", transfer: "Transfer", separation: "
 export function EmployeeChanges() {
   const { id = "" } = useParams();
   const { user, sessionKey } = useInstitution();
+  const [views, setViews] = useState(0);
   const res = useApiResource<HrChanges>(`/hr/employees/${encodeURIComponent(id)}/changes`, { enabled: Boolean(user), refreshKey: sessionKey });
   const d = res.data;
   const base = `/hr/directory/${encodeURIComponent(id)}`;
@@ -100,6 +102,15 @@ export function EmployeeChanges() {
             ) : (
               <EmptyState title="No changes yet" detail="Promotions, transfers and leaving appear here with their approval state." />
             )}
+            <section className="hr-sec" aria-label="Personal and pay">
+              <h3 className="hr-sub">Personal and pay</h3>
+              <div className="hr-box">
+                <div className="hr-box__b">
+                  <SensitivePanel employee={id} onViewed={() => setViews((n) => n + 1)} />
+                </div>
+              </div>
+            </section>
+            <AccessLogSection employee={id} refreshKey={views} />
           </div>
         ) : null}
       </ResourceGate>

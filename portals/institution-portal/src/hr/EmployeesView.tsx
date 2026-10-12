@@ -7,6 +7,7 @@ import { RequireStaff } from "../components/RequireStaff";
 import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrEmployeesResponse, HrEmployeeSummary } from "../api/types";
 import { initialsFromName } from "./helpers";
+import { SensitivePanel } from "./sensitive/Sensitive";
 
 /** Directory — live /hr/employees only. */
 
@@ -144,14 +145,7 @@ export function EmployeesView() {
         },
         {
           heading: "Personal and pay",
-          content: (
-            <div className="hr-lock">
-              <span>Hidden. Opening these is recorded against your name.</span>
-              <button type="button" className="btn ghost sm" disabled title="Coming soon">
-                Show details
-              </button>
-            </div>
-          ),
+          content: <SensitivePanel key={selected.id} employee={selected.id} />,
         },
         {
           heading: "Changes",

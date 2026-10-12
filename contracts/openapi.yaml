@@ -1944,6 +1944,59 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/HrEstChangeDetail" }
 
+  /hr/employees/{employee_id}/sensitive:
+    post:
+      tags: [hr]
+      operationId: viewSensitiveDetails
+      summary: Personal (level 1) or pay and bank (level 2) details, with a reason; the view is logged first
+      description: A POST so the reason stays out of URLs. Level 1 HR User and HR Manager; level 2 HR Manager only; never your own pay.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrSensitiveBody" }
+      responses:
+        "200":
+          description: The fields at that level
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrSensitive" }
+        "403":
+          description: Not allowed at that level
+        "400":
+          description: Reason missing or too short
+
+  /hr/employees/{employee_id}/access-log:
+    get:
+      tags: [hr]
+      operationId: getEmployeeAccessLog
+      summary: Who opened this person's protected details, when and why (HR Managers, or the person)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrAccessLog" }
+
+  /hr/me/access-log:
+    get:
+      tags: [hr]
+      operationId: getMyAccessLog
+      summary: Who has opened my protected details
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrAccessLog" }
+
   /hr/offboarding/{name}:
     get:
       tags: [hr]
@@ -6790,6 +6843,50 @@ components:
         new_grade: { anyOf: [{ type: string }, { type: "null" }] }
         cost_note: { anyOf: [{ type: string }, { type: "null" }] }
         confirm: { type: boolean }
+    HrSensitiveBody:
+      type: object
+      required: [level, reason, confirm]
+      properties:
+        level: { type: integer, enum: [1, 2] }
+        reason: { type: string, minLength: 10 }
+        confirm: { type: boolean }
+    HrSensitive:
+      type: object
+      required: [employee, employee_name, level, level_label, log]
+      properties:
+        employee: { type: string }
+        employee_name: { type: string }
+        level: { type: integer, enum: [1, 2] }
+        level_label: { type: string }
+        fields:
+          type: array
+          items:
+            type: object
+            required: [field, label]
+            properties:
+              field: { type: string }
+              label: { type: string }
+              value: { anyOf: [{ type: string }, { type: "null" }] }
+        log: { type: string, description: HR Access Log row written for this view }
+    HrAccessLog:
+      type: object
+      required: [employee, employee_name]
+      properties:
+        employee: { type: string }
+        employee_name: { type: string }
+        can_open: { type: array, items: { type: integer }, description: Levels the viewer may open }
+        items:
+          type: array
+          items:
+            type: object
+            required: [id]
+            properties:
+              id: { type: string }
+              viewer: { anyOf: [{ type: string }, { type: "null" }] }
+              viewer_name: { anyOf: [{ type: string }, { type: "null" }] }
+              level: { anyOf: [{ type: string }, { type: "null" }] }
+              reason: { anyOf: [{ type: string }, { type: "null" }] }
+              viewed_on: { anyOf: [{ type: string }, { type: "null" }] }
     HrSeparationDefaults:
       type: object
       required: [employee, employee_name]

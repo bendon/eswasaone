@@ -7,3 +7,4 @@ export { MyInterviews } from "./MyInterviews";
 export { FirstDays } from "./FirstDays";
 export { MyAppraisal } from "./MyAppraisal";
 export { RaiseConcern } from "./RaiseConcern";
+export { MyAccessLog } from "../hr/sensitive/Sensitive";

@@ -1629,6 +1629,45 @@ class HrEstChangeBody(BaseModel):
     confirm: bool
 
 
+class HrSensitiveBody(BaseModel):
+    level: int  # 1 personal, 2 pay and bank
+    reason: str
+    confirm: bool
+
+
+class HrSensitiveField(BaseModel):
+    field: str
+    label: str
+    value: str | None = None
+
+
+class HrSensitive(BaseModel):
+    """POST /hr/employees/{id}/sensitive — the fields at one level; the view is logged first."""
+
+    employee: str
+    employee_name: str
+    level: int
+    level_label: str
+    fields: list[HrSensitiveField] = Field(default_factory=list)
+    log: str
+
+
+class HrAccessLogRow(BaseModel):
+    id: str
+    viewer: str | None = None
+    viewer_name: str | None = None
+    level: str | None = None
+    reason: str | None = None
+    viewed_on: str | None = None
+
+
+class HrAccessLog(BaseModel):
+    employee: str
+    employee_name: str
+    items: list[HrAccessLogRow] = Field(default_factory=list)
+    can_open: list[int] = Field(default_factory=list)
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

@@ -1,0 +1,162 @@
+[
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-date_of_birth-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "date_of_birth",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "1"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-marital_status-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "marital_status",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "1"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-personal_email-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "personal_email",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "1"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-cell_number-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "cell_number",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "1"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-current_address-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "current_address",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "1"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-permanent_address-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "permanent_address",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "1"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-person_to_be_contacted-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "person_to_be_contacted",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "1"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-relation-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "relation",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "1"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-emergency_phone_number-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "emergency_phone_number",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "1"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-passport_number-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "passport_number",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "1"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-ctc-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "ctc",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "2"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-salary_currency-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "salary_currency",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "2"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-salary_mode-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "salary_mode",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "2"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-bank_name-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "bank_name",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "2"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-bank_ac_no-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "bank_ac_no",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "2"
+ },
+ {
+  "doctype": "Property Setter",
+  "name": "Employee-iban-permlevel",
+  "doc_type": "Employee",
+  "doctype_or_field": "DocField",
+  "field_name": "iban",
+  "property": "permlevel",
+  "property_type": "Int",
+  "value": "2"
+ }
+]

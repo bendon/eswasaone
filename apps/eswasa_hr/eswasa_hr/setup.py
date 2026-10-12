@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import frappe
 
+from eswasa_hr.sensitive import apply_field_levels  # J12: Employee field levels in Desk
+
 # ERPNext default leaf departments (install fixtures). Safe to disable until
 # ESWASA's real tree arrives (§0.5 #1). Names may include " - {company abbr}".
 _ERPNEXT_DEPT_STEMS = {
@@ -86,6 +88,7 @@ def keep_cases_out_of_search() -> int:
 def after_migrate() -> None:
     apply_hr_settings()
     keep_cases_out_of_search()
+    apply_field_levels()
     # Only disable fixtures when no Active employees yet (safe on greenfield).
     if frappe.db.count("Employee", {"status": "Active"}) == 0:
         disable_erpnext_department_fixtures()

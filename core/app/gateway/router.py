@@ -121,7 +121,10 @@ from app.schemas import (
     HrReviewBody,
     HrSelfAssessmentBody,
     HrContractBody,
+    HrAccessLog,
     HrEstablishment,
+    HrSensitive,
+    HrSensitiveBody,
     HrEstChangeBody,
     HrEstChangeDetail,
     HrEstDepartment,
@@ -5494,6 +5497,45 @@ async def get_establishment_change(
 ) -> HrEstChangeDetail:
     """Where an establishment change is and who decides it."""
     return HrEstChangeDetail.model_validate(await _hr_call(auth, frappe, f"{_EST}.change_detail", params={"name": name}))
+
+
+_SENSITIVE = "eswasa_hr.sensitive"
+
+
+@router.post("/hr/employees/{employee_id}/sensitive", response_model=HrSensitive, tags=["hr"])
+async def view_sensitive_details(
+    employee_id: str,
+    body: HrSensitiveBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrSensitive:
+    """Personal (level 1) or pay and bank (level 2) details, with a reason; eswasa_hr logs the view first.
+
+    A POST, not a GET, so the reason never appears in URLs or request logs.
+    """
+    _require_confirm(body.confirm)
+    audit_log(action="hr.sensitive.view", actor=auth.user.username, resource=f"Employee:{employee_id}", detail={"level": body.level}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_SENSITIVE}.view", json={"employee": employee_id, "level": body.level, "reason": body.reason, "confirm": 1})
+    return HrSensitive.model_validate(raw)
+
+
+@router.get("/hr/employees/{employee_id}/access-log", response_model=HrAccessLog, tags=["hr"])
+async def get_employee_access_log(
+    employee_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrAccessLog:
+    """Who opened this person's protected details, when and why (HR Managers, or the person)."""
+    return HrAccessLog.model_validate(await _hr_call(auth, frappe, f"{_SENSITIVE}.access_log", params={"employee": employee_id}))
+
+
+@router.get("/hr/me/access-log", response_model=HrAccessLog, tags=["hr"])
+async def get_my_access_log(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrAccessLog:
+    """Who has opened my protected details."""
+    return HrAccessLog.model_validate(await _hr_call(auth, frappe, f"{_SENSITIVE}.my_access_log"))
 
 
 @router.get("/hr/offboarding/{name}", response_model=HrOnboarding, tags=["hr"])

@@ -215,6 +215,9 @@ function Linked({ me }: { me: HrMe }) {
       <p className="hr-note">
         Something wrong at work? <Link to="concern">Raise a concern in confidence</Link>. Only one HR Manager sees it.
       </p>
+      <p className="hr-note">
+        Your personal and pay details are hidden until HR gives a reason. <Link to="access-log">See who looked at your record</Link>.
+      </p>
 
       {waiting.length ? (
         <NextStep

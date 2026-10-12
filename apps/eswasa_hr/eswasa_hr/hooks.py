@@ -32,6 +32,7 @@ fixtures = [
                     "Employee Grievance-custom_next_step",
                     "Employee Grievance-custom_next_step_due",
                     "Employee Grievance-custom_talk_first",
+                    "User-custom_hr_email_opt_out",
                 ],
             ]
         ],

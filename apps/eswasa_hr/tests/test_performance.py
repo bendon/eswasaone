@@ -78,6 +78,8 @@ class RemindTests(unittest.TestCase):
             return staff.get(name, {}).get(field)
 
         def exists(dt, key):
+            if dt == "DocType":  # no HR Notification outbox on this site
+                return False
             return any(all(t.get(k) == v for k, v in key.items()) for t in todos)
 
         f.db = SimpleNamespace(get_value=get_value, exists=exists)

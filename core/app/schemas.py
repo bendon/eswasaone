@@ -1750,6 +1750,7 @@ class HrLiveOverview(BaseModel):
     turnover: HrTurnover = Field(default_factory=HrTurnover)
     ending_soon: dict[str, int] = Field(default_factory=dict)
     record_quality: list[HrRecordGap] = Field(default_factory=list)
+    record_checked_on: str | None = None  # R-H7: when the nightly integrity check last ran (None = live, not yet run)
     cycles: list[HrCycleStatus] = Field(default_factory=list)
 
 

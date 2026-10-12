@@ -14,6 +14,10 @@ notes: >
   Head of department approves; must differ from employee (four-eyes).
   Guard: eswasa_hr.competence.is_authorised.
 
+# PROVISIONAL (brief §12.1; confirm with ESWASA): the head of department decides within 5 days.
+# No escalation ladder yet; nothing escalates to a role pool.
+sla: {days: 5, calendar: calendar, escalate_to: null, provisional: true}
+
 display:
   customer: {}
   staff:

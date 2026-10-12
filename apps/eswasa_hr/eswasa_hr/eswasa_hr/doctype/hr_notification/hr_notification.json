@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "key",
+  "to_user",
+  "to_address",
+  "channel",
+  "template",
+  "context",
+  "status",
+  "attempts",
+  "sent_on",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "key",
+   "fieldtype": "Data",
+   "label": "Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "description": "Event and recipient; stops the same message being queued twice"
+  },
+  {
+   "fieldname": "to_user",
+   "fieldtype": "Link",
+   "label": "To user",
+   "options": "User",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "to_address",
+   "fieldtype": "Data",
+   "label": "To address",
+   "read_only": 1,
+   "description": "Only for people without a login (applicants); otherwise resolved from the user when sending"
+  },
+  {
+   "fieldname": "channel",
+   "fieldtype": "Select",
+   "label": "Channel",
+   "options": "email\nsms",
+   "default": "email",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "template",
+   "fieldtype": "Data",
+   "label": "Template",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "A key of eswasa_hr.notify_templates.TEMPLATES"
+  },
+  {
+   "fieldname": "context",
+   "fieldtype": "JSON",
+   "label": "Context",
+   "read_only": 1,
+   "description": "Only the fields the template declares; never case details or protected fields"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Queued\nSent\nFailed\nSkipped",
+   "default": "Queued",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "label": "Attempts",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sent_on",
+   "fieldtype": "Datetime",
+   "label": "Sent on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-12 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa HR",
+ "name": "HR Notification",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "write": 0
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "in_create": 1,
+ "search_fields": "template,status"
+}

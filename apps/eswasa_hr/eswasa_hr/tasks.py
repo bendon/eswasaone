@@ -1,4 +1,4 @@
-"""Daily HR jobs: R-H1…R-H6, R-L1 leave escalation and lifecycle dates."""
+"""Daily HR jobs: R-H7 integrity first, then R-H1…R-H6, R-L1 leave escalation, recruitment reminders and lifecycle dates."""
 
 from __future__ import annotations
 
@@ -8,15 +8,25 @@ from frappe.utils import getdate, today
 
 def daily() -> None:
     """Nightly HR HRMS/custom cron entrypoint."""
+    rh7_integrity()  # first, so the later steps run on a known picture of the records
     rh1_probation_reviews()
     recompute_authorisation_statuses()  # statuses first, so R-H3/R-H4 see today's Current/Expiring
     rh2_contract_end_alerts()
     rh3_authorisation_expiry_alerts()
     rh4_single_holder_alerts()
     rh5_declarations()
+    rh5_late_declarations()
     lifecycle_due()
     rh6_appraisal_reminders()
     rl1_leave_escalation()
+    recruitment_reminders()
+
+
+def rh7_integrity() -> dict:
+    """R-H7: the nightly employee integrity check; writes the snapshot the Overview reads."""
+    from eswasa_hr.integrity import run
+
+    return run()
 
 
 def rh1_probation_reviews() -> int:
@@ -89,6 +99,13 @@ def rh5_declarations() -> int:
     return rh5_open_year()
 
 
+def rh5_late_declarations() -> int:
+    """R-H5 (provisional 10 days): an unsigned declaration reaches the line manager, once."""
+    from eswasa_hr.declarations import rh5_escalate
+
+    return rh5_escalate()
+
+
 def lifecycle_due() -> tuple[int, int]:
     """Approved promotions/transfers whose date has come are submitted; last days are processed (brief §4)."""
     from eswasa_hr.lifecycle import process_last_days, submit_due_changes
@@ -101,3 +118,10 @@ def rl1_leave_escalation() -> int:
     from eswasa_hr.leave import escalate_overdue
 
     return escalate_overdue()
+
+
+def recruitment_reminders() -> int:
+    """Interview feedback 1 working day late, and offers unanswered after 5 working days (provisional)."""
+    from eswasa_hr.hiring import remind_due
+
+    return remind_due()

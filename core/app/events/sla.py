@@ -62,11 +62,10 @@ ESCALATION_LADDER: dict[str, list[str]] = {
         "Accounts Manager",
         "System Manager",
     ],
-    "hr": [
-        "HR User",
-        "HR Manager",
-        "System Manager",
-    ],
+    # HR is handled in Frappe: each HR DocType escalates to named users through its own daily job
+    # (eswasa_hr: R-L1 leave → named HR Managers, R-H5 declarations → the line manager), never to a role
+    # pool (brief §12.1). The generic sweep skips HR items.
+    "hr": [],
     "crm": [
         "Sales User",
         "Sales Manager",
@@ -138,6 +137,8 @@ class SweepReport:
 def next_escalation_role(module: str, current_role: str | None) -> str | None:
     """Return the next ladder role above ``current_role``, or first rung if unset."""
     ladder = ESCALATION_LADDER.get((module or "").lower(), _DEFAULT_LADDER)
+    if not ladder:  # escalated by the module itself (HR)
+        return None
     if not current_role:
         return ladder[0]
     norm = current_role.strip().lower()
@@ -430,6 +431,18 @@ async def escalate_item(
             to_role=None,
             status="error",
             detail="missing doctype/name",
+        )
+
+    if module.lower() in ESCALATION_LADDER and not ESCALATION_LADDER[module.lower()]:
+        return EscalationResult(
+            doctype=doctype,
+            name=name,
+            title=title,
+            module=module,
+            from_role=None,
+            to_role=None,
+            status="skipped",
+            detail="escalated in Frappe to named users, not by the generic sweep",
         )
 
     if await _already_escalated_today(session, doctype, name):

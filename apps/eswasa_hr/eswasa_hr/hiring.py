@@ -74,6 +74,26 @@ def interview_todo_title(applicant_name: str, scheduled_on: str, from_time: str)
     return f"Interview {applicant_name} on {scheduled_on} at {str(from_time)[:5]}, then record your feedback"
 
 
+FEEDBACK_DAYS = 1  # working days after the interview (brief §7, provisional)
+OFFER_WAIT_DAYS = 5  # working days an offer may wait for the candidate's answer (provisional)
+REMINDER_RULE = "Recruitment reminder"
+OPEN_INTERVIEW = ("Pending", "Under Review")
+
+
+def feedback_title(applicant_name: str, scheduled_on: Any) -> str:
+    return f"Interview feedback overdue: record yours for {applicant_name} (interviewed {str(scheduled_on)[:10]})"
+
+
+def offer_wait_title(applicant_name: str, offer_date: Any) -> str:
+    return f"No answer to the offer to {applicant_name} since {str(offer_date)[:10]}. Follow up with the candidate"
+
+
+def missing_feedback(panel: list[str], given: list[str]) -> list[str]:
+    """Panel members who haven't submitted feedback, in panel order."""
+    done = set(given)
+    return [u for u in dict.fromkeys(panel) if u and u not in done]
+
+
 # ---------------------------------------------------------------- Frappe glue
 
 
@@ -432,6 +452,11 @@ def decide_offer(name: str, action: str, comment: str | None = None) -> dict[str
     if key == "approve":
         o.submit()
         state = "Approved"
+        email = getattr(o, "applicant_email", None)
+        if email:
+            from eswasa_hr import notify
+
+            notify.queue(f"offer-sent:{name}", [], "offer_sent", {"applicant_name": o.applicant_name, "designation": o.designation}, to_address=email)
     elif key in ("reject", "return"):
         if not note:
             frappe.throw("Say what to change in the offer.", frappe.ValidationError)
@@ -442,6 +467,42 @@ def decide_offer(name: str, action: str, comment: str | None = None) -> dict[str
     _close(OFFER, name)
     return {"ok": True, "doctype": OFFER, "name": name, "action": action, "workflow_action": None, "status": state,
             "message": f"Offer {state.lower()}: {o.applicant_name}"}
+
+
+def remind_due() -> int:
+    """Daily: interview feedback 1 working day late goes to each panel member; an offer waiting more than
+    5 working days goes to the HR person who prepared it. Each is raised once (the key carries the due date)."""
+    import frappe
+    from frappe.utils import getdate
+
+    from eswasa_hr.alerts import raise_alert, recipients
+    from eswasa_hr.workdays import add_working_days, holidays
+
+    if not frappe.db.exists("DocType", "HR Alert"):
+        return 0
+    day = getdate(_today())
+    off = holidays()
+    n = 0
+    for i in frappe.get_all(INTERVIEW, filters={"docstatus": 0, "status": ["in", list(OPEN_INTERVIEW)], "scheduled_on": ["<", day]},
+                            fields=["name", "job_applicant", "scheduled_on"], limit=0):
+        due = add_working_days(getdate(i["scheduled_on"]), FEEDBACK_DAYS, off)
+        if due > day:
+            continue
+        panel = [d.get("interviewer") for d in frappe.get_all("Interview Detail", filters={"parent": i["name"], "parenttype": INTERVIEW}, fields=["interviewer"], limit=0)]
+        given = [f.get("interviewer") for f in frappe.get_all(FEEDBACK, filters={"interview": i["name"], "docstatus": 1}, fields=["interviewer"], limit=0)]
+        name = frappe.db.get_value(APPLICANT, i["job_applicant"], "applicant_name") or i["job_applicant"]
+        for user in recipients(missing_feedback(panel, given)):
+            n += raise_alert(f"interview-feedback:{i['name']}:{user}:{due.isoformat()}", REMINDER_RULE, feedback_title(name, i["scheduled_on"]),
+                             [user], due.isoformat(), None, (INTERVIEW, i["name"]))
+    for o in frappe.get_all(OFFER, filters={"docstatus": 1, "status": "Awaiting Response"}, fields=["name", "applicant_name", "offer_date", "owner"], limit=0):
+        if not o.get("offer_date"):
+            continue
+        due = add_working_days(getdate(o["offer_date"]), OFFER_WAIT_DAYS, off)
+        users = recipients(o.get("owner")) or recipients(_hr_managers(None))
+        if due < day and users:
+            n += raise_alert(f"offer-waiting:{o['name']}:{due.isoformat()}", REMINDER_RULE, offer_wait_title(o.get("applicant_name") or o["name"], o["offer_date"]),
+                             users, due.isoformat(), None, (OFFER, o["name"]))
+    return n
 
 
 def answer_impl(offer: str, answer: str) -> dict[str, Any]:

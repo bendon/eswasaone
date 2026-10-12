@@ -366,6 +366,10 @@ def apply_impl(opening: str, applicant_name: str, email: str, phone: str | None,
         }
     )
     doc.insert(ignore_permissions=True)
+    from eswasa_hr import notify
+
+    notify.queue(f"applied:{doc.name}", [], "application_received",
+                 {"applicant_name": doc.applicant_name, "job_title": job.get("job_title"), "reference": doc.name}, to_address=email)
     return {"reference": doc.name, "job_title": job.get("job_title"), "closes_on": job.get("closes_on")}
 
 

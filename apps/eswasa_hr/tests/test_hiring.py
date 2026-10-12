@@ -122,5 +122,55 @@ class FlowTests(unittest.TestCase):
             hi.answer_impl("HR-OFF-1", "Rejected")
 
 
+class ReminderTests(unittest.TestCase):
+    """Interview feedback 1 working day late, offers unanswered after 5 working days; each once per key."""
+
+    def setUp(self):
+        from unittest import mock
+
+        from tests import _fakefrappe as ff
+
+        self.ff = ff
+        self.store = {
+            hi.INTERVIEW: [{"name": "INT-1", "job_applicant": "APP-1", "scheduled_on": "2026-10-14", "status": "Under Review", "docstatus": 0}],
+            "Interview Detail": [{"parent": "INT-1", "parenttype": hi.INTERVIEW, "interviewer": u} for u in ("a@x", "b@x")],
+            hi.FEEDBACK: [{"interview": "INT-1", "interviewer": "a@x", "docstatus": 1}],
+            hi.APPLICANT: [{"name": "APP-1", "applicant_name": "Sipho Dube"}],
+            hi.OFFER: [{"name": "OFF-1", "applicant_name": "Sipho Dube", "offer_date": "2026-10-08", "owner": "hr2@x", "docstatus": 1, "status": "Awaiting Response"}],
+        }
+        mock.patch("eswasa_hr.workdays.holidays", return_value=set()).start()
+        self.addCleanup(mock.patch.stopall)
+        self.addCleanup(ff.uninstall)
+
+    def _run(self, today):
+        self.ff.install(self.store, today=today, doctypes=("HR Alert",))
+        return hi.remind_due()
+
+    def _todos(self):
+        return [(t["allocated_to"], t["description"]) for t in self.store.get("ToDo", [])]
+
+    def test_feedback_on_the_next_working_day_offer_only_after_five(self):
+        self.assertEqual(self._run("2026-10-14"), 0)
+        self.assertEqual(self._run("2026-10-15"), 1)  # feedback is due today; the offer reaches 5 days today, not more
+        self.assertEqual([t[0] for t in self._todos()], ["b@x"])
+
+    def test_reminders_once_per_key(self):
+        self.assertEqual(self._run("2026-10-16"), 2)
+        self.assertEqual(self._run("2026-10-19"), 0)
+        self.assertEqual(self._todos(), [
+            ("b@x", "Interview feedback overdue: record yours for Sipho Dube (interviewed 2026-10-14)"),
+            ("hr2@x", "No answer to the offer to Sipho Dube since 2026-10-08. Follow up with the candidate"),
+        ])
+        self.assertEqual([a["key"] for a in self.store["HR Alert"]], ["interview-feedback:INT-1:b@x:2026-10-15", "offer-waiting:OFF-1:2026-10-15"])
+
+    def test_answered_offers_and_finished_interviews_are_left_alone(self):
+        self.store[hi.OFFER][0]["status"] = "Accepted"
+        self.store[hi.INTERVIEW][0]["status"] = "Cleared"
+        self.assertEqual(self._run("2026-10-30"), 0)
+
+    def test_missing_feedback(self):
+        self.assertEqual(hi.missing_feedback(["a@x", "b@x", "a@x", None], ["a@x"]), ["b@x"])
+
+
 if __name__ == "__main__":
     unittest.main()

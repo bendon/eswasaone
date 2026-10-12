@@ -133,15 +133,15 @@ def _user_of(employee: str | None) -> str | None:
     return frappe.db.get_value("Employee", employee, "user_id") if employee else None
 
 
-def _todo(user: str | None, title: str, appraisal: str, due: Any) -> int:
-    """One open ToDo per person per appraisal and title kind; returns 1 if created."""
+def _todo(user: str | None, title: str, appraisal: str, due: Any) -> str | None:
+    """One open ToDo per person per appraisal and title kind; returns the new ToDo's name, or None."""
     import frappe
 
     if not user:
-        return 0
+        return None
     if frappe.db.exists("ToDo", {"reference_type": APPRAISAL, "reference_name": appraisal, "allocated_to": user, "status": "Open"}):
-        return 0
-    frappe.get_doc(
+        return None
+    todo = frappe.get_doc(
         {
             "doctype": "ToDo",
             "allocated_to": user,
@@ -152,8 +152,9 @@ def _todo(user: str | None, title: str, appraisal: str, due: Any) -> int:
             "priority": "Medium",
             "date": due,
         }
-    ).insert(ignore_permissions=True)
-    return 1
+    )
+    todo.insert(ignore_permissions=True)
+    return getattr(todo, "name", None) or "ToDo"
 
 
 def _close_todos(appraisal: str, user: str | None = None) -> None:
@@ -310,12 +311,21 @@ def remind_impl(cycle: str, department: str | None = None) -> dict[str, Any]:
         frappe.throw("Cycle not found.", frappe.DoesNotExistError)
     end = _d(c["end_date"])
     sent = 0
+    from eswasa_hr import notify
+
     for r in _rows(cycle, department):
         if r["step"] == "self":
-            sent += _todo(_user_of(r["employee"]), self_title(c["cycle_name"], end), r["appraisal"], c["end_date"])
+            user, step_text = _user_of(r["employee"]), "Your self-assessment"
         elif r["step"] == "manager":
-            manager = frappe.db.get_value("Employee", r["employee"], "reports_to")
-            sent += _todo(_user_of(manager), review_title(r["employee_name"], c["cycle_name"], end), r["appraisal"], c["end_date"])
+            user, step_text = _user_of(frappe.db.get_value("Employee", r["employee"], "reports_to")), f"Your review of {r['employee_name']}"
+        else:
+            continue
+        title = self_title(c["cycle_name"], end) if r["step"] == "self" else review_title(r["employee_name"], c["cycle_name"], end)
+        todo = _todo(user, title, r["appraisal"], c["end_date"])
+        if todo:
+            sent += 1
+            notify.queue(f"appraisal:{r['appraisal']}:{r['step']}:{todo}", [user], "appraisal_step",
+                         {"step_text": step_text, "cycle_name": c["cycle_name"], "due": str(c["end_date"])[:10]})
     return {"sent": sent}
 
 

@@ -14,6 +14,10 @@ notes: >
   R-H5 opens a do ToDo for each employee annually. Guard has_conflict
   fails when no signed declaration for the current year.
 
+# R-H5, PROVISIONAL (brief §12.1; confirm with ESWASA): sign within 10 days of the year opening, then the
+# line manager is told once (eswasa_hr.declarations.rh5_escalate). Never a role pool.
+sla: {days: 10, calendar: calendar, escalate_to: line manager, provisional: true}
+
 display:
   customer: {}
   staff:

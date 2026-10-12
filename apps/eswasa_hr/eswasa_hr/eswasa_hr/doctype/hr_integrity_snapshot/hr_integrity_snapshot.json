@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-10-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "issingle": 1,
+ "field_order": [
+  "ran_on",
+  "counts",
+  "rows"
+ ],
+ "fields": [
+  {
+   "fieldname": "ran_on",
+   "fieldtype": "Datetime",
+   "label": "Ran on",
+   "read_only": 1,
+   "description": "R-H7: when the nightly employee integrity check last ran"
+  },
+  {
+   "fieldname": "counts",
+   "fieldtype": "JSON",
+   "label": "Counts",
+   "read_only": 1,
+   "description": "People with gaps, and the count per missing item"
+  },
+  {
+   "fieldname": "rows",
+   "fieldtype": "JSON",
+   "label": "Rows",
+   "read_only": 1,
+   "description": "Up to 500 employees with their gaps"
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-12 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa HR",
+ "name": "HR Integrity Snapshot",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "role": "HR Manager",
+   "write": 0
+  },
+  {
+   "read": 1,
+   "role": "HR User",
+   "write": 0
+  },
+  {
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

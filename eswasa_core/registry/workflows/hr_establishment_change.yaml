@@ -17,6 +17,9 @@ notes: >
   Board Secretary with the minute reference. Approval amends the Staffing Plan (cancel and amend) or
   sets Designation.custom_grade.
 
+# PROVISIONAL (brief §12.1; confirm with ESWASA): the Executive Director decides within 5 days.
+sla: {days: 5, calendar: calendar, escalate_to: null, provisional: true}
+
 display:
   customer: {}
   staff:

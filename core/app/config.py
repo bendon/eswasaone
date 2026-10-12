@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     frappe_guest_api_key: str = ""
     frappe_guest_api_secret: str = ""
 
+    # HR notification outbox cron (POST /events/hr-notify without a staff session). The token is a shared secret
+    # for the host cron; the API key/secret belong to a System Manager service user in Frappe. All empty = cron
+    # must log in as a System Manager instead.
+    hr_notify_cron_token: str = ""
+    frappe_service_api_key: str = ""
+    frappe_service_api_secret: str = ""
+
     session_cookie_secure: bool = False
     session_cookie_domain: str = ""
 

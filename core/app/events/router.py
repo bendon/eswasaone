@@ -1,21 +1,25 @@
-"""Events routes — webhook consumer stubs + SLA sweep + WebSocket /ws/feed."""
+"""Events routes — webhook consumer stubs + SLA sweep + HR notification outbox + WebSocket /ws/feed."""
 
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, Header, HTTPException, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel, Field
 
 from app.adapters.momo import MoMoPaymentStatus, handle_callback
 from app.audit import audit_log
+from app.config import Settings, get_settings
 from app.events.bus import FeedBus, get_feed_bus
+from app.events.hr_notify import run_hr_notify
 from app.events.sla import run_sla_sweep
 from app.frappe_client import FrappeClient, FrappeError, get_frappe_client
-from app.identity.deps import AuthContext, require_staff
+from app.identity.deps import SYSTEM_MANAGER_ROLES, AuthContext, get_optional_auth, require_staff
+from app.identity.errors import AuthRequired
 
 logger = logging.getLogger(__name__)
 
@@ -196,6 +200,48 @@ async def sla_sweep(
             "errors": report.errors,
         },
     )
+    return report.as_dict()
+
+
+class HrNotifyBody(BaseModel):
+    confirm: bool = False
+    limit: int = Field(default=50, ge=1, le=200)
+
+
+@router.post("/events/hr-notify")
+async def hr_notify(
+    body: HrNotifyBody,
+    auth: Annotated[AuthContext | None, Depends(get_optional_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    x_cron_token: Annotated[str | None, Header()] = None,
+) -> dict[str, Any]:
+    """Plan 04 cron-callable: send queued HR notifications (``HR Notification``) through Core messaging.
+
+    A System Manager session, or the host cron with ``X-Cron-Token`` (then Core acts as the Frappe service
+    user). Requires ``confirm: true``.
+    """
+    cron = bool(settings.hr_notify_cron_token and x_cron_token and hmac.compare_digest(x_cron_token, settings.hr_notify_cron_token))
+    if not cron:
+        if auth is None or auth.is_guest:
+            raise AuthRequired(detail="Authentication required")
+        if not set(auth.user.roles or []) & SYSTEM_MANAGER_ROLES:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="System Manager role required")
+    if not body.confirm:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="confirm must be true")
+    if cron and not (settings.frappe_service_api_key and settings.frappe_service_api_secret):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="FRAPPE_SERVICE_API_KEY/SECRET not set for the HR notification cron")
+    if (auth is not None and auth.mock and not cron) or not await frappe.health():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Frappe unavailable: HR notifications need the live outbox")
+
+    session = frappe.with_token(settings.frappe_service_api_key, settings.frappe_service_api_secret) if cron else auth.frappe(frappe)
+    actor = "cron" if cron else auth.user.username
+    try:
+        report = await run_hr_notify(session, limit=body.limit)
+    except FrappeError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+
+    audit_log(action="events.hr_notify", actor=actor, resource="hr-notification", confirmed=True, detail=report.as_dict())
     return report.as_dict()
 
 

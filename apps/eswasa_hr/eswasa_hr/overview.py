@@ -77,17 +77,12 @@ def progress(steps: list[dict[str, Any]]) -> dict[str, int]:
     return {"done": done, "total": len(counted), "pct": round(done / len(counted) * 100) if counted else 0}
 
 
-def record_gaps(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Active employee records missing what routing and self-service need."""
-    checks = (
-        ("department", "No department"),
-        ("designation", "No designation"),
-        ("reports_to", "No line manager"),
-        ("leave_approver", "No leave approver"),
-        ("user_id", "No login linked"),
-    )
-    rows = list(rows)
-    return [{"field": f, "label": label, "count": sum(1 for r in rows if not r.get(f))} for f, label in checks]
+def record_gaps(rows: Iterable[dict[str, Any]], top: Iterable[str] = (), departments: dict[str, dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """Active employee records missing what routing and self-service need (the R-H7 rule, ``integrity.gaps``)."""
+    from eswasa_hr.integrity import CHECKS, summarise
+
+    by = summarise(rows, top, departments)["by_field"]
+    return [{"field": f, "label": label, "count": by[f]} for f, label in CHECKS]
 
 
 # ---------------------------------------------------------------- Frappe glue
@@ -211,6 +206,7 @@ def overview_impl() -> dict[str, Any]:
         "R-H2": ("1 contract ends within 60 days", "{n} contracts end within 60 days", "/hr/directory"),
         "R-H3": ("1 staff authorisation is expiring", "{n} staff authorisations are expiring", "/hr/competence"),
         "R-H4": ("1 competence has thin cover", "{n} competences have thin cover", "/hr/competence"),
+        "Late declaration": ("1 declaration unsigned after 10 days", "{n} declarations unsigned after 10 days", "/hr/competence"),
     }.items():
         a = alerts.get(rule, {})
         items.append(attention(rule, a.get("count", 0), one, many, href, a.get("due"), "Acknowledge in Approvals once handled.", 2))
@@ -243,8 +239,17 @@ def overview_impl() -> dict[str, Any]:
         open_cases = sum(k["open"] for k in board_impl()["kinds"])
         items.append(attention("cases", open_cases, "1 open case", "{n} open cases", "/hr/cases", None, "Details stay inside each case."))
 
+    # R-H7: last night's snapshot; before the first run (or before migrate), the same rule live.
+    from eswasa_hr import integrity
+
+    snap = integrity.current()
+    if snap is None:
+        live = integrity.summarise(integrity._active_rows(), integrity.top_employees(), integrity._departments())
+        snap = {"ran_on": None, "counts": {"people": live["people"], "by_field": live["by_field"]}}
+    items.append(attention("record_gaps", snap["counts"].get("people", 0), "1 employee record has gaps", "{n} employee records have gaps", "/hr/directory",
+                           None, "Checked nightly. See Record quality for what is missing."))
+
     est = establishment_impl() if approved_posts() else None
-    gaps = record_gaps(active)
     return {
         "as_of": day.isoformat(),
         "headcount": headcount,
@@ -262,7 +267,8 @@ def overview_impl() -> dict[str, Any]:
             "contracts": _count("Employee", {"status": "Active", "contract_end_date": ["between", [day, soon]]}),
             "probations": _count("Employee", probation),
         },
-        "record_quality": [g for g in gaps if g["count"]],
+        "record_quality": integrity.quality(snap["counts"]),
+        "record_checked_on": snap["ran_on"],
         "cycles": cycles,
     }
 

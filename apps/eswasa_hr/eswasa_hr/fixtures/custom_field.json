@@ -160,5 +160,16 @@
   "options": "Employee Grade",
   "insert_after": "designation_name",
   "name": "Designation-custom_grade"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "User",
+  "fieldname": "custom_hr_email_opt_out",
+  "label": "No non-essential HR email",
+  "fieldtype": "Check",
+  "default": "0",
+  "insert_after": "send_me_a_copy",
+  "description": "Skip HR reminders by email. Leave decisions and job offers are always sent.",
+  "name": "User-custom_hr_email_opt_out"
  }
 ]

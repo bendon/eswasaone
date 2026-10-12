@@ -94,8 +94,12 @@ def _user_of(employee: str | None) -> str | None:
     return frappe.db.get_value("Employee", employee, "user_id") if employee else None
 
 
-def raise_alert(key: str, rule: str, title: str, users: list[str], due: Any, employee: str | None = None, subject: tuple[str, str] | None = None) -> int:
-    """Create the alert and one ToDo per user, once per key. Returns 1 if raised now, else 0."""
+def raise_alert(key: str, rule: str, title: str, users: list[str], due: Any, employee: str | None = None, subject: tuple[str, str] | None = None,
+                notify: tuple[str, dict[str, Any]] | None = None) -> int:
+    """Create the alert and one ToDo per user, once per key. Returns 1 if raised now, else 0.
+
+    ``notify`` = (template, context) also emails the same users, for high-value alerts only (R-H2, R-H3 at 7 days).
+    """
     import frappe
 
     if not users or frappe.db.exists(DOCTYPE, {"key": key}):
@@ -127,6 +131,10 @@ def raise_alert(key: str, rule: str, title: str, users: list[str], due: Any, emp
                 "date": due,
             }
         ).insert(ignore_permissions=True)
+    if notify:
+        from eswasa_hr import notify as outbox
+
+        outbox.queue(f"alert:{key}", users, notify[0], notify[1])
     return 1
 
 
@@ -162,7 +170,8 @@ def contract_end_alerts() -> int:
         if not contract_due(end, day):
             continue
         users = recipients(hr, _user_of(e.get("reports_to")))
-        n += raise_alert(f"R-H2:{e['name']}:{end.isoformat()}", "R-H2", contract_title(e["employee_name"], end), users, end, e["name"], ("Employee", e["name"]))
+        n += raise_alert(f"R-H2:{e['name']}:{end.isoformat()}", "R-H2", contract_title(e["employee_name"], end), users, end, e["name"], ("Employee", e["name"]),
+                         ("contract_ending", {"employee_name": e["employee_name"], "end_date": fmt(end)}))
     return n
 
 
@@ -191,7 +200,8 @@ def authorisation_expiry_alerts() -> int:
         e = frappe.db.get_value("Employee", a["employee"], ["employee_name", "user_id", "reports_to"], as_dict=True) or {}
         users = recipients(e.get("user_id"), _user_of(e.get("reports_to")), hr)
         title = expiry_title(e.get("employee_name") or a["employee"], a["skill"], end, t)
-        n += raise_alert(f"R-H3:{a['name']}:{end.isoformat()}:{t}", "R-H3", title, users, end, a["employee"], ("Staff Authorisation", a["name"]))
+        mail = ("authorisation_expiring", {"employee_name": e.get("employee_name") or a["employee"], "competence": a["skill"], "valid_to": fmt(end)}) if t == 7 else None
+        n += raise_alert(f"R-H3:{a['name']}:{end.isoformat()}:{t}", "R-H3", title, users, end, a["employee"], ("Staff Authorisation", a["name"]), mail)
     return n
 
 

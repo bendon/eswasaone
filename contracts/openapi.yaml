@@ -539,6 +539,49 @@ paths:
         "200":
           description: Accepted
 
+  /events/hr-notify:
+    post:
+      tags: [adapters]
+      operationId: hrNotify
+      summary: Send queued HR notifications (cron)
+      description: >
+        Plan 04. Pulls the Frappe HR Notification outbox (eswasa_hr.notify.pending), sends each message through
+        Core messaging (console fallback when SMTP/SMS is unset) and marks it Sent, Failed or Skipped.
+        A System Manager session, or the host cron with the X-Cron-Token header.
+      security: [{ bearerAuth: [] }, {}]
+      parameters:
+        - name: X-Cron-Token
+          in: header
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm]
+              properties:
+                confirm: { type: boolean }
+                limit: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        "200":
+          description: What was sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sent, failed, skipped, errors]
+                properties:
+                  sent: { type: integer }
+                  failed: { type: integer }
+                  skipped: { type: integer }
+                  errors: { type: array, items: { type: string } }
+        "400": { description: confirm must be true }
+        "401": { description: Login or cron token required }
+        "403": { description: System Manager role required }
+        "503": { description: Frappe or the service credentials unavailable }
+
   # --- Wave 1 Frontend Workflow Capture (F0b) ---
   /certification/audits/{id}:
     patch:
@@ -7769,6 +7812,7 @@ components:
               field: { type: string }
               label: { type: string }
               count: { type: integer }
+        record_checked_on: { type: string, nullable: true, description: "R-H7: when the nightly integrity check last ran" }
         cycles: { type: array, items: { $ref: "#/components/schemas/HrCycleStatus" } }
     HrSetupStatus:
       type: object

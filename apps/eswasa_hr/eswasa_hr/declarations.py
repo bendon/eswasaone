@@ -90,6 +90,22 @@ def signing_error(interests: list[dict[str, Any]], nothing_else: bool, accepted:
     return None
 
 
+HANDOFF_DAYS = 10  # R-H5 (brief §12.1, provisional): then the line manager is told
+LATE_RULE = "Late declaration"
+
+
+def handoff_due(todo_date: Any, day: date) -> bool:
+    """R-H5: the employee's ToDo was due ``HANDOFF_DAYS`` after it opened; past that date, hand it on."""
+    if todo_date in (None, ""):
+        return False
+    d = todo_date if isinstance(todo_date, date) else date.fromisoformat(str(todo_date)[:10])
+    return d < day
+
+
+def late_title(employee_name: str, year: int) -> str:
+    return f"{employee_name} hasn't signed their {year_label(year)} impartiality declaration after {HANDOFF_DAYS} days. Remind them"
+
+
 # ---------------------------------------------------------------- Frappe glue
 
 
@@ -279,6 +295,9 @@ def remind_impl(year: int | None = None) -> dict[str, Any]:
             }
         ).insert(ignore_permissions=True)
         created += 1
+        from eswasa_hr import notify
+
+        notify.queue(f"decl-open:{row['employee']}:{reg['year']}", [user], "declaration_open", {"year_label": reg["year_label"]})
     return {"created": created, "without_login": skipped, "outstanding": len(reg["outstanding"])}
 
 
@@ -318,6 +337,10 @@ def on_submit(doc: Any, method: str | None = None) -> None:
     import frappe
 
     _close_todos(None, frappe.db.get_value("Employee", doc.employee, "user_id"))
+    from eswasa_hr.alerts import close_for
+
+    if frappe.db.exists("DocType", "HR Alert"):
+        close_for(doc.employee, LATE_RULE)
     from eswasa_hr.onboarding import on_declaration_signed
 
     on_declaration_signed(doc.employee)
@@ -372,6 +395,38 @@ def remind(confirm: Any = False) -> dict[str, Any]:
     if not _is_hr():
         frappe.throw("Only HR can send reminders.", frappe.PermissionError)
     return remind_impl()
+
+
+def rh5_escalate() -> int:
+    """Daily (R-H5): an unsigned declaration whose ToDo is past its 10 days reaches the line manager, once.
+
+    The employee's own ToDo stays open. Without a line manager, the HR Managers are told instead.
+    """
+    import frappe
+
+    from eswasa_hr.alerts import raise_alert, recipients
+    from eswasa_hr.recruitment import _hr_manager_users
+
+    if not frappe.db.exists("DocType", "HR Alert"):
+        return 0
+    day = _today()
+    year = declaration_year(day)
+    prefix = f"IMP-%-{year}"
+    n = 0
+    for t in frappe.get_all("ToDo", filters={"reference_type": DOCTYPE, "status": "Open", "reference_name": ["like", prefix]},
+                            fields=["name", "allocated_to", "reference_name", "date"], limit=0):
+        if not handoff_due(t.get("date"), day):
+            continue
+        emp = frappe.db.get_value("Employee", {"user_id": t.get("allocated_to"), "status": "Active"}, ["name", "employee_name", "reports_to"], as_dict=True)
+        if not emp or t.get("reference_name") != _doc_name(emp["name"], year):
+            continue
+        if frappe.db.exists(DOCTYPE, {"employee": emp["name"], "year": year, "docstatus": 1}):
+            continue
+        manager = frappe.db.get_value("Employee", emp.get("reports_to"), "user_id") if emp.get("reports_to") else None
+        users = recipients(manager) or recipients(_hr_manager_users())
+        n += raise_alert(f"decl-late:{emp['name']}:{year}", LATE_RULE, late_title(emp.get("employee_name") or emp["name"], year), users,
+                         day.isoformat(), emp["name"], ("Employee", emp["name"]))
+    return n
 
 
 def rh5_open_year() -> int:

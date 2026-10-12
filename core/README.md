@@ -53,6 +53,23 @@ curl -sS -X POST http://127.0.0.1:8015/api/events/sla/sweep \
 Suggested schedule: every 15–60 minutes. Path is Core-internal until Orchestrator
 adds it to `contracts/openapi.yaml`.
 
+### HR notification outbox (plan 04)
+
+HR queues plain-language email/SMS in Frappe (`HR Notification`); Core sends them through
+`adapters/messaging` (console fallback when SMTP/SMS is unset) and marks each Sent, Failed or Skipped.
+HR escalations themselves run in Frappe (`eswasa_hr.tasks.daily`) to named users; the generic SLA sweep
+skips HR.
+
+```bash
+# Host cron, no login: set HR_NOTIFY_CRON_TOKEN and FRAPPE_SERVICE_API_KEY/SECRET (a System Manager user) in .env
+curl -sS -X POST http://127.0.0.1:8015/api/events/hr-notify \
+  -H "X-Cron-Token: $HR_NOTIFY_CRON_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"confirm": true, "limit": 50}'
+```
+
+Or call it as a logged-in System Manager with `Authorization: Bearer $TOKEN`. Suggested schedule: every 5–15 minutes.
+
 ## Smoke
 
 ```bash

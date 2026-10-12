@@ -179,5 +179,62 @@ class SigningTests(unittest.TestCase):
             dec.validate(doc)
 
 
+class HandoffTests(unittest.TestCase):
+    """R-H5: an unsigned declaration reaches the line manager once, after the 10 days, never after signing."""
+
+    def setUp(self):
+        from unittest import mock
+
+        from tests import _fakefrappe as ff
+
+        self.ff = ff
+        self.store = {
+            "Employee": [
+                {"name": "EMP-44", "employee_name": "Thandi Mamba", "user_id": "thandi@x", "status": "Active", "reports_to": "EMP-10"},
+                {"name": "EMP-10", "employee_name": "Sipho Dlamini", "user_id": "sipho@x", "status": "Active", "reports_to": None},
+            ],
+            "ToDo": [{"name": "TD-1", "reference_type": dec.DOCTYPE, "reference_name": "IMP-EMP-44-2026", "allocated_to": "thandi@x",
+                      "status": "Open", "date": "2026-10-22"}],
+        }
+        p = mock.patch("eswasa_hr.recruitment._hr_manager_users", return_value=["hr1@x"])
+        p.start()
+        self.addCleanup(mock.patch.stopall)
+        self.addCleanup(ff.uninstall)
+
+    def _run(self, today):
+        self.ff.install(self.store, today=today, doctypes=("HR Alert",))
+        return dec.rh5_escalate()
+
+    def _manager_todos(self):
+        return [t for t in self.store["ToDo"] if t["allocated_to"] != "thandi@x"]
+
+    def test_not_before_day_10(self):
+        self.assertEqual(self._run("2026-10-22"), 0)
+        self.assertEqual(self._manager_todos(), [])
+
+    def test_escalates_to_the_line_manager_once_and_the_employee_todo_stays(self):
+        self.assertEqual(self._run("2026-10-23"), 1)
+        self.assertEqual(self._run("2026-10-24"), 0)
+        [todo] = self._manager_todos()
+        self.assertEqual(todo["allocated_to"], "sipho@x")
+        self.assertTrue(todo["description"].startswith("Thandi Mamba hasn't signed their 2026/27 impartiality declaration"))
+        self.assertEqual(self.store["HR Alert"][0]["key"], "decl-late:EMP-44:2026")
+        self.assertEqual(self.store["ToDo"][0]["status"], "Open")
+
+    def test_not_after_signing(self):
+        self.store[dec.DOCTYPE] = [{"name": "IMP-EMP-44-2026", "employee": "EMP-44", "year": 2026, "docstatus": 1}]
+        self.assertEqual(self._run("2026-10-30"), 0)
+
+    def test_without_a_line_manager_hr_is_told(self):
+        self.store["Employee"][0]["reports_to"] = None
+        self._run("2026-10-23")
+        self.assertEqual([t["allocated_to"] for t in self._manager_todos()], ["hr1@x"])
+
+    def test_rule_dates(self):
+        self.assertFalse(dec.handoff_due("2026-10-22", date(2026, 10, 22)))
+        self.assertTrue(dec.handoff_due("2026-10-22", date(2026, 10, 23)))
+        self.assertFalse(dec.handoff_due(None, date(2026, 10, 23)))
+
+
 if __name__ == "__main__":
     unittest.main()

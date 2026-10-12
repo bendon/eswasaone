@@ -439,6 +439,10 @@ def decide(name: str, action: str, comment: str | None = None) -> dict[str, Any]
     if note:
         doc.add_comment("Comment", note)
     sync_todo(doc)
+    from eswasa_hr import notify
+
+    notify.queue(f"leave-decided:{name}", [_applicant_user(doc)], "leave_decided",
+                 {"decision": "approved" if status == "Approved" else "not approved", "from_date": fmt(doc.from_date), "to_date": fmt(doc.to_date)})
     return {
         "ok": True,
         "doctype": DOCTYPE,
@@ -479,6 +483,11 @@ def cancel_impl(name: str, reason: str) -> dict[str, Any]:
     if was_approved and doc.leave_approver and doc.leave_approver != applicant and frappe.db.exists("DocType", "HR Alert"):
         title = f"{doc.employee_name} cancelled approved leave, {fmt(doc.from_date)}–{fmt(doc.to_date)}: {note}"
         raise_alert(f"leave-cancelled:{name}", RULE_CANCELLED, title, [doc.leave_approver], _today().isoformat(), doc.employee, (DOCTYPE, name))
+    if was_approved and doc.leave_approver and doc.leave_approver != applicant:
+        from eswasa_hr import notify
+
+        notify.queue(f"leave-cancelled:{name}", [doc.leave_approver], "leave_cancelled",
+                     {"employee_name": doc.employee_name, "from_date": fmt(doc.from_date), "to_date": fmt(doc.to_date)})
     return {"ok": True, "name": name, "status": "Cancelled", "message": _("Leave cancelled")}
 
 

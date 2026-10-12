@@ -406,7 +406,8 @@ def setup_status_impl() -> dict[str, Any]:
 
 
 def _import_step(active: int, linked: int) -> dict[str, Any]:
-    """Plan 09: the state comes from the last HR Import Run per pass (records, then links); the link stays on Desk."""
+    """Plan 09: the state comes from the last HR Import Run per pass (records, then links); the link opens the
+    import panel on the HR setup page (template, dry run, run, past runs)."""
     from eswasa_hr.employee_import import import_state, last_runs
 
     state, detail = import_state(last_runs())
@@ -415,9 +416,9 @@ def _import_step(active: int, linked: int) -> dict[str, Any]:
         "Import employees",
         {"done": DONE, "partial": PARTIAL}.get(state, PARTIAL if active else AWAITING),
         (f"{active} active employees, {linked} with a login. " if active else "") + detail,
-        "data-import/new?reference_doctype=Employee",
+        "/system-admin?tab=hr-setup#hr-import",
         None if active or state != "todo" else "§0.5 #3",
-        desk=True,
+        desk=False,
     )
 
 

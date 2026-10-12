@@ -66,6 +66,8 @@ class SetupTests(unittest.TestCase):
         by = {s["id"]: s for s in out["steps"]}
         self.assertEqual(by["departments"]["state"], ov.AWAITING)
         self.assertEqual(by["import"]["awaiting"], "§0.5 #3")
+        self.assertEqual(by["import"]["href"], "/system-admin?tab=hr-setup#hr-import")
+        self.assertFalse(by["import"]["desk"])
         self.assertEqual((by["payroll"]["state"], by["payroll"]["awaiting"]), (ov.EXCLUDED, "H15, H16"))
         self.assertEqual(out["total"], len(out["steps"]) - 1)
         self.assertEqual(out["done"], 0)

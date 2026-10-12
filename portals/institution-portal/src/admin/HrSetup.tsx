@@ -5,6 +5,7 @@ import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrSetupStatus, HrSetupStepState } from "../api/types";
 import { deskUrl } from "../hr/desk";
 import { Banner, StatusPill } from "../me/parts";
+import { ImportEmployees, MasterDataLoad } from "./HrImport";
 
 /**
  * HR setup (H14, System Administration). Each step is worked out from live counts by eswasa_hr.overview:
@@ -87,6 +88,8 @@ export function HrSetup() {
               })}
             </ol>
           </div>
+          <ImportEmployees />
+          {(user?.roles ?? []).some((r) => r === "System Manager" || r === "Administrator") ? <MasterDataLoad /> : null}
           {d.steps.some((s) => s.id === "payroll" && s.state === "excluded") ? (
             <Banner kind="info" title="Payroll is out of scope for now">
               Whether payroll runs in EswasaOne or stays in the current system waits on ESWASA (Confirmation Pack H15); statutory tables come from

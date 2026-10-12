@@ -162,6 +162,31 @@ def _my_employee() -> dict[str, Any] | None:
     return {"name": ext["name"], "employee_name": ext.get("full_name"), "_field": "external_person"} if ext else None
 
 
+def _person_user(employee: str | None, external_person: str | None = None) -> str | None:
+    """The login of an employee, or of an external person (plan 07 step 7)."""
+    import frappe
+
+    if employee:
+        return frappe.db.get_value("Employee", employee, "user_id")
+    if external_person:
+        return frappe.db.get_value("External Person", external_person, "user")
+    return None
+
+
+def _externals() -> list[dict[str, Any]]:
+    """Active external people, shaped like the register's staff rows, while the H10 register is on."""
+    import frappe
+
+    from eswasa_hr import external
+
+    if not external.enabled():
+        return []
+    rows = frappe.get_all(external.DOCTYPE, filters={"status": "Active"}, fields=["name", "full_name", "organisation", "role", "user"],
+                          limit=0, order_by="full_name asc")
+    return [{"name": r["name"], "employee_name": r.get("full_name"), "department": r.get("organisation"), "designation": r.get("role"),
+             "user_id": r.get("user"), "external": True} for r in rows]
+
+
 def _is_hr() -> bool:
     import frappe
 
@@ -279,10 +304,11 @@ def register_impl(year: int | None = None) -> dict[str, Any]:
         limit=0,
         order_by="employee_name asc",
     )
+    staff = list(staff) + _externals()  # external people sign too (plan 07 step 7, behind H10)
     signed_rows = frappe.get_all(
-        DOCTYPE, filters={"year": y, "docstatus": 1}, fields=["employee", "signed_on"], limit=0
+        DOCTYPE, filters={"year": y, "docstatus": 1}, fields=["employee", "external_person", "signed_on"], limit=0
     )
-    signed = {r.get("employee"): r.get("signed_on") for r in signed_rows}
+    signed = {r.get("employee") or r.get("external_person"): r.get("signed_on") for r in signed_rows}
     outstanding = [
         {
             "employee": s.get("name"),
@@ -290,6 +316,7 @@ def register_impl(year: int | None = None) -> dict[str, Any]:
             "department": s.get("department"),
             "designation": s.get("designation"),
             "has_login": bool(s.get("user_id")),
+            **({"external": True} if s.get("external") else {}),
         }
         for s in staff
         if s.get("name") not in signed
@@ -312,7 +339,7 @@ def remind_impl(year: int | None = None) -> dict[str, Any]:
     title = f"Sign your {reg['year_label']} impartiality and confidentiality declaration"
     created = skipped = 0
     for row in reg["outstanding"]:
-        user = frappe.db.get_value("Employee", row["employee"], "user_id")
+        user = _person_user(None, row["employee"]) if row.get("external") else _person_user(row["employee"])
         if not user:
             skipped += 1
             continue
@@ -377,14 +404,30 @@ def before_submit(doc: Any, method: str | None = None) -> None:
 def on_submit(doc: Any, method: str | None = None) -> None:
     import frappe
 
-    _close_todos(None, frappe.db.get_value("Employee", doc.employee, "user_id"))
-    from eswasa_hr.alerts import close_for
-
+    external_person = None if doc.employee else doc.get("external_person")
+    user = _person_user(doc.employee, external_person)
+    # Only this person's declaration ToDos. With no login, only this declaration's: never every open one.
+    _close_todos(None, user) if user else _close_todos(doc.name, None)
     if frappe.db.exists("DocType", "HR Alert"):
-        close_for(doc.employee, LATE_RULE)
-    from eswasa_hr.onboarding import on_declaration_signed
+        if doc.employee:
+            from eswasa_hr.alerts import close_for
 
-    on_declaration_signed(doc.employee)
+            close_for(doc.employee, LATE_RULE)
+        elif external_person:
+            _close_late(external_person)
+    if doc.employee:
+        from eswasa_hr.onboarding import on_declaration_signed
+
+        on_declaration_signed(doc.employee)
+
+
+def _close_late(person: str) -> None:
+    """Close the R-H5 hand-off for an external person (their alerts carry no employee)."""
+    import frappe
+
+    for a in frappe.get_all("HR Alert", filters={"rule": LATE_RULE, "key": ["like", f"decl-late:{person}:%"]}, fields=["name"], limit=0):
+        for t in frappe.get_all("ToDo", filters={"reference_type": "HR Alert", "reference_name": a["name"], "status": "Open"}, fields=["name"], limit=0):
+            frappe.db.set_value("ToDo", t["name"], "status", "Closed")
 
 
 def can_act(user_or_employee: str | None, on: Any = None, party: str | None = None) -> tuple[bool, str | None]:
@@ -503,14 +546,21 @@ def rh5_escalate() -> int:
         if not handoff_due(t.get("date"), day):
             continue
         emp = frappe.db.get_value("Employee", {"user_id": t.get("allocated_to"), "status": "Active"}, ["name", "employee_name", "reports_to"], as_dict=True)
+        field, subject_type = "employee", "Employee"
+        if not emp:
+            from eswasa_hr import external
+
+            ext = external.for_user(t.get("allocated_to"))  # plan 07 step 7: no line manager, so HR is told
+            emp = {"name": ext["name"], "employee_name": ext.get("full_name"), "reports_to": None} if ext else None
+            field, subject_type = "external_person", external.DOCTYPE
         if not emp or t.get("reference_name") != _doc_name(emp["name"], year):
             continue
-        if frappe.db.exists(DOCTYPE, {"employee": emp["name"], "year": year, "docstatus": 1}):
+        if frappe.db.exists(DOCTYPE, {field: emp["name"], "year": year, "docstatus": 1}):
             continue
         manager = frappe.db.get_value("Employee", emp.get("reports_to"), "user_id") if emp.get("reports_to") else None
         users = recipients(manager) or recipients(_hr_manager_users())
         n += raise_alert(f"decl-late:{emp['name']}:{year}", LATE_RULE, late_title(emp.get("employee_name") or emp["name"], year), users,
-                         day.isoformat(), emp["name"], ("Employee", emp["name"]))
+                         day.isoformat(), emp["name"] if field == "employee" else None, (subject_type, emp["name"]))
     return n
 
 

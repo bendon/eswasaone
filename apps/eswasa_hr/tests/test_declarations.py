@@ -267,5 +267,65 @@ class HandoffTests(unittest.TestCase):
         self.assertFalse(dec.handoff_due(None, date(2026, 10, 23)))
 
 
+class ExternalPeopleTests(unittest.TestCase):
+    """Plan 07 step 7: external people are in the register, the reminders and R-H5 while H10 is on."""
+
+    def setUp(self):
+        from unittest import mock
+
+        from tests import _fakefrappe as ff
+
+        self.ff = ff
+        self.store = {
+            "Employee": [{"name": "EMP-44", "employee_name": "Thandi Mamba", "user_id": "thandi@x", "status": "Active"}],
+            "External Person": [
+                {"name": "EXT-1", "full_name": "Ayanda Contract", "organisation": "Audit Co", "role": "Contract auditor", "user": "ayanda@x", "status": "Active"},
+                {"name": "EXT-2", "full_name": "Old Expert", "user": None, "status": "Inactive"},
+                {"name": "EXT-3", "full_name": "No Login", "user": None, "status": "Active"},
+            ],
+            "ToDo": [
+                {"name": "TD-1", "reference_type": dec.DOCTYPE, "reference_name": "IMP-EMP-44-2026", "allocated_to": "thandi@x", "status": "Open", "date": "2026-10-22"},
+                {"name": "TD-2", "reference_type": dec.DOCTYPE, "reference_name": "IMP-EXT-3-2026", "allocated_to": "hr1@x", "status": "Open", "date": "2026-10-22"},
+            ],
+        }
+        mock.patch("eswasa_hr.external.enabled", return_value=True).start()
+        mock.patch("eswasa_hr.recruitment._hr_manager_users", return_value=["hr1@x"]).start()
+        self.addCleanup(mock.patch.stopall)
+        self.addCleanup(ff.uninstall)
+
+    def test_register_lists_active_external_people(self):
+        self.ff.install(self.store, user="hr@x", roles=("HR Manager",), today="2026-10-12")
+        reg = dec.register_impl()
+        self.assertEqual(reg["total"], 3)
+        self.assertEqual([(o["employee"], o["has_login"], o.get("external")) for o in reg["outstanding"]],
+                         [("EMP-44", True, None), ("EXT-1", True, True), ("EXT-3", False, True)])
+        self.store[dec.DOCTYPE] = [{"name": "IMP-EXT-1-2026", "external_person": "EXT-1", "year": 2026, "docstatus": 1}]
+        self.assertNotIn("EXT-1", [o["employee"] for o in dec.register_impl()["outstanding"]])
+
+    def test_reminder_reaches_an_external_login(self):
+        self.ff.install(self.store, user="hr@x", roles=("HR Manager",), today="2026-10-12")
+        self.store["ToDo"] = []
+        res = dec.remind_impl()
+        self.assertEqual((res["created"], res["without_login"]), (2, 1))
+        self.assertEqual(sorted(t["allocated_to"] for t in self.store["ToDo"]), ["ayanda@x", "thandi@x"])
+        self.assertIn("IMP-EXT-1-2026", [t["reference_name"] for t in self.store["ToDo"]])
+
+    def test_late_external_declaration_goes_to_hr(self):
+        self.store["ToDo"] = [{"name": "TD-9", "reference_type": dec.DOCTYPE, "reference_name": "IMP-EXT-1-2026", "allocated_to": "ayanda@x",
+                               "status": "Open", "date": "2026-10-22"}]
+        self.ff.install(self.store, user="Administrator", today="2026-10-23", doctypes=("HR Alert", "External Person"))
+        self.assertEqual(dec.rh5_escalate(), 1)
+        alert = self.store["HR Alert"][0]
+        self.assertEqual((alert["key"], alert.get("employee")), ("decl-late:EXT-1:2026", None))
+        self.assertEqual([t["allocated_to"] for t in self.store["ToDo"] if t["name"] != "TD-9"], ["hr1@x"])
+
+    def test_signing_without_a_login_closes_only_that_declaration(self):
+        self.ff.install(self.store, user="hr@x", roles=("HR Manager",), today="2026-10-12")
+        doc = _Doc({"doctype": dec.DOCTYPE, "name": "IMP-EXT-3-2026", "employee": None, "external_person": "EXT-3", "year": 2026})
+        dec.on_submit(doc)
+        status = {t["name"]: t["status"] for t in self.store["ToDo"]}
+        self.assertEqual(status, {"TD-1": "Open", "TD-2": "Closed"})  # Thandi's ToDo is untouched
+
+
 if __name__ == "__main__":
     unittest.main()

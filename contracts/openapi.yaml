@@ -842,6 +842,36 @@ paths:
         "503":
           description: Frappe unavailable
 
+  /hr/me/expense-claims/options:
+    get:
+      tags: [hr]
+      operationId: getMyExpenseOptions
+      summary: The claim form's expense types and receipt threshold (awaiting ESWASA Finance while none exist)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Options
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrExpenseOptions" }
+        "503":
+          description: Frappe unavailable
+
+  /hr/employee-options:
+    get:
+      tags: [hr]
+      operationId: getHrEmployeeOptions
+      summary: Add person choices read from HRMS (genders)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Options
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeOptions" }
+        "503":
+          description: Frappe unavailable
+
   /hr/me/expense-claims:
     get:
       tags: [hr]
@@ -9454,9 +9484,14 @@ components:
           default: false
           title: Required Set
           type: boolean
+        types:
+          items:
+            type: string
+          title: Types
+          type: array
       title: HrEmployeeDocuments
       type: object
-      required: [employee, items, missing, required_set]
+      required: [employee, items, missing, required_set, types]
     HrRecordDocuments:
       properties:
         items:
@@ -9772,9 +9807,64 @@ components:
             $ref: '#/components/schemas/HrProfileChange'
           title: Items
           type: array
+        fields:
+          items:
+            $ref: '#/components/schemas/HrProfileChangeField'
+          title: Fields
+          type: array
       title: HrProfileChanges
       type: object
-      required: [items]
+      required: [items, fields]
+    HrProfileChangeField:
+      description: A detail a person may ask to correct; a name change needs evidence.
+      properties:
+        field:
+          title: Field
+          type: string
+        label:
+          title: Label
+          type: string
+        evidence_required:
+          default: false
+          title: Evidence Required
+          type: boolean
+      title: HrProfileChangeField
+      type: object
+      required: [field, label, evidence_required]
+    HrExpenseOptions:
+      description: The claim form's choices. awaiting is "ESWASA Finance" while no expense types exist.
+      properties:
+        types:
+          items:
+            type: string
+          title: Types
+          type: array
+        receipt_required_above:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Receipt Required Above
+        awaiting:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Awaiting
+      title: HrExpenseOptions
+      type: object
+      required: [types]
+    HrEmployeeOptions:
+      description: Add person choices read from HRMS.
+      properties:
+        genders:
+          items:
+            type: string
+          title: Genders
+          type: array
+      title: HrEmployeeOptions
+      type: object
+      required: [genders]
     HrProfileChangeBody:
       properties:
         field:

@@ -1,6 +1,5 @@
 import { http, HttpResponse } from "msw";
 import { auditHandlers } from "./auditHandlers";
-import { hrHandlers } from "./hrHandlers";
 
 const API = "/api";
 
@@ -17,6 +16,5 @@ export const handlers = [
   http.get(`${API}/field/ping`, () =>
     HttpResponse.json({ ok: true, portal: "field", stub: true }),
   ),
-  ...hrHandlers,
   ...auditHandlers,
 ];

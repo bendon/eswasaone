@@ -147,10 +147,12 @@ export function HomeScreen() {
         <div className="hm-glance">
           <div>
             <div className="hm-glance__big">
-              {me.leaveDaysLeft}{" "}
-              <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>
-                days
-              </span>
+              {me.leaveDaysLeft ?? "—"}{" "}
+              {me.leaveDaysLeft != null ? (
+                <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>
+                  days
+                </span>
+              ) : null}
             </div>
             <div style={{ fontSize: 12, color: "var(--muted-2)" }}>
               Annual leave left
@@ -164,8 +166,8 @@ export function HomeScreen() {
         </div>
         <div className="hm-glance" style={{ borderTop: "1px solid var(--line-2)" }}>
           <div>
-            <div className="hm-glance__big">{me.nextPayday}</div>
-            <div style={{ fontSize: 12, color: "var(--muted-2)" }}>Next payday</div>
+            <div className="hm-glance__big">Payslips</div>
+            <div style={{ fontSize: 12, color: "var(--muted-2)" }}>Read from HR</div>
           </div>
           <div className="hm-glance__r">
             <Link className="hm-link" to="/me?tab=pay">

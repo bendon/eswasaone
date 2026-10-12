@@ -14,7 +14,9 @@ type Options = {
 export function useMeResource<T>(path: string, options: Options = {}) {
   const enabled = options.enabled ?? true;
   const refreshKey = options.refreshKey ?? "";
-  const snap = readSnapshot<T>(path);
+  // Snapshots are per signed-in person: one device can be shared, and HR data never crosses accounts.
+  const key = `${refreshKey}:${path}`;
+  const snap = readSnapshot<T>(key);
   const [data, setData] = useState<T | null>(() => snap?.data ?? null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(enabled && !snap);
@@ -38,7 +40,7 @@ export function useMeResource<T>(path: string, options: Options = {}) {
     void apiFetch<T>(path)
       .then((res) => {
         setData(res);
-        writeSnapshot(path, res);
+        writeSnapshot(key, res);
         setFromCache(false);
         setLoading(false);
         setRefreshing(false);
@@ -51,7 +53,7 @@ export function useMeResource<T>(path: string, options: Options = {}) {
           setError(err.reason || err.message || "Sign in required");
           if (!soft) setData(null);
         } else {
-          const cached = readSnapshot<T>(path);
+          const cached = readSnapshot<T>(key);
           if (cached) {
             setData(cached.data);
             setFromCache(true);
@@ -62,7 +64,7 @@ export function useMeResource<T>(path: string, options: Options = {}) {
           }
         }
       });
-  }, [path, enabled]);
+  }, [path, key, enabled]);
 
   useEffect(() => {
     reload();

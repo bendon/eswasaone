@@ -353,3 +353,22 @@
 .mono {
   font-family: var(--font-mono);
 }
+
+/* Inline text action in a Me row (e.g. cancel a leave request). */
+.me-link {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--navy);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.me-link:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

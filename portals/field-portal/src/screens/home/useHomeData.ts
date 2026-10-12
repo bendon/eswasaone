@@ -5,7 +5,7 @@ import { readSnapshot, writeSnapshot } from "../../lib/localSnapshot";
 import { companyOf, schemeLabel } from "../audits/api";
 import type { FieldAuditRow } from "../audits/types";
 import {
-  MOCK_ME_GLANCE,
+  EMPTY_ME_GLANCE,
   MOCK_NEXT_AUDIT,
   MOCK_SCHEDULE,
   type MeGlance,
@@ -48,17 +48,10 @@ function toSchedule(rows: FieldAuditRow[]): ScheduleItem[] {
 }
 
 function balancesToGlance(b: LeaveBalances | null): MeGlance {
-  if (!b) return MOCK_ME_GLANCE;
-  if (typeof b.annual === "number") {
-    return { leaveDaysLeft: b.annual, nextPayday: MOCK_ME_GLANCE.nextPayday };
-  }
-  const annual = b.items?.find((i) =>
-    /annual/i.test(i.leave_type || ""),
-  )?.balance;
-  if (typeof annual === "number") {
-    return { leaveDaysLeft: annual, nextPayday: MOCK_ME_GLANCE.nextPayday };
-  }
-  return MOCK_ME_GLANCE;
+  if (!b) return EMPTY_ME_GLANCE;
+  if (typeof b.annual === "number") return { leaveDaysLeft: b.annual };
+  const annual = b.items?.find((i) => /annual/i.test(i.leave_type || ""))?.balance;
+  return { leaveDaysLeft: typeof annual === "number" ? annual : null };
 }
 
 /**
@@ -76,7 +69,7 @@ export function useHomeData() {
     return rows.length ? toSchedule(rows) : MOCK_SCHEDULE;
   });
   const [me, setMe] = useState<MeGlance>(() => {
-    const snap = readSnapshot<LeaveBalances>(BALANCES_PATH);
+    const snap = readSnapshot<LeaveBalances>(`${user?.username ?? "guest"}:${BALANCES_PATH}`);
     return balancesToGlance(snap?.data ?? null);
   });
   const [fromCache, setFromCache] = useState(false);
@@ -106,17 +99,17 @@ export function useHomeData() {
 
     try {
       const bal = await apiFetch<LeaveBalances>(BALANCES_PATH);
-      writeSnapshot(BALANCES_PATH, bal);
+      writeSnapshot(`${user?.username ?? "guest"}:${BALANCES_PATH}`, bal);
       setMe(balancesToGlance(bal));
       gotNetwork = true;
     } catch {
-      const snap = readSnapshot<LeaveBalances>(BALANCES_PATH);
+      const snap = readSnapshot<LeaveBalances>(`${user?.username ?? "guest"}:${BALANCES_PATH}`);
       if (snap) setMe(balancesToGlance(snap.data));
     }
 
     setFromCache(!gotNetwork);
     setRefreshing(false);
-  }, []);
+  }, [user?.username]);
 
   useEffect(() => {
     void reload();

@@ -1,122 +1,68 @@
 /**
- * Module access requests (staff → supervisor / HoD / HR).
- * // TODO: wire real — POST /hr/access-requests once Orchestrator adds the contract.
+ * Module access requests (staff → HR / System Manager). Live: GET/POST /hr/access-requests and
+ * PATCH /hr/access-requests/{id} (rules in eswasa_hr.access_requests; the same review is an Approvals card).
  */
 
+import { apiFetch } from "@eswasaone/shared-ui";
 import type { InstitutionRouteId } from "../nav";
+import { hrSend } from "./api";
 
 export type AccessRequestStatus = "pending" | "approved" | "rejected";
 
 export type ModuleAccessRequest = {
   id: string;
-  moduleId: InstitutionRouteId;
+  moduleId: InstitutionRouteId | string;
   moduleLabel: string;
   requesterUsername: string;
   requesterName: string;
   requesterEmail: string;
   note: string;
   status: AccessRequestStatus;
-  createdAt: string;
+  createdAt?: string;
   reviewedAt?: string;
   reviewedBy?: string;
   reviewNote?: string;
+  rolesGranted?: string;
 };
 
-const STORAGE_KEY = "eswasaone.module-access-requests";
-
-function readAll(): ModuleAccessRequest[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as ModuleAccessRequest[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+/** Reviewers get every request; anyone else gets their own. */
+export function listAccessRequests(filter: { status?: AccessRequestStatus; module?: string } = {}): Promise<ModuleAccessRequest[]> {
+  const q = new URLSearchParams();
+  if (filter.status) q.set("status", filter.status);
+  if (filter.module) q.set("module", filter.module);
+  const qs = q.toString();
+  return apiFetch<ModuleAccessRequest[]>(`/hr/access-requests${qs ? `?${qs}` : ""}`, { quiet: true });
 }
 
-function writeAll(items: ModuleAccessRequest[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+export async function listPendingAccessRequests(): Promise<ModuleAccessRequest[]> {
+  return listAccessRequests({ status: "pending" });
 }
 
-export function listAccessRequests(): ModuleAccessRequest[] {
-  return readAll().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export async function findPendingForUserModule(username: string, moduleId: InstitutionRouteId): Promise<ModuleAccessRequest | undefined> {
+  const rows = await listAccessRequests({ status: "pending", module: moduleId });
+  return rows.find((r) => r.requesterUsername === username);
 }
 
-export function listPendingAccessRequests(): ModuleAccessRequest[] {
-  return listAccessRequests().filter((r) => r.status === "pending");
-}
-
-export function findPendingForUserModule(
-  username: string,
-  moduleId: InstitutionRouteId,
-): ModuleAccessRequest | undefined {
-  return listAccessRequests().find(
-    (r) =>
-      r.status === "pending" &&
-      r.requesterUsername === username &&
-      r.moduleId === moduleId,
-  );
-}
-
-export function submitAccessRequest(input: {
-  moduleId: InstitutionRouteId;
-  moduleLabel: string;
-  requesterUsername: string;
-  requesterName: string;
-  requesterEmail: string;
-  note?: string;
-}): ModuleAccessRequest {
-  const existing = findPendingForUserModule(input.requesterUsername, input.moduleId);
-  if (existing) return existing;
-
-  const next: ModuleAccessRequest = {
-    id: `MAR-${Date.now().toString(36).toUpperCase()}`,
+/** The requester is the session user; a pending request for the same module comes back instead of a new one. */
+export function submitAccessRequest(input: { moduleId: InstitutionRouteId; moduleLabel: string; note?: string }): Promise<ModuleAccessRequest> {
+  return hrSend<ModuleAccessRequest>("/hr/access-requests", {
     moduleId: input.moduleId,
     moduleLabel: input.moduleLabel,
-    requesterUsername: input.requesterUsername,
-    requesterName: input.requesterName || input.requesterUsername,
-    requesterEmail: input.requesterEmail || "",
-    note: (input.note || "").trim(),
-    status: "pending",
-    createdAt: new Date().toISOString(),
-  };
-  const all = readAll();
-  all.unshift(next);
-  writeAll(all);
-  return next;
+    note: (input.note || "").trim() || undefined,
+  });
 }
 
-export function reviewAccessRequest(
-  id: string,
-  decision: "approved" | "rejected",
-  reviewerUsername: string,
-  reviewNote?: string,
-): ModuleAccessRequest | null {
-  const all = readAll();
-  const idx = all.findIndex((r) => r.id === id);
-  if (idx < 0) return null;
-  const cur = all[idx];
-  if (cur.status !== "pending") return cur;
-  const updated: ModuleAccessRequest = {
-    ...cur,
-    status: decision,
-    reviewedAt: new Date().toISOString(),
-    reviewedBy: reviewerUsername,
-    reviewNote: (reviewNote || "").trim() || undefined,
-  };
-  all[idx] = updated;
-  writeAll(all);
-  return updated;
+/** Approve grants the module's role; reject needs a note the requester sees. Four-eyes is enforced server-side. */
+export function reviewAccessRequest(id: string, decision: "approved" | "rejected", reviewNote?: string): Promise<ModuleAccessRequest> {
+  return hrSend<ModuleAccessRequest>(
+    `/hr/access-requests/${encodeURIComponent(id)}`,
+    { decision, reviewNote: (reviewNote || "").trim() || undefined },
+    "PATCH",
+  );
 }
 
-/** HR managers / System Managers review access requests. */
+/** Who sees the review screen (mirrors access_requests.REVIEWER_ROLES; the server decides). */
 export function canReviewAccessRequests(roles: string[] | null | undefined): boolean {
   const set = new Set(roles ?? []);
-  return (
-    set.has("System Manager") ||
-    set.has("Administrator") ||
-    set.has("HR Manager") ||
-    set.has("HR User")
-  );
+  return set.has("System Manager") || set.has("Administrator") || set.has("HR Manager") || set.has("HR User");
 }

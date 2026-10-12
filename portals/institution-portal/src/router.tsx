@@ -566,6 +566,10 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "time-off/policy",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.LeavePolicyView }))} />,
+                  },
+                  {
                     path: "competence",
                     element: (
                       <L

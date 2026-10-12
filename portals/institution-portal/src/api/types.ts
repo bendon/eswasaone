@@ -458,3 +458,18 @@ export type TbtSubscriptionsResponse = { items: TbtSubscription[] };
 /** Analytics report types */
 export type AnalyticsReportSummary = components["schemas"]["AnalyticsReportSummary"];
 export type AnalyticsReportsResponse = { items: AnalyticsReportSummary[] };
+
+/* Screen ↔ backend sweep (2026-10-12): routes that had no screen. */
+export type HrLeaveRequest = components["schemas"]["HrLeaveRequest"];
+export type HrLeaveRequests = components["schemas"]["HrLeaveRequests"];
+export type HrLeaveCalendar = components["schemas"]["HrLeaveCalendar"];
+export type HrLeavePolicy = components["schemas"]["HrLeavePolicy"];
+export type HrEmployeeOptions = components["schemas"]["HrEmployeeOptions"];
+export type HrExpenseOptions = components["schemas"]["HrExpenseOptions"];
+export type HrExpenseClaim = components["schemas"]["HrExpenseClaim"];
+export type HrExpenseClaims = components["schemas"]["HrExpenseClaims"];
+export type HrEmployeeDocument = components["schemas"]["HrEmployeeDocument"];
+export type HrEmployeeDocuments = components["schemas"]["HrEmployeeDocuments"];
+export type HrProfileChange = components["schemas"]["HrProfileChange"];
+export type HrProfileChanges = components["schemas"]["HrProfileChanges"];
+export type HrEmployeeRecord = components["schemas"]["HrEmployeeRecord"];

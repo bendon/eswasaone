@@ -66,7 +66,7 @@ export function MeScreen() {
       {tab === "pay" ? (
         <PayslipsPane enabled refreshKey={refreshKey} onAuthRequired={onAuthRequired} />
       ) : null}
-      {tab === "claims" ? <ClaimsPane onAuthRequired={onAuthRequired} /> : null}
+      {tab === "claims" ? <ClaimsPane enabled refreshKey={refreshKey} onAuthRequired={onAuthRequired} /> : null}
       {tab === "profile" ? (
         <ProfilePane
           user={user}

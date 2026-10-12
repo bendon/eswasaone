@@ -232,6 +232,7 @@ def rows_for(employee: str, show_file: bool) -> dict[str, Any]:
         "items": [doc_row(r, show_file, day, types) for r in held],
         "missing": missing(required, held, day),
         "required_set": bool(required),
+        "types": list(TYPES),
     }
 
 

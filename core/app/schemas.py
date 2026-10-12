@@ -2069,6 +2069,7 @@ class HrEmployeeDocuments(BaseModel):
     items: list[HrEmployeeDocument] = Field(default_factory=list)
     missing: list[str] = Field(default_factory=list)  # required for the person's employment type, not held
     required_set: bool = False  # False until ESWASA lists required documents for this employment type
+    types: list[str] = Field(default_factory=list)  # the document types an upload may use
 
 
 class HrRecordDocuments(BaseModel):
@@ -2134,8 +2135,31 @@ class HrProfileChange(BaseModel):
     requested_on: str | None = None
 
 
+class HrProfileChangeField(BaseModel):
+    """A detail a person may ask to correct (profile_changes.ALLOWED); a name change needs evidence."""
+
+    field: str
+    label: str
+    evidence_required: bool = False
+
+
 class HrProfileChanges(BaseModel):
     items: list[HrProfileChange] = Field(default_factory=list)
+    fields: list[HrProfileChangeField] = Field(default_factory=list)
+
+
+class HrExpenseOptions(BaseModel):
+    """The claim form's choices. ``awaiting`` is "ESWASA Finance" while no expense types exist."""
+
+    types: list[str] = Field(default_factory=list)
+    receipt_required_above: float | None = None  # None: a receipt is needed for every line
+    awaiting: str | None = None
+
+
+class HrEmployeeOptions(BaseModel):
+    """Add person (H2) choices read from HRMS."""
+
+    genders: list[str] = Field(default_factory=list)
 
 
 class HrProfileChangeBody(BaseModel):

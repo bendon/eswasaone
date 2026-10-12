@@ -56,8 +56,9 @@ export function PayrollView() {
             <div>
               <h2>Payroll</h2>
               <p>
-                {status?.period || "October 2026"} run
-                {status?.message ? `. ${status.message}` : ". Cut-off Tue 20 Oct, pays Fri 23 Oct."}
+                {status?.period
+                  ? `${status.period} run: ${status.status || "status not set"}${status.message ? `. ${status.message}` : ""}`
+                  : "No payroll run recorded in HRMS yet."}
               </p>
             </div>
             <div className="hr-head__r">
@@ -75,11 +76,7 @@ export function PayrollView() {
           <div style={{ marginBottom: 16 }}>
             <NotConnectedPanel
               what="Payroll run tracker"
-              detail={
-                status?.period
-                  ? `Live status: ${status.period} · ${status.status || "—"}. The six-step change feed and month comparison need GET /hr/payroll/run (and §0.5 payroll-scope decision).`
-                  : "Six-step run tracker and change feed need GET /hr/payroll/run once Finance confirms payroll stays in HRMS (§0.5 #6)."
-              }
+              detail="The run tracker waits for ESWASA to confirm where payroll runs (Confirmation Pack H15) and for Finance's statutory tables (H16). The run status and slips on this page are read from HRMS."
             />
           </div>
 

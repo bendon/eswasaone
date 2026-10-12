@@ -271,6 +271,19 @@ def _whitelist(fn):
         return fn
 
 
+def form_options_impl() -> dict[str, Any]:
+    """Add person (H2) choices from HRMS itself, never a hard-coded list."""
+    import frappe
+
+    genders = [r["name"] for r in frappe.get_all("Gender", fields=["name"], order_by="name asc", limit=0)] if frappe.db.exists("DocType", "Gender") else []
+    return {"genders": genders}
+
+
+@_whitelist
+def form_options() -> dict[str, Any]:
+    return form_options_impl()
+
+
 @_whitelist
 def create(
     employee_name: str,

@@ -23,7 +23,7 @@ import { InstitutionSidebar } from "./InstitutionSidebar";
 import { AccessDeniedPanel } from "../components/AccessDeniedPanel";
 import { titleForPath, type InstitutionRouteId, INSTITUTION_NAV, routeFromAsk } from "../nav";
 import { canAccessRoute, hasStaffRole, primaryStaffLabel } from "../staff";
-import { listPendingAccessRequests } from "../hr/accessRequests";
+import { canReviewAccessRequests, listPendingAccessRequests } from "../hr/accessRequests";
 import { StaffGate } from "../pages/StaffGate";
 import { StaffBell } from "./StaffBell";
 import { DockNudge } from "../components/DockNudge";
@@ -194,10 +194,10 @@ export function InstitutionLayout() {
       if (results[1].status === "fulfilled" && results[1].value.new_count > 0) {
         next.tbt = results[1].value.new_count;
       }
-      // Local access-request queue until /hr/access-requests exists.
-      const pendingAccess = listPendingAccessRequests().length;
-      if (pendingAccess > 0 && canAccessRoute(user.roles, "hr")) {
-        next.hr = pendingAccess;
+      // Pending module access requests, for reviewers only (GET /hr/access-requests; others get their own).
+      if (canReviewAccessRequests(user.roles) && canAccessRoute(user.roles, "hr")) {
+        const pendingAccess = await listPendingAccessRequests().then((r) => r.length).catch(() => 0);
+        if (pendingAccess > 0) next.hr = pendingAccess;
       }
       // CRM: cases past their SLA. TODO: wire real — breaching_count from GET /cases once Core has it.
       if (crmDemoMode() && canAccessRoute(user.roles, "crm")) {

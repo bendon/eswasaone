@@ -253,6 +253,18 @@ def threshold() -> float | None:
     return None if value in (None, "", 0, "0") else _num(value)
 
 
+def options_view(types: list[str], above: float | None) -> dict[str, Any]:
+    """The claim form's choices. No types means Finance hasn't set them up (awaiting ESWASA Finance)."""
+    return {"types": sorted(t for t in types if t), "receipt_required_above": above, "awaiting": None if types else "ESWASA Finance"}
+
+
+def options_impl() -> dict[str, Any]:
+    import frappe
+
+    types = [r["name"] for r in frappe.get_all("Expense Claim Type", fields=["name"], limit=0)] if frappe.db.exists("DocType", "Expense Claim Type") else []
+    return options_view(types, threshold())
+
+
 def sync_todo(doc: Any, method: str | None = None) -> None:
     """doc_events hook: one open ToDo for the named expense approver while the claim is Draft; closed after."""
     import frappe
@@ -518,6 +530,11 @@ def _parse(value: Any) -> Any:
 @_whitelist
 def claims(status: str | None = None, employee: str | None = None, department: str | None = None) -> list[dict[str, Any]]:
     return list_impl(status, employee, department)
+
+
+@_whitelist
+def options() -> dict[str, Any]:
+    return options_impl()
 
 
 @_whitelist

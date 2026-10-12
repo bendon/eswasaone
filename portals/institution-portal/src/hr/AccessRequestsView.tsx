@@ -9,12 +9,13 @@ import {
   type DrawerSection,
   type SummaryTile,
 } from "@eswasaone/shared-ui";
-import { EmptyState } from "../components/PageStates";
+import { EmptyState, ResourceGate } from "../components/PageStates";
+import { useApiResource } from "../hooks/useApiResource";
+import { errorText } from "./api";
 import { RequireStaff } from "../components/RequireStaff";
 import { useInstitution } from "../layout/InstitutionLayout";
 import {
   canReviewAccessRequests,
-  listAccessRequests,
   reviewAccessRequest,
   type AccessRequestStatus,
   type ModuleAccessRequest,
@@ -35,17 +36,19 @@ function statusSla(s: AccessRequestStatus): "due" | "ok" | "breach" {
 }
 
 export function AccessRequestsView() {
-  const { user } = useInstitution();
-  const [tick, setTick] = useState(0);
+  const { user, sessionKey } = useInstitution();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
   const [openId, setOpenId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+  const [actionErr, setActionErr] = useState<string | null>(null);
 
   const canReview = canReviewAccessRequests(user.roles);
-  const items = useMemo(() => {
-    void tick;
-    return listAccessRequests();
-  }, [tick]);
+  const res = useApiResource<ModuleAccessRequest[]>("/hr/access-requests", { enabled: canReview, refreshKey: sessionKey });
+  const items = useMemo(
+    () => [...(res.data ?? [])].sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? "")),
+    [res.data],
+  );
 
   const filtered = useMemo(() => {
     if (statusFilter === "all") return items;
@@ -68,18 +71,26 @@ export function AccessRequestsView() {
     },
   ];
 
-  function refresh() {
-    setTick((n) => n + 1);
+  function open(id: string | null) {
+    setOpenId(id);
+    setNote("");
+    setActionErr(null);
   }
 
-  function decide(item: ModuleAccessRequest, decision: "approved" | "rejected") {
+  async function decide(item: ModuleAccessRequest, decision: "approved" | "rejected") {
     if (!canReview || busy) return;
+    if (decision === "rejected" && !note.trim()) {
+      setActionErr("Say why you're not giving access. The requester sees your note.");
+      return;
+    }
     setBusy(true);
+    setActionErr(null);
     try {
-      // TODO: wire real — PATCH /hr/access-requests/{id} then assign Desk role
-      reviewAccessRequest(item.id, decision, user.username);
-      refresh();
-      if (openId === item.id) setOpenId(null);
+      await reviewAccessRequest(item.id, decision, note);
+      open(null);
+      res.reload();
+    } catch (err) {
+      setActionErr(errorText(err));
     } finally {
       setBusy(false);
     }
@@ -105,7 +116,7 @@ export function AccessRequestsView() {
               </div>
               <div className="kv">
                 <b>Submitted</b>
-                <span>{new Date(selected.createdAt).toLocaleString()}</span>
+                <span>{selected.createdAt ? new Date(selected.createdAt).toLocaleString() : "—"}</span>
               </div>
             </>
           ),
@@ -133,8 +144,52 @@ export function AccessRequestsView() {
             </>
           ),
         },
+        selected.status === "pending"
+          ? {
+              heading: "Your review",
+              content: (
+                <>
+                  <label className="hr-f">
+                    <span>Note to the requester (needed to reject)</span>
+                    <textarea className="hr-in" rows={3} value={note} disabled={busy} onChange={(e) => setNote(e.target.value)} />
+                  </label>
+                  <p className="page-note">Approving gives the role for that module straight away. You can't review your own request.</p>
+                  {actionErr ? (
+                    <p className="page-note" role="alert">
+                      {actionErr}
+                    </p>
+                  ) : null}
+                </>
+              ),
+            }
+          : {
+              heading: "Review",
+              content: (
+                <>
+                  <div className="kv">
+                    <b>Reviewed by</b>
+                    <span>{selected.reviewedBy || "—"}</span>
+                  </div>
+                  <div className="kv">
+                    <b>When</b>
+                    <span>{selected.reviewedAt ? new Date(selected.reviewedAt).toLocaleString() : "—"}</span>
+                  </div>
+                  <div className="kv">
+                    <b>Note</b>
+                    <span>{selected.reviewNote || "—"}</span>
+                  </div>
+                  {selected.rolesGranted ? (
+                    <div className="kv">
+                      <b>Role given</b>
+                      <span>{selected.rolesGranted}</span>
+                    </div>
+                  ) : null}
+                </>
+              ),
+            },
       ]
     : [];
+
 
   const drawerActions: DrawerAction[] =
     selected && selected.status === "pending" && canReview
@@ -142,13 +197,13 @@ export function AccessRequestsView() {
           {
             label: busy ? "Working…" : "Approve",
             variant: "pri",
-            onClick: () => decide(selected, "approved"),
+            onClick: () => void decide(selected, "approved"),
             disabled: busy,
           },
           {
             label: "Reject",
             variant: "ghost",
-            onClick: () => decide(selected, "rejected"),
+            onClick: () => void decide(selected, "rejected"),
             disabled: busy,
           },
         ]
@@ -159,7 +214,7 @@ export function AccessRequestsView() {
       <RequireStaff reason="Staff sign-in required">
         <EmptyState
           title="Supervisor / HR only"
-          detail="Module access requests are reviewed by your head of department, HR, or a System Manager."
+          detail="Module access requests are reviewed by HR or a System Manager."
         />
       </RequireStaff>
     );
@@ -169,7 +224,7 @@ export function AccessRequestsView() {
     <RequireStaff reason="Staff sign-in required">
       <ModuleHeader
         title="Access requests"
-        subtitle="Staff asking for Institution module access. After you approve, a System Manager still assigns the matching role."
+        subtitle="Staff asking for Institution module access. Approving gives the role for that module; the same requests also show in Approvals."
         summary={tiles}
       />
 
@@ -194,6 +249,7 @@ export function AccessRequestsView() {
         ]}
       />
 
+      <ResourceGate loading={res.loading} error={res.error} onRetry={res.reload} refreshing={res.refreshing} hasData={Boolean(res.data)}>
       {filtered.length === 0 ? (
         <EmptyState
           title="No access requests"
@@ -215,16 +271,17 @@ export function AccessRequestsView() {
                 title={`${item.requesterName} → ${item.moduleLabel}`}
                 badge={item.id}
                 meta={meta}
-                onOpen={() => setOpenId(item.id)}
+                onOpen={() => open(item.id)}
               />
             );
           })}
         </div>
       )}
+      </ResourceGate>
 
       <RecordDrawer
         open={!!selected}
-        onClose={() => setOpenId(null)}
+        onClose={() => open(null)}
         reference={selected?.id}
         title={selected ? selected.requesterName : ""}
         subtitle={selected ? selected.moduleLabel : null}

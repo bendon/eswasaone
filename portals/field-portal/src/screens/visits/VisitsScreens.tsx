@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { apiFetch, Icon, uploadMedia } from "@eswasaone/shared-ui";
 import {
   collectSample,
   downloadPack,
@@ -35,7 +35,7 @@ import { verifyCertificateToken } from "@eswasaone/shared-ui/certification";
 import { displayState, stateDef, type Actor } from "@eswasaone/shared-ui/workflow";
 import { useAuth } from "../../auth/AuthProvider";
 import { clearSent, discard, enqueue, isOffline, outbox, outboxSummary, retry, setSimulatedOffline } from "../../lib/outbox";
-import { createExpense } from "../me/api";
+import { errorText, submitClaim } from "../me/api";
 
 /* ---------------- shared ---------------- */
 
@@ -751,41 +751,92 @@ function PhotoSheet({ onClose, onSave }: { onClose: () => void; onSave: (p: { na
   );
 }
 
+/** A claim for this visit goes to the person's named expense approver (POST /hr/me/expense-claims); never saved locally. */
 function ClaimSheet({ v, onClose, onDone }: { v: FieldVisit; onClose: () => void; onDone: (m: string) => void }) {
-  const [amount, setAmount] = useState(String(350 * v.duration_days));
-  const [type, setType] = useState("Per diem");
+  const [opts, setOpts] = useState<{ types: string[]; receipt_required_above?: number | null } | null>(null);
+  const [amount, setAmount] = useState("");
+  const [type, setType] = useState("");
+  const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10));
+  const [receipt, setReceipt] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    apiFetch<{ types: string[]; receipt_required_above?: number | null }>("/hr/me/expense-claims/options", { quiet: true })
+      .then((o) => {
+        if (!live) return;
+        setOpts(o);
+        setType(o.types[0] ?? "");
+      })
+      .catch((e) => live && setErr(errorText(e, "Claim options couldn't be loaded.")));
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const n = Number(amount);
+  const above = opts?.receipt_required_above ?? null;
+  const needsReceipt = n > 0 && (above == null || n > above);
+
+  async function send() {
+    setErr(null);
+    if (needsReceipt && !receipt) return setErr("Attach the receipt for this amount.");
+    setBusy(true);
+    try {
+      const attachments = receipt ? [{ file_name: receipt.name, url: (await uploadMedia(receipt, "hr/expenses", { allowMock: false })).url }] : [];
+      const r = await submitClaim({
+        lines: [{ expense_type: type, expense_date: day, amount: n, description: `${v.title} (${v.id})`, receipt: receipt?.name ?? null }],
+        description: `Field visit ${v.id}`,
+        attachments,
+        confirm: true,
+      });
+      if (r.name) linkClaim(v.id, r.name);
+      onDone(r.approver ? `Claim sent to ${r.approver}.` : "Claim sent to your expense approver.");
+    } catch (e) {
+      setErr(errorText(e, "Claim not sent."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <Sheet title="Claim from this visit" onClose={onClose}>
       <p className="fv-sub">
-        Pre-filled from {v.id}: {v.duration_days} day(s) at {v.site.name}.
+        For {v.id}: {v.duration_days} day(s) at {v.site.name}. Your expense approver decides it in Approvals.
       </p>
-      <div className="fv-seg">
-        {["Per diem", "Mileage", "Accommodation"].map((t) => (
-          <button key={t} type="button" className={type === t ? "on" : ""} onClick={() => setType(t)}>
-            {t}
-          </button>
-        ))}
-      </div>
-      <label className="fv-label">
-        Amount (E)
-        <input className="fv-input" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
-      </label>
-      <button
-        type="button"
-        className="fv-btn fv-btn--pri fv-btn--block"
-        disabled={busy || !Number(amount)}
-        onClick={() => {
-          setBusy(true);
-          const ref = `EXP-${v.id.slice(-4)}-${Date.now() % 1000}`;
-          // TODO: wire real — POST /hr/expenses with the visit reference.
-          void createExpense({ amount: Number(amount), expense_type: type, description: `${v.title} (${v.id})`, confirm: true })
-            .then((x) => ((linkClaim(v.id, String((x as { name?: string }).name ?? ref)), onDone("Claim submitted."))))
-            .catch(() => (linkClaim(v.id, ref), onDone(`Claim ${ref} saved (demo — HR isn't connected).`)))
-            .finally(() => setBusy(false));
-        }}
-      >
-        Submit claim
+      {opts && !opts.types.length ? (
+        <p className="fv-sub">Expense claims open once ESWASA Finance sets up the expense types.</p>
+      ) : (
+        <>
+          <div className="fv-seg">
+            {(opts?.types ?? []).map((t) => (
+              <button key={t} type="button" className={type === t ? "on" : ""} onClick={() => setType(t)}>
+                {t}
+              </button>
+            ))}
+          </div>
+          <label className="fv-label">
+            Date
+            <input className="fv-input" type="date" value={day} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDay(e.target.value)} />
+          </label>
+          <label className="fv-label">
+            Amount (E)
+            <input className="fv-input" type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </label>
+          <label className="fv-label">
+            Receipt{needsReceipt ? " (needed)" : " (optional)"}
+            <input className="fv-input" type="file" accept="application/pdf,image/jpeg,image/png" onChange={(e) => setReceipt(e.target.files?.[0] ?? null)} />
+          </label>
+        </>
+      )}
+      {err ? (
+        <p className="fv-sub" role="alert" style={{ color: "var(--bad, #b42318)" }}>
+          {err}
+        </p>
+      ) : null}
+      <button type="button" className="fv-btn fv-btn--pri fv-btn--block" disabled={busy || !type || !(n > 0) || !day} onClick={() => void send()}>
+        {busy ? "Sending…" : "Send claim"}
       </button>
     </Sheet>
   );

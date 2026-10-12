@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { apiFetch, AuthError, RecordDrawer, type DrawerSection, Select } from "@eswasaone/shared-ui";
+import { AuthError, RecordDrawer, type DrawerSection, Select } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
 import { useInstitution } from "../layout/InstitutionLayout";
-import type { HrEmployeesResponse, HrEmployeeSummary } from "../api/types";
+import type { HrDepartmentsResponse, HrDesignationsResponse, HrEmployeeOptions, HrEmployeesResponse, HrEmployeeSummary } from "../api/types";
+import { errorText, hrSend } from "./api";
 import { initialsFromName } from "./helpers";
 import { SensitivePanel } from "./sensitive/Sensitive";
 
@@ -54,7 +55,14 @@ export function EmployeesView() {
   const [email, setEmail] = useState("");
   const [department, setDepartment] = useState("");
   const [designation, setDesignation] = useState("");
+  const [gender, setGender] = useState("");
+  const [dob, setDob] = useState("");
+  const [joined, setJoined] = useState("");
   const [invite, setInvite] = useState(true);
+  const [addErr, setAddErr] = useState<string | null>(null);
+  const depts = useApiResource<HrDepartmentsResponse>("/hr/departments?limit=200", { enabled: showAdd, refreshKey: sessionKey });
+  const desigs = useApiResource<HrDesignationsResponse>("/hr/designations?limit=200", { enabled: showAdd, refreshKey: sessionKey });
+  const opts = useApiResource<HrEmployeeOptions>("/hr/employee-options", { enabled: showAdd, refreshKey: sessionKey });
 
   useEffect(() => {
     if (authRequired) openAuth("Staff sign-in required");
@@ -83,28 +91,31 @@ export function EmployeesView() {
     e.preventDefault();
     setBusy(true);
     setFlash(null);
+    setAddErr(null);
     try {
-      const created = await apiFetch<HrEmployeeSummary>("/hr/employees", {
-        method: "POST",
-        body: JSON.stringify({
-          employee_name: fullName.trim(),
-          email: email.trim() || undefined,
-          department: department.trim() || undefined,
-          designation: designation.trim() || undefined,
-          invite,
-          confirm: true,
-        }),
+      const created = await hrSend<HrEmployeeSummary>("/hr/employees", {
+        employee_name: fullName.trim(),
+        gender,
+        date_of_birth: dob,
+        date_of_joining: joined,
+        email: email.trim() || undefined,
+        department: department || undefined,
+        designation: designation || undefined,
+        invite,
       });
       setFlash(`Created ${created.employee_name} (${created.id})`);
       setFullName("");
       setEmail("");
       setDepartment("");
       setDesignation("");
+      setGender("");
+      setDob("");
+      setJoined("");
       setShowAdd(false);
       reload();
     } catch (err) {
       if (err instanceof AuthError && err.authRequired) openAuth(err.reason);
-      else setFlash(err instanceof Error ? err.message : "Could not create employee");
+      setAddErr(errorText(err, "Could not create the record."));
     } finally {
       setBusy(false);
     }
@@ -228,7 +239,7 @@ export function EmployeesView() {
               <div className="hr-box__h">
                 <div>
                   <h3>Add employee</h3>
-                  <p>Creates an employee record and optionally sends a portal invite.</p>
+                  <p>Name, gender, date of birth and date of joining are required by HRMS. Nothing is filled in for you.</p>
                 </div>
               </div>
               <div className="hr-box__b">
@@ -242,12 +253,45 @@ export function EmployeesView() {
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                   </label>
                   <label>
+                    Gender
+                    <select required value={gender} onChange={(e) => setGender(e.target.value)}>
+                      <option value="">{opts.loading ? "Loading…" : opts.data?.genders.length ? "Choose…" : "None set up in HRMS"}</option>
+                      {(opts.data?.genders ?? []).map((g) => (
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Date of birth
+                    <input type="date" required value={dob} onChange={(e) => setDob(e.target.value)} />
+                  </label>
+                  <label>
+                    Date of joining
+                    <input type="date" required value={joined} onChange={(e) => setJoined(e.target.value)} />
+                  </label>
+                  <label>
                     Department
-                    <input value={department} onChange={(e) => setDepartment(e.target.value)} />
+                    <select value={department} onChange={(e) => setDepartment(e.target.value)}>
+                      <option value="">{depts.loading ? "Loading…" : depts.data?.items.length ? "Choose later" : "None set up yet"}</option>
+                      {(depts.data?.items ?? []).map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                   <label>
                     Designation
-                    <input value={designation} onChange={(e) => setDesignation(e.target.value)} />
+                    <select value={designation} onChange={(e) => setDesignation(e.target.value)}>
+                      <option value="">{desigs.loading ? "Loading…" : desigs.data?.items.length ? "Choose later" : "None set up yet"}</option>
+                      {(desigs.data?.items ?? []).map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.title}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                   <label style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                     <input
@@ -257,6 +301,11 @@ export function EmployeesView() {
                     />
                     Also invite as Institution user (welcome email)
                   </label>
+                  {addErr ? (
+                    <p className="page-note" role="alert" style={{ whiteSpace: "pre-line" }}>
+                      {addErr}
+                    </p>
+                  ) : null}
                   <button type="submit" className="btn pri" disabled={busy}>
                     {busy ? "Saving…" : "Create employee"}
                   </button>

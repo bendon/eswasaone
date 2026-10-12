@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { SessionUser } from "@eswasaone/shared-ui";
 import { INSTITUTION_NAV, type InstitutionRouteId } from "../nav";
+import { errorText } from "../hr/api";
 import {
   findPendingForUserModule,
   submitAccessRequest,
+  type ModuleAccessRequest,
 } from "../hr/accessRequests";
 
 type Props = {
@@ -17,29 +19,31 @@ export function AccessDeniedPanel({ routeId, user }: Props) {
   const moduleLabel = nav?.title ?? nav?.label ?? "this module";
   const username = user.username;
 
-  const [pending, setPending] = useState(() =>
-    findPendingForUserModule(username, routeId),
-  );
+  const [pending, setPending] = useState<ModuleAccessRequest | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
-  function onRequest() {
+  // A request already sent for this module shows instead of the form.
+  useEffect(() => {
+    let live = true;
+    findPendingForUserModule(username, routeId)
+      .then((r) => {
+        if (live) setPending(r ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [username, routeId]);
+
+  async function onRequest() {
     setBusy(true);
     setErr(null);
     try {
-      // TODO: wire real — POST /hr/access-requests (confirm-before-commit)
-      const created = submitAccessRequest({
-        moduleId: routeId,
-        moduleLabel,
-        requesterUsername: username,
-        requesterName: user.full_name || username,
-        requesterEmail: user.email || "",
-        note,
-      });
-      setPending(created);
+      setPending(await submitAccessRequest({ moduleId: routeId, moduleLabel, note }));
     } catch (ex) {
-      setErr(ex instanceof Error ? ex.message : "Could not send request.");
+      setErr(errorText(ex, "Request not sent. Try again."));
     } finally {
       setBusy(false);
     }
@@ -50,18 +54,18 @@ export function AccessDeniedPanel({ routeId, user }: Props) {
       <h3>Access needed</h3>
       <p style={{ color: "var(--muted)" }}>
         You do not have access to <strong>{moduleLabel}</strong> yet. If you need this
-        module for your work, send a request to your supervisor. Your head of department
-        or HR can review it from HR &amp; People.
+        module for your work, send a request. HR or a System Manager reviews it in HR &amp; People
+        or in Approvals.
       </p>
 
       {pending ? (
         <p className="access-denied__ok" role="status">
-          Request sent ({pending.id}). Your supervisor or HR will review it.
+          Request sent ({pending.id}). HR or a System Manager will review it.
         </p>
       ) : (
         <div className="access-denied__form">
           <label>
-            Optional note for your supervisor
+            Why you need it (optional)
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -70,14 +74,18 @@ export function AccessDeniedPanel({ routeId, user }: Props) {
               disabled={busy}
             />
           </label>
-          {err ? <p className="page-note">{err}</p> : null}
+          {err ? (
+            <p className="page-note" role="alert">
+              {err}
+            </p>
+          ) : null}
           <button
             type="button"
             className="btn-primary"
             disabled={busy}
-            onClick={onRequest}
+            onClick={() => void onRequest()}
           >
-            {busy ? "Sending…" : "Request access from supervisor"}
+            {busy ? "Sending…" : "Request access"}
           </button>
         </div>
       )}

@@ -18,9 +18,9 @@ export type ScheduleItem = {
   time: string;
 };
 
+/** Live only: null until /hr/leave/balances answers (HR never shows a sample value). */
 export type MeGlance = {
-  leaveDaysLeft: number;
-  nextPayday: string;
+  leaveDaysLeft: number | null;
 };
 
 // TODO: wire real — GET /api/certification/audits (next assigned visit)
@@ -51,8 +51,4 @@ export const MOCK_SCHEDULE: ScheduleItem[] = [
   },
 ];
 
-// TODO: wire real — leave balance + payroll payday from HR APIs
-export const MOCK_ME_GLANCE: MeGlance = {
-  leaveDaysLeft: 11,
-  nextPayday: "24 Feb",
-};
+export const EMPTY_ME_GLANCE: MeGlance = { leaveDaysLeft: null };

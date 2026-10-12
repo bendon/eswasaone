@@ -1,63 +1,30 @@
-import { apiFetch } from "@eswasaone/shared-ui";
-import type {
-  CreateExpenseBody,
-  CreateLeaveBody,
-  HrEmployeeSummary,
-  HrEmployeesResponse,
-  HrExpense,
-  HrLeaveBalancesResponse,
-  HrLeaveResponse,
-  HrLeaveSummary,
-  HrSlipsResponse,
-} from "./types";
+import { ApiError, AuthError, apiFetch } from "@eswasaone/shared-ui";
+import type { CreateLeaveBody, HrExpenseClaimBody, HrLeaveSummary } from "./types";
 
-/** Field Me ESS — Core HR paths via shared session credentials. */
-
-export function listLeave(limit = 20): Promise<HrLeaveResponse> {
-  return apiFetch<HrLeaveResponse>(`/hr/leave?limit=${limit}`);
-}
-
-export function listLeaveBalances(): Promise<HrLeaveBalancesResponse> {
-  return apiFetch<HrLeaveBalancesResponse>("/hr/leave/balances");
-}
+/** Field Me (mobile E1–E5): the caller's own HR through Core. Writes are quiet; panes show the server's sentence. */
 
 export function createLeave(body: CreateLeaveBody): Promise<HrLeaveSummary> {
-  return apiFetch<HrLeaveSummary>("/hr/leave", {
+  return apiFetch<HrLeaveSummary>("/hr/leave", { method: "POST", body: JSON.stringify(body), quiet: true });
+}
+
+/** Cancel your own Open request, or Approved leave that hasn't started (eswasa_hr.leave.cancel). */
+export function cancelLeave(id: string, reason: string): Promise<unknown> {
+  return apiFetch(`/hr/leave/${encodeURIComponent(id)}/cancel`, {
     method: "POST",
-    body: JSON.stringify(body),
+    body: JSON.stringify({ reason, confirm: true }),
+    quiet: true,
   });
 }
 
-export function listSlips(limit = 12): Promise<HrSlipsResponse> {
-  return apiFetch<HrSlipsResponse>(`/hr/slips?limit=${limit}`);
+/** Send a claim to your named expense approver; it's decided in Approvals. */
+export function submitClaim(body: HrExpenseClaimBody): Promise<{ name?: string; approver?: string; message?: string }> {
+  return apiFetch("/hr/me/expense-claims", { method: "POST", body: JSON.stringify(body), quiet: true });
 }
 
-export function createExpense(body: CreateExpenseBody): Promise<HrExpense> {
-  return apiFetch<HrExpense>("/hr/expenses", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-}
-
-export function listEmployees(limit = 100): Promise<HrEmployeesResponse> {
-  return apiFetch<HrEmployeesResponse>(`/hr/employees?limit=${limit}`);
-}
-
-export function getEmployee(id: string): Promise<HrEmployeeSummary> {
-  return apiFetch<HrEmployeeSummary>(`/hr/employees/${encodeURIComponent(id)}`);
-}
-
-/** Match session user to an Employee row (user_id or email). */
-export function findMyEmployee(
-  items: HrEmployeeSummary[],
-  username: string,
-  email?: string | null,
-): HrEmployeeSummary | null {
-  const u = username.toLowerCase();
-  const e = (email || "").toLowerCase();
-  return (
-    items.find((row) => (row.user_id || "").toLowerCase() === u) ||
-    items.find((row) => (row.email || "").toLowerCase() === e) ||
-    null
-  );
+/** One plain sentence for a failed call; an outage never reads as success. */
+export function errorText(err: unknown, fallback = "That didn't work. Nothing was saved."): string {
+  if (err instanceof AuthError) return err.authRequired ? "Your session ended. Sign in again, then retry." : err.message || fallback;
+  if (err instanceof ApiError && err.status >= 502 && err.status <= 504) return "HR can't be reached right now. Nothing was saved.";
+  if (err instanceof TypeError) return "You're offline or HR can't be reached. Nothing was saved.";
+  return err instanceof Error && err.message ? err.message : fallback;
 }

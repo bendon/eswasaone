@@ -1,14 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { AuthError, DateField, Icon, Select, useDialogs } from "@eswasaone/shared-ui";
-import { createLeave } from "./api";
-import {
-  fmtDateRange,
-  leaveRowTitle,
-  pickBalanceCards,
-  statusKind,
-  statusLabel,
-} from "./helpers";
-import type { HrLeaveBalancesResponse, HrLeaveResponse, HrLeaveSummary } from "./types";
+import { cancelLeave, createLeave, errorText } from "./api";
+import { fmtDateRange, leaveRowTitle, statusKind, statusLabel } from "./helpers";
+import type { HrLeaveSummary, HrMe } from "./types";
 import { useMeResource } from "./useMeResource";
 
 type Props = {
@@ -17,151 +11,215 @@ type Props = {
   onAuthRequired: (reason?: string) => void;
 };
 
-const LEAVE_TYPES = ["Annual", "Sick", "Study"];
+const TONES = ["c1", "c2", "c3"] as const;
 
+/** E2/E3 on mobile: your balances, your requests, apply and cancel. Live GET /hr/me; POST /hr/leave, /cancel. */
 export function LeavePane({ enabled, refreshKey, onAuthRequired }: Props) {
   const dialogs = useDialogs();
-  const leaveRes = useMeResource<HrLeaveResponse>("/hr/leave?limit=20", {
-    enabled,
-    refreshKey,
-  });
-  const balRes = useMeResource<HrLeaveBalancesResponse>("/hr/leave/balances", {
-    enabled,
-    refreshKey,
-  });
+  const meRes = useMeResource<HrMe>("/hr/me", { enabled, refreshKey });
 
   const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [leaveType, setLeaveType] = useState("Annual");
+  const [leaveType, setLeaveType] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [reason, setReason] = useState("");
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (leaveRes.authRequired || balRes.authRequired) {
-      onAuthRequired(leaveRes.error || balRes.error || undefined);
-    }
-  }, [leaveRes.authRequired, balRes.authRequired, leaveRes.error, balRes.error, onAuthRequired]);
+    if (meRes.authRequired) onAuthRequired(meRes.error || undefined);
+  }, [meRes.authRequired, meRes.error, onAuthRequired]);
 
-  const cards = useMemo(
-    () => pickBalanceCards(balRes.data?.items ?? []),
-    [balRes.data],
-  );
+  const me = meRes.data;
+  const balances = useMemo(() => me?.balances ?? [], [me]);
+  const items: HrLeaveSummary[] = me?.leave ?? [];
 
-  const items: HrLeaveSummary[] = leaveRes.data?.items ?? [];
+  useEffect(() => {
+    if (!leaveType && balances.length) setLeaveType(balances[0].leave_type);
+  }, [balances, leaveType]);
 
   async function submitLeave() {
-    if (!fromDate || !toDate) {
-      await dialogs.alert({ message: "Choose from and to dates.", kind: "error" });
-      return;
-    }
+    setErr(null);
+    if (!leaveType) return setErr("Choose a leave type.");
+    if (!fromDate || !toDate) return setErr("Choose from and to dates.");
+    if (toDate < fromDate) return setErr("The last day is before the first day.");
     const ok = await dialogs.confirm({
-      title: "Submit leave request",
-      message: `Request ${leaveType} leave from ${fromDate} to ${toDate}?`,
-      confirmLabel: "Submit",
+      title: "Send leave request",
+      message: `Ask for ${leaveType} from ${fromDate} to ${toDate}? ${me?.leave_approver?.name ? `${me.leave_approver.name} decides it.` : ""}`,
+      confirmLabel: "Send",
     });
     if (!ok) return;
     setBusy(true);
     try {
-      await createLeave({
-        leave_type: leaveType,
-        from_date: fromDate,
-        to_date: toDate,
-        reason: reason.trim() || undefined,
-        confirm: true,
-      });
-      await dialogs.alert({ message: "Leave request submitted.", kind: "success" });
+      await createLeave({ leave_type: leaveType, from_date: fromDate, to_date: toDate, reason: reason.trim() || undefined, confirm: true });
       setShowForm(false);
       setReason("");
-      leaveRes.reload();
-      balRes.reload();
-    } catch (err) {
-      if (err instanceof AuthError && err.authRequired) {
-        onAuthRequired(err.reason);
-      } else {
-        await dialogs.alert({
-          message: err instanceof Error ? err.message : "Leave request failed",
-          kind: "error",
-        });
-      }
+      setFromDate("");
+      setToDate("");
+      meRes.reload();
+    } catch (e) {
+      if (e instanceof AuthError && e.authRequired) onAuthRequired(e.reason);
+      setErr(errorText(e, "Leave request not sent."));
     } finally {
       setBusy(false);
     }
   }
 
+  async function cancel(item: HrLeaveSummary) {
+    const why = await dialogs.prompt({
+      title: "Cancel this leave",
+      message: `${leaveRowTitle(item)}, ${fmtDateRange(item.from_date, item.to_date)}. Your approver is told.`,
+      label: "Why are you cancelling?",
+      confirmLabel: "Cancel leave",
+    });
+    if (why == null) return;
+    if (!why.trim()) {
+      setErr("Say why you're cancelling.");
+      return;
+    }
+    setErr(null);
+    setBusy(true);
+    try {
+      await cancelLeave(item.id, why.trim());
+      meRes.reload();
+    } catch (e) {
+      if (e instanceof AuthError && e.authRequired) onAuthRequired(e.reason);
+      setErr(errorText(e, "Not cancelled."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (meRes.loading && !me) {
+    return (
+      <div className="me-pane">
+        <p className="field-muted">Loading your leave…</p>
+      </div>
+    );
+  }
+
+  if (meRes.error && !me) {
+    return (
+      <div className="me-pane">
+        <p className="me-error" role="alert">
+          {meRes.error}
+        </p>
+        <button type="button" className="me-btn me-btn--ghost" onClick={meRes.reload}>
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (me && !me.linked) {
+    return (
+      <div className="me-pane">
+        <div className="field-card">
+          <p className="field-muted">Your login isn't linked to an employee record yet. Ask HR to link it, then your leave shows here.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="me-pane">
       {dialogs.host}
-      {balRes.loading && !balRes.data ? (
-        <p className="field-muted">Loading balances…</p>
-      ) : (
+      {meRes.fromCache ? <p className="field-muted">Offline: showing what was last loaded.</p> : null}
+      {balances.length ? (
         <div className="me-bals" aria-label="Leave balances">
-          {cards.map((c) => (
-            <div key={c.label} className={`me-bal me-bal--${c.tone}`}>
-              <div className="me-bal__n">{c.balance}</div>
-              <div className="me-bal__l">{c.label}</div>
+          {balances.slice(0, 3).map((b, i) => (
+            <div key={b.leave_type} className={`me-bal me-bal--${TONES[i]}`}>
+              <div className="me-bal__n">{b.balance}</div>
+              <div className="me-bal__l">{b.leave_type}</div>
             </div>
           ))}
         </div>
+      ) : (
+        <div className="field-card">
+          <p className="field-muted">No leave allocated to you yet. ESWASA HR sets leave types and entitlements first.</p>
+        </div>
       )}
-      {balRes.error && !balRes.authRequired ? (
+
+      {err ? (
         <p className="me-error" role="alert">
-          {balRes.error}
+          {err}
         </p>
       ) : null}
 
       {!showForm ? (
-        <button
-          type="button"
-          className="me-btn me-btn--pri"
-          onClick={() => setShowForm(true)}
-        >
+        <button type="button" className="me-btn me-btn--pri" disabled={!balances.length} onClick={() => setShowForm(true)}>
           <Icon name="i-plus" />
           Request leave
         </button>
       ) : (
-        <LeaveRequestForm
-          leaveType={leaveType}
-          fromDate={fromDate}
-          toDate={toDate}
-          reason={reason}
-          busy={busy}
-          onLeaveType={setLeaveType}
-          onFrom={setFromDate}
-          onTo={setToDate}
-          onReason={setReason}
-          onCancel={() => setShowForm(false)}
-          onSubmit={() => void submitLeave()}
-        />
+        <form
+          className="me-form field-card"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submitLeave();
+          }}
+        >
+          <label className="me-field">
+            <span>Leave type</span>
+            <Select value={leaveType} onChange={(val) => setLeaveType(val)} disabled={busy}>
+              {balances.map((b) => (
+                <option key={b.leave_type} value={b.leave_type}>
+                  {b.leave_type} ({b.balance} left)
+                </option>
+              ))}
+            </Select>
+          </label>
+          <label className="me-field">
+            <span>From</span>
+            <DateField value={fromDate} onChange={setFromDate} ariaLabel="From" required disabled={busy} />
+          </label>
+          <label className="me-field">
+            <span>To</span>
+            <DateField value={toDate} onChange={setToDate} min={fromDate || undefined} ariaLabel="To" required disabled={busy} />
+          </label>
+          <label className="me-field">
+            <span>Reason (optional)</span>
+            <textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} disabled={busy} />
+          </label>
+          {me?.leave_approver?.name ? <p className="field-muted">{me.leave_approver.name} decides this in Approvals.</p> : null}
+          <div className="me-form__actions">
+            <button type="button" className="me-btn me-btn--ghost" onClick={() => setShowForm(false)} disabled={busy}>
+              Back
+            </button>
+            <button type="submit" className="me-btn me-btn--pri" disabled={busy}>
+              {busy ? "Sending…" : "Confirm & send"}
+            </button>
+          </div>
+        </form>
       )}
 
       <div className="me-sec-h">
         My requests
-        {leaveRes.refreshing ? <span className="me-sec-h__hint"> · updating</span> : null}
+        {meRes.refreshing ? <span className="me-sec-h__hint"> · updating</span> : null}
       </div>
-      {leaveRes.loading && !leaveRes.data ? (
-        <p className="field-muted">Loading requests…</p>
-      ) : items.length === 0 ? (
+      {items.length === 0 ? (
         <div className="field-card">
           <p className="field-muted">No leave requests yet.</p>
         </div>
       ) : (
         <div className="me-card">
           {items.map((item) => (
-            <LeaveRow key={item.id} item={item} />
+            <LeaveRow key={item.id} item={item} busy={busy} onCancel={() => void cancel(item)} />
           ))}
         </div>
       )}
-      {leaveRes.error && !leaveRes.authRequired ? (
-        <p className="me-error" role="alert">
-          {leaveRes.error}
-        </p>
-      ) : null}
     </div>
   );
 }
 
-function LeaveRow({ item }: { item: HrLeaveSummary }) {
+/** Open requests, or approved leave that hasn't started, can be cancelled (the server has the last word). */
+function cancellable(item: HrLeaveSummary): boolean {
+  const s = (item.status ?? "").toLowerCase();
+  const today = new Date().toISOString().slice(0, 10);
+  return s === "open" || (s === "approved" && Boolean(item.from_date) && (item.from_date as string) > today);
+}
+
+function LeaveRow({ item, busy, onCancel }: { item: HrLeaveSummary; busy: boolean; onCancel: () => void }) {
   const kind = statusKind(item.status);
   return (
     <div className="me-row">
@@ -171,97 +229,16 @@ function LeaveRow({ item }: { item: HrLeaveSummary }) {
       <div className="me-row__b">
         <b>{leaveRowTitle(item)}</b>
         <span>{fmtDateRange(item.from_date, item.to_date)}</span>
+        {cancellable(item) ? (
+          <button type="button" className="me-link" disabled={busy} onClick={onCancel}>
+            Cancel
+          </button>
+        ) : null}
       </div>
       <span className={`me-stt me-stt--${kind}`}>
         <span className="me-stt__d" />
         {statusLabel(item.status)}
       </span>
     </div>
-  );
-}
-
-function LeaveRequestForm({
-  leaveType,
-  fromDate,
-  toDate,
-  reason,
-  busy,
-  onLeaveType,
-  onFrom,
-  onTo,
-  onReason,
-  onCancel,
-  onSubmit,
-}: {
-  leaveType: string;
-  fromDate: string;
-  toDate: string;
-  reason: string;
-  busy: boolean;
-  onLeaveType: (v: string) => void;
-  onFrom: (v: string) => void;
-  onTo: (v: string) => void;
-  onReason: (v: string) => void;
-  onCancel: () => void;
-  onSubmit: () => void;
-}) {
-  return (
-    <form
-      className="me-form field-card"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit();
-      }}
-    >
-      <label className="me-field">
-        <span>Leave type</span>
-        <Select value={leaveType} onChange={(val) => onLeaveType(val)} disabled={busy}>
-          {LEAVE_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </Select>
-      </label>
-      <label className="me-field">
-        <span>From</span>
-        <DateField
-          value={fromDate}
-          onChange={onFrom}
-          ariaLabel="From"
-          required
-          disabled={busy}
-        />
-      </label>
-      <label className="me-field">
-        <span>To</span>
-        <DateField
-          value={toDate}
-          onChange={onTo}
-          min={fromDate || undefined}
-          ariaLabel="To"
-          required
-          disabled={busy}
-        />
-      </label>
-      <label className="me-field">
-        <span>Reason (optional)</span>
-        <textarea
-          rows={2}
-          value={reason}
-          onChange={(e) => onReason(e.target.value)}
-          disabled={busy}
-          placeholder="Brief reason"
-        />
-      </label>
-      <div className="me-form__actions">
-        <button type="button" className="me-btn me-btn--ghost" onClick={onCancel} disabled={busy}>
-          Cancel
-        </button>
-        <button type="submit" className="me-btn me-btn--pri" disabled={busy}>
-          {busy ? "Submitting…" : "Confirm & submit"}
-        </button>
-      </div>
-    </form>
   );
 }

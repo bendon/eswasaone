@@ -177,13 +177,13 @@ async def test_document_file_streams_only_after_frappe_allows(client: AsyncClien
 
 @pytest.mark.asyncio
 async def test_profile_changes(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
-    calls = _frappe(monkeypatch, lambda m: [CHANGE] if m.endswith(".mine") else CHANGE)
+    calls = _frappe(monkeypatch, lambda m: [CHANGE] if m.endswith(".mine") else [] if m.endswith(".fields") else CHANGE)
     assert (await client.get("/api/hr/me/profile-changes")).json()["items"][0]["field_label"] == "Mobile"
     body = {"field": "cell_number", "requested_value": "7600 0000", "reason": "New number"}
     assert (await client.post("/api/hr/me/profile-changes", json={**body, "confirm": False})).status_code == 400
     r = await client.post("/api/hr/me/profile-changes", json={**body, "evidence": "/api/media/hr/evidence/x.pdf", "confirm": True})
     assert r.status_code == 200, r.text
-    assert calls[1] == ("eswasa_hr.profile_changes.submit", {**body, "evidence": "http://test/api/media/hr/evidence/x.pdf", "confirm": True})
+    assert calls[2] == ("eswasa_hr.profile_changes.submit", {**body, "evidence": "http://test/api/media/hr/evidence/x.pdf", "confirm": True})
 
 
 @pytest.mark.asyncio

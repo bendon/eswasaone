@@ -694,6 +694,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hr/me/expense-claims/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The claim form's expense types and receipt threshold (awaiting ESWASA Finance while none exist) */
+        get: operations["getMyExpenseOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/employee-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Add person choices read from HRMS (genders) */
+        get: operations["getHrEmployeeOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hr/me/expense-claims": {
         parameters: {
             query?: never;
@@ -6688,6 +6722,8 @@ export interface components {
              * @default false
              */
             required_set: boolean;
+            /** Types */
+            types: string[];
         };
         /** HrRecordDocuments */
         HrRecordDocuments: {
@@ -6931,6 +6967,49 @@ export interface components {
         HrProfileChanges: {
             /** Items */
             items: components["schemas"]["HrProfileChange"][];
+            /** Fields */
+            fields: components["schemas"]["HrProfileChangeField"][];
+        };
+        /**
+         * HrProfileChangeField
+         * @description A detail a person may ask to correct; a name change needs evidence.
+         */
+        HrProfileChangeField: {
+            /** Field */
+            field: string;
+            /** Label */
+            label: string;
+            /**
+             * Evidence Required
+             * @default false
+             */
+            evidence_required: boolean;
+        };
+        /**
+         * HrExpenseOptions
+         * @description The claim form's choices. awaiting is "ESWASA Finance" while no expense types exist.
+         */
+        HrExpenseOptions: {
+            /** Types */
+            types: string[];
+            /**
+             * Receipt Required Above
+             * @default null
+             */
+            receipt_required_above: number | null;
+            /**
+             * Awaiting
+             * @default null
+             */
+            awaiting: string | null;
+        };
+        /**
+         * HrEmployeeOptions
+         * @description Add person choices read from HRMS.
+         */
+        HrEmployeeOptions: {
+            /** Genders */
+            genders: string[];
         };
         /** HrProfileChangeBody */
         HrProfileChangeBody: {
@@ -8968,6 +9047,60 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Frappe unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getMyExpenseOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrExpenseOptions"];
+                };
+            };
+            /** @description Frappe unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getHrEmployeeOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrEmployeeOptions"];
+                };
             };
             /** @description Frappe unavailable */
             503: {

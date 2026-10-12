@@ -171,6 +171,9 @@ from app.schemas import (
     HrProfileChange,
     HrProfileChangeBody,
     HrProfileChanges,
+    HrProfileChangeField,
+    HrExpenseOptions,
+    HrEmployeeOptions,
     HrExpenseClaims,
     HrImportJob,
     HrImportResult,
@@ -3524,6 +3527,15 @@ async def get_hr_employee(
     return _as_hr_record(await _hr_call(auth, frappe, f"{_RECORD}.record", params={"employee": employee_id}))
 
 
+@router.get("/hr/employee-options", response_model=HrEmployeeOptions, tags=["hr"])
+async def get_hr_employee_options(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEmployeeOptions:
+    """Add person choices read from HRMS (genders), so the form never hard-codes them."""
+    return HrEmployeeOptions.model_validate(await _hr_call(auth, frappe, "eswasa_hr.employees.form_options") or {})
+
+
 @router.post(
     "/hr/employees",
     response_model=HrEmployeeSummary,
@@ -3774,6 +3786,15 @@ async def list_my_expense_claims(
     return HrExpenseClaims(items=[HrExpenseClaim.model_validate(r) for r in rows])
 
 
+@router.get("/hr/me/expense-claims/options", response_model=HrExpenseOptions, tags=["hr"])
+async def get_my_expense_options(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrExpenseOptions:
+    """The claim form's expense types and receipt threshold (set by ESWASA Finance; nothing invented)."""
+    return HrExpenseOptions.model_validate(await _hr_call(auth, frappe, f"{_EXPENSES}.options") or {})
+
+
 @router.post("/hr/me/expense-claims", tags=["hr"])
 async def submit_my_expense_claim(
     body: HrExpenseClaimBody,
@@ -3928,8 +3949,11 @@ async def list_my_profile_changes(
     auth: Annotated[AuthContext, Depends(require_auth)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> HrProfileChanges:
-    """E5: your correction requests and where each one is. HR decides them in Approvals."""
-    return HrProfileChanges(items=[HrProfileChange.model_validate(r) for r in (await _hr_call(auth, frappe, f"{_PROFILE}.mine") or [])])
+    """E5: your correction requests and where each one is, plus the details you may ask to correct.
+    HR decides them in Approvals."""
+    rows = await _hr_call(auth, frappe, f"{_PROFILE}.mine") or []
+    fields = await _hr_call(auth, frappe, f"{_PROFILE}.fields") or []
+    return HrProfileChanges(items=[HrProfileChange.model_validate(r) for r in rows], fields=[HrProfileChangeField.model_validate(f) for f in fields])
 
 
 @router.post("/hr/me/profile-changes", response_model=HrProfileChange, tags=["hr"])

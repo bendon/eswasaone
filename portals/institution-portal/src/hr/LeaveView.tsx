@@ -1,29 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  apiFetch,
-  AuthError,
-  Icon,
-  NotConnectedPanel,
-  RecordDrawer,
-  useDialogs,
-  type DrawerSection,
-  Select,
-} from "@eswasaone/shared-ui";
+import { Link } from "react-router-dom";
+import { Icon, RecordDrawer, type DrawerSection, Select } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
 import { useInstitution } from "../layout/InstitutionLayout";
-import type { HrLeaveResponse, HrLeaveSummary } from "../api/types";
+import type { HrLeaveRequest, HrLeaveRequests } from "../api/types";
+import { LeaveCalendar } from "./LeaveCalendar";
 import { initialsFromName } from "./helpers";
 
-/** Time off — live leave queue + balances + holidays from HRMS. */
+/**
+ * H4 Time off: who is away, what is waiting, what is owed. Read-only: leave is decided by the named
+ * approver in Approvals (an HR Manager only on escalation). Live GET /hr/leave/requests, /hr/leave/calendar,
+ * /hr/leave/balances, /hr/holidays.
+ */
 
-type StatusFilter = "all" | "pending" | "approved" | "rejected";
+type StatusFilter = "all" | "pending" | "approved" | "rejected" | "cancelled";
 
-type LeaveRow = HrLeaveSummary & { days?: number; balance?: number; initials?: string };
+type LeaveRow = HrLeaveRequest;
 
-function bucketFor(item: HrLeaveSummary): StatusFilter {
+function bucketFor(item: LeaveRow): StatusFilter {
   const s = (item.status ?? "").toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
   if (s.includes("approve") || s.includes("granted") || s.includes("accepted")) return "approved";
   if (s.includes("reject") || s.includes("denied") || s.includes("declined")) return "rejected";
   return "pending";
@@ -47,12 +45,11 @@ function dayCount(item: LeaveRow): number {
 
 export function LeaveView() {
   const { openAuth, user, sessionKey } = useInstitution();
-  const dialogs = useDialogs();
-  const { data, loading, refreshing, error, authRequired, reload } = useApiResource<HrLeaveResponse>(
-    "/hr/leave",
+  const { data, loading, refreshing, error, authRequired, reload } = useApiResource<HrLeaveRequests>(
+    "/hr/leave/requests",
     { enabled: Boolean(user), refreshKey: sessionKey },
   );
-  const balancesRes = useApiResource<{ items: Array<{ leave_type: string; allocated: number; used: number; balance: number }> }>(
+  const balancesRes = useApiResource<{ items: Array<{ leave_type: string; allocated: number; used: number; balance: number }>; awaiting?: string | null }>(
     "/hr/leave/balances",
     { enabled: Boolean(user), refreshKey: sessionKey },
   );
@@ -63,7 +60,6 @@ export function LeaveView() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
   const [openRef, setOpenRef] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authRequired || balancesRes.authRequired || holidaysRes.authRequired) {
@@ -104,37 +100,6 @@ export function LeaveView() {
     }));
   }, [holidaysRes.data]);
 
-  async function actLeave(id: string, decision: "approve" | "reject", employee: string) {
-    const ok = await dialogs.confirm({
-      title: decision === "approve" ? "Approve leave" : "Reject leave",
-      message: `${decision === "approve" ? "Approve" : "Reject"} leave for ${employee}?`,
-      confirmLabel: decision === "approve" ? "Approve" : "Reject",
-      danger: decision === "reject",
-    });
-    if (!ok) return;
-    setBusyId(id);
-    try {
-      await apiFetch<HrLeaveSummary>(`/hr/leave/${encodeURIComponent(id)}/act`, {
-        method: "POST",
-        body: JSON.stringify({ decision, confirm: true }),
-      });
-      await dialogs.alert({
-        message: `${decision === "approve" ? "Approved" : "Rejected"}: ${employee}`,
-        kind: "success",
-      });
-      reload();
-    } catch (err) {
-      if (err instanceof AuthError && err.authRequired) openAuth(err.reason);
-      else
-        await dialogs.alert({
-          message: err instanceof Error ? err.message : "Leave action failed",
-          kind: "error",
-        });
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   const drawerSections: DrawerSection[] = selected
     ? [
         {
@@ -147,7 +112,11 @@ export function LeaveView() {
               </div>
               <div className="kv">
                 <b>Employee</b>
-                <span>{selected.employee}</span>
+                <span>{selected.employee_name || selected.employee}</span>
+              </div>
+              <div className="kv">
+                <b>Department</b>
+                <span>{selected.department || "—"}</span>
               </div>
               <div className="kv">
                 <b>Leave type</b>
@@ -156,9 +125,37 @@ export function LeaveView() {
               <div className="kv">
                 <b>Dates</b>
                 <span>
-                  {fmtDate(selected.from_date)} → {fmtDate(selected.to_date)}
+                  {fmtDate(selected.from_date)} → {fmtDate(selected.to_date)} ({dayCount(selected)} days)
                 </span>
               </div>
+            </>
+          ),
+        },
+        {
+          heading: "Decision",
+          content: (
+            <>
+              <div className="kv">
+                <b>Status</b>
+                <span className="stagechip">{selected.status}</span>
+              </div>
+              <div className="kv">
+                <b>Decides</b>
+                <span>{selected.approver_name || selected.approver || "No approver set. HR is alerted."}</span>
+              </div>
+              {selected.sla_date ? (
+                <div className="kv">
+                  <b>Due</b>
+                  <span>
+                    {fmtDate(selected.sla_date)}
+                    {selected.overdue ? " (overdue)" : ""}
+                    {selected.escalated ? ", escalated to HR" : ""}
+                  </span>
+                </div>
+              ) : null}
+              <p className="page-note">
+                Leave is decided in <Link to="/approvals">Approvals</Link> by the person named here.
+              </p>
             </>
           ),
         },
@@ -177,7 +174,6 @@ export function LeaveView() {
         label="Loading time off…"
       >
         <div className="hr">
-          {dialogs.host}
 
           <div className="hr-head">
             <div>
@@ -191,23 +187,23 @@ export function LeaveView() {
               <span className="l">Requests waiting</span>
               <span className="v">{pending.length}</span>
               <span className={`d ${pending.length ? "warn" : ""}`}>
-                {pending.length ? "Line managers decide in Approvals" : "Queue clear"}
+                {pending.length ? "Named approvers decide in Approvals" : "Queue clear"}
               </span>
             </div>
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <NotConnectedPanel
-              what="Leave calendar"
-              detail="Team calendar (approved leave, open requests, Field Visits as F) needs GET /hr/leave/calendar. Requests and balances below are live from HRMS."
-            />
+            <LeaveCalendar enabled={Boolean(user)} refreshKey={sessionKey} />
           </div>
 
           <div className="hr-box" style={{ marginBottom: 16 }}>
             <div className="hr-box__h">
               <div>
                 <h3>Requests</h3>
-                <p>Line managers decide these in Approvals</p>
+                <p>
+                  Each request is decided by its named approver in <Link to="/approvals">Approvals</Link>.{" "}
+                  <Link to="/hr/time-off/policy">Leave policy</Link>
+                </p>
               </div>
               <span className="hr-st leave">
                 <span className="d" />
@@ -225,6 +221,7 @@ export function LeaveView() {
                     { value: "all", label: "All" },
                     { value: "approved", label: "Approved" },
                     { value: "rejected", label: "Rejected" },
+                    { value: "cancelled", label: "Cancelled" },
                   ]}
                 />
               </div>
@@ -247,8 +244,9 @@ export function LeaveView() {
                         <th>Type</th>
                         <th>Dates</th>
                         <th>Days</th>
-                        <th>Balance</th>
-                        <th style={{ textAlign: "right" }}>Action</th>
+                        <th>Decides</th>
+                        <th>Status</th>
+                        <th />
                       </tr>
                     </thead>
                     <tbody>
@@ -257,10 +255,11 @@ export function LeaveView() {
                           <td>
                             <div className="hr-who">
                               <span className="hr-av">
-                                {item.initials ?? initialsFromName(item.employee)}
+                                {initialsFromName(item.employee_name || item.employee || "")}
                               </span>
                               <div>
-                                <b>{item.employee}</b>
+                                <b>{item.employee_name || item.employee}</b>
+                                {item.department ? <small style={{ display: "block", color: "var(--muted)" }}>{item.department}</small> : null}
                               </div>
                             </div>
                           </td>
@@ -272,38 +271,15 @@ export function LeaveView() {
                               : ""}
                           </td>
                           <td className="mono">{dayCount(item)}</td>
-                          <td className="mono">
-                            {item.balance != null ? `${item.balance} days` : "—"}
+                          <td>{item.approver_name || item.approver || "Not set"}</td>
+                          <td>
+                            <span className="stagechip">{item.status}</span>
+                            {item.overdue ? <small style={{ display: "block", color: "var(--bad, #b42318)" }}>Overdue{item.escalated ? ", with HR" : ""}</small> : null}
                           </td>
                           <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                            {bucketFor(item) === "pending" ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="btn pri sm"
-                                  disabled={busyId === item.id}
-                                  onClick={() => void actLeave(item.id, "approve", item.employee)}
-                                >
-                                  <Icon name="i-check-c" />
-                                  {busyId === item.id ? "…" : "Approve"}
-                                </button>{" "}
-                                <button
-                                  type="button"
-                                  className="btn ghost sm"
-                                  disabled={busyId === item.id}
-                                  onClick={() => void actLeave(item.id, "reject", item.employee)}
-                                >
-                                  Reject
-                                </button>{" "}
-                                <button type="button" className="btn ghost sm" onClick={() => setOpenRef(item.id)}>
-                                  View
-                                </button>
-                              </>
-                            ) : (
-                              <button type="button" className="btn ghost sm" onClick={() => setOpenRef(item.id)}>
-                                View
-                              </button>
-                            )}
+                            <button type="button" className="btn ghost sm" onClick={() => setOpenRef(item.id)}>
+                              View
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -318,14 +294,18 @@ export function LeaveView() {
             <div className="hr-box">
               <div className="hr-box__h">
                 <div>
-                  <h3>Leave balances</h3>
-                  <p>Allocated leave balances for your staff</p>
+                  <h3>Your leave balances</h3>
+                  <p>From the leave ledger. Each person sees their own on My HR.</p>
                 </div>
               </div>
               <div className="hr-box__b">
                 {balanceRows.length === 0 ? (
                   <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
-                    No allocations visible yet. Ensure Leave Allocation records exist and your role can read them.
+                    {balancesRes.data?.awaiting
+                      ? `Awaiting ESWASA (${balancesRes.data.awaiting}): leave types and entitlements aren't set yet.`
+                      : balancesRes.error
+                        ? "Balances couldn't be loaded."
+                        : "No leave allocated to you for this period."}
                   </p>
                 ) : (
                   <div className="hr-tl">
@@ -378,8 +358,8 @@ export function LeaveView() {
             open={!!selected}
             onClose={() => setOpenRef(null)}
             reference={selected?.id}
-            title={selected ? selected.employee : ""}
-            subtitle={selected ? <span className="stagechip">{selected.leave_type}</span> : null}
+            title={selected ? selected.employee_name || selected.employee || "" : ""}
+            subtitle={selected?.leave_type ? <span className="stagechip">{selected.leave_type}</span> : null}
             sections={drawerSections}
           />
         </div>

@@ -73,6 +73,11 @@ def request_errors(field: str | None, requested: str | None, reason: str | None,
     return errs
 
 
+def field_options() -> list[dict[str, Any]]:
+    """What a person may ask to correct (E5 picker); a name change needs evidence."""
+    return [{"field": f, "label": label, "evidence_required": f in NAME} for f, label in ALLOWED.items()]
+
+
 def decider_error(user: str, roles: Iterable[str], requester: str | None, employee_user: str | None) -> str | None:
     if not set(roles or ()) & set(DECIDERS):
         return "Only HR can decide profile changes."
@@ -273,6 +278,11 @@ def _whitelist(fn):
 @_whitelist
 def mine() -> list[dict[str, Any]]:
     return mine_impl()
+
+
+@_whitelist
+def fields() -> list[dict[str, Any]]:
+    return field_options()
 
 
 @_whitelist

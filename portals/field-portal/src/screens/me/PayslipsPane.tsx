@@ -32,26 +32,20 @@ export function PayslipsPane({ enabled, refreshKey, onAuthRequired }: Props) {
       window.open(url, "_blank", "noopener,noreferrer");
       return;
     }
-    // Contract HrPayslip has no pdf_url yet — toast until Core returns a link.
-    setToast(`Downloading payslip ${slip.period || slip.id}…`);
+    // HrPayslip has no PDF link yet (payroll is out of scope until ESWASA decides H15).
+    setToast(`No PDF for ${slip.period || slip.id} yet. Ask HR for a copy.`);
   }
 
   return (
     <div className="me-pane">
       <Toast message={toast} />
 
-      <div className="field-card me-ytd">
-        <div className="me-ytd__lbl">Earnings YTD</div>
-        <div className="me-ytd__n mono">
-          {slipsRes.loading && !slipsRes.data ? "…" : fmtSzl(ytd || 30400)}
+      {ytd > 0 ? (
+        <div className="field-card me-ytd">
+          <div className="me-ytd__lbl">Net pay this year (from your slips)</div>
+          <div className="me-ytd__n mono">{fmtSzl(ytd)}</div>
         </div>
-        {!ytd && !slipsRes.loading ? (
-          <p className="me-ytd__hint">
-            {/* TODO: wire real — YTD from payroll when Core exposes it */}
-            Stub total until slips include year-to-date.
-          </p>
-        ) : null}
-      </div>
+      ) : null}
 
       <div className="me-sec-h">Payslips</div>
       {slipsRes.loading && !slipsRes.data ? (

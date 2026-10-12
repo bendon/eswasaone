@@ -877,9 +877,31 @@ def finance_kpis() -> dict[str, Any]:
     }
 
 
+# Who may read the HR roll-up; mirrors eswasa_hr.overview.BOARD_ROLES when that app isn't installed.
+_HR_SUMMARY_ROLES = ("Eswasa Board Member", "Eswasa Board Secretary", "Eswasa Executive Director", "HR Manager", "System Manager")
+
+
 @frappe.whitelist()
 def hr_summary() -> dict[str, Any]:
-    """Headcount / appraisal / leave snapshot from HRMS doctypes when present."""
+    """Headcount / appraisal / leave snapshot for ``board_rollup: hr.summary``.
+
+    Board roles only. With eswasa_hr installed it comes from the Board HR pack, so the two can't disagree;
+    open leave counts only requests still waiting for a decision.
+    """
+    try:
+        from eswasa_hr.overview import BOARD_ROLES, board_pack_impl
+    except ImportError:
+        BOARD_ROLES, board_pack_impl = _HR_SUMMARY_ROLES, None
+    if not set(frappe.get_roles()) & set(BOARD_ROLES):
+        frappe.throw("You can't see the HR summary.", frappe.PermissionError)
+    open_leave = _safe_count("Leave Application", {"status": "Open", "docstatus": 0})
+    if board_pack_impl is not None:
+        pack = board_pack_impl()
+        cycle = pack.get("appraisals") or {}
+        people = int(cycle.get("people") or 0)
+        pct = round(int(cycle.get("manager_done") or 0) * 100.0 / people, 1) if people else 0.0
+        return {**pack, "headcount": pack["headcount"], "appraisal_completion_pct": pct, "open_leave": open_leave}
+
     headcount = _safe_count("Employee", {"status": "Active"}) or _safe_count("Employee")
 
     appraisals_total = _safe_count("Appraisal")
@@ -892,12 +914,6 @@ def hr_summary() -> dict[str, Any]:
         if appraisals_total
         else 0.0
     )
-
-    open_leave = _safe_count(
-        "Leave Application", {"status": ["in", ["Open", "Approved"]]}
-    )
-    if open_leave == 0:
-        open_leave = _safe_count("Leave Application", {"docstatus": 0})
 
     return {
         "headcount": headcount,

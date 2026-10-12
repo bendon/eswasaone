@@ -69,10 +69,10 @@ async def test_live_overview_setup_and_board(client: AsyncClient, monkeypatch: p
 
 
 @pytest.mark.asyncio
-async def test_old_overview_alias_still_works(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_old_overview_removed_live_stays(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     async def _down(self: FrappeClient) -> bool:
         return False
 
     monkeypatch.setattr(FrappeClient, "health", _down)
-    assert (await client.get("/api/hr/overview")).status_code == 503
+    assert (await client.get("/api/hr/overview")).status_code == 404
     assert (await client.get("/api/hr/overview/live")).status_code == 503

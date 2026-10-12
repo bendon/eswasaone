@@ -153,6 +153,10 @@ def raise_from_frappe(exc: FrappeError) -> None:
                     "self-service roles refresh, then retry. If it still fails, ask a System Manager."
                 ),
             ) from exc
+        # A guard's own reason (frappe.throw(..., PermissionError) in eswasa_*) reaches the user unchanged.
+        reason = user_facing_frappe_message(text)
+        if not re.search(r"Insufficient Permission|No permission|not permitted|^Something went wrong|^This action isn't|^[\w.]*PermissionError\W*$", reason, re.I):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=reason) from exc
         m = re.search(r"Insufficient Permission for\s+(.+?)(?:\"|,|\n|$)", plain)
         doc = (m.group(1).strip() if m else "this record").rstrip(".")
         raise HTTPException(

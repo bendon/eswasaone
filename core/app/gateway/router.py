@@ -18,7 +18,7 @@ from app.audit import audit_log
 from app.frappe_client import FrappeClient, FrappeError, get_frappe_client
 from app.gateway import analytics as analytics_bridge
 from app.gateway import mocks
-from app.identity.deps import AuthContext, get_actor, require_auth, require_auth_csrf, require_staff
+from app.identity.deps import SYSTEM_MANAGER_ROLES, AuthContext, get_actor, require_auth, require_auth_csrf, require_staff
 from app.media.store import MediaStore, get_media_store
 from app.identity.errors import AuthRequired
 from app.schemas import (
@@ -44,7 +44,6 @@ from app.schemas import (
     CreateCrmLeadBody,
     CreateFinanceInvoiceBody,
     CreateHrEmployeeBody,
-    CreateHrJobBody,
     CreateHrLeaveBody,
     CrmDealSummary,
     CrmLeadSummary,
@@ -52,10 +51,6 @@ from app.schemas import (
     EnrolTrainingBody,
     FinanceDashboard,
     FinanceInvoiceSummary,
-    HrActivityItem,
-    HrApplicant,
-    HrAppraisalSummary,
-    HrAttendanceSnapshot,
     HrCostCentre,
     HrCostCentreCreate,
     HrCostCentrePatch,
@@ -75,7 +70,6 @@ from app.schemas import (
     HrGradeBandPatch,
     HrGradeBandRef,
     HrHoliday,
-    HrJobOpening,
     HrLeaveActBody,
     HrLeaveBalance,
     CareerApplicationReceipt,
@@ -171,7 +165,6 @@ from app.schemas import (
     HrPayslip,
     HrPayrollStatus,
     HrSetupProgress,
-    HrSummary,
     FinanceSettings,
     FinanceSetupStep,
     InstitutionHome,
@@ -188,23 +181,7 @@ from app.schemas import (
     VerificationResult,
 )
 
-# Default roles when POST /hr/employees invite=true without explicit roles.
-_HR_INVITE_DEFAULT_ROLES = ("ESWASA Staff", "Desk User", "Employee", "Employee Self Service")
-_HR_INVITE_ALLOWED_ROLES = frozenset(
-    {
-        "ESWASA Staff",
-        "Desk User",
-        "Employee",
-        "Employee Self Service",
-        "HR User",
-        "HR Manager",
-        "Leave Approver",
-        "Accounts User",
-        "Accounts Manager",
-        "Sales User",
-        "Sales Manager",
-    }
-)
+# Invitation roles for POST /hr/employees live in eswasa_hr.employees (INVITE_ALLOWED_ROLES).
 
 logger = logging.getLogger(__name__)
 
@@ -1738,48 +1715,6 @@ async def get_finance_settings(
     )
 
 
-@router.get("/hr/summary", response_model=HrSummary, tags=["hr"])
-async def get_hr_summary(
-    auth: Annotated[AuthContext, Depends(require_auth)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-) -> HrSummary:
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    try:
-        raw = await session.method("eswasa_governance.api.hr_summary")
-        return HrSummary.model_validate(raw)
-    except FrappeError as exc:
-        text = str(exc)
-        if (
-            "PermissionError" in text
-            or "Insufficient Permission" in text
-            or "DoesNotExistError" in text
-            or "not found" in text.lower()
-            or "AttributeError" in text
-        ):
-            return await _aggregate_hr_summary(session)
-        _raise_from_frappe(exc)
-    except ValidationError:
-        return await _aggregate_hr_summary(session)
-    raise HTTPException(status_code=502, detail="HR summary unavailable")
-
-
-@router.get("/hr/overview", response_model=HrSummary, tags=["hr"])
-async def get_hr_overview(
-    auth: Annotated[AuthContext, Depends(require_auth)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-) -> HrSummary:
-    """Alias of GET /hr/summary — aggregates from HRMS DocTypes."""
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    try:
-        return await _aggregate_hr_summary(auth.frappe(frappe))
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
-
-
 # --- HR organisation / structure --------------------------------------------
 
 _EMPLOYEE_GRADE_DOCTYPE = "Employee Grade"
@@ -2092,23 +2027,6 @@ def _payroll_readiness(
     )
 
 
-async def _frappe_delete(session: FrappeClient, doctype: str, name: str) -> None:
-    try:
-        await session.method(
-            "frappe.client.delete",
-            json={"doctype": doctype, "name": name},
-        )
-    except FrappeError as exc:
-        text = str(exc)
-        if "LinkExistsError" in text or "is linked" in text.lower():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"{doctype} is still referenced and cannot be deleted",
-            ) from exc
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
-
-
 async def _load_company(session: FrappeClient) -> dict[str, Any] | None:
     rows = await _frappe_get_list(
         session,
@@ -2350,6 +2268,7 @@ async def create_hr_organisation(
 ) -> HrOrganisation:
     """Create the Frappe Company singleton (confirm-before-commit)."""
     _require_confirm(body.confirm)
+    _require_system_manager(auth)
     legal = (body.legal_name or "").strip()
     if not legal:
         raise HTTPException(status_code=422, detail="legal_name required")
@@ -2401,6 +2320,7 @@ async def patch_hr_organisation(
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> HrOrganisation:
     _require_confirm(body.confirm)
+    _require_system_manager(auth)
     audit_log(
         action="hr.organisation.patch",
         actor=auth.user.username,
@@ -2515,27 +2435,13 @@ async def create_hr_department(
         detail={"name": body.name, "code": body.code},
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    doc: dict[str, Any] = {
-        "doctype": "Department",
-        "department_name": body.name,
-    }
-    if body.parent_department_id:
-        doc["parent_department"] = body.parent_department_id
-    if body.cost_centre_id:
-        doc["payroll_cost_center"] = body.cost_centre_id
-    # body.code — no standard abbr on Department; omit (TODO: custom field)
-    company = await _load_company(session)
-    if company and company.get("name"):
-        doc["company"] = company["name"]
-    try:
-        raw = await _frappe_insert(session, doc)
-        return _as_hr_department(raw)
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+    raw = await _hr_write(
+        auth,
+        frappe,
+        "eswasa_hr.master_data.create_department",
+        json={"name": body.name, "parent_department_id": body.parent_department_id, "cost_centre_id": body.cost_centre_id, "confirm": 1},
+    )
+    return _as_hr_department(raw)
 
 
 @router.patch("/hr/departments/{department_id}", response_model=HrDepartment, tags=["hr"])
@@ -2553,56 +2459,20 @@ async def patch_hr_department(
         detail={"name": body.name},
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    updates: dict[str, Any] = {}
-    if body.name is not None:
-        updates["department_name"] = body.name
-    if body.parent_department_id is not None:
-        updates["parent_department"] = body.parent_department_id or ""
-    if body.cost_centre_id is not None:
-        updates["payroll_cost_center"] = body.cost_centre_id or ""
-    if body.status == "archived":
-        updates["disabled"] = 1
-    elif body.status == "active":
-        updates["disabled"] = 0
-    try:
-        if updates:
-            await _frappe_set_value(session, "Department", department_id, updates)
-        raw = await _frappe_get_doc(session, "Department", department_id)
-        if not raw:
-            raise HTTPException(status_code=404, detail="Department not found")
-        return _as_hr_department(raw)
-    except FrappeError as exc:
-        text = str(exc)
-        if "DoesNotExistError" in text or "not found" in text.lower():
-            raise HTTPException(status_code=404, detail="Department not found") from exc
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
-
-
-@router.delete(
-    "/hr/departments/{department_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["hr"],
-)
-async def delete_hr_department(
-    department_id: str,
-    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-    confirm: bool = False,
-) -> None:
-    _require_confirm(confirm)
-    audit_log(
-        action="hr.department.delete",
-        actor=auth.user.username,
-        resource=f"Department:{department_id}",
-        confirmed=True,
+    raw = await _hr_write(
+        auth,
+        frappe,
+        "eswasa_hr.master_data.update_department",
+        json={
+            "department": department_id,
+            "title": body.name,
+            "parent_department": body.parent_department_id,
+            "payroll_cost_center": body.cost_centre_id,
+            "status": body.status,
+            "confirm": 1,
+        },
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    await _frappe_delete(auth.frappe(frappe), "Department", department_id)
+    return _as_hr_department(raw)
 
 
 @router.post("/hr/departments/{department_id}/head", response_model=HrDepartment, tags=["hr"])
@@ -2775,34 +2645,26 @@ async def create_hr_designation(
         detail={"title": body.title},
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    doc: dict[str, Any] = {
-        "doctype": "Designation",
-        "designation_name": body.title,
-    }
-    if body.description:
-        doc["description"] = body.description
-    # TODO: department_id / grade_band_id / approved_headcount need custom fields on Designation
-    try:
-        raw = await _frappe_insert(auth.frappe(frappe), doc)
-        dept = (
-            HrDepartmentRef(id=body.department_id, name=body.department_id)
-            if body.department_id
-            else None
-        )
-        grade = (
-            HrGradeBandRef(id=body.grade_band_id, code=body.grade_band_id)
-            if body.grade_band_id
-            else None
-        )
-        mapped = _as_hr_designation(raw, department=dept, grade_band=grade)
-        if body.approved_headcount is not None:
-            mapped = mapped.model_copy(update={"total": body.approved_headcount})
-        return mapped
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+    raw = await _hr_write(
+        auth,
+        frappe,
+        "eswasa_hr.master_data.create_designation",
+        json={"title": body.title, "description": body.description, "grade_band_id": body.grade_band_id, "confirm": 1},
+    )
+    dept = (
+        HrDepartmentRef(id=body.department_id, name=body.department_id)
+        if body.department_id
+        else None
+    )
+    grade = (
+        HrGradeBandRef(id=body.grade_band_id, code=body.grade_band_id)
+        if body.grade_band_id
+        else None
+    )
+    mapped = _as_hr_designation(raw, department=dept, grade_band=grade)
+    if body.approved_headcount is not None:
+        mapped = mapped.model_copy(update={"total": body.approved_headcount})
+    return mapped
 
 
 @router.patch("/hr/designations/{designation_id}", response_model=HrDesignation, tags=["hr"])
@@ -2820,53 +2682,22 @@ async def patch_hr_designation(
         detail={"title": body.title},
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    updates: dict[str, Any] = {}
-    if body.title is not None:
-        updates["designation_name"] = body.title
-    if body.description is not None:
-        updates["description"] = body.description
-    try:
-        if updates:
-            await _frappe_set_value(session, "Designation", designation_id, updates)
-        raw = await _frappe_get_doc(session, "Designation", designation_id)
-        if not raw:
-            raise HTTPException(status_code=404, detail="Designation not found")
-        mapped = _as_hr_designation(raw)
-        if body.approved_headcount is not None:
-            mapped = mapped.model_copy(update={"total": body.approved_headcount})
-        return mapped
-    except FrappeError as exc:
-        text = str(exc)
-        if "DoesNotExistError" in text or "not found" in text.lower():
-            raise HTTPException(status_code=404, detail="Designation not found") from exc
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
-
-
-@router.delete(
-    "/hr/designations/{designation_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["hr"],
-)
-async def delete_hr_designation(
-    designation_id: str,
-    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-    confirm: bool = False,
-) -> None:
-    _require_confirm(confirm)
-    audit_log(
-        action="hr.designation.delete",
-        actor=auth.user.username,
-        resource=f"Designation:{designation_id}",
-        confirmed=True,
+    raw = await _hr_write(
+        auth,
+        frappe,
+        "eswasa_hr.master_data.update_designation",
+        json={
+            "designation": designation_id,
+            "title": body.title,
+            "description": body.description,
+            "grade_band_id": body.grade_band_id,
+            "confirm": 1,
+        },
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    await _frappe_delete(auth.frappe(frappe), "Designation", designation_id)
+    mapped = _as_hr_designation(raw)
+    if body.approved_headcount is not None:
+        mapped = mapped.model_copy(update={"total": body.approved_headcount})
+    return mapped
 
 
 @router.get("/hr/grade-bands", tags=["hr"])
@@ -2910,47 +2741,23 @@ async def create_hr_grade_band(
         detail={"code": body.code},
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    doc: dict[str, Any] = {
-        "doctype": _EMPLOYEE_GRADE_DOCTYPE,
-        "grade_name": body.code,
-        # ERPNext Employee Grade uses `name` as the grade code after insert
-    }
-    # Prefer setting name via grade if DocType uses autoname by field
-    doc["__newname"] = body.code
-    if body.name:
-        doc["description"] = body.name
-    try:
-        raw = await _frappe_insert(auth.frappe(frappe), doc)
-        mapped = _as_hr_grade_band(raw)
-        return mapped.model_copy(
-            update={
-                "code": body.code,
-                "name": body.name or mapped.name,
-                "level": body.level,
-                "min_salary": body.min_salary,
-                "max_salary": body.max_salary,
-                "currency": body.currency,
-            }
-        )
-    except FrappeError as exc:
-        text = str(exc)
-        if "DoesNotExistError" in text or "not found" in text.lower():
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=(
-                    f"DocType {_EMPLOYEE_GRADE_DOCTYPE} is not installed. "
-                    "Enable HRMS Employee Grade before creating grade bands"
-                ),
-            ) from exc
-        if "ValidationError" in text or "mandatory" in text.lower():
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Could not create Employee Grade: {text[:200]}",
-            ) from exc
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+    raw = await _hr_write(
+        auth,
+        frappe,
+        "eswasa_hr.master_data.create_grade_band",
+        json={"code": body.code, "label": body.name, "confirm": 1},
+    )
+    mapped = _as_hr_grade_band(raw)
+    return mapped.model_copy(
+        update={
+            "code": body.code,
+            "name": body.name or mapped.name,
+            "level": body.level,
+            "min_salary": body.min_salary,
+            "max_salary": body.max_salary,
+            "currency": body.currency,
+        }
+    )
 
 
 @router.patch("/hr/grade-bands/{grade_id}", response_model=HrGradeBand, tags=["hr"])
@@ -2967,40 +2774,25 @@ async def patch_hr_grade_band(
         resource=f"{_EMPLOYEE_GRADE_DOCTYPE}:{grade_id}",
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    updates: dict[str, Any] = {}
-    if body.name is not None:
-        updates["description"] = body.name
-    try:
-        if updates:
-            await _frappe_set_value(session, _EMPLOYEE_GRADE_DOCTYPE, grade_id, updates)
-        raw = await _frappe_get_doc(session, _EMPLOYEE_GRADE_DOCTYPE, grade_id)
-        if not raw:
-            raise HTTPException(status_code=404, detail="Grade band not found")
-        mapped = _as_hr_grade_band(raw)
-        return mapped.model_copy(
-            update={
-                "level": body.level if body.level is not None else mapped.level,
-                "min_salary": body.min_salary
-                if body.min_salary is not None
-                else mapped.min_salary,
-                "max_salary": body.max_salary
-                if body.max_salary is not None
-                else mapped.max_salary,
-                "currency": body.currency if body.currency is not None else mapped.currency,
-            }
-        )
-    except FrappeError as exc:
-        text = str(exc)
-        if "DoesNotExistError" in text or "not found" in text.lower():
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"DocType {_EMPLOYEE_GRADE_DOCTYPE} unavailable or grade not found",
-            ) from exc
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+    raw = await _hr_write(
+        auth,
+        frappe,
+        "eswasa_hr.master_data.update_grade_band",
+        json={"grade_band": grade_id, "description": body.name, "confirm": 1},
+    )
+    mapped = _as_hr_grade_band(raw)
+    return mapped.model_copy(
+        update={
+            "level": body.level if body.level is not None else mapped.level,
+            "min_salary": body.min_salary
+            if body.min_salary is not None
+            else mapped.min_salary,
+            "max_salary": body.max_salary
+            if body.max_salary is not None
+            else mapped.max_salary,
+            "currency": body.currency if body.currency is not None else mapped.currency,
+        }
+    )
 
 
 @router.get("/hr/locations", tags=["hr"])
@@ -3063,24 +2855,15 @@ async def create_hr_location(
         detail={"name": body.name},
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    doc: dict[str, Any] = {"doctype": "Branch", "branch": body.name}
-    # address / type — TODO: custom fields on Branch if needed
-    try:
-        raw = await _frappe_insert(session, doc)
-        mapped = _as_hr_location(raw)
-        if body.type:
-            mapped = mapped.model_copy(update={"type": body.type})
-        if body.address:
-            mapped = mapped.model_copy(update={"address": body.address})
-        if body.code:
-            mapped = mapped.model_copy(update={"code": body.code})
-        return mapped
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+    raw = await _hr_write(auth, frappe, "eswasa_hr.master_data.create_location", json={"name": body.name, "confirm": 1})
+    mapped = _as_hr_location(raw)
+    if body.type:
+        mapped = mapped.model_copy(update={"type": body.type})
+    if body.address:
+        mapped = mapped.model_copy(update={"address": body.address})
+    if body.code:
+        mapped = mapped.model_copy(update={"code": body.code})
+    return mapped
 
 
 @router.patch("/hr/locations/{location_id}", response_model=HrLocation, tags=["hr"])
@@ -3097,35 +2880,23 @@ async def patch_hr_location(
         resource=f"Branch:{location_id}",
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    updates: dict[str, Any] = {}
-    if body.name is not None:
-        updates["branch"] = body.name
-    try:
-        if updates:
-            await _frappe_set_value(session, "Branch", location_id, updates)
-        raw = await _frappe_get_doc(session, "Branch", location_id)
-        if not raw:
-            raise HTTPException(status_code=404, detail="Location not found")
-        mapped = _as_hr_location(raw)
-        extra: dict[str, Any] = {}
-        if body.address is not None:
-            extra["address"] = body.address
-        if body.type is not None:
-            extra["type"] = body.type
-        if body.code is not None:
-            extra["code"] = body.code
-        if body.status is not None:
-            extra["status"] = body.status
-        return mapped.model_copy(update=extra) if extra else mapped
-    except FrappeError as exc:
-        text = str(exc)
-        if "DoesNotExistError" in text or "not found" in text.lower():
-            raise HTTPException(status_code=404, detail="Location not found") from exc
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+    raw = await _hr_write(
+        auth,
+        frappe,
+        "eswasa_hr.master_data.update_location",
+        json={"location": location_id, "title": body.name, "confirm": 1},
+    )
+    mapped = _as_hr_location(raw)
+    extra: dict[str, Any] = {}
+    if body.address is not None:
+        extra["address"] = body.address
+    if body.type is not None:
+        extra["type"] = body.type
+    if body.code is not None:
+        extra["code"] = body.code
+    if body.status is not None:
+        extra["status"] = body.status
+    return mapped.model_copy(update=extra) if extra else mapped
 
 
 @router.get("/hr/cost-centres", tags=["hr"])
@@ -3198,48 +2969,18 @@ async def create_hr_cost_centre(
         detail={"name": body.name},
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    company = await _load_company(session)
-    if not company or not company.get("name"):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Company required before creating a Cost Center",
-        )
-    company_name = str(company["name"])
-    parent_rows = await _frappe_get_list(
-        session,
-        "Cost Center",
-        fields=["name"],
-        filters=[["company", "=", company_name], ["is_group", "=", 1]],
-        limit=1,
-        soft=True,
-    )
-    doc: dict[str, Any] = {
-        "doctype": "Cost Center",
-        "cost_center_name": body.name,
-        "company": company_name,
-        "is_group": 0,
-    }
-    if parent_rows:
-        doc["parent_cost_center"] = parent_rows[0].get("name")
-    try:
-        raw = await _frappe_insert(session, doc)
-        mapped = _as_hr_cost_centre(raw)
-        extra: dict[str, Any] = {}
-        if body.code:
-            extra["code"] = body.code
-        if body.description:
-            extra["description"] = body.description
-        if body.finance_account_code:
-            extra["finance_account_code"] = body.finance_account_code
-        if body.status:
-            extra["status"] = body.status
-        return mapped.model_copy(update=extra) if extra else mapped
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+    raw = await _hr_write(auth, frappe, "eswasa_hr.master_data.create_cost_centre", json={"name": body.name, "confirm": 1})
+    mapped = _as_hr_cost_centre(raw)
+    extra: dict[str, Any] = {}
+    if body.code:
+        extra["code"] = body.code
+    if body.description:
+        extra["description"] = body.description
+    if body.finance_account_code:
+        extra["finance_account_code"] = body.finance_account_code
+    if body.status:
+        extra["status"] = body.status
+    return mapped.model_copy(update=extra) if extra else mapped
 
 
 @router.patch("/hr/cost-centres/{cc_id}", response_model=HrCostCentre, tags=["hr"])
@@ -3256,40 +2997,25 @@ async def patch_hr_cost_centre(
         resource=f"Cost Center:{cc_id}",
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    updates: dict[str, Any] = {}
-    if body.status == "archived":
-        updates["disabled"] = 1
-    elif body.status in ("active", "draft"):
-        updates["disabled"] = 0
-    try:
-        if updates:
-            await _frappe_set_value(session, "Cost Center", cc_id, updates)
-        raw = await _frappe_get_doc(session, "Cost Center", cc_id)
-        if not raw:
-            raise HTTPException(status_code=404, detail="Cost centre not found")
-        mapped = _as_hr_cost_centre(raw)
-        extra: dict[str, Any] = {}
-        if body.name is not None:
-            extra["name"] = body.name
-        if body.code is not None:
-            extra["code"] = body.code
-        if body.description is not None:
-            extra["description"] = body.description
-        if body.finance_account_code is not None:
-            extra["finance_account_code"] = body.finance_account_code
-        if body.status is not None:
-            extra["status"] = body.status
-        return mapped.model_copy(update=extra) if extra else mapped
-    except FrappeError as exc:
-        text = str(exc)
-        if "DoesNotExistError" in text or "not found" in text.lower():
-            raise HTTPException(status_code=404, detail="Cost centre not found") from exc
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
-
+    raw = await _hr_write(
+        auth,
+        frappe,
+        "eswasa_hr.master_data.update_cost_centre",
+        json={"cost_centre": cc_id, "status": body.status, "confirm": 1},
+    )
+    mapped = _as_hr_cost_centre(raw)
+    extra: dict[str, Any] = {}
+    if body.name is not None:
+        extra["name"] = body.name
+    if body.code is not None:
+        extra["code"] = body.code
+    if body.description is not None:
+        extra["description"] = body.description
+    if body.finance_account_code is not None:
+        extra["finance_account_code"] = body.finance_account_code
+    if body.status is not None:
+        extra["status"] = body.status
+    return mapped.model_copy(update=extra) if extra else mapped
 
 
 @router.get("/metrology/jobs", tags=["metrology"])
@@ -3503,24 +3229,6 @@ def _as_hr_out_today(row: dict[str, Any]) -> HrOutTodayItem:
     )
 
 
-def _as_hr_appraisal(row: dict[str, Any]) -> HrAppraisalSummary:
-    # HRMS Appraisal is submittable — no Select "status"; map docstatus
-    raw_status = row.get("status")
-    if raw_status is None:
-        ds = row.get("docstatus")
-        try:
-            ds_i = int(ds) if ds is not None else 0
-        except (TypeError, ValueError):
-            ds_i = 0
-        raw_status = {0: "Draft", 1: "Submitted", 2: "Cancelled"}.get(ds_i, "Draft")
-    return HrAppraisalSummary(
-        id=str(row.get("name") or row.get("id") or ""),
-        employee=str(row.get("employee_name") or row.get("employee") or ""),
-        cycle=row.get("appraisal_cycle") or row.get("cycle"),
-        status=str(raw_status),
-    )
-
-
 def _quarter_start(today: date | None = None) -> date:
     d = today or date.today()
     month = ((d.month - 1) // 3) * 3 + 1
@@ -3531,131 +3239,7 @@ def _today_iso() -> str:
     return date.today().isoformat()
 
 
-async def _aggregate_hr_summary(session: FrappeClient) -> HrSummary:
-    """Build overview KPIs from HRMS DocTypes (soft-empty on permission / missing)."""
-    today = _today_iso()
-    q_start = _quarter_start().isoformat()
-
-    employees = await _frappe_get_list(
-        session,
-        "Employee",
-        fields=["name", "status", "date_of_joining", "employee_name", "modified"],
-        filters=[["status", "=", "Active"]],
-        limit=500,
-        order_by="modified desc",
-        soft=True,
-    )
-    headcount = len(employees)
-    new_hires_q = sum(
-        1
-        for e in employees
-        if e.get("date_of_joining") and str(e["date_of_joining"])[:10] >= q_start
-    )
-
-    leave_open = await _frappe_get_list(
-        session,
-        "Leave Application",
-        fields=[
-            "name",
-            "employee",
-            "employee_name",
-            "leave_type",
-            "from_date",
-            "to_date",
-            "status",
-            "modified",
-        ],
-        filters=[["status", "=", "Open"]],
-        limit=200,
-        order_by="modified desc",
-        soft=True,
-    )
-    leave_pending = len(leave_open)
-
-    out_rows = await _frappe_get_list(
-        session,
-        "Leave Application",
-        fields=[
-            "name",
-            "employee",
-            "employee_name",
-            "leave_type",
-            "from_date",
-            "to_date",
-            "status",
-        ],
-        filters=[
-            ["status", "in", ["Open", "Approved"]],
-            ["from_date", "<=", today],
-            ["to_date", ">=", today],
-        ],
-        limit=100,
-        soft=True,
-    )
-    on_leave_today = len(out_rows)
-
-    appraisals = await _frappe_get_list(
-        session,
-        "Appraisal",
-        fields=["name", "docstatus", "employee_name", "modified"],
-        limit=500,
-        order_by="modified desc",
-        soft=True,
-    )
-    if appraisals:
-        submitted = sum(1 for a in appraisals if int(a.get("docstatus") or 0) == 1)
-        appraisal_pct = round(100.0 * submitted / len(appraisals), 1)
-    else:
-        appraisal_pct = 0.0
-
-    jobs = await _frappe_get_list(
-        session,
-        "Job Opening",
-        fields=["name", "status"],
-        filters=[["status", "=", "Open"]],
-        limit=100,
-        soft=True,
-    )
-    open_positions = len(jobs)
-
-    activity: list[HrActivityItem] = []
-    for row in leave_open[:5]:
-        activity.append(
-            HrActivityItem(
-                id=str(row.get("name") or ""),
-                kind="leave",
-                title=f"Leave pending: {row.get('employee_name') or row.get('employee') or ''}",
-                at=str(row.get("modified")) if row.get("modified") else None,
-            )
-        )
-    for row in employees[:3]:
-        if row.get("date_of_joining") and str(row["date_of_joining"])[:10] >= q_start:
-            activity.append(
-                HrActivityItem(
-                    id=str(row.get("name") or ""),
-                    kind="hire",
-                    title=f"New hire: {row.get('employee_name') or row.get('name')}",
-                    at=str(row.get("date_of_joining")),
-                )
-            )
-
-    return HrSummary(
-        headcount=headcount,
-        appraisal_completion_pct=appraisal_pct,
-        open_leave=leave_pending,
-        new_hires_q=new_hires_q,
-        on_leave_today=on_leave_today,
-        leave_pending=leave_pending,
-        open_positions=open_positions,
-        out_today=[_as_hr_out_today(r) for r in out_rows],
-        activity=activity[:8] or None,
-    )
-
-
 # Back-compat name used in earlier Phase 1 drafts.
-_aggregate_hr_overview = _aggregate_hr_summary
-
-
 def _as_marketing_campaign(row: dict[str, Any]) -> MarketingCampaignSummary:
     return MarketingCampaignSummary(
         id=str(row.get("name") or row.get("id") or ""),
@@ -3725,6 +3309,12 @@ def _as_training_enrolment(row: dict[str, Any]) -> TrainingEnrolmentSummary:
         member=row.get("member"),
         status=status,
     )
+
+
+def _require_system_manager(auth: AuthContext) -> None:
+    """The company profile is a System Manager setting, not an HR one."""
+    if not set(auth.user.roles or []) & SYSTEM_MANAGER_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only a System Manager can change the company profile.")
 
 
 def _require_confirm(confirm: bool) -> None:
@@ -3920,6 +3510,8 @@ async def create_hr_employee(
     auth: Annotated[AuthContext, Depends(require_auth_csrf)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> HrEmployeeSummary:
+    """Add a person. eswasa_hr.employees.create checks the HRMS-required fields, the department and the
+    invitation; a missing field comes back as a plain 422 the form shows."""
     _require_confirm(body.confirm)
     audit_log(
         action="hr.employee.create",
@@ -3932,92 +3524,19 @@ async def create_hr_employee(
         },
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    payload = body.model_dump(exclude={"confirm", "company", "profile_name"})
+    raw = await _hr_write(auth, frappe, "eswasa_hr.employees.create", json={**payload, "confirm": 1})
+    invited = str((raw or {}).get("user_id") or "")
+    if body.invite and body.profile_name and invited:
+        from app.admin.router import _apply_job_profile
 
-    name_parts = body.employee_name.strip().split(None, 1)
-    first_name = (body.first_name or (name_parts[0] if name_parts else "")).strip()
-    last_name = (
-        body.last_name
-        or (name_parts[1] if len(name_parts) > 1 else "")
-        or ""
-    ).strip()
-    if not first_name:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="employee_name or first_name required",
-        )
-
-    doc: dict[str, Any] = {
-        "doctype": "Employee",
-        "first_name": first_name,
-        "last_name": last_name,
-        "employee_name": body.employee_name.strip() or f"{first_name} {last_name}".strip(),
-        "status": "Active",
-    }
-    for key, val in (
-        ("department", body.department),
-        ("designation", body.designation),
-        ("date_of_joining", body.date_of_joining),
-        ("company_email", body.company_email or body.email),
-        ("gender", body.gender),
-        ("date_of_birth", body.date_of_birth),
-        ("company", body.company),
-        ("reports_to", body.reports_to),
-    ):
-        if val:
-            doc[key] = val
-
-    session = auth.frappe(frappe)
-    try:
-        raw = await _frappe_insert(session, doc)
-        emp_name = str(raw.get("name") or "")
-
-        invite_email = (body.email or body.company_email or "").strip().lower()
-        if body.invite:
-            if not invite_email:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="email (or company_email) required when invite=true",
-                )
-            roles = [r for r in (body.roles or list(_HR_INVITE_DEFAULT_ROLES)) if r in _HR_INVITE_ALLOWED_ROLES]
-            if not roles:
-                roles = list(_HR_INVITE_DEFAULT_ROLES)
-            try:
-                await frappe.invite_staff(
-                    email=invite_email,
-                    full_name=doc["employee_name"],
-                    roles=roles,
-                )
-            except FrappeError as exc:
-                detail = str(exc).lower()
-                if "already" not in detail and exc.status_code != 409:
-                    _raise_from_frappe(exc)
-                    raise  # pragma: no cover
-            try:
-                await _frappe_set_value(session, "Employee", emp_name, "user_id", invite_email)
-                raw["user_id"] = invite_email
-            except HTTPException:
-                logger.warning("link Employee.user_id=%s failed for %s", invite_email, emp_name)
-
-            if body.profile_name:
-                from app.admin.router import _apply_job_profile
-
-                try:
-                    await _apply_job_profile(
-                        session,
-                        user=invite_email,
-                        profile_name=body.profile_name.strip(),
-                    )
-                except HTTPException:
-                    raise
-                except Exception as exc:  # noqa: BLE001 — profile is best-effort after invite
-                    logger.warning("apply profile %s on %s: %s", body.profile_name, invite_email, exc)
-
-        return _as_hr_employee(raw)
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+        try:
+            await _apply_job_profile(auth.frappe(frappe), user=invited, profile_name=body.profile_name.strip())
+        except HTTPException:
+            raise
+        except Exception as exc:  # noqa: BLE001 — profile is best-effort after invite
+            logger.warning("apply profile %s on %s: %s", body.profile_name, invited, exc)
+    return _as_hr_employee(raw or {})
 
 
 @router.patch(
@@ -4031,6 +3550,7 @@ async def patch_hr_employee(
     auth: Annotated[AuthContext, Depends(require_auth_csrf)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> HrEmployeeSummary:
+    """Correct job fields. Moves, leaving and protected details are refused in eswasa_hr.employees.update."""
     _require_confirm(body.confirm)
     updates: dict[str, Any] = {}
     for key in ("employee_name", "department", "designation", "status", "reports_to"):
@@ -4051,21 +3571,8 @@ async def patch_hr_employee(
         detail=updates,
         confirmed=True,
     )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    session = auth.frappe(frappe)
-    try:
-        await _frappe_set_value(session, "Employee", employee_id, updates)
-        raw = await _frappe_get_doc(session, "Employee", employee_id)
-        if not raw:
-            raise HTTPException(status_code=404, detail="Employee not found")
-        return _as_hr_employee(raw)
-    except FrappeError as exc:
-        text = str(exc)
-        if "DoesNotExistError" in text or "not found" in text.lower():
-            raise HTTPException(status_code=404, detail="Employee not found") from exc
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
+    raw = await _hr_write(auth, frappe, "eswasa_hr.employees.update", json={"employee": employee_id, "changes": updates, "confirm": 1})
+    return _as_hr_employee(raw or {})
 
 
 @router.get("/hr/orgchart", tags=["hr"])
@@ -4528,6 +4035,22 @@ async def _hr_call(
     except FrappeError as exc:
         _raise_from_frappe(exc)
         raise  # pragma: no cover
+
+
+async def _hr_write(
+    auth: AuthContext,
+    frappe: FrappeClient,
+    method: str,
+    *,
+    json: dict[str, Any],
+) -> Any:
+    """``_hr_call`` for forms: a rule the input breaks comes back as 422 with eswasa_hr's plain text."""
+    try:
+        return await _hr_call(auth, frappe, method, json=json)
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_400_BAD_REQUEST:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.detail) from exc
+        raise
 
 
 @router.get("/hr/competence/matrix", response_model=HrCompetenceMatrix, tags=["hr"])
@@ -5645,6 +5168,8 @@ async def act_hr_leave(
     auth: Annotated[AuthContext, Depends(require_auth_csrf)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> HrLeaveSummary:
+    """Approve or reject from the Time off page. Same path as Approvals, so eswasa_hr.leave.decide applies:
+    the named leave approver or an HR Manager, never the applicant, and a reject needs a note."""
     _require_confirm(body.confirm)
     decision = body.decision.strip().lower()
     if decision not in ("approve", "reject"):
@@ -5652,7 +5177,6 @@ async def act_hr_leave(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="decision must be approve or reject",
         )
-    new_status = "Approved" if decision == "approve" else "Rejected"
     audit_log(
         action="hr.leave.act",
         actor=auth.user.username,
@@ -5664,46 +5188,23 @@ async def act_hr_leave(
         raise HTTPException(status_code=503, detail="Frappe unavailable")
     session = auth.frappe(frappe)
     try:
-        workflow_ok = False
-        try:
-            leave_doc = await _frappe_get_doc(session, "Leave Application", leave_id)
-            if leave_doc:
-                action_label = "Approve" if decision == "approve" else "Reject"
-                await session.method(
-                    "frappe.model.workflow.apply_workflow",
-                    json={"doc": leave_doc, "action": action_label},
-                )
-                workflow_ok = True
-        except FrappeError:
-            workflow_ok = False
-
-        if not workflow_ok:
-            await _frappe_set_value(session, "Leave Application", leave_id, "status", new_status)
-
-        if body.reason:
-            try:
-                await session.method(
-                    "frappe.client.insert",
-                    json={
-                        "doc": {
-                            "doctype": "Comment",
-                            "comment_type": "Comment",
-                            "reference_doctype": "Leave Application",
-                            "reference_name": leave_id,
-                            "content": f"[{auth.user.username}] {decision}: {body.reason}",
-                        }
-                    },
-                )
-            except FrappeError:
-                pass
-
+        await session.method(
+            "eswasa_governance.api.act_on_approval",
+            json={
+                "doctype": "Leave Application",
+                "name": leave_id,
+                "action": decision,
+                "comment": body.reason,
+                "confirm": True,
+            },
+        )
         raw = await _frappe_get_doc(session, "Leave Application", leave_id)
         if not raw:
             raise HTTPException(status_code=404, detail="Leave application not found")
         return _as_hr_leave(raw)
     except FrappeError as exc:
         text = str(exc)
-        if "DoesNotExistError" in text or "not found" in text.lower():
+        if "DoesNotExistError" in text:
             raise HTTPException(status_code=404, detail="Leave application not found") from exc
         _raise_from_frappe(exc)
         raise  # pragma: no cover
@@ -5758,145 +5259,6 @@ async def list_hr_holidays(
         raise  # pragma: no cover
 
 
-@router.get("/hr/attendance", response_model=HrAttendanceSnapshot, tags=["hr"])
-async def list_hr_attendance(
-    auth: Annotated[AuthContext, Depends(require_auth)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-    date_param: Annotated[str | None, Query(alias="date")] = None,
-) -> HrAttendanceSnapshot:
-    """Who is out on a given date (Open/Approved leave overlapping)."""
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    day = (date_param or _today_iso())[:10]
-    try:
-        rows = await _frappe_get_list(
-            auth.frappe(frappe),
-            "Leave Application",
-            fields=[
-                "name",
-                "employee",
-                "employee_name",
-                "leave_type",
-                "from_date",
-                "to_date",
-                "status",
-            ],
-            filters=[
-                ["status", "in", ["Open", "Approved"]],
-                ["from_date", "<=", day],
-                ["to_date", ">=", day],
-            ],
-            limit=100,
-            order_by="employee_name asc",
-            soft=True,
-        )
-        out = [_as_hr_out_today(r) for r in rows]
-        return HrAttendanceSnapshot(
-            date=day,
-            out_today=out,
-            absent_count=len(out),
-            present_count=None,
-        )
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
-
-
-@router.get("/hr/out-today", tags=["hr"])
-async def list_hr_out_today(
-    auth: Annotated[AuthContext, Depends(require_auth)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-    limit: int = 50,
-) -> dict[str, list[HrOutTodayItem]]:
-    """Alias of attendance out list — staff on leave today."""
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    today = _today_iso()
-    try:
-        rows = await _frappe_get_list(
-            auth.frappe(frappe),
-            "Leave Application",
-            fields=[
-                "name",
-                "employee",
-                "employee_name",
-                "leave_type",
-                "from_date",
-                "to_date",
-                "status",
-            ],
-            filters=[
-                ["status", "in", ["Open", "Approved"]],
-                ["from_date", "<=", today],
-                ["to_date", ">=", today],
-            ],
-            limit=limit,
-            order_by="employee_name asc",
-            soft=True,
-        )
-        return {"items": [_as_hr_out_today(r) for r in rows]}
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
-
-
-@router.get("/hr/appraisals", tags=["hr"])
-async def list_hr_appraisals(
-    auth: Annotated[AuthContext, Depends(require_auth)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-    limit: int = 20,
-) -> dict[str, list[HrAppraisalSummary]]:
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    try:
-        rows = await _frappe_get_list(
-            auth.frappe(frappe),
-            "Appraisal",
-            fields=[
-                "name",
-                "employee",
-                "employee_name",
-                "appraisal_cycle",
-                "docstatus",
-                "final_score",
-            ],
-            limit=limit,
-            order_by="modified desc",
-            soft=True,
-        )
-        return {"items": [_as_hr_appraisal(r) for r in rows]}
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
-
-
-def _as_hr_job(row: dict[str, Any]) -> HrJobOpening:
-    vacancies = row.get("planned_no_of_positions") or row.get("vacancies") or row.get("no_of_positions")
-    try:
-        vac_i = int(vacancies) if vacancies is not None else None
-    except (TypeError, ValueError):
-        vac_i = None
-    return HrJobOpening(
-        id=str(row.get("name") or ""),
-        job_title=str(row.get("job_title") or row.get("name") or ""),
-        status=str(row.get("status") or "Open"),
-        department=str(row["department"]) if row.get("department") else None,
-        designation=str(row["designation"]) if row.get("designation") else None,
-        vacancies=vac_i,
-    )
-
-
-def _as_hr_applicant(row: dict[str, Any]) -> HrApplicant:
-    status = str(row.get("status") or "Open")
-    return HrApplicant(
-        id=str(row.get("name") or ""),
-        applicant_name=str(row.get("applicant_name") or row.get("name") or ""),
-        status=status,
-        job=str(row.get("job_title") or row.get("job_opening") or "") or None,
-        stage=status,
-    )
-
-
 def _as_hr_payslip(row: dict[str, Any]) -> HrPayslip:
     net = row.get("net_pay")
     try:
@@ -5911,110 +5273,6 @@ def _as_hr_payslip(row: dict[str, Any]) -> HrPayslip:
         period=str(period) if period else None,
         net_pay=net_f,
     )
-
-
-@router.get("/hr/jobs", tags=["hr"])
-async def list_hr_jobs(
-    auth: Annotated[AuthContext, Depends(require_auth)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-    limit: int = 20,
-    status_filter: Annotated[str | None, Query(alias="status")] = None,
-) -> dict[str, list[HrJobOpening]]:
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    filters: list[Any] | None = [["status", "=", status_filter]] if status_filter else None
-    try:
-        rows = await _frappe_get_list(
-            auth.frappe(frappe),
-            "Job Opening",
-            fields=[
-                "name",
-                "job_title",
-                "department",
-                "designation",
-                "status",
-                "planned_no_of_positions",
-            ],
-            filters=filters,
-            limit=limit,
-            order_by="modified desc",
-            soft=True,
-        )
-        return {"items": [_as_hr_job(r) for r in rows]}
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
-
-
-@router.post(
-    "/hr/jobs",
-    response_model=HrJobOpening,
-    status_code=status.HTTP_201_CREATED,
-    tags=["hr"],
-)
-async def create_hr_job(
-    body: CreateHrJobBody,
-    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-) -> HrJobOpening:
-    _require_confirm(body.confirm)
-    audit_log(
-        action="hr.jobs.create",
-        actor=auth.user.username,
-        resource="Job Opening",
-        detail={"job_title": body.job_title, "department": body.department},
-        confirmed=True,
-    )
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    doc: dict[str, Any] = {
-        "doctype": "Job Opening",
-        "job_title": body.job_title.strip(),
-        "status": "Open",
-    }
-    if body.department:
-        doc["department"] = body.department
-    if body.designation:
-        doc["designation"] = body.designation
-    if body.vacancies is not None:
-        doc["planned_no_of_positions"] = body.vacancies
-    try:
-        raw = await _frappe_insert(auth.frappe(frappe), doc)
-        return _as_hr_job(raw if isinstance(raw, dict) else {"name": body.job_title, **doc})
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
-
-
-@router.get("/hr/applicants", tags=["hr"])
-async def list_hr_applicants(
-    auth: Annotated[AuthContext, Depends(require_auth)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-    job: str | None = None,
-    status_filter: Annotated[str | None, Query(alias="status")] = None,
-    limit: int = 40,
-) -> dict[str, list[HrApplicant]]:
-    if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=503, detail="Frappe unavailable")
-    filters: list[Any] = []
-    if job:
-        filters.append(["job_title", "=", job])
-    if status_filter:
-        filters.append(["status", "=", status_filter])
-    try:
-        rows = await _frappe_get_list(
-            auth.frappe(frappe),
-            "Job Applicant",
-            fields=["name", "applicant_name", "job_title", "status"],
-            filters=filters or None,
-            limit=limit,
-            order_by="modified desc",
-            soft=True,
-        )
-        return {"items": [_as_hr_applicant(r) for r in rows]}
-    except FrappeError as exc:
-        _raise_from_frappe(exc)
-        raise  # pragma: no cover
 
 
 @router.get("/hr/slips", tags=["hr"])

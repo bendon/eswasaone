@@ -2074,6 +2074,479 @@ paths:
         "422":
           description: Invalid or reversed dates
 
+  # Plan 01: HR routes that stay, each now behind an eswasa_hr guard.
+  /hr/employees:
+    get:
+      tags: [hr]
+      operationId: listHrEmployees
+      summary: People list (soft-empty when the caller can't read Employee)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 50 } }
+        - { name: q, in: query, schema: { type: string } }
+        - { name: department, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/HrEmployeeSummary" } }
+    post:
+      tags: [hr]
+      operationId: createHrEmployee
+      summary: Add a person (eswasa_hr.employees.create). Gender, date of birth and date of joining are required by HRMS and never defaulted
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrEmployeeCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeSummary" }
+        "400":
+          description: confirm must be true
+        "403":
+          description: Not HR
+        "422":
+          description: Missing HRMS field, department not an enabled leaf, or the person already logs in (plain text)
+
+  /hr/employees/{employee_id}:
+    get:
+      tags: [hr]
+      operationId: getHrEmployee
+      summary: One person's summary
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeSummary" }
+        "404":
+          description: Not found
+    patch:
+      tags: [hr]
+      operationId: patchHrEmployee
+      summary: Correct job fields (eswasa_hr.employees.update). Moves on an active record, leaving and protected details are refused
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrEmployeePatch" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeSummary" }
+        "422":
+          description: Rule failed (plain text)
+
+  /hr/leave:
+    get:
+      tags: [hr]
+      operationId: listHrLeave
+      summary: Leave requests the caller can see
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/HrLeaveSummary" } }
+    post:
+      tags: [hr]
+      operationId: createHrLeave
+      summary: Apply for leave as the signed-in employee
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateHrLeaveBody" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLeaveSummary" }
+
+  /hr/leave/{leave_id}/act:
+    post:
+      tags: [hr]
+      operationId: actHrLeave
+      summary: Approve or reject through the Approvals handler (eswasa_hr.leave.decide). The named approver or an HR Manager, never the applicant; a reject needs a reason
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: leave_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrLeaveActBody" }
+      responses:
+        "200":
+          description: Decided
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLeaveSummary" }
+        "400":
+          description: confirm must be true, already decided, or a reject without a reason
+        "403":
+          description: Not the leave approver or an HR Manager, or the caller's own leave (plain text)
+
+  /hr/leave/balances:
+    get:
+      tags: [hr]
+      operationId: listHrLeaveBalances
+      summary: Leave balances
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/HrLeaveBalance" } }
+
+  /hr/holidays:
+    get:
+      tags: [hr]
+      operationId: listHrHolidays
+      summary: Public holidays from the company holiday list
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/HrHoliday" } }
+
+  /hr/organisation:
+    get:
+      tags: [hr]
+      operationId: getHrOrganisation
+      summary: Company profile
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrOrganisation" }
+    post:
+      tags: [hr]
+      operationId: createHrOrganisation
+      summary: Create the company profile. System Manager only
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrOrganisationCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrOrganisation" }
+        "403":
+          description: Not a System Manager
+        "409":
+          description: Company already exists
+    patch:
+      tags: [hr]
+      operationId: patchHrOrganisation
+      summary: Edit the company profile. System Manager only
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrOrganisationPatch" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrOrganisation" }
+        "403":
+          description: Not a System Manager
+
+  /hr/organisation/overview:
+    get:
+      tags: [hr]
+      operationId: getHrOrganisationOverview
+      summary: Structure counts and setup progress (soft-empty when Frappe is down)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrOrganisationOverview" }
+
+  /hr/departments:
+    post:
+      tags: [hr]
+      operationId: createHrDepartment
+      summary: Create a department (eswasa_hr.master_data.create_department / update_department. The parent must be an enabled group in the company; a department still in use can't be archived; the head is set only through /head). HR Manager only
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrDepartmentCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrDepartment" }
+        "403":
+          description: Not an HR Manager
+        "422":
+          description: Rule failed (plain text)
+
+  /hr/departments/{department_id}:
+    patch:
+      tags: [hr]
+      operationId: patchHrDepartment
+      summary: Edit a department. HR Manager only
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: department_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrDepartmentPatch" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrDepartment" }
+        "403":
+          description: Not an HR Manager
+        "404":
+          description: Not found
+        "422":
+          description: Rule failed, e.g. still in use (plain text)
+
+  /hr/designations:
+    post:
+      tags: [hr]
+      operationId: createHrDesignation
+      summary: Create a designation (eswasa_hr.master_data.create_designation / update_designation). HR Manager only
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrDesignationCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrDesignation" }
+        "403":
+          description: Not an HR Manager
+        "422":
+          description: Rule failed (plain text)
+
+  /hr/designations/{designation_id}:
+    patch:
+      tags: [hr]
+      operationId: patchHrDesignation
+      summary: Edit a designation. HR Manager only
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: designation_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrDesignationPatch" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrDesignation" }
+        "403":
+          description: Not an HR Manager
+        "404":
+          description: Not found
+        "422":
+          description: Rule failed, e.g. still in use (plain text)
+
+  /hr/locations:
+    post:
+      tags: [hr]
+      operationId: createHrLocation
+      summary: Create a location (eswasa_hr.master_data.create_location / update_location). HR Manager only
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrLocationCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLocation" }
+        "403":
+          description: Not an HR Manager
+        "422":
+          description: Rule failed (plain text)
+
+  /hr/locations/{location_id}:
+    patch:
+      tags: [hr]
+      operationId: patchHrLocation
+      summary: Edit a location. HR Manager only
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: location_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrLocationPatch" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLocation" }
+        "403":
+          description: Not an HR Manager
+        "404":
+          description: Not found
+        "422":
+          description: Rule failed, e.g. still in use (plain text)
+
+  /hr/cost-centres:
+    post:
+      tags: [hr]
+      operationId: createHrCostCentre
+      summary: Create a cost centre (eswasa_hr.master_data.create_cost_centre / update_cost_centre. A cost centre still in use can't be archived). HR Manager only
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrCostCentreCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrCostCentre" }
+        "403":
+          description: Not an HR Manager
+        "422":
+          description: Rule failed (plain text)
+
+  /hr/cost-centres/{cc_id}:
+    patch:
+      tags: [hr]
+      operationId: patchHrCostCentre
+      summary: Edit a cost centre. HR Manager only
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: cc_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrCostCentrePatch" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrCostCentre" }
+        "403":
+          description: Not an HR Manager
+        "404":
+          description: Not found
+        "422":
+          description: Rule failed, e.g. still in use (plain text)
+
+  /hr/grade-bands:
+    post:
+      tags: [hr]
+      operationId: createHrGradeBand
+      summary: Create a grade band (eswasa_hr.master_data.create_grade_band / update_grade_band). HR Manager only
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrGradeBandCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrGradeBand" }
+        "403":
+          description: Not an HR Manager
+        "422":
+          description: Rule failed (plain text)
+
+  /hr/grade-bands/{grade_id}:
+    patch:
+      tags: [hr]
+      operationId: patchHrGradeBand
+      summary: Edit a grade band. HR Manager only
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: grade_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrGradeBandPatch" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrGradeBand" }
+        "403":
+          description: Not an HR Manager
+        "404":
+          description: Not found
+        "422":
+          description: Rule failed, e.g. still in use (plain text)
+
   /tbt/alerts/{id}/{action}:
     post:
       tags: [ingest]
@@ -5652,6 +6125,150 @@ components:
       - id
       - name
       title: HrEmployeeRef
+    HrEmployeeCreate:
+      description: 'OpenAPI: HrEmployeeCreate.'
+      properties:
+        employee_name:
+          title: Employee Name
+          type: string
+        confirm:
+          title: Confirm
+          type: boolean
+        first_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: First Name
+        last_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Name
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Department
+        designation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Designation
+        date_of_joining:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Date Of Joining
+        company_email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Company Email
+        gender:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Gender
+        date_of_birth:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Date Of Birth
+        company:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Company
+        reports_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Reports To
+        invite:
+          default: false
+          title: Invite
+          type: boolean
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        roles:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Roles
+        profile_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Profile Name
+      required:
+      - employee_name
+      - confirm
+      title: HrEmployeeCreate
+      type: object
+    HrEmployeePatch:
+      description: 'OpenAPI: HrEmployeePatch.'
+      properties:
+        confirm:
+          title: Confirm
+          type: boolean
+        employee_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Employee Name
+        department:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Department
+        designation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Designation
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Status
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        reports_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Reports To
+      required:
+      - confirm
+      title: HrEmployeePatch
+      type: object
     HrEmployeeSummary:
       properties:
         id:

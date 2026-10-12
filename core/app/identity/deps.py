@@ -55,6 +55,7 @@ STAFF_ROLES = frozenset(
         "Eswasa TC Member",
         "Eswasa Board Secretary",
         "Eswasa Board Member",
+        "Eswasa Executive Director",
         "Eswasa Risk Officer",
         "Eswasa TBT Officer",
         "Eswasa TBT Analyst",

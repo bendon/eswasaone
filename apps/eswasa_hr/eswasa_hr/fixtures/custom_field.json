@@ -150,5 +150,15 @@
   "insert_after": "custom_next_step_due",
   "default": "0",
   "name": "Employee Grievance-custom_talk_first"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Designation",
+  "fieldname": "custom_grade",
+  "label": "Grade",
+  "fieldtype": "Link",
+  "options": "Employee Grade",
+  "insert_after": "designation_name",
+  "name": "Designation-custom_grade"
  }
 ]

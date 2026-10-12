@@ -18,3 +18,4 @@ export { PipelineView } from "./recruitment/PipelineView";
 export { ApplicantView } from "./recruitment/ApplicantView";
 export { OnboardingList, StartOnboarding, OnboardingDetail } from "./onboarding/Onboarding";
 export { EmployeeChanges, PromotionForm, TransferForm, LeaverForm, ContractForm, OffboardingDetail } from "./lifecycle/Lifecycle";
+export { DepartmentDetail, RequestChange, ChangeDetail } from "./establishment/Establishment";

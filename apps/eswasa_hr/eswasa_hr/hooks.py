@@ -8,6 +8,7 @@ app_license = "mit"
 required_apps = ["frappe", "erpnext", "hrms"]
 
 fixtures = [
+    {"dt": "Role", "filters": [["name", "in", ["Eswasa Executive Director"]]]},
     {
         "dt": "Custom Field",
         "filters": [
@@ -17,6 +18,7 @@ fixtures = [
                 [
                     "Department-custom_head",
                     "Staffing Plan Detail-custom_frozen_positions",
+                    "Designation-custom_grade",
                     "Skill-custom_kind",
                     "Skill-custom_scheme",
                     "Skill-custom_validity_months",
@@ -110,4 +112,6 @@ eswasa_approval_handlers = {
     # Cases move on only from the case page (notes, outcome, appeal routing).
     "Employee Grievance": "eswasa_hr.cases.decide",
     "Disciplinary Case": "eswasa_hr.cases.decide",
+    # J11: the Executive Director decides; the Board Secretary records the Council decision when needed.
+    "Establishment Change": "eswasa_hr.establishment.decide",
 }

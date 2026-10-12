@@ -121,6 +121,10 @@ from app.schemas import (
     HrReviewBody,
     HrSelfAssessmentBody,
     HrContractBody,
+    HrEstablishment,
+    HrEstChangeBody,
+    HrEstChangeDetail,
+    HrEstDepartment,
     HrContractDefaults,
     HrPromotionBody,
     HrSeparationBody,
@@ -5439,6 +5443,57 @@ async def prepare_contract_change(
     audit_log(action="hr.contract.prepare", actor=auth.user.username, resource=f"Employee:{employee_id}", detail={"kind": body.kind, "new_end": body.new_end}, confirmed=True)
     raw = await _hr_call(auth, frappe, f"{_CONTRACT}.prepare", json={"employee": employee_id, **body.model_dump(exclude={"confirm"}), "confirm": 1})
     return HrChanges.model_validate(raw)
+
+
+_EST = "eswasa_hr.establishment"
+
+
+@router.get("/hr/establishment", response_model=HrEstablishment, tags=["hr"])
+async def get_establishment(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEstablishment:
+    """Approved, frozen, filled, in recruitment and vacant posts per department (H3). HR, ED or the head."""
+    return HrEstablishment.model_validate(await _hr_call(auth, frappe, f"{_EST}.establishment"))
+
+
+@router.get("/hr/establishment/departments/{department_id}", response_model=HrEstDepartment, tags=["hr"])
+async def get_establishment_department(
+    department_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEstDepartment:
+    """One department: head, posts, people, cover warnings and establishment changes (H3a)."""
+    return HrEstDepartment.model_validate(await _hr_call(auth, frappe, f"{_EST}.department", params={"department": department_id}))
+
+
+@router.post("/hr/establishment/changes", response_model=HrEstChangeDetail, tags=["hr"])
+async def request_establishment_change(
+    body: HrEstChangeBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEstChangeDetail:
+    """HR or the head asks; the Executive Director decides in Approvals, then Council for new posts or grades."""
+    _require_confirm(body.confirm)
+    audit_log(
+        action="hr.establishment.request",
+        actor=auth.user.username,
+        resource=f"Department:{body.department}",
+        detail={"designation": body.designation, "change": body.change, "count": body.count, "new_grade": body.new_grade},
+        confirmed=True,
+    )
+    raw = await _hr_call(auth, frappe, f"{_EST}.request_change", json={**body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrEstChangeDetail.model_validate(raw)
+
+
+@router.get("/hr/establishment/changes/{name}", response_model=HrEstChangeDetail, tags=["hr"])
+async def get_establishment_change(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEstChangeDetail:
+    """Where an establishment change is and who decides it."""
+    return HrEstChangeDetail.model_validate(await _hr_call(auth, frappe, f"{_EST}.change_detail", params={"name": name}))
 
 
 @router.get("/hr/offboarding/{name}", response_model=HrOnboarding, tags=["hr"])

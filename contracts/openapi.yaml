@@ -1881,6 +1881,69 @@ paths:
         "422":
           description: Rule failed
 
+  /hr/establishment:
+    get:
+      tags: [hr]
+      operationId: getEstablishment
+      summary: Approved, frozen, filled, in recruitment and vacant posts per department (H3)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEstablishment" }
+
+  /hr/establishment/departments/{department_id}:
+    get:
+      tags: [hr]
+      operationId: getEstablishmentDepartment
+      summary: One department's head, posts, people, cover warnings and establishment changes (H3a)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: department_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEstDepartment" }
+
+  /hr/establishment/changes:
+    post:
+      tags: [hr]
+      operationId: requestEstablishmentChange
+      summary: Ask to add, remove, freeze, unfreeze or regrade posts; the Executive Director decides, then Council for new posts or grades
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrEstChangeBody" }
+      responses:
+        "200":
+          description: Sent to the Executive Director
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEstChangeDetail" }
+        "422":
+          description: Rule failed
+
+  /hr/establishment/changes/{name}:
+    get:
+      tags: [hr]
+      operationId: getEstablishmentChange
+      summary: Where an establishment change is and who decides it
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEstChangeDetail" }
+
   /hr/offboarding/{name}:
     get:
       tags: [hr]
@@ -6598,6 +6661,134 @@ components:
         reason: { type: string }
         new_end: { anyOf: [{ type: string, format: date }, { type: "null" }] }
         new_type: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrEstCounts:
+      type: object
+      properties:
+        approved: { type: integer }
+        frozen: { type: integer }
+        filled: { type: integer }
+        in_recruitment: { type: integer }
+        vacant: { type: integer }
+    HrEstPost:
+      allOf:
+        - { $ref: "#/components/schemas/HrEstCounts" }
+        - type: object
+          required: [designation]
+          properties:
+            designation: { type: string }
+            grade: { anyOf: [{ type: string }, { type: "null" }] }
+    HrEstHead:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+    HrEstChange:
+      type: object
+      required: [id, department, designation, change, summary, state]
+      properties:
+        id: { type: string }
+        department: { type: string }
+        designation: { type: string }
+        change: { type: string, enum: [Add, Remove, Freeze, Unfreeze, Regrade] }
+        count: { type: integer }
+        new_grade: { anyOf: [{ type: string }, { type: "null" }] }
+        summary: { type: string }
+        state: { type: string, enum: [Waiting for Executive Director, Waiting for Council, Approved, Sent back, Not approved] }
+        council_required: { type: boolean }
+        date: { anyOf: [{ type: string, format: date }, { type: "null" }] }
+    HrEstDepartmentRow:
+      allOf:
+        - { $ref: "#/components/schemas/HrEstCounts" }
+        - type: object
+          required: [department]
+          properties:
+            department: { type: string }
+            head: { anyOf: [{ $ref: "#/components/schemas/HrEstHead" }, { type: "null" }] }
+            posts: { type: array, items: { $ref: "#/components/schemas/HrEstPost" } }
+            unplanned: { type: integer, description: Active people in the department beyond its planned posts }
+    HrEstablishment:
+      type: object
+      required: [totals]
+      properties:
+        departments: { type: array, items: { $ref: "#/components/schemas/HrEstDepartmentRow" } }
+        totals: { $ref: "#/components/schemas/HrEstCounts" }
+        has_plans: { type: boolean }
+        pending: { type: array, items: { $ref: "#/components/schemas/HrEstChange" } }
+        can_request: { type: boolean }
+    HrEstDepartment:
+      type: object
+      required: [department]
+      properties:
+        department: { type: string }
+        parent: { anyOf: [{ type: string }, { type: "null" }] }
+        head: { anyOf: [{ $ref: "#/components/schemas/HrEstHead" }, { type: "null" }] }
+        posts: { type: array, items: { $ref: "#/components/schemas/HrEstPost" } }
+        people:
+          type: array
+          items:
+            type: object
+            required: [id]
+            properties:
+              id: { type: string }
+              name: { anyOf: [{ type: string }, { type: "null" }] }
+              designation: { anyOf: [{ type: string }, { type: "null" }] }
+              reports_to: { anyOf: [{ type: string }, { type: "null" }] }
+        cover_warnings:
+          type: array
+          items:
+            type: object
+            required: [skill, holders]
+            properties:
+              skill: { type: string }
+              holders: { type: integer }
+        changes: { type: array, items: { $ref: "#/components/schemas/HrEstChange" } }
+        can_request: { type: boolean }
+        can_set_head: { type: boolean }
+    HrTrackStep:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        state: { anyOf: [{ type: string, enum: [done, now] }, { type: "null" }] }
+    HrEstChangeDetail:
+      allOf:
+        - { $ref: "#/components/schemas/HrEstChange" }
+        - type: object
+          properties:
+            reason: { anyOf: [{ type: string }, { type: "null" }] }
+            cost_note: { anyOf: [{ type: string }, { type: "null" }] }
+            current_grade: { anyOf: [{ type: string }, { type: "null" }] }
+            before:
+              type: object
+              properties:
+                approved: { type: integer }
+                frozen: { type: integer }
+            prepared_by: { anyOf: [{ type: string }, { type: "null" }] }
+            ed_decision_by: { anyOf: [{ type: string }, { type: "null" }] }
+            council_reference: { anyOf: [{ type: string }, { type: "null" }] }
+            decision_note: { anyOf: [{ type: string }, { type: "null" }] }
+            deciders:
+              type: array
+              items:
+                type: object
+                required: [user, name]
+                properties:
+                  user: { type: string }
+                  name: { type: string }
+            track: { type: array, items: { $ref: "#/components/schemas/HrTrackStep" } }
+    HrEstChangeBody:
+      type: object
+      required: [department, designation, change, reason, confirm]
+      properties:
+        department: { type: string }
+        designation: { type: string }
+        change: { type: string, enum: [Add, Remove, Freeze, Unfreeze, Regrade] }
+        reason: { type: string }
+        count: { anyOf: [{ type: integer, minimum: 1 }, { type: "null" }] }
+        new_grade: { anyOf: [{ type: string }, { type: "null" }] }
+        cost_note: { anyOf: [{ type: string }, { type: "null" }] }
         confirm: { type: boolean }
     HrSeparationDefaults:
       type: object

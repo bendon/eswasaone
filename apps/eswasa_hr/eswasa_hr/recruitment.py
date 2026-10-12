@@ -127,24 +127,18 @@ def _hr_manager_users(exclude: str | None = None) -> list[str]:
 
 
 def vacancies_impl() -> list[dict[str, Any]]:
-    """Approved posts with a vacancy, per department and designation (latest submitted Staffing Plans)."""
+    """Approved, unfrozen posts with a vacancy, per department and designation (submitted Staffing Plans)."""
     import frappe
 
-    plans = frappe.get_all("Staffing Plan", filters={"docstatus": 1}, fields=["name", "department"], limit=0)
-    approved: dict[tuple[str, str], int] = {}
-    for p in plans:
-        for d in frappe.get_all(
-            "Staffing Plan Detail", filters={"parent": p.get("name")}, fields=["designation", "number_of_positions"], limit=0
-        ):
-            key = (p.get("department"), d.get("designation"))
-            approved[key] = approved.get(key, 0) + int(d.get("number_of_positions") or 0)
+    from eswasa_hr.establishment import approved_posts, post_counts
+
     out = []
-    for (dept, desig), n in sorted(approved.items(), key=lambda kv: (kv[0][0] or "", kv[0][1] or "")):
+    for (dept, desig), base in sorted(approved_posts().items(), key=lambda kv: (kv[0][0] or "", kv[0][1] or "")):
         filled = frappe.db.count("Employee", {"status": "Active", "department": dept, "designation": desig})
         open_reqs = frappe.db.count(REQ, {"department": dept, "designation": desig, "status": ["in", ["Pending", "Open & Approved", "On Hold"]]})
-        v = vacant(n, filled, open_reqs)
-        if v > 0:
-            out.append({"department": dept, "designation": desig, "approved": n, "filled": filled, "in_recruitment": open_reqs, "vacant": v})
+        p = post_counts(base["approved"], base["frozen"], filled, open_reqs)
+        if p["vacant"] > 0:
+            out.append({"department": dept, "designation": desig, "approved": p["approved"], "filled": filled, "in_recruitment": open_reqs, "vacant": p["vacant"]})
     return out
 
 

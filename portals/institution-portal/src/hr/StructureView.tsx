@@ -4,6 +4,7 @@ import { apiFetch, AuthError, Icon, useDialogs, Select } from "@eswasaone/shared
 import { useApiResource } from "../hooks/useApiResource";
 import { ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
+import { EstablishmentPanel } from "./establishment/Establishment";
 import { useInstitution } from "../layout/InstitutionLayout";
 import type {
   HrCostCentre,
@@ -23,9 +24,10 @@ import type {
   HrLocationsResponse,
 } from "../api/types";
 
-type StructureTab = "departments" | "designations" | "locations" | "cost-centres" | "grades";
+type StructureTab = "establishment" | "departments" | "designations" | "locations" | "cost-centres" | "grades";
 
 const TABS: { id: StructureTab; label: string }[] = [
+  { id: "establishment", label: "Establishment" },
   { id: "departments", label: "Departments" },
   { id: "designations", label: "Designations" },
   { id: "locations", label: "Locations" },
@@ -35,7 +37,7 @@ const TABS: { id: StructureTab; label: string }[] = [
 
 function parseTab(raw: string | null): StructureTab {
   if (raw && TABS.some((t) => t.id === raw)) return raw as StructureTab;
-  return "departments";
+  return "establishment";
 }
 
 /** Structure — live CRUD for org units (confirm-before-commit). */
@@ -126,7 +128,7 @@ export function StructureView() {
             <div className="hr-box__h">
               <div>
                 <h3>Organisation structure</h3>
-                <p>Departments, designations, locations, cost centres, and grade bands</p>
+                <p>Approved establishment, departments, designations, locations, cost centres and grade bands</p>
               </div>
             </div>
             <div className="hr-box__b" style={{ paddingTop: 8 }}>
@@ -145,6 +147,7 @@ export function StructureView() {
             </div>
           </div>
 
+          {tab === "establishment" ? <EstablishmentPanel /> : null}
           {tab === "departments" ? (
             <DepartmentsPanel
               items={depts.data?.items ?? []}

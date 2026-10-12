@@ -1509,6 +1509,126 @@ class HrConcernReceipt(BaseModel):
     handled_by: str | None = None
 
 
+class HrEstPost(BaseModel):
+    designation: str
+    approved: int = 0
+    frozen: int = 0
+    filled: int = 0
+    in_recruitment: int = 0
+    vacant: int = 0
+    grade: str | None = None
+
+
+class HrEstHead(BaseModel):
+    id: str
+    name: str
+
+
+class HrEstCounts(BaseModel):
+    approved: int = 0
+    frozen: int = 0
+    filled: int = 0
+    in_recruitment: int = 0
+    vacant: int = 0
+
+
+class HrEstChange(BaseModel):
+    id: str
+    department: str
+    designation: str
+    change: str  # Add | Remove | Freeze | Unfreeze | Regrade
+    count: int = 0
+    new_grade: str | None = None
+    summary: str
+    state: str
+    council_required: bool = False
+    date: str | None = None
+
+
+class HrEstDepartmentRow(HrEstCounts):
+    department: str
+    head: HrEstHead | None = None
+    posts: list[HrEstPost] = Field(default_factory=list)
+    unplanned: int = 0
+
+
+class HrEstablishment(BaseModel):
+    """GET /hr/establishment — approved posts from submitted Staffing Plans (H3)."""
+
+    departments: list[HrEstDepartmentRow] = Field(default_factory=list)
+    totals: HrEstCounts
+    has_plans: bool = False
+    pending: list[HrEstChange] = Field(default_factory=list)
+    can_request: bool = False
+
+
+class HrEstPerson(BaseModel):
+    id: str
+    name: str | None = None
+    designation: str | None = None
+    reports_to: str | None = None
+
+
+class HrEstCoverWarning(BaseModel):
+    skill: str
+    holders: int
+
+
+class HrEstDepartment(BaseModel):
+    """GET /hr/establishment/departments/{id} (H3a)."""
+
+    department: str
+    parent: str | None = None
+    head: HrEstHead | None = None
+    posts: list[HrEstPost] = Field(default_factory=list)
+    people: list[HrEstPerson] = Field(default_factory=list)
+    cover_warnings: list[HrEstCoverWarning] = Field(default_factory=list)
+    changes: list[HrEstChange] = Field(default_factory=list)
+    can_request: bool = False
+    can_set_head: bool = False
+
+
+class HrTrackStep(BaseModel):
+    title: str
+    state: str | None = None
+
+
+class HrEstDecider(BaseModel):
+    user: str
+    name: str
+
+
+class HrEstBefore(BaseModel):
+    approved: int = 0
+    frozen: int = 0
+
+
+class HrEstChangeDetail(HrEstChange):
+    """GET /hr/establishment/changes/{name} — where it is and who decides; no decision here (H3b)."""
+
+    reason: str | None = None
+    cost_note: str | None = None
+    current_grade: str | None = None
+    before: HrEstBefore = Field(default_factory=HrEstBefore)
+    prepared_by: str | None = None
+    ed_decision_by: str | None = None
+    council_reference: str | None = None
+    decision_note: str | None = None
+    deciders: list[HrEstDecider] = Field(default_factory=list)
+    track: list[HrTrackStep] = Field(default_factory=list)
+
+
+class HrEstChangeBody(BaseModel):
+    department: str
+    designation: str
+    change: str
+    reason: str
+    count: int | None = None
+    new_grade: str | None = None
+    cost_note: str | None = None
+    confirm: bool
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

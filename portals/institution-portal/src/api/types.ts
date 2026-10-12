@@ -283,6 +283,53 @@ export type HrContractDefaults = {
   employment_types: string[];
   pending?: string | null;
 };
+export type HrEstCounts = { approved: number; frozen: number; filled: number; in_recruitment: number; vacant: number };
+export type HrEstPost = HrEstCounts & { designation: string; grade?: string | null };
+export type HrEstHead = { id: string; name: string };
+export type HrEstChangeKind = "Add" | "Remove" | "Freeze" | "Unfreeze" | "Regrade";
+export type HrEstChange = {
+  id: string;
+  department: string;
+  designation: string;
+  change: HrEstChangeKind;
+  count: number;
+  new_grade?: string | null;
+  summary: string;
+  state: "Waiting for Executive Director" | "Waiting for Council" | "Approved" | "Sent back" | "Not approved";
+  council_required: boolean;
+  date?: string | null;
+};
+export type HrEstablishment = {
+  departments: Array<HrEstCounts & { department: string; head?: HrEstHead | null; posts: HrEstPost[]; unplanned: number }>;
+  totals: HrEstCounts;
+  has_plans: boolean;
+  pending: HrEstChange[];
+  can_request: boolean;
+};
+export type HrEstDepartment = {
+  department: string;
+  parent?: string | null;
+  head?: HrEstHead | null;
+  posts: HrEstPost[];
+  people: Array<{ id: string; name?: string | null; designation?: string | null; reports_to?: string | null }>;
+  cover_warnings: Array<{ skill: string; holders: number }>;
+  changes: HrEstChange[];
+  can_request: boolean;
+  can_set_head: boolean;
+};
+export type HrTrackStep = { title: string; state?: "done" | "now" | null };
+export type HrEstChangeDetail = HrEstChange & {
+  reason?: string | null;
+  cost_note?: string | null;
+  current_grade?: string | null;
+  before: { approved: number; frozen: number };
+  prepared_by?: string | null;
+  ed_decision_by?: string | null;
+  council_reference?: string | null;
+  decision_note?: string | null;
+  deciders: Array<{ user: string; name: string }>;
+  track: HrTrackStep[];
+};
 export type HrSeparationDefaults = { employee: string; employee_name: string; reasons: string[]; activities: HrOnboardingActivity[] };
 export type HrPickItem = { id: string; name?: string | null; title?: string | null; employee_name?: string | null };
 export type HrVacancy = { department?: string | null; designation: string; approved: number; filled: number; in_recruitment: number; vacant: number };

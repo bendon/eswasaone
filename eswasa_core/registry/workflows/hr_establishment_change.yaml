@@ -1,0 +1,64 @@
+# Establishment Change — add, remove, freeze, unfreeze or regrade posts (journey J11; screens H3, H3a, H3b).
+
+doctype: Establishment Change
+module: hr
+workflow_name: Establishment Change
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: hr.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  No Frappe Workflow: eswasa_hr.establishment.decide is the approval handler. HR or the head of the
+  department asks; the Executive Director decides (never the preparer). Adding posts or regrading also
+  goes to the Council HR & Remuneration Committee (Confirmation Pack H4, provisional), recorded by the
+  Board Secretary with the minute reference. Approval amends the Staffing Plan (cancel and amend) or
+  sets Designation.custom_grade.
+
+display:
+  customer: {}
+  staff:
+    Waiting for Executive Director: Waiting for the Executive Director
+    Waiting for Council: Waiting for Council
+    Approved: Approved
+    Sent back: Sent back
+    Not approved: Not approved
+
+states:
+  - {name: Waiting for Executive Director, owner_role: Eswasa Executive Director, allow_edit: HR User}
+  - {name: Waiting for Council, owner_role: Eswasa Board Secretary, allow_edit: HR Manager}
+  - {name: Approved, owner_role: HR Manager, allow_edit: HR Manager, style: Success}
+  - {name: Sent back, owner_role: HR User, allow_edit: HR User, style: Danger}
+  - {name: Not approved, owner_role: HR Manager, allow_edit: HR Manager, style: Danger}
+
+transitions:
+  - action: Approve
+    from: Waiting for Executive Director
+    to: Waiting for Council
+    actor: Eswasa Executive Director
+    approvals_family: approve
+  - action: Approve
+    from: Waiting for Executive Director
+    to: Approved
+    actor: Eswasa Executive Director
+    approvals_family: approve
+  - action: Send back
+    from: Waiting for Executive Director
+    to: Sent back
+    actor: Eswasa Executive Director
+    reason: required
+    approvals_family: approve
+  - action: Approve
+    from: Waiting for Council
+    to: Approved
+    actor: Eswasa Board Secretary
+    reason: required
+    approvals_family: approve
+  - action: Not approved
+    from: Waiting for Council
+    to: Not approved
+    actor: Eswasa Board Secretary
+    reason: required
+    approvals_family: approve

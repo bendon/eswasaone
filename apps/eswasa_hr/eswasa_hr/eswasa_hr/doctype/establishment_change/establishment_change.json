@@ -1,0 +1,207 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "department",
+  "designation",
+  "change",
+  "count",
+  "current_grade",
+  "new_grade",
+  "state",
+  "council_required",
+  "section_counts",
+  "approved_before",
+  "frozen_before",
+  "section_reason",
+  "reason",
+  "cost_note",
+  "section_decision",
+  "ed_decided_by",
+  "council_reference",
+  "decision_note",
+  "staffing_plan"
+ ],
+ "fields": [
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "change",
+   "fieldtype": "Select",
+   "label": "Change",
+   "options": "Add\nRemove\nFreeze\nUnfreeze\nRegrade",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "count",
+   "fieldtype": "Int",
+   "label": "Number of Posts",
+   "depends_on": "eval:doc.change!='Regrade'"
+  },
+  {
+   "fieldname": "current_grade",
+   "fieldtype": "Link",
+   "label": "Current Grade",
+   "options": "Employee Grade",
+   "read_only": 1
+  },
+  {
+   "fieldname": "new_grade",
+   "fieldtype": "Link",
+   "label": "New Grade",
+   "options": "Employee Grade",
+   "depends_on": "eval:doc.change=='Regrade'"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Select",
+   "label": "State",
+   "options": "Waiting for Executive Director\nWaiting for Council\nApproved\nSent back\nNot approved",
+   "default": "Waiting for Executive Director",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "council_required",
+   "fieldtype": "Check",
+   "label": "Council Decision Required",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_counts",
+   "fieldtype": "Section Break",
+   "label": "Before the change"
+  },
+  {
+   "fieldname": "approved_before",
+   "fieldtype": "Int",
+   "label": "Approved Posts Before",
+   "read_only": 1
+  },
+  {
+   "fieldname": "frozen_before",
+   "fieldtype": "Int",
+   "label": "Frozen Posts Before",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_reason",
+   "fieldtype": "Section Break",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cost_note",
+   "fieldtype": "Small Text",
+   "label": "Cost"
+  },
+  {
+   "fieldname": "section_decision",
+   "fieldtype": "Section Break",
+   "label": "Decision"
+  },
+  {
+   "fieldname": "ed_decided_by",
+   "fieldtype": "Link",
+   "label": "Executive Director Decision By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "council_reference",
+   "fieldtype": "Data",
+   "label": "Council Minute Reference",
+   "read_only": 1
+  },
+  {
+   "fieldname": "decision_note",
+   "fieldtype": "Small Text",
+   "label": "Decision Note",
+   "read_only": 1
+  },
+  {
+   "fieldname": "staffing_plan",
+   "fieldtype": "Link",
+   "label": "Amended Staffing Plan",
+   "options": "Staffing Plan",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa HR",
+ "name": "Establishment Change",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "HR Manager",
+   "read": 1,
+   "report": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0
+  },
+  {
+   "role": "HR User",
+   "read": 1,
+   "report": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Executive Director",
+   "read": 1,
+   "report": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0
+  },
+  {
+   "role": "Eswasa Board Secretary",
+   "read": 1,
+   "report": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -8,6 +8,9 @@ Recruitment, part 2 (brief §7; journey J2): shortlist → interview → feedbac
   (``eswasa_approval_handlers``); approving submits it (status Awaiting Response). HRMS's own validation
   refuses offers beyond the Staffing Plan vacancies and duplicates.
 - HR records the candidate's answer. On Accepted, HR creates the Employee through HRMS's ``make_employee``.
+- Offer letter (plan 08): print format ``ESWASA Offer Letter``. The wording comes from the Terms and Conditions
+  record "Offer letter", the signatory from ``HR Settings.custom_offer_signatory_role`` (H3; empty means the
+  letter says "awaiting ESWASA"). Approving the offer attaches the PDF and emails it to the applicant.
 
 Field names follow HRMS version-16. Pure rules sit at the top and are tested without Frappe.
 """
@@ -22,6 +25,12 @@ FEEDBACK = "Interview Feedback"
 OFFER = "Job Offer"
 HR_ROLES = ("HR Manager", "HR User", "System Manager")
 HR_STATUSES = ("Open", "Shortlisted", "Hold", "Rejected")
+LETTER_FORMAT = "ESWASA Offer Letter"
+LETTER_TERMS = "Offer letter"  # Terms and Conditions record holding ESWASA HR's wording
+SIGNATORY_FIELD = "custom_offer_signatory_role"
+SIGNATORY_AWAITING = "Signatory: awaiting ESWASA (H3)"
+WORDING_AWAITING = "Offer letter wording: awaiting ESWASA HR."
+ROLE_TITLES = {"Eswasa Executive Director": "Executive Director", "HR Manager": "HR Manager"}
 
 
 # ---------------------------------------------------------------- pure rules
@@ -86,6 +95,45 @@ def feedback_title(applicant_name: str, scheduled_on: Any) -> str:
 
 def offer_wait_title(applicant_name: str, offer_date: Any) -> str:
     return f"No answer to the offer to {applicant_name} since {str(offer_date)[:10]}. Follow up with the candidate"
+
+
+def signatory_line(role: str | None, holder: str | None) -> str:
+    """Who signs (H3). No role configured: say so, never pick one."""
+    if not role:
+        return SIGNATORY_AWAITING
+    title = ROLE_TITLES.get(role, role)
+    return f"{holder}, {title}" if holder else title
+
+
+def find_term(terms: list[dict[str, Any]], *words: str) -> str | None:
+    """The value of the first offer term whose label mentions one of ``words`` (e.g. start date)."""
+    for t in terms or []:
+        label = str(t.get("offer_term") or "").lower()
+        if any(w in label for w in words):
+            return str(t.get("value") or "").strip() or None
+    return None
+
+
+def letter_context(offer: dict[str, Any], terms: list[dict[str, Any]], grade: str | None, department: str | None,
+                   role: str | None, holder: str | None, wording: str | None) -> dict[str, Any]:
+    """Everything the offer letter prints. Missing configuration shows as awaiting text, not a default."""
+    start = find_term(terms, "start", "commence", "joining")
+    accept_by = find_term(terms, "accept", "respond", "deadline")
+    used = {start, accept_by} - {None}
+    return {
+        "applicant_name": offer.get("applicant_name"),
+        "designation": offer.get("designation"),
+        "department": department,
+        "grade": grade,
+        "offer_date": str(offer.get("offer_date") or "")[:10] or None,
+        "start_date": start,
+        "accept_by": accept_by,
+        "terms": [{"label": t.get("offer_term"), "value": t.get("value")} for t in terms or [] if (str(t.get("value") or "").strip() or None) not in used],
+        "wording": wording or None,
+        "wording_awaiting": None if wording else WORDING_AWAITING,
+        "signatory": signatory_line(role, holder),
+        "signatory_awaiting": not role,
+    }
 
 
 def missing_feedback(panel: list[str], given: list[str]) -> list[str]:
@@ -453,10 +501,15 @@ def decide_offer(name: str, action: str, comment: str | None = None) -> dict[str
         o.submit()
         state = "Approved"
         email = getattr(o, "applicant_email", None)
+        letter = _attach_letter(name)  # status is now Awaiting Response: the letter goes with the email
         if email:
             from eswasa_hr import notify
 
-            notify.queue(f"offer-sent:{name}", [], "offer_sent", {"applicant_name": o.applicant_name, "designation": o.designation}, to_address=email)
+            ctx = {"applicant_name": o.applicant_name, "designation": o.designation}
+            if letter:
+                notify.queue(f"offer-sent:{name}", [], "offer_letter", ctx, to_address=email, attachment=letter)
+            else:
+                notify.queue(f"offer-sent:{name}", [], "offer_sent", ctx, to_address=email)
     elif key in ("reject", "return"):
         if not note:
             frappe.throw("Say what to change in the offer.", frappe.ValidationError)
@@ -467,6 +520,74 @@ def decide_offer(name: str, action: str, comment: str | None = None) -> dict[str
     _close(OFFER, name)
     return {"ok": True, "doctype": OFFER, "name": name, "action": action, "workflow_action": None, "status": state,
             "message": f"Offer {state.lower()}: {o.applicant_name}"}
+
+
+def _signatory() -> tuple[str | None, str | None]:
+    """(role, holder's full name when exactly one enabled user holds it)."""
+    import frappe
+
+    try:
+        role = frappe.db.get_single_value("HR Settings", SIGNATORY_FIELD) or None
+    except Exception:  # noqa: BLE001  (custom field not migrated yet)
+        role = None
+    if not role:
+        return None, None
+    holders = sorted({r["parent"] for r in frappe.get_all("Has Role", filters={"role": role, "parenttype": "User"}, fields=["parent"], limit=0)} - {"Administrator"})
+    enabled = [u["name"] for u in frappe.get_all("User", filters={"name": ["in", holders], "enabled": 1}, fields=["name"], limit=0)] if holders else []
+    holder = frappe.db.get_value("User", enabled[0], "full_name") if len(enabled) == 1 else None
+    return role, holder
+
+
+def offer_letter_context(name: str) -> dict[str, Any]:
+    """Jinja method for the ``ESWASA Offer Letter`` print format (hooks ``jinja``)."""
+    import frappe
+
+    o = frappe.get_doc(OFFER, name)
+    terms = [{"offer_term": t.get("offer_term"), "value": t.get("value")} for t in (o.get("offer_terms") or [])]
+    grade = frappe.db.get_value("Designation", o.designation, "custom_grade") if o.designation else None
+    department = o.get("department")
+    if not department and o.get("job_applicant"):
+        opening = frappe.db.get_value(APPLICANT, o.job_applicant, "job_title")
+        department = frappe.db.get_value("Job Opening", opening, "department") if opening else None
+    wording = frappe.db.get_value("Terms and Conditions", LETTER_TERMS, "terms") if frappe.db.exists("Terms and Conditions", LETTER_TERMS) else None
+    role, holder = _signatory()
+    return letter_context({"applicant_name": o.applicant_name, "designation": o.designation, "offer_date": o.offer_date},
+                          terms, grade, department, role, holder, wording)
+
+
+def _letter_pdf(name: str) -> bytes:
+    import frappe
+
+    return frappe.get_print(OFFER, name, print_format=LETTER_FORMAT, as_pdf=True)
+
+
+def _attach_letter(name: str) -> str | None:
+    """Attach the offer letter PDF to the offer (private). None when it can't be printed; the offer still stands."""
+    import frappe
+
+    try:
+        pdf = _letter_pdf(name)
+        f = frappe.get_doc({"doctype": "File", "file_name": f"Offer letter {name}.pdf", "attached_to_doctype": OFFER,
+                            "attached_to_name": name, "is_private": 1, "content": pdf})
+        f.insert(ignore_permissions=True)
+        return f.name
+    except Exception:  # noqa: BLE001  (no PDF renderer, or print format not migrated)
+        log = getattr(frappe, "log_error", None)
+        if log:
+            log(title=f"Offer letter for {name} not attached")
+        return None
+
+
+def offer_letter_impl(offer: str) -> dict[str, Any]:
+    """HR only: the offer letter as a PDF (base64 for Core to stream)."""
+    import base64
+
+    import frappe
+
+    _require_hr()
+    if not frappe.db.exists(OFFER, offer):
+        frappe.throw("Offer not found.", frappe.DoesNotExistError)
+    return {"file_name": f"Offer letter {offer}.pdf", "content_type": "application/pdf", "content": base64.b64encode(_letter_pdf(offer)).decode()}
 
 
 def remind_due() -> int:
@@ -575,6 +696,11 @@ def _json(v: Any) -> Any:
     import frappe
 
     return frappe.parse_json(v) if isinstance(v, str) else v
+
+
+@_whitelist
+def offer_letter(offer: str) -> dict[str, Any]:
+    return offer_letter_impl(offer)
 
 
 @_whitelist

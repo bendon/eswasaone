@@ -873,6 +873,8 @@ class HrRequisition(BaseModel):
     expected_by: str | None = None
     opening: HrOpeningRef | None = None
     applicants: dict[str, int] = Field(default_factory=dict)
+    stage: str | None = None  # Head | HR while Pending (plan 08); status stays Pending through both
+    waiting_on: str | None = None  # the named people whose Approvals card is open
 
 
 class HrRequisitionBody(BaseModel):
@@ -1087,9 +1089,13 @@ class HrOnboardingDefaults(BaseModel):
 
 
 class HrStartOnboardingBody(BaseModel):
+    """From the accepted offer, or (plan 08) for an employee hired outside Recruitment. No activities means the
+    default checklist with named owners."""
+
     employee: str
-    activities: list[HrOnboardingActivity]
+    activities: list[HrOnboardingActivity] = Field(default_factory=list)
     boarding_begins_on: str | None = None
+    start_date: str | None = None
     confirm: bool
 
 

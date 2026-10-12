@@ -192,5 +192,40 @@
   "description": "File name of the receipt attached to the claim.",
   "in_list_view": 0,
   "name": "Expense Claim Detail-custom_receipt"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Job Requisition",
+  "fieldname": "custom_stage",
+  "label": "Approval stage",
+  "fieldtype": "Select",
+  "options": "\nHead\nHR\nDone",
+  "insert_after": "status",
+  "read_only": 1,
+  "description": "Head of department, then HR (brief §12.1). Set by EswasaOne.",
+  "name": "Job Requisition-custom_stage"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_offer_signatory_role",
+  "label": "Offer letter signatory",
+  "fieldtype": "Select",
+  "options": "\nEswasa Executive Director\nHR Manager",
+  "insert_after": "custom_receipt_required_above",
+  "description": "Who signs offer letters (Confirmation Pack H3). Empty: letters say the signatory is awaiting ESWASA.",
+  "name": "HR Settings-custom_offer_signatory_role"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Job Applicant",
+  "fieldname": "custom_source",
+  "label": "Source",
+  "fieldtype": "Select",
+  "options": "\nCareers\nDirect",
+  "insert_after": "status",
+  "read_only": 1,
+  "description": "Direct: created by EswasaOne to onboard someone hired outside Recruitment.",
+  "name": "Job Applicant-custom_source"
  }
 ]

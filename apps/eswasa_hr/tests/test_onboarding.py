@@ -117,5 +117,87 @@ class FlowTests(unittest.TestCase):
         self.assertEqual((res["message"], tasks["TASK-ICT"]["status"]), ("Boarding task done", "Completed"))
 
 
+class NoOfferTests(unittest.TestCase):
+    """Plan 08: onboarding an existing employee who wasn't hired through Recruitment."""
+
+    def setUp(self):
+        from tests.test_leave import _Store, _fake_frappe
+
+        self.store = _Store()
+        self.store["Employee"] = [{"name": "E-7", "user_id": "sipho@x"}, {"name": "E-1", "user_id": "lm@x"}]
+        self.f = _fake_frappe(self.store, user="hr@x", roles=("HR Manager",))
+        self.emp = {"name": "E-7", "employee_name": "Sipho Dlamini", "status": "Active", "job_offer": None, "reports_to": "E-1", "user_id": "sipho@x",
+                    "company": "ESWASA", "department": "Metrology", "designation": "Technician", "date_of_joining": "2019-03-01", "holiday_list": None,
+                    "company_email": "sipho@eswasa.org.sz"}
+        self.f.docs["E-7"] = _Emp(self.emp)
+        self.reqd = False
+        self.f.get_meta = lambda dt: SimpleNamespace(get_field=lambda fn: SimpleNamespace(reqd=1 if self.reqd else 0), has_field=lambda fn: True)
+        self.created = []
+        f = self.f
+        base = f.get_doc
+
+        def get_doc(d, *a):
+            doc = base(d, *a)
+            if isinstance(d, dict):
+                doc_insert = doc.insert
+
+                def insert(ignore_permissions=False):
+                    out = doc_insert(ignore_permissions)
+                    self.created.append(dict(doc))
+                    return out
+
+                dict.__setitem__(doc, "submit", lambda: None)
+                return _Wrap(doc, insert)
+            return doc
+
+        f.get_doc = get_doc
+        self._detail = ob.detail_impl
+        ob.detail_impl = lambda name, doctype=ob.ONBOARDING: {"name": name}
+
+    def tearDown(self):
+        ob.detail_impl = self._detail
+        sys.modules.pop("frappe", None)
+        sys.modules.pop("frappe.utils", None)
+
+    def test_starts_without_an_offer_with_named_owners(self):
+        ob.start_impl("E-7", [], "2026-10-20")
+        onb = next(d for d in self.created if d["doctype"] == ob.ONBOARDING)
+        self.assertNotIn("job_offer", onb)
+        self.assertNotIn("job_applicant", onb)
+        self.assertEqual(onb["boarding_begins_on"], "2026-10-20")
+        self.assertTrue(all(a["user"] for a in onb["activities"]))
+        owners = {a["activity_name"]: a["user"] for a in onb["activities"]}
+        self.assertEqual(owners["Laptop and access card"], "hr@x")
+        self.assertEqual(owners["Welcome meeting and first-week plan"], "lm@x")
+
+    def test_direct_applicant_only_when_hrms_requires_one(self):
+        self.reqd = True
+        ob.start_impl("E-7", [], None)
+        applicant = next(d for d in self.created if d["doctype"] == "Job Applicant")
+        self.assertEqual((applicant["custom_source"], applicant["email_id"]), ("Direct", "sipho@eswasa.org.sz"))
+        onb = next(d for d in self.created if d["doctype"] == ob.ONBOARDING)
+        self.assertEqual(onb["job_applicant"], applicant["name"])
+
+    def test_duplicate_refused(self):
+        self.store["Employee Onboarding"] = [{"name": "ONB-1", "employee": "E-7", "docstatus": 1, "boarding_status": "In Process"}]
+        with self.assertRaisesRegex(self.f.ValidationError, "already started"):
+            ob.start_impl("E-7", [], None)
+        self.store["Employee Onboarding"][0]["boarding_status"] = "Completed"
+        ob.start_impl("E-7", [], None)  # a finished one doesn't block
+
+
+class _Emp(dict):
+    def __getattr__(self, k):
+        return self.get(k)
+
+
+class _Wrap:
+    def __init__(self, doc, insert):
+        self._doc, self.insert = doc, insert
+
+    def __getattr__(self, k):
+        return self._doc.get(k) if k != "submit" else (lambda: None)
+
+
 if __name__ == "__main__":
     unittest.main()

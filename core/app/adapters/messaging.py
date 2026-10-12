@@ -62,12 +62,19 @@ class MessageResult(BaseModel):
     raw: dict[str, Any] = Field(default_factory=dict)
 
 
+class EmailAttachment(BaseModel):
+    filename: str
+    content: bytes
+    content_type: str = "application/octet-stream"
+
+
 class EmailRequest(BaseModel):
     to: str
     subject: str
     body: str
     html: str | None = None
     from_addr: str | None = None
+    attachments: list[EmailAttachment] = Field(default_factory=list)
     # Optional RFC-5322 headers (e.g. Message-ID to prevent client threading).
     headers: dict[str, str] = Field(
         default_factory=dict,
@@ -191,6 +198,9 @@ class MessagingAdapter:
         msg.set_content(req.body)
         if req.html:
             msg.add_alternative(req.html, subtype="html")
+        for att in req.attachments:
+            maintype, _, subtype = att.content_type.partition("/")
+            msg.add_attachment(att.content, maintype=maintype or "application", subtype=subtype or "octet-stream", filename=att.filename)
 
         # Unique Message-ID per email — prevents Gmail/Outlook from grouping
         # OTP emails into a single thread.

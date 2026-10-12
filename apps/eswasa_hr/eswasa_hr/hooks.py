@@ -9,6 +9,7 @@ required_apps = ["frappe", "erpnext", "hrms"]
 
 fixtures = [
     {"dt": "Role", "filters": [["name", "in", ["Eswasa Executive Director"]]]},
+    {"dt": "Print Format", "filters": [["name", "in", ["ESWASA Offer Letter"]]]},
     {
         "dt": "Custom Field",
         "filters": [
@@ -35,6 +36,9 @@ fixtures = [
                     "User-custom_hr_email_opt_out",
                     "HR Settings-custom_receipt_required_above",
                     "Expense Claim Detail-custom_receipt",
+                    "Job Requisition-custom_stage",
+                    "HR Settings-custom_offer_signatory_role",
+                    "Job Applicant-custom_source",
                 ],
             ]
         ],
@@ -100,6 +104,9 @@ has_permission = {
 }
 
 after_migrate = ["eswasa_hr.setup.after_migrate"]
+
+# Plan 08: the ESWASA Offer Letter print format reads its data through this.
+jinja = {"methods": ["eswasa_hr.hiring.offer_letter_context"]}
 
 scheduler_events = {
     "daily": [

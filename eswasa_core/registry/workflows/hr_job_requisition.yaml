@@ -1,0 +1,61 @@
+# Job Requisition — ask to fill an approved, vacant post (brief §7, §12.1; plan 08).
+
+doctype: Job Requisition
+module: hr
+workflow_name: Job Requisition
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: null
+guards: [expected_state, idempotency_key]
+notes: >
+  HRMS owns this DocType; no Frappe Workflow. eswasa_hr.recruitment routes it to the head of the
+  department (Department.custom_head), then to each HR Manager, as named ToDos; eswasa_hr.recruitment.decide
+  is the approval handler. HRMS status stays Pending through both stages; custom_stage says which.
+  A requester who heads the department skips the head stage; a department with no head raises an HR Alert
+  and goes straight to HR. The HR approver is never the head who approved, nor the requester.
+
+# PROVISIONAL (brief §12.1; confirm with ESWASA alongside H3): 3 days per stage, head then HR.
+sla: {days: 3, calendar: calendar, escalate_to: null, provisional: true}
+
+display:
+  customer: {}
+  staff:
+    Pending: Waiting for approval
+    Open & Approved: Approved
+    On Hold: On hold
+    Rejected: Rejected
+
+states:
+  - {name: Pending, sla: 3d per stage (provisional), owner_role: Department Head then HR Manager, allow_edit: HR User}
+  - {name: Open & Approved, owner_role: HR Manager, allow_edit: HR User, style: Success}
+  - {name: On Hold, owner_role: HR Manager, allow_edit: HR User}
+  - {name: Rejected, owner_role: HR Manager, allow_edit: HR Manager, style: Danger}
+
+transitions:
+  - action: Approve
+    from: Pending
+    to: Pending
+    actor: department head (named)
+    when: custom_stage = Head; moves custom_stage to HR and routes to each HR Manager except the head and the requester
+    approvals_family: approve
+  - action: Approve
+    from: Pending
+    to: Open & Approved
+    actor: HR Manager (named)
+    when: custom_stage = HR
+    approvals_family: approve
+  - action: Return
+    from: Pending
+    to: On Hold
+    actor: department head or HR Manager
+    reason: required
+    approvals_family: approve
+  - action: Reject
+    from: Pending
+    to: Rejected
+    actor: department head or HR Manager
+    reason: required
+    approvals_family: approve

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import logging
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Any, Literal
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import Response
@@ -4276,6 +4279,16 @@ async def raise_requisition(
     return HrRequisition.model_validate(raw)
 
 
+@router.get("/hr/recruitment/requisitions/{name}", response_model=HrRequisition, tags=["hr"])
+async def get_requisition(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrRequisition:
+    """One requisition with ``stage`` (Head, then HR) and ``waiting_on`` (named people), plan 08."""
+    return HrRequisition.model_validate(await _hr_call(auth, frappe, f"{_REC}.requisition", params={"name": name}))
+
+
 @router.post("/hr/recruitment/requisitions/{name}/publish", response_model=HrRequisition, tags=["hr"])
 async def publish_requisition(
     name: str,
@@ -4550,6 +4563,26 @@ async def make_offer(
     return HrApplicantDetail.model_validate(raw)
 
 
+@router.get("/hr/recruitment/offers/{name}/letter", tags=["hr"])
+async def get_offer_letter(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> Response:
+    """The offer letter PDF (print format ESWASA Offer Letter). HR only, enforced in eswasa_hr; audited."""
+    raw = await _hr_call(auth, frappe, f"{_HIRE}.offer_letter", params={"offer": name}) or {}
+    try:
+        pdf = base64.b64decode(str(raw.get("content") or ""), validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(status_code=502, detail="The offer letter couldn't be printed.") from exc
+    if not pdf:
+        raise HTTPException(status_code=502, detail="The offer letter couldn't be printed.")
+    audit_log(action="hr.offer.letter", actor=auth.user.username, resource=f"Job Offer:{name}", detail={"bytes": len(pdf)}, confirmed=True)
+    filename = str(raw.get("file_name") or f"Offer letter {name}.pdf")
+    return Response(content=pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'inline; filename="{quote(filename)}"', "Cache-Control": "private, no-store"})
+
+
 @router.post("/hr/recruitment/offers/{name}/answer", response_model=HrApplicantDetail, tags=["hr"])
 async def record_offer_answer(
     name: str,
@@ -4606,7 +4639,8 @@ async def start_onboarding(
     auth: Annotated[AuthContext, Depends(require_auth_csrf)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> HrOnboarding:
-    """Start onboarding from the accepted offer; each activity becomes a task for its named owner."""
+    """Start onboarding from the accepted offer, or for an employee hired outside Recruitment (the branch is in
+    eswasa_hr.onboarding); each activity becomes a task for its named owner."""
     _require_confirm(body.confirm)
     audit_log(action="hr.onboarding.start", actor=auth.user.username, resource=f"Employee:{body.employee}", detail={"activities": len(body.activities)}, confirmed=True)
     raw = await _hr_call(
@@ -4616,7 +4650,7 @@ async def start_onboarding(
         json={
             "employee": body.employee,
             "activities": [{"activity_name": a.activity_name, "user": a.user} for a in body.activities],
-            "boarding_begins_on": body.boarding_begins_on,
+            "boarding_begins_on": body.boarding_begins_on or body.start_date,
             "confirm": 1,
         },
     )

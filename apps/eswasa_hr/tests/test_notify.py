@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 import unittest
 
 from eswasa_hr import notify
@@ -89,6 +90,19 @@ class OutboxTests(unittest.TestCase):
                      to_address="sipho@mail.example")
         self.assertEqual(self._rows()[0]["to_address"], "sipho@mail.example")
         self.assertIsNone(self._rows()[0]["to_user"])
+
+    def test_offer_letter_goes_with_its_attachment(self):
+        import base64
+
+        notify.queue("offer-sent:OFF-1", [], "offer_letter", {"applicant_name": "Sipho", "designation": "Auditor"},
+                     to_address="sipho@mail.example", attachment="FILE-1")
+        self.assertEqual(self._rows()[0]["attachment"], "FILE-1")
+        self.store["File"] = [{"name": "FILE-1", "file_name": "Offer letter OFF-1.pdf"}]
+        orig = sys.modules["frappe"].get_doc
+        sys.modules["frappe"].get_doc = lambda d, *a: ff.Doc(file_name="Offer letter OFF-1.pdf", get_content=lambda: b"%PDF-1.4") if d == "File" else orig(d, *a)
+        out = notify.pending_impl()
+        self.assertEqual(out[0]["attachments"], [{"file_name": "Offer letter OFF-1.pdf", "content_type": "application/pdf",
+                                                  "content": base64.b64encode(b"%PDF-1.4").decode()}])
 
     def test_unknown_template_and_missing_doctype(self):
         with self.assertRaises(ValueError):

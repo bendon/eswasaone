@@ -11,11 +11,12 @@ Cron: ``POST /api/events/hr-notify`` with ``{"confirm": true}``, as a System Man
 
 from __future__ import annotations
 
+import base64
 import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.adapters.messaging import DeliveryStatus, EmailRequest, MessagingAdapter, SmsRequest, get_messaging
+from app.adapters.messaging import DeliveryStatus, EmailAttachment, EmailRequest, MessagingAdapter, SmsRequest, get_messaging
 from app.frappe_client import FrappeClient, FrappeError
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,13 @@ async def _send(messaging: MessagingAdapter, item: dict[str, Any]) -> tuple[str,
         if item.get("channel") == "sms":
             result = await messaging.send_sms(SmsRequest(to=to, body=f"{item.get('subject') or ''}: {item.get('body') or ''}"[:480]))
         else:
-            result = await messaging.send_email(EmailRequest(to=to, subject=str(item.get("subject") or ""), body=str(item.get("body") or "")))
+            attachments = [
+                EmailAttachment(filename=str(a.get("file_name") or "attachment"), content=base64.b64decode(str(a.get("content") or "")),
+                                content_type=str(a.get("content_type") or "application/octet-stream"))
+                for a in item.get("attachments") or []
+            ]
+            result = await messaging.send_email(EmailRequest(to=to, subject=str(item.get("subject") or ""), body=str(item.get("body") or ""),
+                                                             attachments=attachments))
     except Exception as exc:  # adapter or provider error: Frappe keeps it queued for a retry
         logger.warning("hr-notify send failed for %s: %s", item.get("name"), exc)
         return "Failed", str(exc)

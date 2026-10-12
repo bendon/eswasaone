@@ -15,7 +15,8 @@
   "status",
   "attempts",
   "sent_on",
-  "error"
+  "error",
+  "attachment"
  ],
  "fields": [
   {
@@ -95,6 +96,14 @@
    "fieldtype": "Small Text",
    "label": "Error",
    "read_only": 1
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Link",
+   "options": "File",
+   "label": "Attachment",
+   "read_only": 1,
+   "description": "Sent with the email (the offer letter PDF)."
   }
  ],
  "links": [],

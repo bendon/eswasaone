@@ -172,5 +172,54 @@ class ReminderTests(unittest.TestCase):
         self.assertEqual(hi.missing_feedback(["a@x", "b@x", "a@x", None], ["a@x"]), ["b@x"])
 
 
+class OfferLetterTests(unittest.TestCase):
+    TERMS = [{"offer_term": "Start date", "value": "1 Dec 2026"}, {"offer_term": "Accept by", "value": "20 Nov 2026"},
+             {"offer_term": "Probation", "value": "6 months"}]
+
+    def test_letter_says_the_signatory_is_awaiting_eswasa_while_unset(self):
+        c = hi.letter_context({"applicant_name": "Ayanda", "designation": "Officer", "offer_date": "2026-11-02"}, self.TERMS, "G5", "Certification", None, None, None)
+        self.assertEqual(c["signatory"], "Signatory: awaiting ESWASA (H3)")
+        self.assertTrue(c["signatory_awaiting"])
+        self.assertEqual(c["wording_awaiting"], hi.WORDING_AWAITING)
+        self.assertEqual((c["start_date"], c["accept_by"], c["grade"]), ("1 Dec 2026", "20 Nov 2026", "G5"))
+        self.assertEqual(c["terms"], [{"label": "Probation", "value": "6 months"}])
+
+    def test_signatory_from_configuration(self):
+        self.assertEqual(hi.signatory_line("Eswasa Executive Director", "Nomsa Dube"), "Nomsa Dube, Executive Director")
+        self.assertEqual(hi.signatory_line("HR Manager", None), "HR Manager")
+
+    def test_approval_queues_the_letter_to_the_applicant(self):
+        from eswasa_hr import notify
+
+        o = _doc(name="HR-OFF-1", owner="hr1@x", docstatus=0, applicant_name="Ayanda Mthethwa", designation="Officer", applicant_email="a@b.co")
+        _fake("hr2@x", ("HR Manager",), {"HR-OFF-1": o}, [])
+        calls = []
+        saved = (hi._attach_letter, notify.queue)
+        hi._attach_letter = lambda name: "FILE-9"
+        notify.queue = lambda *a, **k: calls.append((a, k))
+        try:
+            hi.decide_offer("HR-OFF-1", "approve")
+        finally:
+            hi._attach_letter, notify.queue = saved
+        (key, users, template, ctx), kw = calls[0]
+        self.assertEqual((key, template, kw["to_address"], kw["attachment"]), ("offer-sent:HR-OFF-1", "offer_letter", "a@b.co", "FILE-9"))
+
+    def test_no_pdf_falls_back_to_the_plain_offer_email(self):
+        from eswasa_hr import notify
+
+        o = _doc(name="HR-OFF-1", owner="hr1@x", docstatus=0, applicant_name="Ayanda", designation="Officer", applicant_email="a@b.co")
+        _fake("hr2@x", ("HR Manager",), {"HR-OFF-1": o}, [])
+        calls = []
+        saved = (hi._attach_letter, notify.queue)
+        hi._attach_letter = lambda name: None
+        notify.queue = lambda *a, **k: calls.append((a, k))
+        try:
+            hi.decide_offer("HR-OFF-1", "approve")
+        finally:
+            hi._attach_letter, notify.queue = saved
+        self.assertEqual(calls[0][0][2], "offer_sent")
+        self.assertNotIn("attachment", calls[0][1])
+
+
 if __name__ == "__main__":
     unittest.main()

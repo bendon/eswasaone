@@ -146,5 +146,94 @@ class FlowTests(unittest.TestCase):
             rc.decide("HR-HIREQ-1", "approve")
 
 
+class StageRuleTests(unittest.TestCase):
+    def test_requester_who_heads_the_department_skips_the_head_stage(self):
+        self.assertEqual(rc.next_stage(None, requester_is_head=False), rc.STAGE_HEAD)
+        self.assertEqual(rc.next_stage(None, requester_is_head=True), rc.STAGE_HR)
+        self.assertEqual(rc.next_stage(rc.STAGE_HEAD), rc.STAGE_HR)
+        self.assertEqual(rc.next_stage(rc.STAGE_HR), rc.STAGE_DONE)
+
+    def test_four_eyes_across_stages(self):
+        err = rc.stage_decider_error
+        self.assertIsNone(err(rc.STAGE_HEAD, "head@x", ["Employee"], "hr@x", "head@x"))
+        self.assertIn("head of the department", err(rc.STAGE_HEAD, "hrm@x", ["HR Manager"], "hr@x", "head@x"))
+        self.assertIn("another HR Manager", err(rc.STAGE_HR, "head@x", ["HR Manager"], "hr@x", "head@x"))
+        self.assertIsNone(err(rc.STAGE_HR, "hrm@x", ["HR Manager"], "head@x", "head@x"))
+        self.assertIn("you raised", err(rc.STAGE_HR, "hrm@x", ["HR Manager"], "hrm@x", None))
+        self.assertIn("HR Manager", err(rc.STAGE_HR, "hru@x", ["HR User"], "head@x", "head@x"))
+
+    def test_patch_puts_legacy_rows_at_hr_or_done(self):
+        from eswasa_hr.patches.v1 import requisition_stage
+
+        rows = [{"name": "R-1", "status": "Pending"}, {"name": "R-2", "status": "Open & Approved"}, {"name": "R-3", "status": "Pending", "custom_stage": "Head"}]
+        self.assertEqual(requisition_stage.updates(rows), [("R-1", "HR"), ("R-2", "Done")])
+
+
+class StageFlowTests(unittest.TestCase):
+    """Head → HR routing against the leave tests' fake frappe."""
+
+    def setUp(self):
+        from tests.test_leave import _Store, _fake_frappe
+
+        self._hr = rc._hr_manager_users
+        rc._hr_manager_users = lambda exclude=None: [u for u in ("head@x", "hrm1@x", "hrm2@x") if u != exclude]
+        self.store = _Store()
+        self.store["DocType"] = ["HR Alert"]
+        self.store["Employee"] = [{"name": "E-HEAD", "user_id": "head@x"}, {"name": "E-REQ", "user_id": "req@x"}]
+        self.store["Department"] = [{"name": "Certification", "custom_head": "E-HEAD"}, {"name": "Metrology", "custom_head": None}]
+        self.f = _fake_frappe(self.store, user="head@x", roles=("Employee", "HR Manager"))
+        sys.modules["frappe.utils"].add_days = lambda d, n: date.fromordinal(d.toordinal() + n)
+
+    def tearDown(self):
+        rc._hr_manager_users = self._hr
+        sys.modules.pop("frappe", None)
+        sys.modules.pop("frappe.utils", None)
+
+    def _req(self, dept="Certification", stage=rc.STAGE_HEAD, requester="E-REQ"):
+        doc = SimpleNamespace(name="HR-HIREQ-1", designation="Certification Officer", department=dept, requested_by=requester,
+                              status="Pending", custom_stage=stage, comments=[])
+        doc.save = lambda: None
+        doc.add_comment = lambda k, t: doc.comments.append(t)
+        self.f.docs[doc.name] = doc
+        return doc
+
+    def _open(self):
+        return sorted(t["allocated_to"] for t in self.store.rows("ToDo") if t["status"] == "Open" and t["reference_type"] == rc.REQ)
+
+    def test_first_stage(self):
+        self.assertEqual(rc._first_stage("Certification", "req@x"), (rc.STAGE_HEAD, False))
+        self.assertEqual(rc._first_stage("Certification", "head@x"), (rc.STAGE_HR, False))
+        self.assertEqual(rc._first_stage("Metrology", "req@x"), (rc.STAGE_HR, True))
+
+    def test_no_head_raises_an_alert_and_goes_to_hr(self):
+        doc = self._req(dept="Metrology", stage=rc.STAGE_HR)
+        rc._no_head_alert(doc)
+        rc._route_requisition(doc)
+        self.assertEqual(self.store.rows("HR Alert")[0]["rule"], rc.RULE_NO_HEAD)
+        self.assertIn("No head is set for Metrology", doc.comments[0])
+        self.assertEqual(self._open(), ["head@x", "hrm1@x", "hrm2@x"])
+
+    def test_head_then_another_hr_manager(self):
+        doc = self._req()
+        rc._route_requisition(doc)
+        self.assertEqual(self._open(), ["head@x"])
+        res = rc.decide(doc.name, "approve")
+        self.assertEqual((doc.status, doc.custom_stage), ("Pending", rc.STAGE_HR))
+        self.assertIn("sent to HR", res["message"])
+        self.assertEqual(self._open(), ["hrm1@x", "hrm2@x"])  # never the head who approved
+        with self.assertRaisesRegex(self.f.PermissionError, "another HR Manager"):
+            rc.decide(doc.name, "approve")
+        self.f.session.user = "hrm1@x"
+        rc.decide(doc.name, "approve")
+        self.assertEqual((doc.status, doc.custom_stage, self._open()), ("Open & Approved", rc.STAGE_DONE, []))
+
+    def test_head_must_give_a_reason_to_reject(self):
+        doc = self._req()
+        with self.assertRaises(self.f.ValidationError):
+            rc.decide(doc.name, "reject", " ")
+        rc.decide(doc.name, "reject", "Not this year")
+        self.assertEqual((doc.status, doc.custom_stage), ("Rejected", rc.STAGE_DONE))
+
+
 if __name__ == "__main__":
     unittest.main()

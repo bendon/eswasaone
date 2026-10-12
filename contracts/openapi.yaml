@@ -1111,6 +1111,27 @@ paths:
         "422":
           description: No approved vacancy, or no description
 
+  /hr/recruitment/requisitions/{name}:
+    get:
+      tags: [hr]
+      operationId: getHrRequisition
+      summary: One requisition with its approval stage and who it waits on (HR, the department head or the requester)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The requisition
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrRequisition" }
+        "403":
+          description: Not HR, the head or the requester (plain text)
+        "404":
+          description: No such requisition
+        "503":
+          description: Frappe unavailable
+
   /hr/recruitment/requisitions/{name}/publish:
     post:
       tags: [hr]
@@ -1331,6 +1352,29 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HrApplicantDetail" }
+
+  /hr/recruitment/offers/{name}/letter:
+    get:
+      tags: [hr]
+      operationId: getHrOfferLetter
+      summary: The offer letter as a PDF (print format ESWASA Offer Letter). HR only; audited. The signatory reads "awaiting ESWASA (H3)" until HR Settings names one
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "403":
+          description: Not HR (plain text)
+        "404":
+          description: No such offer
+        "502":
+          description: The letter couldn't be printed
+        "503":
+          description: Frappe unavailable
 
   /hr/recruitment/offers/{name}/answer:
     post:
@@ -6957,6 +7001,12 @@ components:
         expected_by: { anyOf: [{ type: string }, { type: "null" }] }
         opening: { anyOf: [{ $ref: "#/components/schemas/HrOpeningRef" }, { type: "null" }] }
         applicants: { type: object, additionalProperties: { type: integer } }
+        stage:
+          anyOf: [{ type: string, enum: [Head, HR] }, { type: "null" }]
+          description: While Pending, which approval stage it is at (head of department, then HR). status stays Pending through both
+        waiting_on:
+          anyOf: [{ type: string }, { type: "null" }]
+          description: Full names of the people whose Approvals card is open (never a role)
     HrRequisitionBody:
       type: object
       required: [designation, department, description, expected_compensation, confirm]
@@ -7180,11 +7230,13 @@ components:
         activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" } }
     HrStartOnboardingBody:
       type: object
-      required: [employee, activities, confirm]
+      description: From the accepted offer, or for an employee hired outside Recruitment (no job_offer needed). No activities means the default checklist with named owners
+      required: [employee, confirm]
       properties:
         employee: { type: string }
-        activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" } }
+        activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" }, default: [] }
         boarding_begins_on: { anyOf: [{ type: string }, { type: "null" }] }
+        start_date: { anyOf: [{ type: string }, { type: "null" }], description: Same as boarding_begins_on }
         confirm: { type: boolean }
     HrConfirmBody:
       type: object

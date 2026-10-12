@@ -59,6 +59,13 @@ TEMPLATES: dict[str, dict[str, Any]] = {
         "body": "Dear {applicant_name},\n\nESWASA is pleased to offer you the post of {designation}. "
         "Our HR team will contact you with the offer letter and the next steps.",
     },
+    "offer_letter": {
+        "essential": True,
+        "fields": ("applicant_name", "designation"),
+        "subject": "Your offer from ESWASA",
+        "body": "Dear {applicant_name},\n\nESWASA is pleased to offer you the post of {designation}. "
+        "Your offer letter is attached. Please read it and reply to our HR team by the date it gives.",
+    },
     "application_received": {
         "essential": True,
         "fields": ("applicant_name", "job_title", "reference"),

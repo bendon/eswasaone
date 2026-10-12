@@ -2,3 +2,4 @@
 
 [post_model_sync]
 eswasa_hr.patches.v1.own_record_user_permission
+eswasa_hr.patches.v1.requisition_stage

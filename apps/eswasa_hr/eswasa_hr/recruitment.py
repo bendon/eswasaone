@@ -3,8 +3,10 @@ Recruitment, part 1 (brief §3, §7, §7.1; journey J2): vacancy → requisition
 online application.
 
 - Only approved, vacant posts can be requisitioned (Staffing Plan − active employees − open requisitions).
-- A requisition goes to each HR Manager in Approvals (named people, not a pool; never the requester)
-  and is decided through the ``eswasa_approval_handlers`` hook.
+- A requisition goes first to the head of its department, then to each HR Manager, in Approvals (brief §12.1,
+  plan 08; named people, not a pool; never the requester). A requester who heads the department skips the head
+  stage; a department with no head raises an HR Alert and goes straight to HR. The HR approver can't be the
+  head who approved. HRMS ``status`` stays Pending through both stages; ``custom_stage`` says which.
 - HR publishes an approved requisition as a Job Opening; open, published, unexpired openings are what
   the public careers page lists.
 - Anyone can apply (guest methods). Applications become Job Applicants with status Open.
@@ -22,6 +24,9 @@ REQ = "Job Requisition"
 OPENING = "Job Opening"
 APPLICANT = "Job Applicant"
 HR_ROLES = ("HR Manager", "HR User", "System Manager")
+STAGE_HEAD, STAGE_HR, STAGE_DONE = "Head", "HR", "Done"
+STAGE_FIELD = "custom_stage"
+RULE_NO_HEAD = "Department head"  # HR Alert rule
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
@@ -34,6 +39,35 @@ def vacant(approved: int, filled: int, open_requisitions: int) -> int:
 
 def requisition_title(designation: str, department: str | None) -> str:
     return f"Approve requisition: {designation}" + (f", {department}" if department else "")
+
+
+def next_stage(stage: str | None, requester_is_head: bool = False) -> str:
+    """None (new) → Head, or HR when the requester heads the department; Head → HR; HR → Done."""
+    if not stage:
+        return STAGE_HR if requester_is_head else STAGE_HEAD
+    return STAGE_HR if stage == STAGE_HEAD else STAGE_DONE
+
+
+def legacy_stage(status: str | None) -> str:
+    """Rows from before the head stage: a Pending one stays with HR, anything decided is Done."""
+    return STAGE_HR if (status or "Pending") == "Pending" else STAGE_DONE
+
+
+def stage_decider_error(stage: str | None, user: str, roles: list[str], requester: str | None, head: str | None) -> str | None:
+    """Head stage: only the department head. HR stage: an HR Manager who isn't the head (four-eyes). Never the requester."""
+    if requester and user == requester:
+        return "You can't approve a requisition you raised."
+    if (stage or STAGE_HR) == STAGE_HEAD:
+        return None if head and user == head else "Only the head of the department can approve this requisition at this stage."
+    if not set(roles or ()) & {"HR Manager", "System Manager"}:
+        return "Only an HR Manager can decide a requisition."
+    if head and user == head:
+        return "You approved this as head of department, so another HR Manager must approve it."
+    return None
+
+
+def no_head_title(department: str | None) -> str:
+    return f"Set a head for {department or 'this department'}: a requisition skipped the head-of-department approval"
 
 
 def opening_is_live(status: str | None, publish: Any, closes_on: Any, today: date) -> bool:
@@ -142,12 +176,48 @@ def vacancies_impl() -> list[dict[str, Any]]:
     return out
 
 
+def _has_stage() -> bool:
+    import frappe
+
+    try:
+        return bool(frappe.get_meta(REQ).has_field(STAGE_FIELD))
+    except AttributeError:  # tests' stand-in frappe without get_meta
+        return False
+
+
+def _user_of(employee: str | None) -> str | None:
+    import frappe
+
+    return frappe.db.get_value("Employee", employee, "user_id") if employee else None
+
+
+def _head_user(department: str | None) -> str | None:
+    import frappe
+
+    head = frappe.db.get_value("Department", department, "custom_head") if department else None
+    return _user_of(head)
+
+
+def _stage(doc: Any) -> str:
+    return getattr(doc, STAGE_FIELD, None) or legacy_stage(doc.status)
+
+
 def _route_requisition(doc: Any) -> None:
+    """One ToDo per named approver for the current stage: the department head, or each HR Manager (never the
+    requester, and at the HR stage never the head)."""
     import frappe
     from frappe.utils import add_days
 
-    requester = frappe.db.get_value("Employee", doc.requested_by, "user_id")
-    for user in _hr_manager_users(exclude=requester):
+    requester = _user_of(doc.requested_by)
+    head = _head_user(doc.department)
+    stage = _stage(doc) if _has_stage() else STAGE_HR
+    if stage == STAGE_HEAD:
+        users = [head] if head and head != requester else []
+    elif stage == STAGE_HR:
+        users = [u for u in _hr_manager_users(exclude=requester) if u != head]
+    else:
+        users = []
+    for user in users:
         if frappe.db.exists("ToDo", {"reference_type": REQ, "reference_name": doc.name, "allocated_to": user, "status": "Open"}):
             continue
         frappe.get_doc(
@@ -163,6 +233,26 @@ def _route_requisition(doc: Any) -> None:
                 "date": add_days(_today(), 3),  # brief §12.1: 3 days
             }
         ).insert(ignore_permissions=True)
+
+
+def _first_stage(department: str, requester: str | None) -> tuple[str, bool]:
+    """(stage, no_head) for a new requisition."""
+    head = _head_user(department)
+    if not head:
+        return STAGE_HR, True
+    return next_stage(None, requester_is_head=head == requester), False
+
+
+def _no_head_alert(doc: Any) -> None:
+    import frappe
+
+    from eswasa_hr.alerts import raise_alert
+
+    doc.add_comment("Comment", f"No head is set for {doc.department}, so this requisition went straight to HR.")
+    if frappe.db.exists("DocType", "HR Alert"):
+        requester = _user_of(doc.requested_by)
+        raise_alert(f"requisition-no-head:{doc.name}", RULE_NO_HEAD, no_head_title(doc.department), _hr_manager_users(exclude=requester),
+                    _today().isoformat(), None, (REQ, doc.name))
 
 
 def _close_todos(doctype: str, name: str) -> None:
@@ -189,9 +279,11 @@ def raise_impl(designation: str, department: str, reason: str, description: str,
         )
     if not (description or "").strip():
         frappe.throw("Describe the job: what the person will do and what they need.", frappe.ValidationError)
+    stage, no_head = _first_stage(department, frappe.session.user) if _has_stage() else (None, False)
     doc = frappe.get_doc(
         {
             "doctype": REQ,
+            **({STAGE_FIELD: stage} if stage else {}),
             "designation": designation,
             "department": department,
             "no_of_positions": 1,
@@ -209,36 +301,51 @@ def raise_impl(designation: str, department: str, reason: str, description: str,
         }
     )
     doc.insert()
+    if no_head:
+        _no_head_alert(doc)
     _route_requisition(doc)
     return requisition_row(doc.name)
 
 
 def decide(name: str, action: str, comment: str | None = None) -> dict[str, Any]:
-    """Approvals handler for Job Requisition (HR Manager; never the requester)."""
+    """Approvals handler for Job Requisition: the department head, then an HR Manager (never the requester,
+    and never the head twice). Approving at the head stage moves it to HR; at the HR stage it is approved."""
     import frappe
 
     doc = frappe.get_doc(REQ, name)
-    roles = set(frappe.get_roles())
-    if not roles & {"HR Manager", "System Manager"}:
-        frappe.throw("Only an HR Manager can decide a requisition.", frappe.PermissionError)
-    if frappe.db.get_value("Employee", doc.requested_by, "user_id") == frappe.session.user:
-        frappe.throw("You can't approve a requisition you raised.", frappe.PermissionError)
-    if doc.status != "Pending":
+    staged = _has_stage()
+    stage = _stage(doc) if staged else STAGE_HR
+    err = stage_decider_error(stage, frappe.session.user, list(frappe.get_roles()), _user_of(doc.requested_by), _head_user(getattr(doc, "department", None)))
+    if err:
+        frappe.throw(err, frappe.PermissionError)
+    if doc.status != "Pending" or stage == STAGE_DONE:
         frappe.throw(f"This requisition was already decided ({doc.status}).", frappe.ValidationError)
     key = (action or "").strip().lower()
     note = (comment or "").strip()
+    moved_to_hr = False
     if key == "approve":
-        doc.status = "Open & Approved"
+        if stage == STAGE_HEAD:
+            moved_to_hr = True
+        else:
+            doc.status = "Open & Approved"
     elif key in ("reject", "return"):
         if not note:
-            frappe.throw("Say why, so the head of department can respond.", frappe.ValidationError)
+            frappe.throw("Say why, so the head of department can respond." if stage == STAGE_HR else "Say why, so the requester can respond.", frappe.ValidationError)
         doc.status = "Rejected" if key == "reject" else "On Hold"
     else:
         frappe.throw("A requisition can be approved, put on hold or rejected.", frappe.ValidationError)
+    if staged:
+        setattr(doc, STAGE_FIELD, next_stage(stage) if moved_to_hr else STAGE_DONE)
     doc.save()
-    if note:
+    if moved_to_hr:
+        doc.add_comment("Comment", f"Approved by the head of department ({frappe.session.user})" + (f": {note}" if note else ""))
+    elif note:
         doc.add_comment("Comment", note)
     _close_todos(REQ, name)
+    if moved_to_hr:
+        _route_requisition(doc)
+        return {"ok": True, "doctype": REQ, "name": name, "action": action, "workflow_action": None, "status": doc.status,
+                "message": f"Requisition approved by the head of department and sent to HR: {doc.designation}"}
     return {"ok": True, "doctype": REQ, "name": name, "action": action, "workflow_action": None, "status": doc.status,
             "message": f"Requisition {doc.status.lower()}: {doc.designation}"}
 
@@ -269,7 +376,32 @@ def requisition_row(name: str) -> dict[str, Any]:
         if opening
         else None,
         "applicants": counts,
+        "stage": (getattr(r, STAGE_FIELD, None) or legacy_stage(r.status)) if r.status == "Pending" else None,
+        "waiting_on": _waiting_on(name) if r.status == "Pending" else None,
     }
+
+
+def _waiting_on(name: str) -> str | None:
+    """The named people whose Approvals card is open, by full name (never a role)."""
+    import frappe
+
+    users = sorted({t["allocated_to"] for t in frappe.get_all("ToDo", filters={"reference_type": REQ, "reference_name": name, "status": "Open"},
+                                                              fields=["allocated_to"], limit=0) if t.get("allocated_to")})
+    names = [frappe.db.get_value("User", u, "full_name") or u for u in users]
+    return ", ".join(names) or None
+
+
+def requisition_impl(name: str) -> dict[str, Any]:
+    """One requisition with its stage and who it waits on: HR, the department head or the requester."""
+    import frappe
+
+    if not frappe.db.exists(REQ, name):
+        frappe.throw("Requisition not found.", frappe.DoesNotExistError)
+    r = frappe.db.get_value(REQ, name, ["requested_by", "department"], as_dict=True)
+    me = frappe.session.user
+    if not (_is_hr() or me in (_user_of(r.get("requested_by")), _head_user(r.get("department")))):
+        frappe.throw("Only HR, the head of the department or the requester can see this requisition.", frappe.PermissionError)
+    return requisition_row(name)
 
 
 def requisitions_impl() -> list[dict[str, Any]]:
@@ -404,6 +536,11 @@ def vacancies() -> list[dict[str, Any]]:
 @_whitelist()
 def requisitions() -> list[dict[str, Any]]:
     return requisitions_impl()
+
+
+@_whitelist()
+def requisition(name: str) -> dict[str, Any]:
+    return requisition_impl(name)
 
 
 @_whitelist()

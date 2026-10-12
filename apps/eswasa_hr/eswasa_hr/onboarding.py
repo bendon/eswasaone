@@ -1,7 +1,8 @@
 """
 Onboarding (brief §4; journey J2 end, screens H7 and E10).
 
-HR starts an Employee Onboarding from the accepted Job Offer with a checklist where every activity has a
+HR starts an Employee Onboarding from the accepted Job Offer, or (plan 08) for any Active employee hired
+before go-live or outside Recruitment, with a checklist where every activity has a
 named owner (HR, ICT, Finance, the line manager, the new joiner) — never a role pool. Submitting it makes
 HRMS create the Project and one Task per activity, assigned to its owner (a ToDo in their Approvals).
 Owners mark their task done here or from Approvals (``eswasa_approval_handlers`` for Task); when every task
@@ -53,6 +54,16 @@ def checklist_errors(rows: list[dict[str, Any]]) -> list[str]:
         elif not r.get("user"):
             errs.append(f"Choose who does “{r['activity_name']}”.")
     return errs
+
+
+def filled_checklist(rows: list[dict[str, Any]], starter: str | None) -> list[dict[str, Any]]:
+    """The default checklist with no owner left blank: rows HR would pick (ICT, Finance) go to the HR person
+    starting it, who can reassign the task. Named people only, never a pool."""
+    return [{**r, "user": r.get("user") or starter} for r in rows]
+
+
+def duplicate_error(active: bool) -> str | None:
+    return "Onboarding has already started for this employee." if active else None
 
 
 def progress(statuses: list[str]) -> tuple[int, int]:
@@ -107,24 +118,67 @@ def defaults_impl(employee: str) -> dict[str, Any]:
     }
 
 
+def _active_onboarding(employee: str, job_offer: str | None) -> bool:
+    import frappe
+
+    if job_offer and frappe.db.exists(ONBOARDING, {"job_offer": job_offer, "docstatus": ["<", 2]}):
+        return True
+    return bool(frappe.db.exists(ONBOARDING, {"employee": employee, "docstatus": ["<", 2], "boarding_status": ["not in", ["Completed"]]}))
+
+
+def _applicant_required() -> bool:
+    """Read from the installed HRMS (versions differ): is Employee Onboarding.job_applicant mandatory?"""
+    import frappe
+
+    field = frappe.get_meta(ONBOARDING).get_field("job_applicant")
+    return bool(field and int(getattr(field, "reqd", 0) or 0))
+
+
+def _direct_applicant(e: Any) -> str:
+    """A minimal Job Applicant flagged ``custom_source = "Direct"``, only when the installed HRMS needs one."""
+    import frappe
+
+    email = e.get("company_email") or e.get("personal_email") or e.get("user_id")
+    if not email:
+        frappe.throw(f"Add an email address for {e.employee_name} first: HRMS needs one to start onboarding.", frappe.ValidationError)
+    existing = frappe.db.get_value("Job Applicant", {"email_id": email, "custom_source": "Direct"}, "name")
+    if existing:
+        return existing
+    doc = frappe.get_doc({"doctype": "Job Applicant", "applicant_name": e.employee_name, "email_id": email, "status": "Accepted",
+                          "designation": e.get("designation"), "custom_source": "Direct"})
+    doc.insert(ignore_permissions=True)
+    return doc.name
+
+
 def start_impl(employee: str, activities: list[dict[str, Any]], boarding_begins_on: str | None) -> dict[str, Any]:
+    """From the accepted offer when there is one; otherwise for the existing employee (plan 08). Without
+    activities, the default checklist is used with every row owned by a named person."""
     import frappe
 
     _require_hr()
     e = frappe.get_doc("Employee", employee)
-    if not e.job_offer:
-        frappe.throw("Onboarding starts from an accepted offer. This employee wasn't hired through Recruitment.", frappe.ValidationError)
-    if frappe.db.exists(ONBOARDING, {"job_offer": e.job_offer, "docstatus": ["<", 2]}):
-        frappe.throw("Onboarding has already started for this employee.", frappe.ValidationError)
-    rows = [{"activity_name": str(a.get("activity_name") or "").strip(), "user": a.get("user"), "description": a.get("description")} for a in activities or []]
+    if e.get("status") and e.status != "Active":
+        frappe.throw("Only an active employee can be onboarded.", frappe.ValidationError)
+    err = duplicate_error(_active_onboarding(e.name, e.get("job_offer")))
+    if err:
+        frappe.throw(err, frappe.ValidationError)
+    if activities:
+        rows = [{"activity_name": str(a.get("activity_name") or "").strip(), "user": a.get("user"), "description": a.get("description")} for a in activities]
+    else:
+        manager_user = frappe.db.get_value("Employee", e.reports_to, "user_id") if e.get("reports_to") else None
+        rows = filled_checklist(default_checklist(frappe.session.user, manager_user, e.get("user_id")), frappe.session.user)
+        rows = [{"activity_name": r["activity_name"], "user": r["user"], "description": None} for r in rows]
     errs = checklist_errors(rows)
     if errs:
         frappe.throw(" ".join(errs), frappe.ValidationError)
+    if e.get("job_offer"):
+        source = {"job_offer": e.job_offer, "job_applicant": frappe.db.get_value("Job Offer", e.job_offer, "job_applicant")}
+    else:
+        source = {"job_applicant": _direct_applicant(e)} if _applicant_required() else {}
     doc = frappe.get_doc(
         {
             "doctype": ONBOARDING,
-            "job_offer": e.job_offer,
-            "job_applicant": frappe.db.get_value("Job Offer", e.job_offer, "job_applicant"),
+            **source,
             "employee": e.name,
             "employee_name": e.employee_name,
             "date_of_joining": e.date_of_joining,
@@ -284,7 +338,7 @@ def my_onboarding_impl() -> dict[str, Any] | None:
     emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
     if not emp:
         return None
-    name = frappe.db.get_value(ONBOARDING, {"employee": emp, "docstatus": 1, "boarding_status": ["!=", "Completed"]}, "name")
+    name = frappe.db.get_value(ONBOARDING, {"employee": emp, "docstatus": 1, "boarding_status": ["not in", ["Completed"]]}, "name")
     if not name:
         return None
     d = detail_impl(name)
@@ -296,7 +350,7 @@ def on_declaration_signed(employee: str) -> None:
     """Called when a declaration is submitted: tick the joiner's onboarding task, if any."""
     import frappe
 
-    name = frappe.db.get_value(ONBOARDING, {"employee": employee, "docstatus": 1, "boarding_status": ["!=", "Completed"]}, "name")
+    name = frappe.db.get_value(ONBOARDING, {"employee": employee, "docstatus": 1, "boarding_status": ["not in", ["Completed"]]}, "name")
     if not name:
         return
     task = frappe.db.get_value("Employee Boarding Activity", {"parent": name, "activity_name": DECLARATION_ACTIVITY}, "task")
@@ -335,12 +389,12 @@ def defaults(employee: str) -> dict[str, Any]:
 
 
 @_whitelist
-def start(employee: str, activities: Any = None, boarding_begins_on: str | None = None, confirm: Any = False) -> dict[str, Any]:
+def start(employee: str, activities: Any = None, boarding_begins_on: str | None = None, confirm: Any = False, start_date: str | None = None) -> dict[str, Any]:
     import frappe
 
     _confirm(confirm)
     rows = frappe.parse_json(activities) if isinstance(activities, str) else (activities or [])
-    return start_impl(employee, rows, boarding_begins_on)
+    return start_impl(employee, rows, boarding_begins_on or start_date)
 
 
 @_whitelist

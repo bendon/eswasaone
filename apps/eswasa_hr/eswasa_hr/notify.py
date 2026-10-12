@@ -69,8 +69,10 @@ def _opted_out(user: str) -> bool:
     return bool(frappe.db.get_value("User", user, OPT_OUT))
 
 
-def queue(key: str, users: list[str] | None, template: str, context: dict[str, Any] | None, to_address: str | None = None, channel: str = "email") -> int:
-    """Queue one message per named user (and/or one external address), once per key. Returns how many were added."""
+def queue(key: str, users: list[str] | None, template: str, context: dict[str, Any] | None, to_address: str | None = None, channel: str = "email",
+          attachment: str | None = None) -> int:
+    """Queue one message per named user (and/or one external address), once per key. Returns how many were added.
+    ``attachment`` is a File name sent with the email (plan 08: the offer letter PDF)."""
     import frappe
 
     from eswasa_hr.alerts import recipients
@@ -90,7 +92,8 @@ def queue(key: str, users: list[str] | None, template: str, context: dict[str, A
             continue
         status, error = initial_status(template, bool(user) and _opted_out(user))
         frappe.get_doc({"doctype": DOCTYPE, "key": k, "to_user": user, "to_address": address, "channel": channel,
-                        "template": template, "context": ctx, "status": status, "attempts": 0, "error": error}).insert(ignore_permissions=True)
+                        "template": template, "context": ctx, "status": status, "attempts": 0, "error": error,
+                        "attachment": attachment}).insert(ignore_permissions=True)
         n += 1
     return n
 
@@ -122,7 +125,7 @@ def pending_impl(limit: int = 50) -> list[dict[str, Any]]:
     _require_system_manager()
     if not _ready():
         return []
-    rows = frappe.get_all(DOCTYPE, filters={"status": "Queued"}, fields=["name", "to_user", "to_address", "channel", "template", "context"],
+    rows = frappe.get_all(DOCTYPE, filters={"status": "Queued"}, fields=["name", "to_user", "to_address", "channel", "template", "context", "attachment"],
                           order_by="creation asc", limit=max(1, min(int(limit or 50), 200)))
     out = []
     for r in rows:
@@ -130,8 +133,27 @@ def pending_impl(limit: int = 50) -> list[dict[str, Any]]:
             continue
         ctx = r.get("context")
         msg = render(r["template"], json.loads(ctx) if isinstance(ctx, str) and ctx else ctx or {})
-        out.append({"name": r["name"], "channel": r.get("channel") or "email", "to": _address(r), **msg})
+        item = {"name": r["name"], "channel": r.get("channel") or "email", "to": _address(r), **msg}
+        if r.get("attachment"):
+            item["attachments"] = _attachments(r["attachment"])
+        out.append(item)
     return out
+
+
+def _attachments(file_name: str) -> list[dict[str, Any]]:
+    """The attached File as base64, for Core to add to the email. Empty if the file is gone."""
+    import base64
+
+    import frappe
+
+    if not frappe.db.exists("File", file_name):
+        return []
+    f = frappe.get_doc("File", file_name)
+    content = f.get_content()
+    if isinstance(content, str):
+        content = content.encode()
+    return [{"file_name": f.file_name, "content_type": "application/pdf" if (f.file_name or "").lower().endswith(".pdf") else "application/octet-stream",
+             "content": base64.b64encode(content).decode()}]
 
 
 def mark_impl(name: str, status: str, error: str | None = None) -> dict[str, Any]:

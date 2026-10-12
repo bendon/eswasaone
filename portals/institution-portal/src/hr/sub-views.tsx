@@ -20,3 +20,5 @@ export { OnboardingList, StartOnboarding, OnboardingDetail } from "./onboarding/
 export { EmployeeChanges, PromotionForm, TransferForm, LeaverForm, ContractForm, OffboardingDetail } from "./lifecycle/Lifecycle";
 export { DepartmentDetail, RequestChange, ChangeDetail } from "./establishment/Establishment";
 export { LeavePolicyView } from "./LeavePolicy";
+export { EmployeeRecord } from "./record/EmployeeRecord";
+export { ExpensesView, ExpenseDetail } from "./ExpensesView";

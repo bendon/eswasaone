@@ -211,4 +211,9 @@ describe("No mock data in HR", () => {
     const offenders = ["hr", "me", "team"].flatMap((d) => files(join(root, d))).filter((p) => /localStorage|overviewMock|TODO: wire real|MOCK_/.test(readFileSync(p, "utf8")));
     expect(offenders).toEqual([]);
   });
+
+  it("the HR and My HR tab bars carry no hard-coded badge counts", () => {
+    for (const page of ["HrPage.tsx", "MyHrPage.tsx"]) expect(readFileSync(join(root, "pages", page), "utf8")).not.toMatch(/badge:\s*\d/);
+    expect(readFileSync(join(root, "hr", "HrChrome.tsx"), "utf8")).not.toMatch(/FY20\d\d/);
+  });
 });

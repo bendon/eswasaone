@@ -176,6 +176,9 @@ export function EmployeesView() {
                   Record a leaver
                 </Link>
               </div>
+              <Link className="hr-lnk" to={`/hr/directory/${encodeURIComponent(selected.id)}/record`}>
+                Open full record
+              </Link>
               <Link className="hr-lnk" to={`/hr/directory/${encodeURIComponent(selected.id)}`}>
                 History and pending changes
               </Link>

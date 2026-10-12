@@ -61,7 +61,7 @@ export function HrChrome() {
       <div className="hr-head">
         <div>
           <h2>HR &amp; People</h2>
-          <p>Plan → hire → onboard → manage → develop → pay · FY2026</p>
+          <p>Plan → hire → onboard → manage → develop → pay</p>
         </div>
         <div className="hr-head__r">
           <button type="button" className="btn gold" onClick={() => setShowInvite((v) => !v)}>

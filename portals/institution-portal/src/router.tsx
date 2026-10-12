@@ -698,6 +698,18 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "directory/:id/record",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.EmployeeRecord }))} skeleton="panel" />,
+                  },
+                  {
+                    path: "expenses",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.ExpensesView }))} skeleton="list" />,
+                  },
+                  {
+                    path: "expenses/:id",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.ExpenseDetail }))} skeleton="panel" />,
+                  },
+                  {
                     path: "directory/:id",
                     element: (
                       <L

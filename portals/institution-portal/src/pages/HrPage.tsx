@@ -12,6 +12,7 @@ export function HrPage() {
         { to: "time-off", label: "Time off", icon: "i-clock" },
         { to: "competence", label: "Competence", icon: "i-award", badge: 4 },
         { to: "recruitment", label: "Recruitment", icon: "i-briefcase" },
+        { to: "onboarding", label: "Joiners", icon: "i-users" },
         { to: "performance", label: "Performance", icon: "i-gauge" },
         { to: "payroll", label: "Payroll", icon: "i-dollar", badge: 3 },
         { to: "cases", label: "Cases", icon: "i-case" },

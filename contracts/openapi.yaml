@@ -1248,6 +1248,97 @@ paths:
             application/json:
               schema: { type: object, properties: { interview: { type: string }, result: { type: string } } }
 
+  /hr/onboarding:
+    get:
+      tags: [hr]
+      operationId: listOnboardings
+      summary: Joiners and their onboarding progress (HR only)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Onboardings
+          content:
+            application/json:
+              schema: { type: object, properties: { items: { type: array, items: { $ref: "#/components/schemas/HrOnboarding" } } } }
+    post:
+      tags: [hr]
+      operationId: startOnboarding
+      summary: Start onboarding from the accepted offer; each activity becomes a task for its named owner
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrStartOnboardingBody" }
+      responses:
+        "201":
+          description: Started
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrOnboarding" }
+        "422":
+          description: No accepted offer, already started, or an activity without an owner
+
+  /hr/onboarding/defaults:
+    get:
+      tags: [hr]
+      operationId: getOnboardingDefaults
+      summary: Default checklist for a new employee with owners filled in where known
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Defaults
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrOnboardingDefaults" }
+
+  /hr/onboarding/{name}:
+    get:
+      tags: [hr]
+      operationId: getOnboarding
+      summary: One joiner's checklist (HR or the joiner)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Onboarding
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrOnboarding" }
+
+  /hr/onboarding/tasks/{task}/done:
+    post:
+      tags: [hr]
+      operationId: completeOnboardingTask
+      summary: The task's owner (or HR) marks it done
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: task, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrConfirmBody" }
+      responses:
+        "200":
+          description: Done
+
+  /hr/me/onboarding:
+    get:
+      tags: [hr]
+      operationId: getMyOnboarding
+      summary: The new joiner's own checklist while onboarding is open (null otherwise)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Onboarding or null
+          content:
+            application/json:
+              schema: { type: object, properties: { onboarding: { anyOf: [{ $ref: "#/components/schemas/HrOnboarding" }, { type: "null" }] } } }
+
   /hr/leave/preview:
     post:
       tags: [hr]
@@ -5450,6 +5541,55 @@ components:
         date_of_birth: { type: string, format: date }
         department: { anyOf: [{ type: string }, { type: "null" }] }
         reports_to: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrOnboardingActivity:
+      type: object
+      required: [activity_name]
+      properties:
+        activity_name: { type: string }
+        user: { anyOf: [{ type: string }, { type: "null" }] }
+        user_name: { anyOf: [{ type: string }, { type: "null" }] }
+        group: { anyOf: [{ type: string }, { type: "null" }] }
+        task: { anyOf: [{ type: string }, { type: "null" }] }
+        status: { anyOf: [{ type: string }, { type: "null" }] }
+        mine: { type: boolean }
+    HrOnboarding:
+      type: object
+      required: [id, employee_name]
+      properties:
+        id: { type: string }
+        employee: { anyOf: [{ type: string }, { type: "null" }] }
+        employee_name: { type: string }
+        designation: { anyOf: [{ type: string }, { type: "null" }] }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        date_of_joining: { anyOf: [{ type: string }, { type: "null" }] }
+        boarding_status: { anyOf: [{ type: string }, { type: "null" }] }
+        done: { type: integer }
+        total: { type: integer }
+        activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" } }
+        line_manager: { anyOf: [{ type: string }, { type: "null" }] }
+    HrOnboardingDefaults:
+      type: object
+      required: [employee, employee_name]
+      properties:
+        employee: { type: string }
+        employee_name: { type: string }
+        date_of_joining: { anyOf: [{ type: string }, { type: "null" }] }
+        job_offer: { anyOf: [{ type: string }, { type: "null" }] }
+        has_login: { type: boolean }
+        activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" } }
+    HrStartOnboardingBody:
+      type: object
+      required: [employee, activities, confirm]
+      properties:
+        employee: { type: string }
+        activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" } }
+        boarding_begins_on: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrConfirmBody:
+      type: object
+      required: [confirm]
+      properties:
         confirm: { type: boolean }
     HrHoliday:
       properties:

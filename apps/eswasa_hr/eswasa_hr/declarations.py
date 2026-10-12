@@ -318,6 +318,9 @@ def on_submit(doc: Any, method: str | None = None) -> None:
     import frappe
 
     _close_todos(None, frappe.db.get_value("Employee", doc.employee, "user_id"))
+    from eswasa_hr.onboarding import on_declaration_signed
+
+    on_declaration_signed(doc.employee)
 
 
 # ---------------------------------------------------------------- whitelisted API (Core calls these)
@@ -328,7 +331,7 @@ def _whitelist(fn):
         import frappe
 
         return frappe.whitelist()(fn)
-    except ImportError:  # tests without Frappe
+    except (ImportError, AttributeError):  # tests without Frappe, or with a stand-in module
         return fn
 
 

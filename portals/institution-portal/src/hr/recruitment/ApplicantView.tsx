@@ -92,7 +92,7 @@ export function ApplicantView() {
         />
       );
     } else if (d.offer?.employee) {
-      action = <NextStep title="Hired" body="Onboarding tasks start from the employee record." to={`/hr/directory`} label="Open Directory" />;
+      action = <NextStep title="Hired" body="Onboarding gives ICT, Finance, the line manager and the joiner their tasks." to={`/hr/onboarding/new?employee=${encodeURIComponent(d.offer.employee)}`} label="Start onboarding" />;
     } else if (d.offer?.status === "Rejected") {
       action = <Banner kind="lock" title="Offer declined">The post stays vacant. Offer another shortlisted candidate or re-advertise.</Banner>;
     }
@@ -134,7 +134,7 @@ export function ApplicantView() {
                 <Banner kind="ok" title={`${hired.employee_name} is now an employee`}>
                   Record {hired.employee}. Link their portal login in Directory and start onboarding.
                 </Banner>
-                <NextStep title="Start onboarding" body="ICT, Finance, the line manager and the new joiner each get their tasks." to="/hr/directory" label="Open Directory" />
+                <NextStep title="Start onboarding" body="ICT, Finance, the line manager and the new joiner each get their tasks." to={`/hr/onboarding/new?employee=${encodeURIComponent(hired.employee)}`} label="Start onboarding" />
               </>
             ) : null}
 

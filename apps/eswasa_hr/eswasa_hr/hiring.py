@@ -498,7 +498,7 @@ def _whitelist(fn):
         import frappe
 
         return frappe.whitelist()(fn)
-    except ImportError:  # tests without Frappe
+    except (ImportError, AttributeError):  # tests without Frappe, or with a stand-in module
         return fn
 
 

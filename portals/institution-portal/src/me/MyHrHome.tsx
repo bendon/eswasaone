@@ -3,7 +3,7 @@ import { Icon } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
-import type { HrMe, HrMyDeclaration } from "../api/types";
+import type { HrMe, HrMyDeclaration, HrOnboarding } from "../api/types";
 import { Banner, fmtDays, fmtRange, leaveStatus, NextStep, StatusPill } from "./parts";
 
 /** E1 My HR — the signed-in person's own record, balances and leave. Live GET /hr/me only. */
@@ -47,6 +47,8 @@ function Linked({ me }: { me: HrMe }) {
   const { sessionKey } = useInstitution();
   const decl = useApiResource<HrMyDeclaration>("/hr/me/declaration", { refreshKey: sessionKey });
   const declDue = decl.data && decl.data.status !== "signed" ? decl.data : null;
+  const onb = useApiResource<{ onboarding: HrOnboarding | null }>("/hr/me/onboarding", { refreshKey: sessionKey });
+  const firstDays = onb.data?.onboarding ?? null;
   const emp = me.employee;
   const first = (emp?.employee_name ?? "").split(" ")[0] || "there";
   const annual = me.balances.find((b) => /annual/i.test(b.leave_type)) ?? me.balances[0];
@@ -98,6 +100,20 @@ function Linked({ me }: { me: HrMe }) {
           <span className="d">{waiting.length ? `With ${approver ?? "your approver"} in Approvals` : "Nothing waiting"}</span>
         </Link>
       </div>
+
+      {firstDays ? (
+        <Banner
+          kind="info"
+          title={`Your first days: ${firstDays.done} of ${firstDays.total} set up`}
+          action={
+            <Link className="btn pri sm" to="first-days">
+              Open checklist
+            </Link>
+          }
+        >
+          Your checklist, and what ICT, Finance and your line manager are setting up for you.
+        </Banner>
+      ) : null}
 
       {declDue ? (
         <Banner

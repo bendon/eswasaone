@@ -384,7 +384,7 @@ def _whitelist(**kw):
             import frappe
 
             return frappe.whitelist(**kw)(fn)
-        except ImportError:  # tests without Frappe
+        except (ImportError, AttributeError):  # tests without Frappe, or with a stand-in module
             return fn
 
     return deco

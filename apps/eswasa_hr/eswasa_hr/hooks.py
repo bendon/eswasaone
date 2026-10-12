@@ -86,4 +86,6 @@ eswasa_approval_handlers = {
     "Staff Authorisation": "eswasa_hr.authorisations.decide",
     "Job Requisition": "eswasa_hr.recruitment.decide",
     "Job Offer": "eswasa_hr.hiring.decide_offer",
+    # Onboarding tasks are marked done; other Tasks keep the old behaviour (ToDos closed).
+    "Task": "eswasa_hr.onboarding.decide_task",
 }

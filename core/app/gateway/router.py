@@ -90,6 +90,10 @@ from app.schemas import (
     HrOfferBody,
     HrPipeline,
     HrScheduleInterviewBody,
+    HrConfirmBody,
+    HrOnboarding,
+    HrOnboardingDefaults,
+    HrStartOnboardingBody,
     HrAuthorisationDetail,
     HrAuthorisationRequestBody,
     HrAuthorisationRow,
@@ -4925,6 +4929,84 @@ async def create_employee_from_offer(
     audit_log(action="hr.offer.employee", actor=auth.user.username, resource=f"Job Offer:{name}", detail={"date_of_joining": body.date_of_joining}, confirmed=True)
     raw = await _hr_call(auth, frappe, f"{_HIRE}.create_employee", json={"offer": name, **body.model_dump(exclude={"confirm"}), "confirm": 1})
     return {"employee": str((raw or {}).get("employee", "")), "employee_name": str((raw or {}).get("employee_name", ""))}
+
+
+_ONB = "eswasa_hr.onboarding"
+
+
+@router.get("/hr/onboarding", tags=["hr"])
+async def list_onboardings(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, list[HrOnboarding]]:
+    """Joiners and their onboarding progress (HR only)."""
+    raw = await _hr_call(auth, frappe, f"{_ONB}.onboardings")
+    return {"items": [HrOnboarding.model_validate({**r, "activities": []}) for r in (raw or [])]}
+
+
+@router.get("/hr/onboarding/defaults", response_model=HrOnboardingDefaults, tags=["hr"])
+async def onboarding_defaults(
+    employee: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrOnboardingDefaults:
+    """The default checklist for a new employee, with owners filled in where known."""
+    return HrOnboardingDefaults.model_validate(await _hr_call(auth, frappe, f"{_ONB}.defaults", params={"employee": employee}))
+
+
+@router.post("/hr/onboarding", response_model=HrOnboarding, status_code=status.HTTP_201_CREATED, tags=["hr"])
+async def start_onboarding(
+    body: HrStartOnboardingBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrOnboarding:
+    """Start onboarding from the accepted offer; each activity becomes a task for its named owner."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.onboarding.start", actor=auth.user.username, resource=f"Employee:{body.employee}", detail={"activities": len(body.activities)}, confirmed=True)
+    raw = await _hr_call(
+        auth,
+        frappe,
+        f"{_ONB}.start",
+        json={
+            "employee": body.employee,
+            "activities": [{"activity_name": a.activity_name, "user": a.user} for a in body.activities],
+            "boarding_begins_on": body.boarding_begins_on,
+            "confirm": 1,
+        },
+    )
+    return HrOnboarding.model_validate(raw)
+
+
+@router.get("/hr/onboarding/{name}", response_model=HrOnboarding, tags=["hr"])
+async def get_onboarding(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrOnboarding:
+    return HrOnboarding.model_validate(await _hr_call(auth, frappe, f"{_ONB}.detail", params={"name": name}))
+
+
+@router.post("/hr/onboarding/tasks/{task}/done", tags=["hr"])
+async def complete_onboarding_task(
+    task: str,
+    body: HrConfirmBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    """The task's owner (or HR) marks it done."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.onboarding.task_done", actor=auth.user.username, resource=f"Task:{task}", detail={}, confirmed=True)
+    return dict(await _hr_call(auth, frappe, f"{_ONB}.complete_task", json={"task": task, "confirm": 1}) or {})
+
+
+@router.get("/hr/me/onboarding", tags=["hr"])
+async def get_my_onboarding(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, HrOnboarding | None]:
+    """The new joiner's own checklist while onboarding is open; null otherwise."""
+    raw = await _hr_call(auth, frappe, f"{_ONB}.my_onboarding")
+    return {"onboarding": HrOnboarding.model_validate(raw) if raw else None}
 
 
 @router.post(

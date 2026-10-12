@@ -1034,6 +1034,52 @@ class HrCreateEmployeeBody(BaseModel):
     confirm: bool
 
 
+class HrOnboardingActivity(BaseModel):
+    activity_name: str
+    user: str | None = None
+    user_name: str | None = None
+    group: str | None = None
+    task: str | None = None
+    status: str | None = None
+    mine: bool = False
+
+
+class HrOnboarding(BaseModel):
+    """OpenAPI: HrOnboarding — one joiner's checklist (H7, E10)."""
+
+    id: str
+    employee: str | None = None
+    employee_name: str
+    designation: str | None = None
+    department: str | None = None
+    date_of_joining: str | None = None
+    boarding_status: str | None = None
+    done: int = 0
+    total: int = 0
+    activities: list[HrOnboardingActivity] = Field(default_factory=list)
+    line_manager: str | None = None
+
+
+class HrOnboardingDefaults(BaseModel):
+    employee: str
+    employee_name: str
+    date_of_joining: str | None = None
+    job_offer: str | None = None
+    has_login: bool = False
+    activities: list[HrOnboardingActivity] = Field(default_factory=list)
+
+
+class HrStartOnboardingBody(BaseModel):
+    employee: str
+    activities: list[HrOnboardingActivity]
+    boarding_begins_on: str | None = None
+    confirm: bool
+
+
+class HrConfirmBody(BaseModel):
+    confirm: bool
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

@@ -16,3 +16,4 @@ export { RaiseRequisition } from "./recruitment/RaiseRequisition";
 export { PublishOpening } from "./recruitment/PublishOpening";
 export { PipelineView } from "./recruitment/PipelineView";
 export { ApplicantView } from "./recruitment/ApplicantView";
+export { OnboardingList, StartOnboarding, OnboardingDetail } from "./onboarding/Onboarding";

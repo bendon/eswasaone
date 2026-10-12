@@ -136,6 +136,21 @@ export type HrApplicantDetail = {
   stage: HrStage;
 };
 export type HrMyInterview = { id: string; applicant_name?: string | null; designation?: string | null; scheduled_on?: string | null; from_time?: string | null; interview_type?: string | null; skills: string[] };
+export type HrOnboardingActivity = { activity_name: string; user?: string | null; user_name?: string | null; group?: string | null; task?: string | null; status?: string | null; mine?: boolean };
+export type HrOnboarding = {
+  id: string;
+  employee?: string | null;
+  employee_name: string;
+  designation?: string | null;
+  department?: string | null;
+  date_of_joining?: string | null;
+  boarding_status?: string | null;
+  done: number;
+  total: number;
+  activities: HrOnboardingActivity[];
+  line_manager?: string | null;
+};
+export type HrOnboardingDefaults = { employee: string; employee_name: string; date_of_joining?: string | null; job_offer?: string | null; has_login: boolean; activities: HrOnboardingActivity[] };
 export type HrVacancy = { department?: string | null; designation: string; approved: number; filled: number; in_recruitment: number; vacant: number };
 export type HrRequisition = {
   id: string;

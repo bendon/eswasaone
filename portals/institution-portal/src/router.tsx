@@ -628,6 +628,39 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "onboarding",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.OnboardingList }))
+                        }
+                        skeleton="list"
+                      />
+                    ),
+                  },
+                  {
+                    path: "onboarding/new",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.StartOnboarding }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "onboarding/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.OnboardingDetail }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
                     path: "recruitment/:id/publish",
                     element: (
                       <L
@@ -761,6 +794,17 @@ export const router = createBrowserRouter(
                       <L
                         factory={() =>
                           import("./me/sub-views").then((m) => ({ default: m.MyInterviews }))
+                        }
+                        skeleton="list"
+                      />
+                    ),
+                  },
+                  {
+                    path: "first-days",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.FirstDays }))
                         }
                         skeleton="list"
                       />

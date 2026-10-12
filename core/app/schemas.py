@@ -1912,6 +1912,55 @@ class HrLeaveCancelBody(BaseModel):
     confirm: bool = False
 
 
+class HrExpenseLine(BaseModel):
+    """One expense on a claim. ``receipt`` names one of the claim's attachments (needed above the threshold)."""
+
+    expense_type: str
+    expense_date: str
+    amount: float
+    description: str | None = None
+    receipt: str | None = None
+    sanctioned: float | None = None
+
+
+class HrExpenseAttachment(BaseModel):
+    file_name: str
+    url: str
+    id: str | None = None
+
+
+class HrExpenseClaim(BaseModel):
+    """Plan 05: a reimbursement claim (native HRMS Expense Claim). Lines and attachments only on the detail read."""
+
+    id: str
+    employee: str | None = None
+    employee_name: str | None = None
+    department: str | None = None
+    posting_date: str | None = None
+    total: float = 0
+    sanctioned: float | None = None
+    currency: str | None = None
+    approval_status: str = "Draft"
+    status: str
+    approver: str | None = None
+    sla_date: str | None = None
+    overdue: bool = False
+    description: str | None = None
+    lines: list[HrExpenseLine] | None = None
+    attachments: list[HrExpenseAttachment] | None = None
+
+
+class HrExpenseClaims(BaseModel):
+    items: list[HrExpenseClaim]
+
+
+class HrExpenseClaimBody(BaseModel):
+    lines: list[HrExpenseLine]
+    description: str | None = None
+    attachments: list[HrExpenseAttachment] = Field(default_factory=list)
+    confirm: bool = False
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

@@ -1,0 +1,47 @@
+# Expense Claim — reimbursement of business costs through native HRMS (plan 05; not payroll).
+
+doctype: Expense Claim
+module: hr
+workflow_name: Expense Claim
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: null
+guards: [expected_state, idempotency_key]
+notes: >
+  HRMS owns this DocType; no Frappe Workflow. eswasa_hr.expenses routes a Draft claim to the employee's
+  named expense_approver (one ToDo, never a role pool) and eswasa_hr.expenses.decide is the approval
+  handler. Approve sets approval_status and submits; reject needs a note. Payment is Finance's job
+  (Payment Entry); HR never posts.
+
+# PROVISIONAL (brief §12.1; confirm with ESWASA): decide within 3 working days, then one alert to the
+# named Accounts Managers, once per claim.
+sla: {days: 3, calendar: working, escalate_to: named Accounts Managers, provisional: true}
+
+display:
+  customer: {}
+  staff:
+    Draft: Waiting for approval
+    Approved: Approved
+    Rejected: Not approved
+
+states:
+  - {name: Draft, sla: 3d working (provisional), owner_role: Expense Approver, allow_edit: Employee}
+  - {name: Approved, owner_role: Expense Approver, allow_edit: Accounts Manager, style: Success}
+  - {name: Rejected, owner_role: Expense Approver, allow_edit: Expense Approver, style: Danger}
+
+transitions:
+  - action: Approve
+    from: Draft
+    to: Approved
+    actor: expense_approver
+    when: the named expense approver (never the applicant); HR Manager or Accounts Manager after escalation
+    approvals_family: approve
+  - action: Reject
+    from: Draft
+    to: Rejected
+    actor: expense_approver
+    reason: required
+    approvals_family: approve

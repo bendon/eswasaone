@@ -804,12 +804,87 @@ paths:
 
   /hr/expense-claims:
     get:
-      tags: [identity]
+      tags: [hr]
       operationId: listExpenseClaims
+      summary: Expense claims (plan 05, reimbursement only). HR and Finance (Accounts Manager) see all; others their own and the ones routed to them
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string, enum: [Draft, Approved, Rejected] }, description: approval_status }
+        - { name: employee, in: query, required: false, schema: { type: string } }
+        - { name: department, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: Claims, newest first
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrExpenseClaims" }
+        "503":
+          description: Frappe unavailable
+
+  /hr/expense-claims/{claim_id}:
+    get:
+      tags: [hr]
+      operationId: getExpenseClaim
+      summary: One claim with its lines and receipts, scoped like the list
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: claim_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The claim
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrExpenseClaim" }
+        "403":
+          description: Not your claim and not routed to you (plain text)
+        "404":
+          description: No such claim
+        "503":
+          description: Frappe unavailable
+
+  /hr/me/expense-claims:
+    get:
+      tags: [hr]
+      operationId: listMyExpenseClaims
+      summary: The caller's own claims, with where each one is and who decides it
       security: [{ bearerAuth: [] }]
       responses:
         "200":
-          description: Expense claims for current user
+          description: Own claims
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrExpenseClaims" }
+        "503":
+          description: Frappe unavailable
+    post:
+      tags: [hr]
+      operationId: submitMyExpenseClaim
+      summary: Send a claim to your expense approver (decided in Approvals; Finance pays). Lines above the receipt threshold name an attached receipt
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrExpenseClaimBody" }
+      responses:
+        "200":
+          description: Draft claim created and routed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  name: { type: string }
+                  status: { type: string }
+                  approver: { type: string }
+                  message: { type: string }
+        "400":
+          description: confirm must be true
+        "422":
+          description: No lines, an amount of 0, a future date, a missing receipt, or no expense approver (plain text)
+        "503":
+          description: Frappe unavailable
 
   /hr/me:
     get:
@@ -8274,6 +8349,76 @@ components:
           title: Leave Types
           type: array
       title: HrLeavePolicy
+      type: object
+    HrExpenseLine:
+      properties:
+        expense_type: { title: Expense Type, type: string }
+        expense_date: { title: Expense Date, type: string, format: date }
+        amount: { title: Amount, type: number }
+        description: { title: Description, type: string, nullable: true }
+        receipt: { title: Receipt, type: string, nullable: true, description: File name of one of the claim's attachments }
+        sanctioned: { title: Sanctioned, type: number, nullable: true }
+      required: [expense_type, expense_date, amount]
+      title: HrExpenseLine
+      type: object
+    HrExpenseAttachment:
+      properties:
+        file_name: { title: File Name, type: string }
+        url: { title: Url, type: string, description: From POST /media/upload }
+        id: { title: Id, type: string, nullable: true }
+      required: [file_name, url]
+      title: HrExpenseAttachment
+      type: object
+    HrExpenseClaim:
+      properties:
+        id: { title: Id, type: string }
+        employee: { title: Employee, type: string, nullable: true }
+        employee_name: { title: Employee Name, type: string, nullable: true }
+        department: { title: Department, type: string, nullable: true }
+        posting_date: { title: Posting Date, type: string, nullable: true }
+        total: { title: Total, type: number, default: 0 }
+        sanctioned: { title: Sanctioned, type: number, nullable: true }
+        currency: { title: Currency, type: string, nullable: true }
+        approval_status: { title: Approval Status, type: string, enum: [Draft, Approved, Rejected], default: Draft }
+        status: { title: Status, type: string, description: "Waiting for approval, Approved, waiting for payment, Paid, Not approved or Cancelled" }
+        approver: { title: Approver, type: string, nullable: true }
+        sla_date: { title: Sla Date, type: string, nullable: true, description: Provisional 3 working days while waiting }
+        overdue: { title: Overdue, type: boolean, default: false }
+        description: { title: Description, type: string, nullable: true }
+        lines:
+          nullable: true
+          items: { $ref: '#/components/schemas/HrExpenseLine' }
+          type: array
+        attachments:
+          nullable: true
+          items: { $ref: '#/components/schemas/HrExpenseAttachment' }
+          type: array
+      required: [id, status]
+      title: HrExpenseClaim
+      type: object
+    HrExpenseClaims:
+      properties:
+        items:
+          items: { $ref: '#/components/schemas/HrExpenseClaim' }
+          title: Items
+          type: array
+      required: [items]
+      title: HrExpenseClaims
+      type: object
+    HrExpenseClaimBody:
+      properties:
+        lines:
+          items: { $ref: '#/components/schemas/HrExpenseLine' }
+          title: Lines
+          type: array
+        description: { title: Description, type: string, nullable: true }
+        attachments:
+          items: { $ref: '#/components/schemas/HrExpenseAttachment' }
+          title: Attachments
+          type: array
+        confirm: { default: false, title: Confirm, type: boolean }
+      required: [lines]
+      title: HrExpenseClaimBody
       type: object
     HrLeaveCancelBody:
       properties:

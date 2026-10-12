@@ -318,6 +318,12 @@ def board_pack_impl() -> dict[str, Any]:
     }
 
 
+def _receipt_threshold() -> float | None:
+    from eswasa_hr.expenses import threshold
+
+    return threshold()
+
+
 def setup_status_impl() -> dict[str, Any]:
     """H14: where HR setup stands, step by step, from live counts."""
     import frappe
@@ -336,6 +342,8 @@ def setup_status_impl() -> dict[str, Any]:
     linked = sum(1 for r in active if r.get("user_id"))
     ed = _count("Has Role", {"role": "Eswasa Executive Director", "parenttype": "User"})
     levels = _count("Property Setter", {"doc_type": "Employee", "property": "permlevel"})
+    expense_types = _count("Expense Claim Type")
+    receipt_above = _receipt_threshold() if expense_types else None
 
     steps = [
         step("organisation", "Organisation", DONE if _count("Company") else TODO, "The company record ESWASA's departments sit under.", "company", desk=True),
@@ -378,6 +386,16 @@ def setup_status_impl() -> dict[str, Any]:
             f"{len(active)} active employees, {linked} with a login." if active else "No employee records yet. Import in two passes: records, then line managers and approvers.",
             "data-import/new?reference_doctype=Employee",
             None if active else "§0.5 #3",
+            desk=True,
+        ),
+        step(
+            "expenses",
+            "Expense claims",
+            DONE if expense_types else AWAITING,
+            f"{expense_types} expense types; "
+            + (f"receipts needed above {receipt_above:,.2f}." if receipt_above else "a receipt is needed on every line (no threshold set)."),
+            "expense-claim-type",
+            None if expense_types else "ESWASA Finance",
             desk=True,
         ),
         step("payroll", "Payroll scope", EXCLUDED, "Excluded until ESWASA decides whether payroll runs in EswasaOne.", None, "H15, H16"),

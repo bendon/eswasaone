@@ -33,6 +33,8 @@ fixtures = [
                     "Employee Grievance-custom_next_step_due",
                     "Employee Grievance-custom_talk_first",
                     "User-custom_hr_email_opt_out",
+                    "HR Settings-custom_receipt_required_above",
+                    "Expense Claim Detail-custom_receipt",
                 ],
             ]
         ],
@@ -121,11 +123,20 @@ doc_events = {
         "on_submit": ["eswasa_hr.leave.sync_todo", "eswasa_hr.leave.cover_prompt"],
         "on_cancel": "eswasa_hr.leave.sync_todo",
     },
+    # Plan 05: route each expense claim to the employee's own expense approver in Approvals.
+    "Expense Claim": {
+        "after_insert": "eswasa_hr.expenses.sync_todo",
+        "on_update": "eswasa_hr.expenses.sync_todo",
+        "on_submit": "eswasa_hr.expenses.sync_todo",
+        "on_cancel": "eswasa_hr.expenses.sync_todo",
+    },
 }
 
 # Approvals decides DocTypes without a Frappe Workflow through these (eswasa_governance.approvals).
 eswasa_approval_handlers = {
     "Leave Application": "eswasa_hr.leave.decide",
+    # Plan 05: reimbursement only; Finance pays (Payment Entry), HR never posts.
+    "Expense Claim": "eswasa_hr.expenses.decide",
     "Staff Authorisation": "eswasa_hr.authorisations.decide",
     "Job Requisition": "eswasa_hr.recruitment.decide",
     "Job Offer": "eswasa_hr.hiring.decide_offer",

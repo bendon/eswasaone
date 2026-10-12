@@ -155,6 +155,9 @@ from app.schemas import (
     HrLeaveSummary,
     HrLeaveBalances,
     HrLeaveCalendar,
+    HrExpenseClaim,
+    HrExpenseClaimBody,
+    HrExpenseClaims,
     HrLeaveCancelBody,
     HrLeavePolicy,
     HrLeaveRequest,
@@ -3714,6 +3717,70 @@ async def cancel_hr_leave(
         confirmed=True,
     )
     return await _hr_write(auth, frappe, f"{_LEAVE}.cancel", json={"name": leave_id, "reason": body.reason, "confirm": True})
+
+
+_EXPENSES = "eswasa_hr.expenses"
+
+
+def _absolute_attachment(url: str, request: Request) -> str:
+    """Core's local media fallback returns ``/api/media/<key>``; Frappe's File needs an absolute link."""
+    return f"{str(request.base_url).rstrip('/')}{url}" if url.startswith("/api/media/") else url
+
+
+@router.get("/hr/expense-claims", response_model=HrExpenseClaims, tags=["hr"])
+async def list_expense_claims(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+    employee: str | None = None,
+    department: str | None = None,
+) -> HrExpenseClaims:
+    """Expense claims (plan 05). HR and Finance see all; others their own and the ones routed to them."""
+    params = {k: v for k, v in {"status": status_filter, "employee": employee, "department": department}.items() if v}
+    rows = await _hr_call(auth, frappe, f"{_EXPENSES}.claims", params=params or None) or []
+    return HrExpenseClaims(items=[HrExpenseClaim.model_validate(r) for r in rows])
+
+
+@router.get("/hr/expense-claims/{claim_id}", response_model=HrExpenseClaim, tags=["hr"])
+async def get_expense_claim(
+    claim_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrExpenseClaim:
+    """One claim with its lines and receipts, scoped like the list."""
+    return HrExpenseClaim.model_validate(await _hr_call(auth, frappe, f"{_EXPENSES}.detail", params={"name": claim_id}))
+
+
+@router.get("/hr/me/expense-claims", response_model=HrExpenseClaims, tags=["hr"])
+async def list_my_expense_claims(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrExpenseClaims:
+    """The caller's own claims, with where each one is and who decides it."""
+    rows = await _hr_call(auth, frappe, f"{_EXPENSES}.mine") or []
+    return HrExpenseClaims(items=[HrExpenseClaim.model_validate(r) for r in rows])
+
+
+@router.post("/hr/me/expense-claims", tags=["hr"])
+async def submit_my_expense_claim(
+    body: HrExpenseClaimBody,
+    request: Request,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> dict[str, Any]:
+    """Send a claim to your expense approver. Decisions happen in Approvals; rules live in eswasa_hr.expenses."""
+    _require_confirm(body.confirm)
+    lines = [line.model_dump(exclude={"sanctioned"}, exclude_none=True) for line in body.lines]
+    attachments = [{"file_name": a.file_name, "url": _absolute_attachment(a.url, request)} for a in body.attachments]
+    audit_log(
+        action="hr.expense_claim.submit",
+        actor=auth.user.username,
+        resource="Expense Claim",
+        detail={"lines": len(lines), "total": round(sum(line["amount"] for line in lines), 2), "attachments": len(attachments)},
+        confirmed=True,
+    )
+    return await _hr_write(auth, frappe, f"{_EXPENSES}.submit",
+                           json={"lines": lines, "description": body.description, "attachments": attachments, "confirm": True})
 
 
 _LEAVE_APP = "hrms.hr.doctype.leave_application.leave_application"

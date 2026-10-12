@@ -19,6 +19,7 @@ def daily() -> None:
     lifecycle_due()
     rh6_appraisal_reminders()
     rl1_leave_escalation()
+    expense_escalation()
     recruitment_reminders()
 
 
@@ -116,6 +117,13 @@ def lifecycle_due() -> tuple[int, int]:
 def rl1_leave_escalation() -> int:
     """R-L1 (provisional): an Open leave request past its 2-working-day SLA goes to the named HR Managers, once."""
     from eswasa_hr.leave import escalate_overdue
+
+    return escalate_overdue()
+
+
+def expense_escalation() -> int:
+    """Plan 05 (provisional): a Draft expense claim past its 3-working-day SLA alerts the named Accounts Managers, once."""
+    from eswasa_hr.expenses import escalate_overdue
 
     return escalate_overdue()
 

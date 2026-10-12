@@ -171,5 +171,26 @@
   "insert_after": "send_me_a_copy",
   "description": "Skip HR reminders by email. Leave decisions and job offers are always sent.",
   "name": "User-custom_hr_email_opt_out"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_receipt_required_above",
+  "label": "Receipt required above",
+  "fieldtype": "Currency",
+  "insert_after": "expense_approver_mandatory_in_expense_claim",
+  "description": "Expense claim lines above this amount need a receipt. Leave empty to require a receipt on every line (set by ESWASA Finance).",
+  "name": "HR Settings-custom_receipt_required_above"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Expense Claim Detail",
+  "fieldname": "custom_receipt",
+  "label": "Receipt",
+  "fieldtype": "Data",
+  "insert_after": "description",
+  "description": "File name of the receipt attached to the claim.",
+  "in_list_view": 0,
+  "name": "Expense Claim Detail-custom_receipt"
  }
 ]

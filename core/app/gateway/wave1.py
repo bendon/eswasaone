@@ -376,23 +376,6 @@ async def estore_licence_download(
         raise_from_frappe(exc)
 
 
-# --- HR expense claims list (access requests moved to router.py, plan 02) -------
-
-
-@router.get("/hr/expense-claims")
-async def list_expense_claims(
-    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
-    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-) -> dict[str, Any]:
-    if auth.mock or not await frappe.health():
-        return {"items": []}
-    try:
-        raw = await auth.frappe(frappe).method("eswasa_governance.api.list_expense_claims")
-        return raw if isinstance(raw, dict) else {"items": []}
-    except FrappeError:
-        return {"items": []}
-
-
 # --- TBT triage -------------------------------------------------------------
 
 

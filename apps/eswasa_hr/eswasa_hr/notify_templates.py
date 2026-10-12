@@ -31,6 +31,13 @@ TEMPLATES: dict[str, dict[str, Any]] = {
         "body": "Hello,\n\n{employee_name} cancelled their approved leave for {from_date} to {to_date}. "
         "The days are back in their balance. Nothing more is needed from you.",
     },
+    "expense_decided": {
+        "essential": True,
+        "fields": ("decision", "total"),
+        "subject": "Your expense claim was {decision}",
+        "body": "Hello,\n\nYour expense claim for {total} was {decision}. "
+        "Open My HR in EswasaOne to see the details. Approved claims are paid by Finance.",
+    },
     "contract_ending": {
         "essential": False,
         "fields": ("employee_name", "end_date"),

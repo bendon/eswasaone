@@ -99,6 +99,17 @@ from app.schemas import (
     HrTeamCalendar,
     HrTeamMemberDetail,
     HrChanges,
+    HrAppraisalDetail,
+    HrAppraisalHolder,
+    HrGoalBody,
+    HrPerfCycleBody,
+    HrPerfCycleDetail,
+    HrPerfCycles,
+    HrPerfDefaults,
+    HrPerfRemindBody,
+    HrPerfRemindResult,
+    HrReviewBody,
+    HrSelfAssessmentBody,
     HrContractBody,
     HrContractDefaults,
     HrPromotionBody,
@@ -5147,6 +5158,132 @@ async def prepare_separation(
         },
     )
     return HrChanges.model_validate(raw)
+
+
+_PERF = "eswasa_hr.performance"
+
+
+@router.get("/hr/performance", response_model=HrPerfCycles, tags=["hr"])
+async def list_performance_cycles(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrPerfCycles:
+    """Appraisal cycles with objectives set, self-assessments and manager reviews done (H8; HR only)."""
+    return HrPerfCycles.model_validate(await _hr_call(auth, frappe, f"{_PERF}.cycles"))
+
+
+@router.get("/hr/performance/defaults", response_model=HrPerfDefaults, tags=["hr"])
+async def get_performance_defaults(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrPerfDefaults:
+    return HrPerfDefaults.model_validate(await _hr_call(auth, frappe, f"{_PERF}.defaults"))
+
+
+@router.post("/hr/performance/cycles", response_model=HrPerfCycleDetail, tags=["hr"])
+async def start_performance_cycle(
+    body: HrPerfCycleBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrPerfCycleDetail:
+    """Start a cycle: one appraisal per active person in the chosen departments, and their self-assessment tasks."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.performance.start", actor=auth.user.username, resource=f"Appraisal Cycle:{body.cycle_name}", detail={"template": body.template, "departments": body.departments}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_PERF}.start_cycle", json={**body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrPerfCycleDetail.model_validate(raw)
+
+
+@router.get("/hr/performance/cycles/{name}", response_model=HrPerfCycleDetail, tags=["hr"])
+async def get_performance_cycle(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    department: str | None = None,
+) -> HrPerfCycleDetail:
+    params = {"name": name, **({"department": department} if department else {})}
+    return HrPerfCycleDetail.model_validate(await _hr_call(auth, frappe, f"{_PERF}.cycle", params=params))
+
+
+@router.post("/hr/performance/cycles/{name}/remind", response_model=HrPerfRemindResult, tags=["hr"])
+async def remind_performance_cycle(
+    name: str,
+    body: HrPerfRemindBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrPerfRemindResult:
+    """Remind everyone with an open step (self-assessment or manager review). Already-open tasks aren't repeated."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.performance.remind", actor=auth.user.username, resource=f"Appraisal Cycle:{name}", detail={"department": body.department}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_PERF}.remind", json={"cycle": name, "department": body.department, "confirm": 1})
+    return HrPerfRemindResult.model_validate(raw)
+
+
+@router.get("/hr/performance/appraisals/{name}", response_model=HrAppraisalDetail, tags=["hr"])
+async def get_appraisal(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrAppraisalDetail:
+    """One appraisal: HR, the person, or someone above them (checked in eswasa_hr)."""
+    return HrAppraisalDetail.model_validate(await _hr_call(auth, frappe, f"{_PERF}.appraisal", params={"name": name}))
+
+
+@router.get("/hr/me/appraisal", response_model=HrAppraisalHolder, tags=["hr"])
+async def get_my_appraisal(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrAppraisalHolder:
+    return HrAppraisalHolder(appraisal=await _hr_call(auth, frappe, f"{_PERF}.my_appraisal"))
+
+
+@router.post("/hr/me/appraisal", response_model=HrAppraisalDetail, tags=["hr"])
+async def save_my_self_assessment(
+    body: HrSelfAssessmentBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrAppraisalDetail:
+    """Rate every criterion and add reflections; this hands the review to the line manager."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.appraisal.self", actor=auth.user.username, resource="Appraisal:me", detail={"ratings": len(body.ratings)}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_PERF}.save_self", json={"ratings": [r.model_dump() for r in body.ratings], "reflections": body.reflections, "confirm": 1})
+    return HrAppraisalDetail.model_validate(raw)
+
+
+@router.get("/hr/team/{employee}/review", response_model=HrAppraisalHolder, tags=["hr"])
+async def get_team_review(
+    employee: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrAppraisalHolder:
+    return HrAppraisalHolder(appraisal=await _hr_call(auth, frappe, f"{_PERF}.team_review", params={"employee": employee}))
+
+
+@router.post("/hr/team/{employee}/review", response_model=HrAppraisalDetail, tags=["hr"])
+async def submit_team_review(
+    employee: str,
+    body: HrReviewBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrAppraisalDetail:
+    """The direct line manager rates the criteria and comments (Employee Performance Feedback)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.appraisal.review", actor=auth.user.username, resource=f"Employee:{employee}", detail={"ratings": len(body.ratings)}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_PERF}.submit_review", json={"employee": employee, "ratings": [r.model_dump() for r in body.ratings], "feedback": body.feedback, "confirm": 1})
+    return HrAppraisalDetail.model_validate(raw)
+
+
+@router.post("/hr/team/{employee}/goals", response_model=HrAppraisalDetail, tags=["hr"])
+async def add_team_goal(
+    employee: str,
+    body: HrGoalBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrAppraisalDetail:
+    """An objective in the current cycle, linked to a strategic plan goal (line manager or HR)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.appraisal.goal", actor=auth.user.username, resource=f"Employee:{employee}", detail={"goal": body.goal_name}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_PERF}.add_goal", json={"employee": employee, **body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrAppraisalDetail.model_validate(raw)
 
 
 _CONTRACT = "eswasa_hr.contracts"

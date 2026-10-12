@@ -185,6 +185,60 @@ export type HrChanges = {
   status?: string | null;
   items: Array<{ id: string; kind: "promotion" | "transfer" | "separation" | "contract"; date?: string | null; state: string; changes: Array<{ property: string; current?: string | null; new?: string | null }> }>;
 };
+export type HrPerfCounts = { people: number; objectives_set: number; self_done: number; manager_done: number };
+export type HrPerfCycle = HrPerfCounts & { name: string; cycle_name: string; start_date?: string | null; end_date?: string | null; status?: string | null };
+export type HrPerfStep = "self" | "manager" | "done";
+export type HrPerfPerson = {
+  appraisal: string;
+  employee: string;
+  employee_name: string;
+  department?: string | null;
+  designation?: string | null;
+  manager_name?: string | null;
+  objectives: number;
+  self_done: boolean;
+  manager_done: boolean;
+  step: HrPerfStep;
+};
+export type HrPerfCycleDetail = {
+  name: string;
+  cycle_name: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  status?: string | null;
+  departments: Array<HrPerfCounts & { department: string }>;
+  people: HrPerfPerson[];
+};
+export type HrPerfDefaults = {
+  templates: Array<{ name: string; title: string; criteria: string[]; kras: string[] }>;
+  departments: Array<{ name: string; people: number }>;
+  reminder_days: number[];
+};
+export type HrAppraisal = {
+  id: string;
+  cycle: string;
+  cycle_name: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  cycle_status?: string | null;
+  employee: string;
+  employee_name: string;
+  department?: string | null;
+  designation?: string | null;
+  manager?: string | null;
+  manager_name?: string | null;
+  kras: string[];
+  goals: Array<{ id: string; goal_name: string; kra?: string | null; strategic_goal?: string | null; progress: number; status?: string | null }>;
+  criteria: Array<{ criteria: string; weight: number; self?: number | null; manager?: number | null }>;
+  reflections?: string | null;
+  manager_feedback?: string | null;
+  self_done: boolean;
+  manager_done: boolean;
+  step: HrPerfStep;
+  can_self: boolean;
+  can_review: boolean;
+  can_add_goals: boolean;
+};
 export type HrContractDefaults = {
   employee: string;
   employee_name: string;

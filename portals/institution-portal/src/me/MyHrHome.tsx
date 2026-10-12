@@ -3,8 +3,8 @@ import { Icon } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
-import type { HrMe, HrMyDeclaration, HrOnboarding } from "../api/types";
-import { Banner, fmtDays, fmtRange, leaveStatus, NextStep, StatusPill } from "./parts";
+import type { HrAppraisal, HrMe, HrMyDeclaration, HrOnboarding } from "../api/types";
+import { Banner, fmtDay, fmtDays, fmtRange, leaveStatus, NextStep, StatusPill } from "./parts";
 
 /** E1 My HR — the signed-in person's own record, balances and leave. Live GET /hr/me only. */
 export function MyHrHome() {
@@ -49,6 +49,8 @@ function Linked({ me }: { me: HrMe }) {
   const declDue = decl.data && decl.data.status !== "signed" ? decl.data : null;
   const onb = useApiResource<{ onboarding: HrOnboarding | null }>("/hr/me/onboarding", { refreshKey: sessionKey });
   const firstDays = onb.data?.onboarding ?? null;
+  const apr = useApiResource<{ appraisal: HrAppraisal | null }>("/hr/me/appraisal", { refreshKey: sessionKey });
+  const selfDue = apr.data?.appraisal?.can_self && !apr.data.appraisal.self_done ? apr.data.appraisal : null;
   const emp = me.employee;
   const first = (emp?.employee_name ?? "").split(" ")[0] || "there";
   const annual = me.balances.find((b) => /annual/i.test(b.leave_type)) ?? me.balances[0];
@@ -112,6 +114,20 @@ function Linked({ me }: { me: HrMe }) {
           }
         >
           Your checklist, and what ICT, Finance and your line manager are setting up for you.
+        </Banner>
+      ) : null}
+
+      {selfDue ? (
+        <Banner
+          kind="info"
+          title={`${selfDue.cycle_name}: rate yourself by ${fmtDay(selfDue.end_date, true)}`}
+          action={
+            <Link className="btn pri sm" to="appraisal">
+              Start
+            </Link>
+          }
+        >
+          Then {selfDue.manager_name ?? "your line manager"} adds their ratings.
         </Banner>
       ) : null}
 

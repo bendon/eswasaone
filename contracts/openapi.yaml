@@ -1501,6 +1501,191 @@ paths:
         "422":
           description: Rule failed
 
+  /hr/performance:
+    get:
+      tags: [hr]
+      operationId: listPerformanceCycles
+      summary: Appraisal cycles with completion (H8; HR only)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrPerfCycles" }
+
+  /hr/performance/defaults:
+    get:
+      tags: [hr]
+      operationId: getPerformanceDefaults
+      summary: Appraisal templates and departments for starting a cycle (H8a)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrPerfDefaults" }
+
+  /hr/performance/cycles:
+    post:
+      tags: [hr]
+      operationId: startPerformanceCycle
+      summary: Start a cycle with one appraisal per active person in the chosen departments
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrPerfCycleBody" }
+      responses:
+        "200":
+          description: Started
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrPerfCycleDetail" }
+        "422":
+          description: Rule failed
+
+  /hr/performance/cycles/{name}:
+    get:
+      tags: [hr]
+      operationId: getPerformanceCycle
+      summary: Completion by department and everyone's step
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+        - { name: department, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrPerfCycleDetail" }
+
+  /hr/performance/cycles/{name}/remind:
+    post:
+      tags: [hr]
+      operationId: remindPerformanceCycle
+      summary: Remind everyone with an open step (idempotent)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrPerfRemindBody" }
+      responses:
+        "200":
+          description: Reminders created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrPerfRemindResult" }
+
+  /hr/performance/appraisals/{name}:
+    get:
+      tags: [hr]
+      operationId: getAppraisal
+      summary: One appraisal (HR, the person, or someone above them)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrAppraisalDetail" }
+
+  /hr/me/appraisal:
+    get:
+      tags: [hr]
+      operationId: getMyAppraisal
+      summary: The signed-in person's current appraisal, or null (E7)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrAppraisalHolder" }
+    post:
+      tags: [hr]
+      operationId: saveMySelfAssessment
+      summary: Rate every criterion and add reflections; hands the review to the line manager
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrSelfAssessmentBody" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrAppraisalDetail" }
+        "422":
+          description: Rule failed
+
+  /hr/team/{employee}/review:
+    get:
+      tags: [hr]
+      operationId: getTeamReview
+      summary: A report's current appraisal (T5)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrAppraisalHolder" }
+    post:
+      tags: [hr]
+      operationId: submitTeamReview
+      summary: The direct line manager rates and comments (Employee Performance Feedback)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrReviewBody" }
+      responses:
+        "200":
+          description: Submitted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrAppraisalDetail" }
+        "422":
+          description: Rule failed
+
+  /hr/team/{employee}/goals:
+    post:
+      tags: [hr]
+      operationId: addTeamGoal
+      summary: An objective in the current cycle linked to a strategic plan goal
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrGoalBody" }
+      responses:
+        "200":
+          description: Added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrAppraisalDetail" }
+        "422":
+          description: Rule failed
+
   /hr/employees/{employee_id}/contract:
     get:
       tags: [hr]
@@ -5917,6 +6102,178 @@ components:
         notice_date: { anyOf: [{ type: string }, { type: "null" }] }
         activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" } }
         note: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrPerfCycle:
+      type: object
+      required: [name, cycle_name]
+      properties:
+        name: { type: string }
+        cycle_name: { type: string }
+        start_date: { anyOf: [{ type: string }, { type: "null" }] }
+        end_date: { anyOf: [{ type: string }, { type: "null" }] }
+        status: { anyOf: [{ type: string }, { type: "null" }] }
+        people: { type: integer }
+        objectives_set: { type: integer }
+        self_done: { type: integer }
+        manager_done: { type: integer }
+    HrPerfCycles:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/HrPerfCycle" } }
+    HrPerfDept:
+      type: object
+      required: [department]
+      properties:
+        department: { type: string }
+        people: { type: integer }
+        objectives_set: { type: integer }
+        self_done: { type: integer }
+        manager_done: { type: integer }
+    HrPerfPerson:
+      type: object
+      required: [appraisal, employee, employee_name, step]
+      properties:
+        appraisal: { type: string }
+        employee: { type: string }
+        employee_name: { type: string }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        designation: { anyOf: [{ type: string }, { type: "null" }] }
+        manager_name: { anyOf: [{ type: string }, { type: "null" }] }
+        objectives: { type: integer }
+        self_done: { type: boolean }
+        manager_done: { type: boolean }
+        step: { type: string, enum: [self, manager, done] }
+    HrPerfCycleDetail:
+      type: object
+      required: [name, cycle_name]
+      properties:
+        name: { type: string }
+        cycle_name: { type: string }
+        start_date: { anyOf: [{ type: string }, { type: "null" }] }
+        end_date: { anyOf: [{ type: string }, { type: "null" }] }
+        status: { anyOf: [{ type: string }, { type: "null" }] }
+        departments: { type: array, items: { $ref: "#/components/schemas/HrPerfDept" } }
+        people: { type: array, items: { $ref: "#/components/schemas/HrPerfPerson" } }
+    HrPerfDefaults:
+      type: object
+      properties:
+        templates:
+          type: array
+          items:
+            type: object
+            required: [name, title]
+            properties:
+              name: { type: string }
+              title: { type: string }
+              criteria: { type: array, items: { type: string } }
+              kras: { type: array, items: { type: string } }
+        departments:
+          type: array
+          items:
+            type: object
+            required: [name]
+            properties:
+              name: { type: string }
+              people: { type: integer }
+        reminder_days: { type: array, items: { type: integer } }
+    HrPerfCycleBody:
+      type: object
+      required: [cycle_name, start_date, end_date, template, confirm]
+      properties:
+        cycle_name: { type: string }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        template: { type: string }
+        departments: { type: array, items: { type: string } }
+        confirm: { type: boolean }
+    HrPerfRemindBody:
+      type: object
+      required: [confirm]
+      properties:
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrPerfRemindResult:
+      type: object
+      properties:
+        sent: { type: integer }
+    HrAppraisalDetail:
+      type: object
+      required: [id, cycle, cycle_name, employee, employee_name, step]
+      properties:
+        id: { type: string }
+        cycle: { type: string }
+        cycle_name: { type: string }
+        start_date: { anyOf: [{ type: string }, { type: "null" }] }
+        end_date: { anyOf: [{ type: string }, { type: "null" }] }
+        cycle_status: { anyOf: [{ type: string }, { type: "null" }] }
+        employee: { type: string }
+        employee_name: { type: string }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        designation: { anyOf: [{ type: string }, { type: "null" }] }
+        manager: { anyOf: [{ type: string }, { type: "null" }] }
+        manager_name: { anyOf: [{ type: string }, { type: "null" }] }
+        kras: { type: array, items: { type: string } }
+        goals:
+          type: array
+          items:
+            type: object
+            required: [id, goal_name]
+            properties:
+              id: { type: string }
+              goal_name: { type: string }
+              kra: { anyOf: [{ type: string }, { type: "null" }] }
+              strategic_goal: { anyOf: [{ type: string }, { type: "null" }] }
+              progress: { type: number }
+              status: { anyOf: [{ type: string }, { type: "null" }] }
+        criteria:
+          type: array
+          items:
+            type: object
+            required: [criteria]
+            properties:
+              criteria: { type: string }
+              weight: { type: number }
+              self: { anyOf: [{ type: integer }, { type: "null" }] }
+              manager: { anyOf: [{ type: integer }, { type: "null" }] }
+        reflections: { anyOf: [{ type: string }, { type: "null" }] }
+        manager_feedback: { anyOf: [{ type: string }, { type: "null" }] }
+        self_done: { type: boolean }
+        manager_done: { type: boolean }
+        step: { type: string, enum: [self, manager, done] }
+        can_self: { type: boolean }
+        can_review: { type: boolean }
+        can_add_goals: { type: boolean }
+    HrAppraisalHolder:
+      type: object
+      properties:
+        appraisal: { anyOf: [{ $ref: "#/components/schemas/HrAppraisalDetail" }, { type: "null" }] }
+    HrStarRating:
+      type: object
+      required: [criteria, stars]
+      properties:
+        criteria: { type: string }
+        stars: { type: integer, minimum: 1, maximum: 5 }
+    HrSelfAssessmentBody:
+      type: object
+      required: [ratings, confirm]
+      properties:
+        ratings: { type: array, items: { $ref: "#/components/schemas/HrStarRating" } }
+        reflections: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrGoalBody:
+      type: object
+      required: [goal_name, confirm]
+      properties:
+        goal_name: { type: string }
+        kra: { anyOf: [{ type: string }, { type: "null" }] }
+        strategic_goal: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrReviewBody:
+      type: object
+      required: [ratings, feedback, confirm]
+      properties:
+        ratings: { type: array, items: { $ref: "#/components/schemas/HrStarRating" } }
+        feedback: { type: string }
         confirm: { type: boolean }
     HrContractDefaults:
       type: object

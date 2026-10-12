@@ -342,6 +342,11 @@ export function TeamMember() {
           <Banner kind="lock" title="Personal and pay details aren't shown to line managers">
             Ask HR if you need them for a specific reason.
           </Banner>
+          <div className="hr-actions">
+            <Link className="btn ghost" to={`/team/${encodeURIComponent(m.employee)}/review`}>
+              Appraisal
+            </Link>
+          </div>
           {m.direct && m.on_probation ? (
             <NextStep title="Probation review" body={`Due by ${fmtDay(m.scheduled_confirmation_date, true)}.`} to={`/team/${encodeURIComponent(m.employee)}/probation`} label="Start review" />
           ) : null}

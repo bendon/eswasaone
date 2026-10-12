@@ -1,4 +1,4 @@
-"""Daily HR jobs: R-H1…R-H5 and lifecycle dates. R-H6 runs with performance."""
+"""Daily HR jobs: R-H1…R-H6 and lifecycle dates."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ def daily() -> None:
     rh4_single_holder_alerts()
     rh5_declarations()
     lifecycle_due()
-    # R-H6 needs appraisal-cycle config from §0.5
+    rh6_appraisal_reminders()
 
 
 def rh1_probation_reviews() -> int:
@@ -72,6 +72,13 @@ def recompute_authorisation_statuses() -> int:
             frappe.db.set_value("Staff Authorisation", row.name, "status", new, update_modified=False)
             n += 1
     return n
+
+
+def rh6_appraisal_reminders() -> int:
+    """R-H6: remind anyone with an open appraisal step 10 and 3 working days before the cycle end date."""
+    from eswasa_hr.performance import rh6_reminders
+
+    return rh6_reminders()
 
 
 def rh5_declarations() -> int:

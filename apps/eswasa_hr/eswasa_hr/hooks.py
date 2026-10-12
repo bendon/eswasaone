@@ -96,6 +96,8 @@ eswasa_approval_handlers = {
     "Employee Transfer": "eswasa_hr.lifecycle.decide_transfer",
     "Employee Separation": "eswasa_hr.lifecycle.decide_separation",
     "Contract Change": "eswasa_hr.contracts.decide",
+    # Self-assessment and manager-review ToDos close only once that step is really done.
+    "Appraisal": "eswasa_hr.performance.decide",
     # R-H2…H4 alerts: Acknowledge closes only the acknowledging user's ToDo.
     "HR Alert": "eswasa_hr.alerts.decide",
 }

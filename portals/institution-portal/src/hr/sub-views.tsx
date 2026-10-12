@@ -1,7 +1,7 @@
 export { HrSummaryView } from "./HrSummaryView";
 export { EmployeesView } from "./EmployeesView";
 export { LeaveView } from "./LeaveView";
-export { AppraisalsView } from "./AppraisalsView";
+export { PerformanceHome, CycleNew, CycleDetail, AppraisalDetail } from "./performance/Performance";
 export { AccessRequestsView } from "./AccessRequestsView";
 export { PayrollView } from "./PayrollView";
 export { StructureView } from "./StructureView";

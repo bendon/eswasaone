@@ -5,3 +5,4 @@ export { Declaration } from "./Declaration";
 export { MyCompetence } from "./MyCompetence";
 export { MyInterviews } from "./MyInterviews";
 export { FirstDays } from "./FirstDays";
+export { MyAppraisal } from "./MyAppraisal";

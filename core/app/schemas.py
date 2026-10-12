@@ -1212,6 +1212,167 @@ class HrContractBody(BaseModel):
     confirm: bool
 
 
+class HrPerfCycle(BaseModel):
+    name: str
+    cycle_name: str
+    start_date: str | None = None
+    end_date: str | None = None
+    status: str | None = None
+    people: int = 0
+    objectives_set: int = 0
+    self_done: int = 0
+    manager_done: int = 0
+
+
+class HrPerfCycles(BaseModel):
+    """OpenAPI: HrPerfCycles — appraisal cycles with overall completion (H8)."""
+
+    items: list[HrPerfCycle] = Field(default_factory=list)
+
+
+class HrPerfDept(BaseModel):
+    department: str
+    people: int = 0
+    objectives_set: int = 0
+    self_done: int = 0
+    manager_done: int = 0
+
+
+class HrPerfPerson(BaseModel):
+    appraisal: str
+    employee: str
+    employee_name: str
+    department: str | None = None
+    designation: str | None = None
+    manager_name: str | None = None
+    objectives: int = 0
+    self_done: bool = False
+    manager_done: bool = False
+    step: str  # self | manager | done
+
+
+class HrPerfCycleDetail(BaseModel):
+    """OpenAPI: HrPerfCycleDetail — completion by department and everyone's step (H8)."""
+
+    name: str
+    cycle_name: str
+    start_date: str | None = None
+    end_date: str | None = None
+    status: str | None = None
+    departments: list[HrPerfDept] = Field(default_factory=list)
+    people: list[HrPerfPerson] = Field(default_factory=list)
+
+
+class HrPerfTemplate(BaseModel):
+    name: str
+    title: str
+    criteria: list[str] = Field(default_factory=list)
+    kras: list[str] = Field(default_factory=list)
+
+
+class HrPerfDeptCount(BaseModel):
+    name: str
+    people: int = 0
+
+
+class HrPerfDefaults(BaseModel):
+    templates: list[HrPerfTemplate] = Field(default_factory=list)
+    departments: list[HrPerfDeptCount] = Field(default_factory=list)
+    reminder_days: list[int] = Field(default_factory=list)
+
+
+class HrPerfCycleBody(BaseModel):
+    cycle_name: str
+    start_date: str
+    end_date: str
+    template: str
+    departments: list[str] = Field(default_factory=list)
+    confirm: bool
+
+
+class HrPerfRemindBody(BaseModel):
+    department: str | None = None
+    confirm: bool
+
+
+class HrPerfRemindResult(BaseModel):
+    sent: int = 0
+
+
+class HrAppraisalGoal(BaseModel):
+    id: str
+    goal_name: str
+    kra: str | None = None
+    strategic_goal: str | None = None
+    progress: float = 0
+    status: str | None = None
+
+
+class HrAppraisalCriterion(BaseModel):
+    criteria: str
+    weight: float = 0
+    self: int | None = None
+    manager: int | None = None
+
+
+class HrAppraisalDetail(BaseModel):
+    """OpenAPI: HrAppraisalDetail — one person's appraisal (H8b, E7, T5)."""
+
+    id: str
+    cycle: str
+    cycle_name: str
+    start_date: str | None = None
+    end_date: str | None = None
+    cycle_status: str | None = None
+    employee: str
+    employee_name: str
+    department: str | None = None
+    designation: str | None = None
+    manager: str | None = None
+    manager_name: str | None = None
+    kras: list[str] = Field(default_factory=list)
+    goals: list[HrAppraisalGoal] = Field(default_factory=list)
+    criteria: list[HrAppraisalCriterion] = Field(default_factory=list)
+    reflections: str | None = None
+    manager_feedback: str | None = None
+    self_done: bool = False
+    manager_done: bool = False
+    step: str
+    can_self: bool = False
+    can_review: bool = False
+    can_add_goals: bool = False
+
+
+class HrAppraisalHolder(BaseModel):
+    """The current appraisal, or null when the person isn't in a cycle."""
+
+    appraisal: HrAppraisalDetail | None = None
+
+
+class HrStarRating(BaseModel):
+    criteria: str
+    stars: int
+
+
+class HrSelfAssessmentBody(BaseModel):
+    ratings: list[HrStarRating]
+    reflections: str | None = None
+    confirm: bool
+
+
+class HrGoalBody(BaseModel):
+    goal_name: str
+    kra: str | None = None
+    strategic_goal: str | None = None
+    confirm: bool
+
+
+class HrReviewBody(BaseModel):
+    ratings: list[HrStarRating]
+    feedback: str
+    confirm: bool
+
+
 class HrHoliday(BaseModel):
     date: str
     id: str | None = None

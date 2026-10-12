@@ -744,10 +744,42 @@ export const router = createBrowserRouter(
                     element: (
                       <L
                         factory={() =>
-                          import("./hr/sub-views").then((m) => ({
-                            default: m.AppraisalsView,
-                          }))
+                          import("./hr/sub-views").then((m) => ({ default: m.PerformanceHome }))
                         }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "performance/new",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.CycleNew }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "performance/cycles/:name",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.CycleDetail }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
+                    path: "performance/appraisals/:id",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.AppraisalDetail }))
+                        }
+                        skeleton="panel"
                       />
                     ),
                   },
@@ -845,6 +877,17 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: ":employee/review",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./team/sub-views").then((m) => ({ default: m.TeamReview }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
                     path: ":employee/probation",
                     element: (
                       <L
@@ -915,6 +958,17 @@ export const router = createBrowserRouter(
                           import("./me/sub-views").then((m) => ({ default: m.MyInterviews }))
                         }
                         skeleton="list"
+                      />
+                    ),
+                  },
+                  {
+                    path: "appraisal",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.MyAppraisal }))
+                        }
+                        skeleton="panel"
                       />
                     ),
                   },

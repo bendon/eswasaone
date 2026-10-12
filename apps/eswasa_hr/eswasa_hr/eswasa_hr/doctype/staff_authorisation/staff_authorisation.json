@@ -6,7 +6,10 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "person_type",
   "employee",
+  "external_person",
+  "department",
   "skill",
   "column_break_a",
   "valid_from",
@@ -20,12 +23,39 @@
  ],
  "fields": [
   {
+   "default": "Employee",
+   "fieldname": "person_type",
+   "fieldtype": "Select",
+   "label": "Person Type",
+   "options": "Employee\nExternal",
+   "description": "External personnel stay off until ESWASA answers H10 (HR Settings: External personnel enabled)."
+  },
+  {
    "fieldname": "employee",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Employee",
    "options": "Employee",
-   "reqd": 1
+   "depends_on": "eval:doc.person_type!='External'",
+   "mandatory_depends_on": "eval:doc.person_type!='External'"
+  },
+  {
+   "depends_on": "eval:doc.person_type=='External'",
+   "mandatory_depends_on": "eval:doc.person_type=='External'",
+   "fieldname": "external_person",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "External Person",
+   "options": "External Person"
+  },
+  {
+   "depends_on": "eval:doc.person_type=='External'",
+   "mandatory_depends_on": "eval:doc.person_type=='External'",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "description": "Its head approves an external person's authorisation."
   },
   {
    "fieldname": "skill",
@@ -96,7 +126,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-09 00:00:00.000000",
+ "modified": "2026-10-12 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Eswasa HR",
  "name": "Staff Authorisation",

@@ -49,8 +49,10 @@ class RuleTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "what kind"):
             au.clean_evidence([{"evidence_type": "Rumour", "reference": "x"}])
-        with self.assertRaisesRegex(ValueError, "say what it is"):
+        with self.assertRaisesRegex(ValueError, "attach the file"):
             au.clean_evidence([{"evidence_type": "File"}])
+        with self.assertRaisesRegex(ValueError, "say what it is"):
+            au.clean_evidence([{"evidence_type": "Other"}])
 
     def test_authorisation_on_the_visit_date(self):
         today, visit = date(2026, 10, 12), date(2026, 12, 3)
@@ -97,6 +99,8 @@ def _fake(user, roles, todos, store):
     f.get_roles = lambda: list(roles)
 
     def get_value(dt, name, field, as_dict=False):
+        if isinstance(field, list) and dt != "Skill":
+            return {f: get_value(dt, name, f) for f in field}
         if dt == "Employee":
             return EMP.get(name, {}).get(field)
         if dt == "Department":

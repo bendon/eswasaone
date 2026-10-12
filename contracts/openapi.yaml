@@ -1034,6 +1034,172 @@ paths:
         "422":
           description: Rule failed (no department head, no evidence, head is the person)
 
+  /hr/competence/authorisations/{name}/evidence:
+    post:
+      tags: [hr]
+      operationId: addAuthorisationEvidence
+      summary: HR attaches an evidence file to an authorisation still being prepared (plan 07 step 5)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [evidence_type, file, confirm]
+              properties:
+                evidence_type: { type: string, enum: [Training Result, Witnessed audit, Proficiency test, File, Other] }
+                file: { type: string, format: binary, description: PDF, JPEG or PNG, 5 MB at most; kept privately }
+                reference: { type: string }
+                notes: { type: string }
+                confirm: { type: boolean }
+      responses:
+        "200":
+          description: The authorisation with its evidence
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrAuthorisationDetail" }
+        "400":
+          description: confirm=true required
+        "413":
+          description: Larger than 5 MB
+        "415":
+          description: Not a PDF or image
+        "422":
+          description: Already decided (evidence goes on the renewal), or not HR (plain text)
+
+  /hr/competence/evidence/{row}/file:
+    get:
+      tags: [hr]
+      operationId: getAuthorisationEvidenceFile
+      summary: An evidence file. HR and the person only, checked in eswasa_hr before the file is read; audited
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: row, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The file
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+            image/*:
+              schema: { type: string, format: binary }
+        "403":
+          description: Not HR and not the person (plain text)
+        "404":
+          description: No file
+
+  /hr/competence/training:
+    get:
+      tags: [hr]
+      operationId: getTrainingEvidence
+      summary: Training Results for Training Events tagged to the competence, plus LMS completions if LMS is installed (plan 07 step 6)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee, in: query, required: true, schema: { type: string } }
+        - { name: skill, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTrainingEvidence" }
+        "403":
+          description: Not HR and not the person (plain text)
+
+  /hr/external-people:
+    get:
+      tags: [hr]
+      operationId: listExternalPeople
+      summary: The external personnel register (H10). enabled=false while HR Settings custom_external_personnel_enabled is off
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrExternalPeople" }
+    post:
+      tags: [hr]
+      operationId: createExternalPerson
+      summary: HR adds a contract auditor or expert (plan 07 step 7)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrExternalPersonBody" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrExternalPerson" }
+        "400":
+          description: confirm=true required
+        "404":
+          description: 'The register is off: detail { reason: "disabled", message }'
+        "422":
+          description: Rule failed (plain text)
+
+  /hr/evidence-pack:
+    post:
+      tags: [hr]
+      operationId: requestEvidencePack
+      summary: Build the accreditation evidence pack in the background (H11). HR Manager or Eswasa Quality Manager
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrEvidencePackBody" }
+      responses:
+        "202":
+          description: Queued. One HR Access Log row per person is written
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEvidencePackJob" }
+        "400":
+          description: confirm=true required
+        "403":
+          description: Not HR Manager or Quality Manager (plain text)
+        "422":
+          description: Not exactly one scope, or nobody in it (plain text)
+
+  /hr/evidence-pack/{job}:
+    get:
+      tags: [hr]
+      operationId: getEvidencePack
+      summary: Where the pack is, with its download link once ready
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: job, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEvidencePackJob" }
+
+  /hr/evidence-pack/{job}/download:
+    get:
+      tags: [hr]
+      operationId: downloadEvidencePack
+      summary: The ZIP (pack.json, a PDF per person, evidence files). Audited
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: job, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The pack
+          content:
+            application/zip:
+              schema: { type: string, format: binary }
+        "422":
+          description: Not ready yet (plain text)
+
   /hr/me/competence:
     get:
       tags: [hr]
@@ -7296,6 +7462,16 @@ components:
         evidence_type: { type: string, enum: [Training Result, Witnessed audit, Proficiency test, File, Other] }
         reference: { anyOf: [{ type: string }, { type: "null" }] }
         notes: { anyOf: [{ type: string }, { type: "null" }] }
+        id: { anyOf: [{ type: string }, { type: "null" }] }
+        file: { anyOf: [{ type: string }, { type: "null" }], description: "Plan 07: media key or /files/ URL; open it with /hr/competence/evidence/{id}/file" }
+        link:
+          anyOf:
+            - type: object
+              required: [doctype, name]
+              properties:
+                doctype: { type: string, enum: [Training Result, LMS Certificate] }
+                name: { type: string }
+            - { type: "null" }
     HrAuthorisationDetail:
       allOf:
         - $ref: "#/components/schemas/HrAuthorisationRow"
@@ -7305,17 +7481,106 @@ components:
             scheme: { anyOf: [{ type: string }, { type: "null" }] }
             approver: { anyOf: [{ type: string }, { type: "null" }] }
             decides: { anyOf: [{ type: string }, { type: "null" }] }
+            person_type: { anyOf: [{ type: string, enum: [Employee, External] }, { type: "null" }] }
             evidence: { type: array, items: { $ref: "#/components/schemas/HrAuthorisationEvidence" } }
     HrAuthorisationRequestBody:
       type: object
-      required: [employee, skill, valid_from, confirm]
+      required: [skill, valid_from, confirm]
+      description: employee, or (while external personnel are on) external_person with department
       properties:
-        employee: { type: string }
+        employee: { anyOf: [{ type: string }, { type: "null" }] }
+        external_person: { anyOf: [{ type: string }, { type: "null" }] }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
         skill: { type: string }
         valid_from: { type: string, format: date }
         valid_to: { anyOf: [{ type: string }, { type: "null" }] }
         evidence: { type: array, items: { $ref: "#/components/schemas/HrAuthorisationEvidence" } }
         confirm: { type: boolean }
+    HrTrainingItem:
+      type: object
+      required: [source]
+      properties:
+        source: { type: string, enum: [Training Result, LMS Certificate, LMS Enrollment] }
+        evidence_type: { type: string }
+        reference: { anyOf: [{ type: string }, { type: "null" }] }
+        title: { anyOf: [{ type: string }, { type: "null" }] }
+        training_event: { anyOf: [{ type: string }, { type: "null" }] }
+        date: { anyOf: [{ type: string }, { type: "null" }] }
+        result: { anyOf: [{ type: string }, { type: "null" }] }
+        grade: { anyOf: [{ type: string }, { type: "null" }] }
+        hours: { anyOf: [{ type: number }, { type: "null" }] }
+        tagged: { type: boolean, description: "false for LMS courses, not tagged to a competence yet (H7)" }
+    HrTrainingEvidence:
+      type: object
+      required: [employee]
+      properties:
+        employee: { type: string }
+        skill: { anyOf: [{ type: string }, { type: "null" }] }
+        items: { type: array, items: { $ref: "#/components/schemas/HrTrainingItem" } }
+        lms_installed: { type: boolean }
+    HrExternalPerson:
+      type: object
+      required: [id, full_name, role]
+      properties:
+        id: { type: string }
+        full_name: { type: string }
+        email: { anyOf: [{ type: string }, { type: "null" }] }
+        user: { anyOf: [{ type: string }, { type: "null" }] }
+        organisation_type: { anyOf: [{ type: string }, { type: "null" }] }
+        organisation: { anyOf: [{ type: string }, { type: "null" }] }
+        role: { type: string, enum: [Contract auditor, Technical expert, TC expert] }
+        status: { type: string, enum: [Active, Inactive] }
+        notes: { anyOf: [{ type: string }, { type: "null" }] }
+    HrExternalPeople:
+      type: object
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
+        items: { type: array, items: { $ref: "#/components/schemas/HrExternalPerson" } }
+    HrExternalPersonBody:
+      type: object
+      required: [full_name, role, confirm]
+      properties:
+        full_name: { type: string }
+        role: { type: string, enum: [Contract auditor, Technical expert, TC expert] }
+        email: { anyOf: [{ type: string }, { type: "null" }] }
+        user: { anyOf: [{ type: string }, { type: "null" }] }
+        organisation_type: { anyOf: [{ type: string, enum: [Supplier, Contact] }, { type: "null" }] }
+        organisation: { anyOf: [{ type: string }, { type: "null" }] }
+        status: { anyOf: [{ type: string }, { type: "null" }] }
+        notes: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrEvidencePackBody:
+      type: object
+      required: [confirm]
+      description: Exactly one of employee, external_person, scheme, discipline
+      properties:
+        employee: { anyOf: [{ type: string }, { type: "null" }] }
+        external_person: { anyOf: [{ type: string }, { type: "null" }] }
+        scheme: { anyOf: [{ type: string }, { type: "null" }] }
+        discipline: { anyOf: [{ type: string }, { type: "null" }] }
+        sections:
+          anyOf:
+            - type: array
+              items: { type: string, enum: [authorisations, monitoring, declarations, training] }
+            - { type: "null" }
+        confirm: { type: boolean }
+    HrEvidencePackJob:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [Queued, Running, Ready, Failed] }
+        scope:
+          type: object
+          properties:
+            kind: { anyOf: [{ type: string }, { type: "null" }] }
+            value: { anyOf: [{ type: string }, { type: "null" }] }
+        people: { type: integer }
+        ready: { type: boolean }
+        error: { anyOf: [{ type: string }, { type: "null" }] }
+        finished_on: { anyOf: [{ type: string }, { type: "null" }] }
+        download: { anyOf: [{ type: string }, { type: "null" }] }
     HrCompetenceSkill:
       type: object
       required: [name]

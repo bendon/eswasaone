@@ -6,7 +6,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "person_type",
   "employee",
+  "external_person",
   "year",
   "signed_on",
   "section_interests",
@@ -19,12 +21,30 @@
  ],
  "fields": [
   {
+   "default": "Employee",
+   "fieldname": "person_type",
+   "fieldtype": "Select",
+   "label": "Person Type",
+   "options": "Employee\nExternal",
+   "description": "External personnel stay off until ESWASA answers H10 (HR Settings: External personnel enabled)."
+  },
+  {
    "fieldname": "employee",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Employee",
    "options": "Employee",
-   "reqd": 1
+   "depends_on": "eval:doc.person_type!='External'",
+   "mandatory_depends_on": "eval:doc.person_type!='External'"
+  },
+  {
+   "depends_on": "eval:doc.person_type=='External'",
+   "mandatory_depends_on": "eval:doc.person_type=='External'",
+   "fieldname": "external_person",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "External Person",
+   "options": "External Person"
   },
   {
    "fieldname": "year",

@@ -115,7 +115,9 @@ def conditions(doctype: str, viewer: Viewer, esc: Callable[[str], str]) -> str:
         return _in(f"{t}.`employee`", viewer.people, esc)
     if doctype == "Staff Authorisation":
         headed = (
-            f"{t}.`employee` in (select `name` from `tabEmployee` where {_in('`department`', viewer.headed, esc)})"
+            f"({t}.`employee` in (select `name` from `tabEmployee` where {_in('`department`', viewer.headed, esc)})"
+            # plan 07: an external person's authorisation carries its own department
+            f" or (ifnull({t}.`employee`, '') = '' and {_in(f'{t}.`department`', viewer.headed, esc)}))"
             if viewer.headed
             else "1=0"
         )
@@ -177,6 +179,8 @@ def _row(doctype: str, doc: Any) -> dict[str, Any]:
     row = {k: _field(doc, k) for k in ("name", "employee", "leave_approver")}
     if doctype == "Staff Authorisation" and row.get("employee"):
         row["department"] = frappe.db.get_value("Employee", row["employee"], "department")
+    elif doctype == "Staff Authorisation":  # plan 07: an external person's authorisation names its department
+        row["department"] = _field(doc, "department") or frappe.db.get_value(doctype, row.get("name"), "department")
     return row
 
 

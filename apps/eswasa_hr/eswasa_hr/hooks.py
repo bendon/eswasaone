@@ -8,7 +8,7 @@ app_license = "mit"
 required_apps = ["frappe", "erpnext", "hrms"]
 
 fixtures = [
-    {"dt": "Role", "filters": [["name", "in", ["Eswasa Executive Director"]]]},
+    {"dt": "Role", "filters": [["name", "in", ["Eswasa Executive Director", "Eswasa Quality Manager"]]]},
     {"dt": "Print Format", "filters": [["name", "in", ["ESWASA Offer Letter", "Certificate of Service"]]]},
     {
         "dt": "Custom Field",
@@ -40,6 +40,8 @@ fixtures = [
                     "HR Settings-custom_offer_signatory_role",
                     "Job Applicant-custom_source",
                     "Employment Type-custom_required_documents",
+                    "Training Event-custom_skill",
+                    "HR Settings-custom_external_personnel_enabled",
                 ],
             ]
         ],

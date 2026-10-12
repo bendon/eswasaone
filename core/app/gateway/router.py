@@ -139,6 +139,12 @@ from app.schemas import (
     HrAuthorisationDetail,
     HrAuthorisationRequestBody,
     HrAuthorisationRow,
+    HrEvidencePackBody,
+    HrEvidencePackJob,
+    HrExternalPeople,
+    HrExternalPerson,
+    HrExternalPersonBody,
+    HrTrainingEvidence,
     HrCompetenceMatrix,
     HrDeclarationRegister,
     HrLeavePreview,
@@ -3806,7 +3812,7 @@ async def get_my_hr_record(
     return _as_hr_record(await _hr_call(auth, frappe, f"{_RECORD}.my_record"))
 
 
-async def _store_document(file: UploadFile, store: MediaStore) -> str:
+async def _store_document(file: UploadFile, store: MediaStore, prefix: str = "hr/documents") -> str:
     """Plan 06 upload pattern (S8 reuses it): PDF or image, 5 MB, kept privately; Frappe keeps the media key."""
     data = await file.read()
     if not data:
@@ -3816,7 +3822,7 @@ async def _store_document(file: UploadFile, store: MediaStore) -> str:
     if (file.content_type or "") not in _DOC_TYPES:
         raise HTTPException(status_code=415, detail="Send the document as a PDF or an image (JPEG or PNG).")
     try:
-        return store.put_bytes(data, filename=file.filename, content_type=file.content_type, prefix="hr/documents").key
+        return store.put_bytes(data, filename=file.filename, content_type=file.content_type, prefix=prefix).key
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -4359,7 +4365,7 @@ async def request_authorisation(
         action="hr.authorisation.request",
         actor=auth.user.username,
         resource="Staff Authorisation",
-        detail={"employee": body.employee, "skill": body.skill, "valid_from": body.valid_from},
+        detail={"employee": body.employee or body.external_person, "skill": body.skill, "valid_from": body.valid_from},
         confirmed=True,
     )
     raw = await _hr_call(
@@ -4368,10 +4374,12 @@ async def request_authorisation(
         f"{_AUTH}.request",
         json={
             "employee": body.employee,
+            "external_person": body.external_person,
+            "department": body.department,
             "skill": body.skill,
             "valid_from": body.valid_from,
             "valid_to": body.valid_to,
-            "evidence": [e.model_dump() for e in body.evidence],
+            "evidence": [e.model_dump(include={"evidence_type", "reference", "notes", "file"}, exclude_none=True) for e in body.evidence],
             "confirm": 1,
         },
     )
@@ -4406,6 +4414,163 @@ async def ask_for_renewal(
         auth, frappe, f"{_AUTH}.ask_renewal", json={"skill": body.skill, "note": body.note, "confirm": 1}
     )
     return {"sent_to": int((raw or {}).get("sent_to", 0))}
+
+
+_TRAINING = "eswasa_hr.training"
+_EXTERNAL = "eswasa_hr.external"
+_PACK = "eswasa_hr.evidence_pack"
+
+
+async def _stream_stored(store: MediaStore, key: str, name: str, action: str, actor: str, detail: dict[str, Any]) -> Response:
+    """Plan 06/07: a privately stored file (or a redirect to Frappe's own), after eswasa_hr has allowed it. Audited."""
+    if key.startswith(("http://", "https://", "/files/", "/private/")):
+        return Response(status_code=307, headers={"Location": key})
+    try:
+        body, ctype = store.get_bytes(key)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="File not found") from exc
+    audit_log(action=action, actor=actor, resource=name, detail=detail, confirmed=True)
+    return Response(content=body, media_type=ctype,
+                    headers={"Content-Disposition": f'inline; filename="{quote(name)}"', "Cache-Control": "private, no-store"})
+
+
+@router.post("/hr/competence/authorisations/{name}/evidence", response_model=HrAuthorisationDetail, tags=["hr"])
+async def add_authorisation_evidence(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    store: Annotated[MediaStore, Depends(get_media_store)],
+    evidence_type: Annotated[str, Form()],
+    file: Annotated[UploadFile, File()],
+    confirm: Annotated[bool, Form()] = False,
+    reference: Annotated[str | None, Form()] = None,
+    notes: Annotated[str | None, Form()] = None,
+) -> HrAuthorisationDetail:
+    """Plan 07 step 5: HR attaches a file to an authorisation still being prepared (rules in eswasa_hr)."""
+    _require_confirm(confirm)
+    key = await _store_document(file, store, prefix="hr/evidence")
+    audit_log(action="hr.authorisation.evidence", actor=auth.user.username, resource=f"Staff Authorisation:{name}",
+              detail={"evidence_type": evidence_type, "file": key}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_AUTH}.add_evidence",
+                          json={"name": name, "evidence_type": evidence_type, "file": key, "reference": reference or None,
+                                "notes": notes or None, "confirm": True})
+    return HrAuthorisationDetail.model_validate(raw)
+
+
+@router.get("/hr/competence/evidence/{row}/file", tags=["hr"])
+async def download_authorisation_evidence(
+    row: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    store: Annotated[MediaStore, Depends(get_media_store)],
+) -> Response:
+    """An evidence file. HR and the person only: eswasa_hr refuses anyone else before the file is read."""
+    raw = await _hr_call(auth, frappe, f"{_AUTH}.evidence_file", params={"row": row}) or {}
+    key = str(raw.get("file") or "")
+    if not key:
+        raise HTTPException(status_code=404, detail="No file on this evidence")
+    return await _stream_stored(store, key, row, "hr.authorisation.evidence_viewed", auth.user.username,
+                                {"authorisation": raw.get("authorisation"), "employee": raw.get("employee")})
+
+
+@router.get("/hr/competence/training", response_model=HrTrainingEvidence, tags=["hr"])
+async def get_training_evidence(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    employee: str,
+    skill: str | None = None,
+) -> HrTrainingEvidence:
+    """Plan 07 step 6: Training Results (and LMS completions, if installed) that can back an authorisation."""
+    params = {"employee": employee, **({"skill": skill} if skill else {})}
+    return HrTrainingEvidence.model_validate(await _hr_call(auth, frappe, f"{_TRAINING}.evidence", params=params))
+
+
+@router.get("/hr/external-people", response_model=HrExternalPeople, tags=["hr"])
+async def list_external_people(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrExternalPeople:
+    """Plan 07 step 7 (H10): the external personnel register. ``enabled: false`` while the flag is off."""
+    return HrExternalPeople.model_validate(await _hr_call(auth, frappe, f"{_EXTERNAL}.list_people"))
+
+
+@router.post("/hr/external-people", response_model=HrExternalPerson, status_code=status.HTTP_201_CREATED, tags=["hr"])
+async def create_external_person(
+    body: HrExternalPersonBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrExternalPerson:
+    """Add a contract auditor or expert. 404 with reason "disabled" until ESWASA turns the register on (H10)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.external_person.create", actor=auth.user.username, resource="External Person",
+              detail={"role": body.role}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_EXTERNAL}.create", json={**body.model_dump(exclude={"confirm"}), "confirm": True}) or {}
+    if raw.get("disabled"):
+        raise HTTPException(status_code=404, detail={"reason": "disabled", "message": raw.get("message")})
+    return HrExternalPerson.model_validate(raw)
+
+
+def _pack_job(raw: dict[str, Any]) -> HrEvidencePackJob:
+    job = HrEvidencePackJob.model_validate(raw)
+    if job.ready:
+        job.download = f"/api/hr/evidence-pack/{quote(job.id)}/download"
+    return job
+
+
+@router.post("/hr/evidence-pack", response_model=HrEvidencePackJob, status_code=status.HTTP_202_ACCEPTED, tags=["hr"])
+async def request_evidence_pack(
+    body: HrEvidencePackBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEvidencePackJob:
+    """Plan 07 step 8 (H11): build the accreditation evidence pack in the background. HR Manager / Quality Manager."""
+    _require_confirm(body.confirm)
+    scope = body.model_dump(include={"employee", "external_person", "scheme", "discipline"}, exclude_none=True)
+    audit_log(action="hr.evidence_pack.request", actor=auth.user.username, resource="HR Evidence Pack",
+              detail=scope, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_PACK}.request", json={**scope, "sections": body.sections, "confirm": True})
+    return _pack_job(raw)
+
+
+@router.get("/hr/evidence-pack/{job}", response_model=HrEvidencePackJob, tags=["hr"])
+async def get_evidence_pack(
+    job: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEvidencePackJob:
+    """Where the pack is, and its download link once it's ready."""
+    return _pack_job(await _hr_call(auth, frappe, f"{_PACK}.status", params={"pack": job}))
+
+
+@router.get("/hr/evidence-pack/{job}/download", tags=["hr"])
+async def download_evidence_pack(
+    job: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    store: Annotated[MediaStore, Depends(get_media_store)],
+) -> Response:
+    """The ZIP Frappe built, plus the evidence files kept in Core's media store. Audited."""
+    import io
+    import zipfile
+
+    raw = await _hr_call(auth, frappe, f"{_PACK}.download", params={"pack": job}) or {}
+    buf = io.BytesIO(base64.b64decode(raw.get("content") or ""))
+    missing = []
+    with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED) as z:
+        for f in raw.get("media_files") or []:
+            try:
+                data, _ = store.get_bytes(str(f.get("key")))
+            except FileNotFoundError:
+                missing.append(f.get("key"))
+                continue
+            z.writestr(str(f.get("path")), data)
+        if missing:
+            z.writestr("MISSING_FILES.txt", "These evidence files weren't found in the media store:\n" + "\n".join(map(str, missing)))
+    audit_log(action="hr.evidence_pack.downloaded", actor=auth.user.username, resource=f"HR Evidence Pack:{job}",
+              detail={"files": len(raw.get("media_files") or []), "missing": len(missing)}, confirmed=True)
+    name = str(raw.get("file_name") or f"evidence-pack-{job}.zip")
+    return Response(content=buf.getvalue(), media_type="application/zip",
+                    headers={"Content-Disposition": f'attachment; filename="{quote(name)}"', "Cache-Control": "private, no-store"})
 
 
 _REC = "eswasa_hr.recruitment"

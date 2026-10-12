@@ -786,10 +786,19 @@ class HrAuthorisationRow(BaseModel):
     status: str  # In training | Current | Expiring | Expired | Withdrawn
 
 
+class HrEvidenceLink(BaseModel):
+    doctype: str  # Training Result | LMS Certificate
+    name: str
+
+
 class HrAuthorisationEvidence(BaseModel):
     evidence_type: str
     reference: str | None = None
     notes: str | None = None
+    # Plan 07 step 5: optional extras; the screen's shape above is unchanged.
+    id: str | None = None
+    file: str | None = None
+    link: HrEvidenceLink | None = None
 
 
 class HrAuthorisationDetail(HrAuthorisationRow):
@@ -799,16 +808,102 @@ class HrAuthorisationDetail(HrAuthorisationRow):
     scheme: str | None = None
     approver: str | None = None
     decides: str | None = None
+    person_type: str | None = None  # Employee | External (plan 07 step 7)
     evidence: list[HrAuthorisationEvidence] = Field(default_factory=list)
 
 
 class HrAuthorisationRequestBody(BaseModel):
-    employee: str
+    employee: str | None = None
+    # Plan 07 step 7, behind HR Settings custom_external_personnel_enabled: instead of employee.
+    external_person: str | None = None
+    department: str | None = None
     skill: str
     valid_from: str
     valid_to: str | None = None
     evidence: list[HrAuthorisationEvidence] = Field(default_factory=list)
     confirm: bool
+
+
+class HrTrainingItem(BaseModel):
+    source: str  # Training Result | LMS Certificate | LMS Enrollment
+    evidence_type: str = "Training Result"
+    reference: str | None = None
+    title: str | None = None
+    training_event: str | None = None
+    date: str | None = None
+    result: str | None = None
+    grade: str | None = None
+    hours: float | None = None
+    tagged: bool = True  # False: LMS courses aren't tagged to a competence yet (H7)
+
+
+class HrTrainingEvidence(BaseModel):
+    """OpenAPI: HrTrainingEvidence (plan 07 step 6)."""
+
+    employee: str
+    skill: str | None = None
+    items: list[HrTrainingItem] = Field(default_factory=list)
+    lms_installed: bool = False
+
+
+class HrExternalPerson(BaseModel):
+    """OpenAPI: HrExternalPerson (plan 07 step 7, H10)."""
+
+    id: str
+    full_name: str
+    email: str | None = None
+    user: str | None = None
+    organisation_type: str | None = None
+    organisation: str | None = None
+    role: str
+    status: str = "Active"
+    notes: str | None = None
+
+
+class HrExternalPeople(BaseModel):
+    enabled: bool
+    items: list[HrExternalPerson] = Field(default_factory=list)
+
+
+class HrExternalPersonBody(BaseModel):
+    full_name: str
+    role: str  # Contract auditor | Technical expert | TC expert
+    email: str | None = None
+    user: str | None = None
+    organisation_type: str | None = None  # Supplier | Contact
+    organisation: str | None = None
+    status: str | None = None
+    notes: str | None = None
+    confirm: bool
+
+
+class HrEvidencePackBody(BaseModel):
+    """Exactly one of employee / external_person / scheme / discipline (checked in eswasa_hr)."""
+
+    employee: str | None = None
+    external_person: str | None = None
+    scheme: str | None = None
+    discipline: str | None = None
+    sections: list[str] | None = None  # H11: authorisations, monitoring, declarations, training
+    confirm: bool
+
+
+class HrEvidencePackScope(BaseModel):
+    kind: str | None = None
+    value: str | None = None
+
+
+class HrEvidencePackJob(BaseModel):
+    """OpenAPI: HrEvidencePackJob (plan 07 step 8)."""
+
+    id: str
+    status: str  # Queued | Running | Ready | Failed
+    scope: HrEvidencePackScope = Field(default_factory=HrEvidencePackScope)
+    people: int = 0
+    ready: bool = False
+    error: str | None = None
+    finished_on: str | None = None
+    download: str | None = None
 
 
 class HrCompetenceSkill(BaseModel):

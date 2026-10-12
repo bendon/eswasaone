@@ -7,15 +7,18 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import add_months, date_diff, getdate, today
 
+from eswasa_hr import external
+
 
 class StaffAuthorisation(Document):
     def validate(self) -> None:
+        external.validate_person(self)
         validate(self)
 
     def before_submit(self) -> None:
         if not self.approved_by:
             frappe.throw("Approved By is required before submit.")
-        if self.approved_by == self.employee:
+        if self.employee and self.approved_by == self.employee:
             frappe.throw("The person being authorised cannot approve their own authorisation.")
         self._recompute_status()
 

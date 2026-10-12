@@ -154,7 +154,12 @@ def _my_employee() -> dict[str, Any] | None:
         fields=["name", "employee_name", "department", "designation"],
         limit=1,
     )
-    return rows[0] if rows else None
+    if rows:
+        return rows[0]
+    from eswasa_hr import external
+
+    ext = external.for_user(frappe.session.user)  # plan 07 step 7: an external person signs the same way
+    return {"name": ext["name"], "employee_name": ext.get("full_name"), "_field": "external_person"} if ext else None
 
 
 def _is_hr() -> bool:
@@ -246,7 +251,10 @@ def sign_impl(
         frappe.throw(err, frappe.ValidationError)
 
     if doc is None:
-        doc = frappe.get_doc({"doctype": DOCTYPE, "employee": emp["name"], "year": year})
+        field = emp.get("_field") or "employee"
+        doc = frappe.get_doc(
+            {"doctype": DOCTYPE, field: emp["name"], "person_type": "External" if field == "external_person" else "Employee", "year": year}
+        )
     doc.set("interests", [])
     for r in rows:
         doc.append("interests", r)
@@ -339,7 +347,10 @@ def validate(doc: Any, method: str | None = None) -> None:
     import frappe
 
     if not _is_hr():
-        mine = frappe.db.get_value("Employee", doc.employee, "user_id")
+        if doc.get("employee"):
+            mine = frappe.db.get_value("Employee", doc.employee, "user_id")
+        else:
+            mine = frappe.db.get_value("External Person", doc.get("external_person"), "user") if doc.get("external_person") else None
         if mine != frappe.session.user:
             frappe.throw("You can only complete your own declaration.", frappe.PermissionError)
     try:
@@ -387,13 +398,19 @@ def can_act(user_or_employee: str | None, on: Any = None, party: str | None = No
     emp = frappe.db.get_value("Employee", user_or_employee, fields, as_dict=True) or frappe.db.get_value(
         "Employee", {"user_id": user_or_employee}, fields, as_dict=True
     )
+    who = {"employee": emp.get("name")} if emp else None
     if not emp:
-        return True, None
+        from eswasa_hr import external
+
+        ext = external.for_user(user_or_employee)  # plan 07 step 7: an external person is checked like staff
+        if not ext:
+            return True, None
+        emp, who = {"name": ext["name"], "employee_name": ext.get("full_name")}, {"external_person": ext["name"]}
     today = _today()
     day = _day(on) or today
     decls = frappe.get_all(
         DOCTYPE,
-        filters={"employee": emp.get("name"), "docstatus": 1, "year": [">=", declaration_year(look_back_from(day))]},
+        filters={**who, "docstatus": 1, "year": [">=", declaration_year(look_back_from(day))]},
         fields=["name", "year"],
         limit=0,
     )

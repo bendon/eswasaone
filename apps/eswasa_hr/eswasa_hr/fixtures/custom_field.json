@@ -237,5 +237,27 @@
   "options": "Required Document",
   "insert_after": "employee_type_name",
   "name": "Employment Type-custom_required_documents"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Training Event",
+  "fieldname": "custom_skill",
+  "label": "Competence",
+  "fieldtype": "Link",
+  "options": "Skill",
+  "insert_after": "event_name",
+  "description": "The competence this training counts towards. Its results can back a Staff Authorisation (plan 07).",
+  "name": "Training Event-custom_skill"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_external_personnel_enabled",
+  "label": "External personnel enabled",
+  "fieldtype": "Check",
+  "default": "0",
+  "insert_after": "custom_offer_signatory_role",
+  "description": "Off until ESWASA confirms external auditors and experts are used (Confirmation Pack H10).",
+  "name": "HR Settings-custom_external_personnel_enabled"
  }
 ]

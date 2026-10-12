@@ -1,14 +1,15 @@
-"""R-H1…H6 scaffolds — activate once §0.5 dates and owners are set."""
+"""Daily HR jobs: R-H1…R-H5 and lifecycle dates. R-H6 runs with performance."""
 
 from __future__ import annotations
 
 import frappe
-from frappe.utils import add_days, getdate, today
+from frappe.utils import getdate, today
 
 
 def daily() -> None:
     """Nightly HR HRMS/custom cron entrypoint."""
     rh1_probation_reviews()
+    recompute_authorisation_statuses()  # statuses first, so R-H3/R-H4 see today's Current/Expiring
     rh2_contract_end_alerts()
     rh3_authorisation_expiry_alerts()
     rh4_single_holder_alerts()
@@ -25,34 +26,24 @@ def rh1_probation_reviews() -> int:
 
 
 def rh2_contract_end_alerts() -> int:
-    """R-H2: alert HR Manager + line manager 60 days before contract_end_date."""
-    target = add_days(today(), 60)
-    return frappe.db.count(
-        "Employee",
-        filters={"status": "Active", "contract_end_date": target},
-    )
+    """R-H2: alert HR Managers + line manager once a contract is within 60 days of contract_end_date."""
+    from eswasa_hr.alerts import contract_end_alerts
+
+    return contract_end_alerts()
 
 
 def rh3_authorisation_expiry_alerts() -> int:
-    """R-H3: alert at 60 / 30 / 7 days before Staff Authorisation.valid_to."""
-    if not frappe.db.exists("DocType", "Staff Authorisation"):
-        return 0
-    count = 0
-    for days in (60, 30, 7):
-        target = add_days(today(), days)
-        count += frappe.db.count(
-            "Staff Authorisation",
-            filters={"docstatus": 1, "valid_to": target, "status": ["in", ["Current", "Expiring"]]},
-        )
-    return count
+    """R-H3: alert the employee, line manager and HR at 60 / 30 / 7 days before Staff Authorisation.valid_to."""
+    from eswasa_hr.alerts import authorisation_expiry_alerts
+
+    return authorisation_expiry_alerts()
 
 
 def rh4_single_holder_alerts() -> int:
-    """R-H4: alert when a competence has one or zero Current holders."""
-    if not frappe.db.exists("DocType", "Staff Authorisation"):
-        return 0
-    # TODO: wire real — group by skill, alert heads of department
-    return 0
+    """R-H4: alert the department head when a competence has one or zero Current holders."""
+    from eswasa_hr.alerts import thin_cover_alerts
+
+    return thin_cover_alerts()
 
 
 def recompute_authorisation_statuses() -> int:

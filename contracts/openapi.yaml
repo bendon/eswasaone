@@ -1501,6 +1501,41 @@ paths:
         "422":
           description: Rule failed
 
+  /hr/employees/{employee_id}/contract:
+    get:
+      tags: [hr]
+      operationId: getContractDefaults
+      summary: Current contract end and employment type, and the types to convert to
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrContractDefaults" }
+    post:
+      tags: [hr]
+      operationId: prepareContractChange
+      summary: Renew a fixed-term contract or make it permanent; another HR Manager approves
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrContractBody" }
+      responses:
+        "200":
+          description: Prepared and sent for approval
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrChanges" }
+        "422":
+          description: Rule failed
+
   /hr/offboarding/{name}:
     get:
       tags: [hr]
@@ -5839,7 +5874,7 @@ components:
       required: [id, kind, state]
       properties:
         id: { type: string }
-        kind: { type: string, enum: [promotion, transfer, separation] }
+        kind: { type: string, enum: [promotion, transfer, separation, contract] }
         date: { anyOf: [{ type: string }, { type: "null" }] }
         state: { type: string }
         changes: { type: array, items: { $ref: "#/components/schemas/HrChangeLine" } }
@@ -5882,6 +5917,25 @@ components:
         notice_date: { anyOf: [{ type: string }, { type: "null" }] }
         activities: { type: array, items: { $ref: "#/components/schemas/HrOnboardingActivity" } }
         note: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrContractDefaults:
+      type: object
+      required: [employee, employee_name]
+      properties:
+        employee: { type: string }
+        employee_name: { type: string }
+        employment_type: { anyOf: [{ type: string }, { type: "null" }] }
+        contract_end_date: { anyOf: [{ type: string }, { type: "null" }] }
+        employment_types: { type: array, items: { type: string } }
+        pending: { anyOf: [{ type: string }, { type: "null" }] }
+    HrContractBody:
+      type: object
+      required: [kind, reason, confirm]
+      properties:
+        kind: { type: string, enum: [Renew, Make permanent] }
+        reason: { type: string }
+        new_end: { anyOf: [{ type: string, format: date }, { type: "null" }] }
+        new_type: { anyOf: [{ type: string }, { type: "null" }] }
         confirm: { type: boolean }
     HrSeparationDefaults:
       type: object

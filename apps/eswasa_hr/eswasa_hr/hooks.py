@@ -95,4 +95,7 @@ eswasa_approval_handlers = {
     "Employee Promotion": "eswasa_hr.lifecycle.decide_promotion",
     "Employee Transfer": "eswasa_hr.lifecycle.decide_transfer",
     "Employee Separation": "eswasa_hr.lifecycle.decide_separation",
+    "Contract Change": "eswasa_hr.contracts.decide",
+    # R-H2…H4 alerts: Acknowledge closes only the acknowledging user's ToDo.
+    "HR Alert": "eswasa_hr.alerts.decide",
 }

@@ -1,0 +1,30 @@
+# HR Alert — R-H2 contract end, R-H3 authorisation expiry, R-H4 thin competence cover (brief §12.1).
+
+doctype: HR Alert
+module: hr
+workflow_name: HR Alert
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 1
+approvals_family: alert
+board_rollup: null
+guards: [idempotency_key]
+notes: >
+  Raised once per key by eswasa_hr.alerts from the daily job. One low-priority ToDo per named
+  recipient; eswasa_hr.alerts.decide acknowledges only the acting user's ToDo.
+
+display:
+  customer: {}
+  staff:
+    Open: Open
+
+states:
+  - {name: Open, owner_role: HR Manager, allow_edit: HR Manager}
+
+transitions:
+  - action: Acknowledge
+    from: Open
+    to: Open
+    actor: HR Manager
+    approvals_family: alert

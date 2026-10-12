@@ -99,6 +99,8 @@ from app.schemas import (
     HrTeamCalendar,
     HrTeamMemberDetail,
     HrChanges,
+    HrContractBody,
+    HrContractDefaults,
     HrPromotionBody,
     HrSeparationBody,
     HrSeparationDefaults,
@@ -5144,6 +5146,33 @@ async def prepare_separation(
             "confirm": 1,
         },
     )
+    return HrChanges.model_validate(raw)
+
+
+_CONTRACT = "eswasa_hr.contracts"
+
+
+@router.get("/hr/employees/{employee_id}/contract", response_model=HrContractDefaults, tags=["hr"])
+async def get_contract_defaults(
+    employee_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrContractDefaults:
+    """Current contract end and employment type, for renewing or making permanent (HR only)."""
+    return HrContractDefaults.model_validate(await _hr_call(auth, frappe, f"{_CONTRACT}.defaults", params={"employee": employee_id}))
+
+
+@router.post("/hr/employees/{employee_id}/contract", response_model=HrChanges, tags=["hr"])
+async def prepare_contract_change(
+    employee_id: str,
+    body: HrContractBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrChanges:
+    """Renew a fixed-term contract or make it permanent; another HR Manager approves it in Approvals."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.contract.prepare", actor=auth.user.username, resource=f"Employee:{employee_id}", detail={"kind": body.kind, "new_end": body.new_end}, confirmed=True)
+    raw = await _hr_call(auth, frappe, f"{_CONTRACT}.prepare", json={"employee": employee_id, **body.model_dump(exclude={"confirm"}), "confirm": 1})
     return HrChanges.model_validate(raw)
 
 

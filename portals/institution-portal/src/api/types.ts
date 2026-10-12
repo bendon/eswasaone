@@ -183,7 +183,15 @@ export type HrChanges = {
   employee: string;
   employee_name: string;
   status?: string | null;
-  items: Array<{ id: string; kind: "promotion" | "transfer" | "separation"; date?: string | null; state: string; changes: Array<{ property: string; current?: string | null; new?: string | null }> }>;
+  items: Array<{ id: string; kind: "promotion" | "transfer" | "separation" | "contract"; date?: string | null; state: string; changes: Array<{ property: string; current?: string | null; new?: string | null }> }>;
+};
+export type HrContractDefaults = {
+  employee: string;
+  employee_name: string;
+  employment_type?: string | null;
+  contract_end_date?: string | null;
+  employment_types: string[];
+  pending?: string | null;
 };
 export type HrSeparationDefaults = { employee: string; employee_name: string; reasons: string[]; activities: HrOnboardingActivity[] };
 export type HrPickItem = { id: string; name?: string | null; title?: string | null; employee_name?: string | null };

@@ -1,0 +1,41 @@
+# Contract Change — renew a fixed-term contract or make it permanent (screen H2a; follows R-H2).
+
+doctype: Contract Change
+module: hr
+workflow_name: Contract Change
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: hr.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  No Frappe Workflow: eswasa_hr.contracts.decide is the approval handler. Another HR Manager
+  approves (never the preparer or the person); approval updates Employee.contract_end_date /
+  employment_type and closes the R-H2 alert.
+
+display:
+  customer: {}
+  staff:
+    Waiting for approval: Waiting for approval
+    Done: Done
+    Sent back: Sent back
+
+states:
+  - {name: Waiting for approval, owner_role: HR Manager, allow_edit: HR User}
+  - {name: Done, owner_role: HR Manager, allow_edit: HR Manager, style: Success}
+  - {name: Sent back, owner_role: HR User, allow_edit: HR User, style: Danger}
+
+transitions:
+  - action: Approve
+    from: Waiting for approval
+    to: Done
+    actor: HR Manager
+    approvals_family: approve
+  - action: Send back
+    from: Waiting for approval
+    to: Sent back
+    actor: HR Manager
+    reason: required
+    approvals_family: approve

@@ -99,7 +99,7 @@ function slaMeta(item: ApprovalItem): { pri: InboxPriority; sla: string } {
   return { pri: "normal", sla: `in ${diffDays} days` };
 }
 
-const ALERT_DOCTYPES = new Set(["Instrument", "TBT Notification", "Risk Register Entry"]);
+const ALERT_DOCTYPES = new Set(["Instrument", "TBT Notification", "Risk Register Entry", "HR Alert"]);
 const TASK_HINT =
   /sign-?off|assign|calibrat|file gazette|brief|review|curate|task|acknowledge/i;
 

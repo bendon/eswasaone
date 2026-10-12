@@ -319,6 +319,9 @@ def changes_impl(employee: str) -> dict[str, Any]:
                 "changes": [{"property": "Reason", "current": "", "new": s.get("custom_reason") or ""}],
             }
         )
+    from eswasa_hr.contracts import items_for
+
+    items += items_for(employee)
     items.sort(key=lambda x: x["date"] or "", reverse=True)
     return {"employee": employee, "employee_name": e["employee_name"], "status": e["status"], "items": items}
 

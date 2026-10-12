@@ -1142,7 +1142,7 @@ class HrChangeLine(BaseModel):
 
 class HrChangeItem(BaseModel):
     id: str
-    kind: str  # promotion | transfer | separation
+    kind: str  # promotion | transfer | separation | contract
     date: str | None = None
     state: str
     changes: list[HrChangeLine] = Field(default_factory=list)
@@ -1191,6 +1191,25 @@ class HrSeparationDefaults(BaseModel):
     employee_name: str
     reasons: list[str] = Field(default_factory=list)
     activities: list[HrOnboardingActivity] = Field(default_factory=list)
+
+
+class HrContractDefaults(BaseModel):
+    """OpenAPI: HrContractDefaults — current contract and the employment types to convert to."""
+
+    employee: str
+    employee_name: str
+    employment_type: str | None = None
+    contract_end_date: str | None = None
+    employment_types: list[str] = Field(default_factory=list)
+    pending: str | None = None
+
+
+class HrContractBody(BaseModel):
+    kind: str  # Renew | Make permanent
+    reason: str
+    new_end: str | None = None
+    new_type: str | None = None
+    confirm: bool
 
 
 class HrHoliday(BaseModel):

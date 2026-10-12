@@ -694,6 +694,17 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "directory/:id/contract",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.ContractForm }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
                     path: "directory/:id/leave",
                     element: (
                       <L

@@ -1,21 +1,22 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { apiFetch } from "@eswasaone/shared-ui";
 import { useApiResource } from "../../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../../components/PageStates";
 import { RequireStaff } from "../../components/RequireStaff";
 import { useInstitution } from "../../layout/InstitutionLayout";
-import type { HrChanges, HrEmployeesResponse, HrOnboarding, HrOnboardingActivity, HrPickItem, HrSeparationDefaults } from "../../api/types";
+import type { HrChanges, HrContractDefaults, HrEmployeesResponse, HrOnboarding, HrOnboardingActivity, HrPickItem, HrSeparationDefaults } from "../../api/types";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill, Track } from "../../me/parts";
 import { Checklist } from "../onboarding/Onboarding";
 
 /**
  * Lifecycle (journeys J8, J9; screens H2a, H7b). HR prepares a promotion, transfer or separation; another
  * HR Manager approves it in Approvals. Changes take effect on their date; on a leaver's last day the login
- * is disabled and their open tasks move to the line manager.
+ * is disabled and their open tasks move to the line manager. A fixed-term contract is renewed or made permanent
+ * the same way (another HR Manager approves); letting it end is a leaver.
  */
 
-const KIND_LABEL = { promotion: "Promotion", transfer: "Transfer", separation: "Leaving" } as const;
+const KIND_LABEL = { promotion: "Promotion", transfer: "Transfer", separation: "Leaving", contract: "Contract" } as const;
 
 export function EmployeeChanges() {
   const { id = "" } = useParams();
@@ -42,6 +43,9 @@ export function EmployeeChanges() {
                   </Link>
                   <Link className="btn ghost" to={`${base}/transfer`}>
                     Transfer
+                  </Link>
+                  <Link className="btn ghost" to={`${base}/contract`}>
+                    Contract
                   </Link>
                   {!leaving ? (
                     <Link className="btn ghost" to={`${base}/leave`}>
@@ -79,7 +83,7 @@ export function EmployeeChanges() {
                           ))}
                         </td>
                         <td>
-                          <StatusPill cls={i.state === "Done" ? "ok" : i.state.startsWith("Waiting") ? "leave" : "info"} label={i.state} />
+                          <StatusPill cls={i.state === "Done" ? "ok" : i.state.startsWith("Waiting") ? "leave" : i.state === "Sent back" ? "bad" : "info"} label={i.state} />
                           {i.kind === "separation" && !i.state.startsWith("Waiting") ? (
                             <div>
                               <Link className="hr-lnk" to={`/hr/offboarding/${encodeURIComponent(i.id)}`}>
@@ -244,10 +248,11 @@ export const TransferForm = () => <ChangeForm kind="transfer" />;
 /** H2a Record a leaver, with the offboarding checklist (named owners). */
 export function LeaverForm() {
   const { id = "" } = useParams();
+  const [search] = useSearchParams();
   const { user, sessionKey } = useInstitution();
   const def = useApiResource<HrSeparationDefaults>(`/hr/employees/${encodeURIComponent(id)}/separation-defaults`, { enabled: Boolean(user), refreshKey: sessionKey });
   const people = useApiResource<HrEmployeesResponse>("/hr/employees?limit=500", { enabled: Boolean(user), refreshKey: sessionKey });
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState(search.get("reason") ?? "");
   const [notice, setNotice] = useState("");
   const [lastDay, setLastDay] = useState("");
   const [note, setNote] = useState("");
@@ -368,6 +373,137 @@ export function LeaverForm() {
                 {busy ? "Sending…" : missing ? `${missing} task${missing === 1 ? "" : "s"} need an owner` : "Send for approval"}
               </button>
             </div>
+          </div>
+        ) : null}
+      </ResourceGate>
+    </RequireStaff>
+  );
+}
+
+const CONTRACT_CHOICES = [
+  { value: "Renew", title: "Renew the fixed-term contract", detail: "Same post, new end date" },
+  { value: "Make permanent", title: "Make permanent", detail: "Needs a permanent post with a vacancy" },
+  { value: "End", title: "Let it end", detail: "Record a leaver and start offboarding" },
+] as const;
+
+/** H2a Contract: renew to a new end date or make permanent; another HR Manager approves. Letting it end is a leaver. */
+export function ContractForm() {
+  const { id = "" } = useParams();
+  const { user, sessionKey } = useInstitution();
+  const def = useApiResource<HrContractDefaults>(`/hr/employees/${encodeURIComponent(id)}/contract`, { enabled: Boolean(user), refreshKey: sessionKey });
+  const [kind, setKind] = useState<(typeof CONTRACT_CHOICES)[number]["value"]>("Renew");
+  const [newEnd, setNewEnd] = useState("");
+  const [newType, setNewType] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+  const d = def.data;
+  const name = d?.employee_name ?? id;
+  const record = `/hr/directory/${encodeURIComponent(id)}`;
+  const types = (d?.employment_types ?? []).filter((t) => t !== d?.employment_type);
+  const ready = Boolean(reason.trim()) && (kind === "Renew" ? Boolean(newEnd) : Boolean(newType));
+
+  async function send() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await apiFetch(`/hr/employees/${encodeURIComponent(id)}/contract`, {
+        method: "POST",
+        body: JSON.stringify({ kind, reason: reason.trim(), new_end: kind === "Renew" ? newEnd : null, new_type: kind === "Make permanent" ? newType : null, confirm: true }),
+      });
+      setSent(true);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Not sent. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (sent) return <Sent id={id} name={name} kind="Contract change" />;
+
+  return (
+    <RequireStaff reason="Staff sign-in required">
+      <ResourceGate loading={def.loading} error={def.error} onRetry={def.reload} hasData={Boolean(d)} skeleton="panel">
+        {d ? (
+          <div className="hr hr-view">
+            <Crumbs items={[["Directory", "/hr/directory"], [name, record], ["Contract"]]} />
+            <div className="hr-head">
+              <div>
+                <h2>Contract: {name}</h2>
+                <p>
+                  {d.employment_type ?? "Employment type not set"}
+                  {d.contract_end_date ? `, ends ${fmtDay(d.contract_end_date, true)}` : ", no end date"}. Another HR Manager approves the change.
+                </p>
+              </div>
+            </div>
+            {d.pending ? (
+              <Banner kind="info" title="Already waiting for approval">
+                A contract change for {name} is with another HR Manager in Approvals. It shows on the record until it's decided.
+              </Banner>
+            ) : (
+              <>
+                <div className="hr-box">
+                  <div className="hr-box__b hr-form">
+                    <div className="hr-radios wide" role="radiogroup" aria-label="What happens to the contract">
+                      {CONTRACT_CHOICES.map((c) => (
+                        <label className="hr-radio" key={c.value}>
+                          <input type="radio" name="contract_kind" checked={kind === c.value} onChange={() => setKind(c.value)} />
+                          <span>
+                            <b>{c.title}</b>
+                            <small>{c.detail}</small>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {kind === "Renew" ? (
+                      <label className="hr-f">
+                        <span>New end date</span>
+                        <input className="hr-in" type="date" value={newEnd} min={d.contract_end_date ?? undefined} onChange={(e) => setNewEnd(e.target.value)} />
+                      </label>
+                    ) : null}
+                    {kind === "Make permanent" ? (
+                      <label className="hr-f">
+                        <span>Employment type</span>
+                        <select className="hr-in" value={newType} onChange={(e) => setNewType(e.target.value)}>
+                          <option value="">Choose…</option>
+                          {types.map((t) => (
+                            <option key={t}>{t}</option>
+                          ))}
+                        </select>
+                        {!types.length ? <small>No other employment types are set up yet. Add them in HR setup.</small> : null}
+                      </label>
+                    ) : null}
+                    {kind !== "End" ? (
+                      <label className="hr-f wide">
+                        <span>Reason</span>
+                        <textarea className="hr-in" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
+                      </label>
+                    ) : null}
+                  </div>
+                </div>
+                {err ? (
+                  <Banner kind="bad" title="Not sent">
+                    {err}
+                  </Banner>
+                ) : null}
+                <div className="hr-actions">
+                  <Link className="btn ghost" to={record}>
+                    Cancel
+                  </Link>
+                  {kind === "End" ? (
+                    <Link className="btn pri" to={`${record}/leave?reason=${encodeURIComponent("End of fixed-term contract")}`}>
+                      Record a leaver
+                    </Link>
+                  ) : (
+                    <button type="button" className="btn pri" disabled={!ready || busy} onClick={() => void send()}>
+                      {busy ? "Sending…" : "Send for approval"}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+            <NextStep title="Back to the record" to={record} label="Open the record" />
           </div>
         ) : null}
       </ResourceGate>

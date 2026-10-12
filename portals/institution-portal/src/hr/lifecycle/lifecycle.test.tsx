@@ -12,7 +12,7 @@ vi.mock("../../layout/InstitutionLayout", () => ({
   }),
 }));
 
-import { EmployeeChanges, LeaverForm, OffboardingDetail, PromotionForm } from "./Lifecycle";
+import { ContractForm, EmployeeChanges, LeaverForm, OffboardingDetail, PromotionForm } from "./Lifecycle";
 
 const CHANGES = { employee: "EMP-19", employee_name: "Mandla Zwane", status: "Active", items: [
   { id: "HR-EMP-SEP-1", kind: "separation", date: "2026-10-31", state: "Offboarding in process", changes: [{ property: "Reason", current: "", new: "Resignation" }] },
@@ -31,6 +31,8 @@ function stub() {
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
       if (method === "POST") return json(url.includes("/tasks/") ? { id: "HR-EMP-SEP-1", employee_name: "Mandla Zwane", done: 3, total: 5, activities: [] } : CHANGES);
       if (url.includes("/changes")) return json(CHANGES);
+      if (url.includes("/contract")) return json({ employee: "EMP-19", employee_name: "Mandla Zwane", employment_type: "Fixed-term", contract_end_date: "2026-11-30",
+        employment_types: ["Fixed-term", "Permanent"], pending: null });
       if (url.includes("/separation-defaults")) return json({ employee: "EMP-19", employee_name: "Mandla Zwane", reasons: ["Resignation", "Dismissal"],
         activities: [{ activity_name: "Exit interview", group: "HR", user: "hr@x" }, { activity_name: "Return laptop and access card", group: "ICT", user: null }] });
       if (url.includes("/hr/offboarding/")) return json({ id: "HR-EMP-SEP-1", kind: "offboarding", employee: "EMP-19", employee_name: "Mandla Zwane", last_day: "2026-10-31", reason: "Resignation", done: 2, total: 5,
@@ -51,6 +53,7 @@ function mount(path: string) {
       { path: "/hr/directory/:id", element: <EmployeeChanges /> },
       { path: "/hr/directory/:id/promote", element: <PromotionForm /> },
       { path: "/hr/directory/:id/leave", element: <LeaverForm /> },
+      { path: "/hr/directory/:id/contract", element: <ContractForm /> },
       { path: "/hr/offboarding/:id", element: <OffboardingDetail /> },
     ],
     { initialEntries: [path] },
@@ -101,6 +104,31 @@ describe("Leaver", () => {
       reason: "Resignation", last_day: "2026-10-31", confirm: true,
       activities: [{ activity_name: "Exit interview", user: "hr@x" }, { activity_name: "Return laptop and access card", user: "ict@x" }],
     });
+  });
+});
+
+describe("Contract", () => {
+  it("renews to a new end date with a reason", async () => {
+    const calls = stub();
+    mount("/hr/directory/EMP-19/contract");
+    expect(await screen.findByText(/Fixed-term, ends 30 Nov 2026/)).toBeInTheDocument();
+    const send = screen.getByRole("button", { name: "Send for approval" });
+    fireEvent.change(screen.getByLabelText("New end date"), { target: { value: "2027-11-30" } });
+    expect(send).toBeDisabled(); // reason still missing
+    fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Post still funded" } });
+    fireEvent.click(send);
+    expect(await screen.findByRole("heading", { name: "Contract change sent for approval" })).toBeInTheDocument();
+    expect(calls.find((c) => c.method === "POST")?.body).toEqual({ kind: "Renew", reason: "Post still funded", new_end: "2027-11-30", new_type: null, confirm: true });
+  });
+
+  it("offers only other employment types, and letting it end goes to the leaver form", async () => {
+    stub();
+    mount("/hr/directory/EMP-19/contract");
+    fireEvent.click(await screen.findByRole("radio", { name: /Make permanent/ }));
+    expect(screen.getByRole("option", { name: "Permanent" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Fixed-term" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /Let it end/ }));
+    expect(screen.getByRole("link", { name: "Record a leaver" })).toHaveAttribute("href", "/hr/directory/EMP-19/leave?reason=End%20of%20fixed-term%20contract");
   });
 });
 

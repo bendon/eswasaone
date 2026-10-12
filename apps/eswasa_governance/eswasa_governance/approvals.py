@@ -430,7 +430,7 @@ def _family_for_doctype(doctype: str) -> str:
 	# Sensible defaults
 	if doctype in ("Board Resolution", "Certificate", "Leave Application"):
 		return "approve"
-	if doctype in ("TBT Notification", "Risk Register Entry", "Instrument"):
+	if doctype in ("TBT Notification", "Risk Register Entry", "Instrument", "HR Alert"):
 		return "alert"
 	return "do"
 

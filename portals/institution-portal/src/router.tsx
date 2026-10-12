@@ -638,6 +638,10 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "recruitment/requisitions/:id",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.RequisitionDetail }))} skeleton="panel" />,
+                  },
+                  {
                     path: "recruitment/new",
                     element: (
                       <L

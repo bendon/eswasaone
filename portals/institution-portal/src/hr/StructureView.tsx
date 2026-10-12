@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { apiFetch, AuthError, Icon, useDialogs, Select } from "@eswasaone/shared-ui";
+import { errorText, hrSend } from "./api";
 import { useApiResource } from "../hooks/useApiResource";
 import { ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
@@ -210,6 +211,7 @@ function DepartmentsPanel({
   dialogs: Dialogs;
 }) {
   const [show, setShow] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -283,6 +285,18 @@ function DepartmentsPanel({
           </div>
         </div>
       ) : null}
+      {editing && items.find((r) => r.id === editing) ? (
+        <MasterEdit
+          key={editing}
+          path={`/hr/departments/${encodeURIComponent(editing)}`}
+          fields={((x) => [{ key: "name", label: "Name", value: x.name }, { key: "code", label: "Code", value: x.code ?? "" }, { key: "status", label: "Status", value: x.status, options: ["active", "archived"] }])(items.find((r) => r.id === editing)!)}
+          onDone={() => {
+            setEditing(null);
+            onReload();
+          }}
+          onCancel={() => setEditing(null)}
+        />
+      ) : null}
       <div className="hr-box">
         <div className="hr-box__b" style={{ paddingTop: 8, overflowX: "auto" }}>
           {items.length === 0 ? (
@@ -297,6 +311,7 @@ function DepartmentsPanel({
                   <th>Designations</th>
                   <th>Filled</th>
                   <th>Status</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -317,6 +332,11 @@ function DepartmentsPanel({
                         <span className="d" />
                         {d.status}
                       </span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <button type="button" className="btn ghost sm" onClick={() => setEditing(d.id)}>
+                        Edit
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -345,6 +365,7 @@ function DesignationsPanel({
   dialogs: Dialogs;
 }) {
   const [show, setShow] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [code, setCode] = useState("");
   const [departmentId, setDepartmentId] = useState("");
@@ -460,6 +481,18 @@ function DesignationsPanel({
           </div>
         </div>
       ) : null}
+      {editing && items.find((r) => r.id === editing) ? (
+        <MasterEdit
+          key={editing}
+          path={`/hr/designations/${encodeURIComponent(editing)}`}
+          fields={((x) => [{ key: "title", label: "Title", value: x.title }, { key: "code", label: "Code", value: x.code ?? "" }, { key: "description", label: "Description", value: x.description ?? "" }])(items.find((r) => r.id === editing)!)}
+          onDone={() => {
+            setEditing(null);
+            onReload();
+          }}
+          onCancel={() => setEditing(null)}
+        />
+      ) : null}
       <div className="hr-box">
         <div className="hr-box__b" style={{ paddingTop: 8, overflowX: "auto" }}>
           {items.length === 0 ? (
@@ -472,6 +505,7 @@ function DesignationsPanel({
                   <th>Department</th>
                   <th>Grade</th>
                   <th>Filled</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -490,6 +524,11 @@ function DesignationsPanel({
                     <td>
                       {row.filled}
                       {row.total != null ? ` / ${row.total}` : ""}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <button type="button" className="btn ghost sm" onClick={() => setEditing(row.id)}>
+                        Edit
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -514,6 +553,7 @@ function LocationsPanel({
   dialogs: Dialogs;
 }) {
   const [show, setShow] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [type, setType] = useState<"" | "hq" | "lab" | "satellite">("");
@@ -604,6 +644,18 @@ function LocationsPanel({
           </div>
         </div>
       ) : null}
+      {editing && items.find((r) => r.id === editing) ? (
+        <MasterEdit
+          key={editing}
+          path={`/hr/locations/${encodeURIComponent(editing)}`}
+          fields={((x) => [{ key: "name", label: "Name", value: x.name }, { key: "code", label: "Code", value: x.code ?? "" }, { key: "address", label: "Address", value: x.address ?? "" }, { key: "type", label: "Type", value: x.type ?? "", options: ["hq", "lab", "satellite"] }, { key: "status", label: "Status", value: x.status, options: ["active", "closed"] }])(items.find((r) => r.id === editing)!)}
+          onDone={() => {
+            setEditing(null);
+            onReload();
+          }}
+          onCancel={() => setEditing(null)}
+        />
+      ) : null}
       <div className="hr-box">
         <div className="hr-box__b" style={{ paddingTop: 8, overflowX: "auto" }}>
           {items.length === 0 ? (
@@ -617,6 +669,7 @@ function LocationsPanel({
                   <th>Type</th>
                   <th>Staff</th>
                   <th>Status</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -633,6 +686,11 @@ function LocationsPanel({
                         <span className="d" />
                         {loc.status}
                       </span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <button type="button" className="btn ghost sm" onClick={() => setEditing(loc.id)}>
+                        Edit
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -657,6 +715,7 @@ function CostCentresPanel({
   dialogs: Dialogs;
 }) {
   const [show, setShow] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -731,6 +790,18 @@ function CostCentresPanel({
           </div>
         </div>
       ) : null}
+      {editing && items.find((r) => r.id === editing) ? (
+        <MasterEdit
+          key={editing}
+          path={`/hr/cost-centres/${encodeURIComponent(editing)}`}
+          fields={((x) => [{ key: "name", label: "Name", value: x.name }, { key: "code", label: "Code", value: x.code ?? "" }, { key: "description", label: "Description", value: x.description ?? "" }, { key: "status", label: "Status", value: x.status, options: ["active", "draft", "archived"] }])(items.find((r) => r.id === editing)!)}
+          onDone={() => {
+            setEditing(null);
+            onReload();
+          }}
+          onCancel={() => setEditing(null)}
+        />
+      ) : null}
       <div className="hr-box">
         <div className="hr-box__b" style={{ paddingTop: 8, overflowX: "auto" }}>
           {items.length === 0 ? (
@@ -743,6 +814,7 @@ function CostCentresPanel({
                   <th>Code</th>
                   <th>Staff</th>
                   <th>Status</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -758,6 +830,11 @@ function CostCentresPanel({
                         <span className="d" />
                         {cc.status}
                       </span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <button type="button" className="btn ghost sm" onClick={() => setEditing(cc.id)}>
+                        Edit
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -782,6 +859,7 @@ function GradesPanel({
   dialogs: Dialogs;
 }) {
   const [show, setShow] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [level, setLevel] = useState("");
@@ -868,6 +946,18 @@ function GradesPanel({
           </div>
         </div>
       ) : null}
+      {editing && items.find((r) => r.id === editing) ? (
+        <MasterEdit
+          key={editing}
+          path={`/hr/grade-bands/${encodeURIComponent(editing)}`}
+          fields={((x) => [{ key: "code", label: "Code", value: x.code }, { key: "name", label: "Name", value: x.name ?? "" }, { key: "level", label: "Level", value: x.level == null ? "" : String(x.level), number: true }])(items.find((r) => r.id === editing)!)}
+          onDone={() => {
+            setEditing(null);
+            onReload();
+          }}
+          onCancel={() => setEditing(null)}
+        />
+      ) : null}
       <div className="hr-box">
         <div className="hr-box__b" style={{ paddingTop: 8, overflowX: "auto" }}>
           {items.length === 0 ? (
@@ -880,6 +970,7 @@ function GradesPanel({
                   <th>Name</th>
                   <th>Level</th>
                   <th>Range</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -893,6 +984,11 @@ function GradesPanel({
                         ? `${g.currency || "SZL"} ${g.min_salary ?? "—"} – ${g.max_salary ?? "—"}`
                         : "—"}
                     </td>
+                    <td style={{ textAlign: "right" }}>
+                      <button type="button" className="btn ghost sm" onClick={() => setEditing(g.id)}>
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -901,5 +997,76 @@ function GradesPanel({
         </div>
       </div>
     </>
+  );
+}
+
+type EditField = { key: string; label: string; value: string; options?: string[]; number?: boolean };
+
+/** Edit one master-data row (PATCH). eswasa_hr.master_data refuses a disable that would strand people, with the reason. */
+function MasterEdit({ path, fields, onDone, onCancel }: { path: string; fields: EditField[]; onDone: () => void; onCancel: () => void }) {
+  const [vals, setVals] = useState<Record<string, string>>(() => Object.fromEntries(fields.map((f) => [f.key, f.value])));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    const changes: Record<string, unknown> = {};
+    for (const f of fields) {
+      if (vals[f.key] === f.value) continue;
+      changes[f.key] = f.number ? (vals[f.key] === "" ? null : Number(vals[f.key])) : vals[f.key];
+    }
+    if (!Object.keys(changes).length) return setErr("Nothing to change.");
+    setBusy(true);
+    try {
+      await hrSend(path, changes, "PATCH");
+      onDone();
+    } catch (ex) {
+      setErr(errorText(ex, "Not saved."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="hr-box hr-invite" style={{ marginBottom: 16 }}>
+      <div className="hr-box__h">
+        <div>
+          <h3>Edit</h3>
+          <p>Changes apply straight away and are audited.</p>
+        </div>
+      </div>
+      <div className="hr-box__b">
+        <form onSubmit={(e) => void save(e)}>
+          {fields.map((f) => (
+            <label key={f.key}>
+              {f.label}
+              {f.options ? (
+                <select value={vals[f.key]} onChange={(e) => setVals((v) => ({ ...v, [f.key]: e.target.value }))} disabled={busy}>
+                  {(f.options.includes(vals[f.key]) ? f.options : [vals[f.key], ...f.options]).map((o) => (
+                    <option key={o} value={o}>
+                      {o || "—"}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input type={f.number ? "number" : "text"} value={vals[f.key]} onChange={(e) => setVals((v) => ({ ...v, [f.key]: e.target.value }))} disabled={busy} />
+              )}
+            </label>
+          ))}
+          {err ? (
+            <p className="page-note" role="alert">
+              {err}
+            </p>
+          ) : null}
+          <button type="submit" className="btn pri" disabled={busy}>
+            {busy ? "Saving…" : "Save"}
+          </button>{" "}
+          <button type="button" className="btn ghost" disabled={busy} onClick={onCancel}>
+            Cancel
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }

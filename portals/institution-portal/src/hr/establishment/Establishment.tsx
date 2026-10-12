@@ -5,6 +5,7 @@ import { useApiResource } from "../../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../../components/PageStates";
 import { RequireStaff } from "../../components/RequireStaff";
 import { useInstitution } from "../../layout/InstitutionLayout";
+import { errorText } from "../api";
 import type {
   HrDesignationsResponse,
   HrEstablishment,
@@ -234,10 +235,24 @@ function SetHead({ department, people, current, onDone }: { department: string; 
     setBusy(true);
     setErr(null);
     try {
-      await apiFetch(`/hr/departments/${encodeURIComponent(department)}/head`, { method: "POST", body: JSON.stringify({ employee_id: pick, confirm: true }) });
+      await apiFetch(`/hr/departments/${encodeURIComponent(department)}/head`, { method: "POST", body: JSON.stringify({ employee_id: pick, confirm: true }), quiet: true });
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Not saved.");
+      setErr(errorText(e, "Not saved."));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function remove() {
+    setBusy(true);
+    setErr(null);
+    try {
+      // confirm is a query parameter on this DELETE (no body).
+      await apiFetch(`/hr/departments/${encodeURIComponent(department)}/head?confirm=true`, { method: "DELETE", quiet: true });
+      setPick("");
+      onDone();
+    } catch (e) {
+      setErr(errorText(e, "Not removed."));
     } finally {
       setBusy(false);
     }
@@ -258,6 +273,11 @@ function SetHead({ department, people, current, onDone }: { department: string; 
       <button type="button" className="btn ghost" disabled={!pick || pick === current || busy} onClick={() => void save()}>
         {busy ? "Saving…" : "Set as head"}
       </button>
+      {current ? (
+        <button type="button" className="btn ghost" disabled={busy} onClick={() => void remove()}>
+          Remove head
+        </button>
+      ) : null}
       {err ? <span className="hr-note hr-bad">{err}</span> : null}
     </div>
   );

@@ -5,6 +5,7 @@ import { useApiResource } from "../../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../../components/PageStates";
 import { RequireStaff } from "../../components/RequireStaff";
 import { useInstitution } from "../../layout/InstitutionLayout";
+import { errorText, hrSend } from "../api";
 import type { HrCase, HrCaseKind, HrCaseRegister, HrEmployeesResponse } from "../../api/types";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill } from "../../me/parts";
 
@@ -265,7 +266,7 @@ export function CaseDetail() {
       setC(await apiFetch<HrCase>(`${caseUrl(kind, id)}/${path}`, { method: "POST", body: JSON.stringify({ ...body, confirm: true }) }));
       reset();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Not saved.");
+      setErr(errorText(e, "Not saved."));
     } finally {
       setBusy(false);
     }
@@ -295,6 +296,9 @@ export function CaseDetail() {
             <Banner kind="lock" title="Restricted">
               {LOCK}
             </Banner>
+            {(user?.roles ?? []).includes("HR Manager") && !["Closed", "Resolved", "Invalid"].includes(c.stage) ? (
+              <ReassignOwner url={caseUrl(kind, id)} c={c} onDone={setC} />
+            ) : null}
             <ol className="hr-steps" aria-label="Stages">
               {c.stages.map((s, i) => {
                 const at = c.stages.indexOf(c.stage);
@@ -486,5 +490,82 @@ export function CaseDetail() {
         ) : null}
       </ResourceGate>
     </RequireStaff>
+  );
+}
+
+/** HR Manager hands the case to another named owner; the server refuses anyone involved in it. */
+function ReassignOwner({ url, c, onDone }: { url: string; c: HrCase; onDone: (c: HrCase) => void }) {
+  const [owner, setOwner] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const owners = (c.owners ?? []).filter((o) => o.user !== c.owner);
+
+  async function save() {
+    setErr(null);
+    if (!owner) return setErr("Choose the new owner.");
+    if (!note.trim()) return setErr("Say why the case is moving. It goes on the case record.");
+    setBusy(true);
+    try {
+      onDone(await hrSend<HrCase>(`${url}/owner`, { owner, note: note.trim() }));
+      setOpen(false);
+      setOwner("");
+      setNote("");
+    } catch (e) {
+      setErr(errorText(e, "Not reassigned."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <div>
+        <button type="button" className="btn ghost sm" onClick={() => setOpen(true)}>
+          Change owner
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="hr-box">
+      <div className="hr-box__h">
+        <div>
+          <h3>Change owner</h3>
+          <p>The new owner gets the next-step task. Nobody involved in the case can own it.</p>
+        </div>
+      </div>
+      <div className="hr-box__b hr-view" style={{ gap: 10 }}>
+        <label className="hr-f">
+          <span>New owner</span>
+          <select className="hr-in" value={owner} onChange={(e) => setOwner(e.target.value)} disabled={busy}>
+            <option value="">Choose…</option>
+            {owners.map((o) => (
+              <option key={o.user} value={o.user}>
+                {o.name ?? o.user}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="hr-f">
+          <span>Why</span>
+          <input className="hr-in" value={note} onChange={(e) => setNote(e.target.value)} disabled={busy} />
+        </label>
+        {err ? (
+          <Banner kind="bad" title="Not reassigned">
+            {err}
+          </Banner>
+        ) : null}
+        <div>
+          <button type="button" className="btn pri" disabled={busy} onClick={() => void save()}>
+            {busy ? "Saving…" : "Reassign"}
+          </button>{" "}
+          <button type="button" className="btn ghost" disabled={busy} onClick={() => setOpen(false)}>
+            Back
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

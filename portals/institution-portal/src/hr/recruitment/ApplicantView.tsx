@@ -227,6 +227,14 @@ export function ApplicantView() {
             {d.offer ? (
               <Banner kind="info" title={`Offer: ${d.offer.state}`}>
                 {d.offer.designation}, dated {fmtDay(d.offer.offer_date, true)}.
+                {d.offer.docstatus === 1 ? (
+                  <>
+                    {" "}
+                    <a className="hr-lnk" href={`${apiBase()}/hr/recruitment/offers/${encodeURIComponent(d.offer.name)}/letter`} target="_blank" rel="noreferrer">
+                      Offer letter (PDF)
+                    </a>
+                  </>
+                ) : null}
               </Banner>
             ) : null}
             {err ? (

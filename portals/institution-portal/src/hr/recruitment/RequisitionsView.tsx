@@ -7,8 +7,8 @@ import { useInstitution } from "../../layout/InstitutionLayout";
 import type { HrRequisition, HrVacancy } from "../../api/types";
 import { fmtDay, NextStep, StatusPill } from "../../me/parts";
 
-const STATUS: Record<HrRequisition["status"], { cls: string; label: string }> = {
-  Pending: { cls: "leave", label: "With HR Managers in Approvals" },
+export const STATUS: Record<HrRequisition["status"], { cls: string; label: string }> = {
+  Pending: { cls: "leave", label: "Waiting for approval" },
   "Open & Approved": { cls: "ok", label: "Approved" },
   Rejected: { cls: "bad", label: "Not approved" },
   "On Hold": { cls: "mute", label: "On hold" },
@@ -17,7 +17,7 @@ const STATUS: Record<HrRequisition["status"], { cls: string; label: string }> = 
 };
 
 /** Applicant counts by HRMS status, in pipeline order. */
-const FUNNEL: Array<[string, string[]]> = [
+export const FUNNEL: Array<[string, string[]]> = [
   ["Applied", ["Open", "Replied", "Hold"]],
   ["Shortlist", ["Shortlisted"]],
   ["Offer", ["Accepted"]],
@@ -73,7 +73,9 @@ export function RequisitionsView() {
                     return (
                       <tr key={r.id}>
                         <td>
-                          <b>{r.designation}</b>
+                          <Link className="hr-lnk" to={`/hr/recruitment/requisitions/${encodeURIComponent(r.id)}`}>
+                            <b>{r.designation}</b>
+                          </Link>
                           <div className="sub">
                             {r.department ?? ""} · <span className="mono">{r.id}</span>
                           </div>
@@ -81,6 +83,11 @@ export function RequisitionsView() {
                         <td>
                           <StatusPill cls={s.cls} label={s.label} />
                           {r.requested_by ? <div className="sub">Raised by {r.requested_by}</div> : null}
+                          {r.status === "Pending" && r.waiting_on ? (
+                            <div className="sub">
+                              {r.stage === "Head" ? "Head of department" : "HR"}: {r.waiting_on}
+                            </div>
+                          ) : null}
                         </td>
                         <td>
                           {r.opening ? (

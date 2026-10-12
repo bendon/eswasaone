@@ -2546,11 +2546,10 @@ async def assign_hr_department_head(
         except FrappeError:
             continue
     if not set_ok:
-        # TODO: wire real — standard Frappe Department has no department_head;
-        # leave_block_list is unrelated. Prefer custom field or reports_to graph.
-        logger.info(
-            "department head field unavailable on %s; returning department without persist",
-            department_id,
+        # Never report a head that wasn't saved: approvals route to Department.custom_head (eswasa_hr).
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The head of department couldn't be saved: this site is missing the head field. Ask the administrator to run bench migrate.",
         )
     emp = await _frappe_get_doc(session, "Employee", body.employee_id, soft=True)
     head = None
@@ -2587,14 +2586,17 @@ async def clear_hr_department_head(
     raw = await _frappe_get_doc(session, "Department", department_id)
     if not raw:
         raise HTTPException(status_code=404, detail="Department not found")
-    for field in _DEPT_HEAD_FIELD_CANDIDATES:
-        if field in raw:
-            try:
-                await _frappe_set_value(session, "Department", department_id, field, "")
-                raw[field] = None
-            except (HTTPException, FrappeError):
-                pass
-            break
+    field = next((f for f in _DEPT_HEAD_FIELD_CANDIDATES if f in raw), None)
+    if field is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The head of department couldn't be removed: this site is missing the head field. Ask the administrator to run bench migrate.",
+        )
+    try:
+        await _frappe_set_value(session, "Department", department_id, field, "")
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+    raw[field] = None
     refreshed = await _frappe_get_doc(session, "Department", department_id) or raw
     return _as_hr_department(refreshed, head=None)
 

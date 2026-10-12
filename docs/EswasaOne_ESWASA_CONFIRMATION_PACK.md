@@ -220,6 +220,43 @@ These targets drive reminders and escalations. They count **working days** again
 | G16 | Sample test turnaround | *To confirm* | Lab Manager |  |  |
 | G17 | End-to-end certification (application to decision) | *To confirm* | Head of Certification |  |  |
 
+## H. HR & People
+
+These answers configure HR & People (`docs/EswasaOne_HR_PEOPLE_BUILD_BRIEF.md` §0.5–§0.6). Provisional answers are taken from ESWASA's public sources (website, Standards and Quality Act 10 of 2003) and from ISO/IEC 17021-1, 17065 and 17025 personnel requirements. **Rates, entitlements and statutory amounts are never provisional. Finance and HR supply them.**
+
+**Structure and authority**
+
+| # | Question | Provisional answer | ESWASA answer |
+| --- | --- | --- | --- |
+| H1 | Top-level structure under the Executive Director | Three divisions: Finance & Administration (CFO), Technical (Technical Manager), Commercial (Chief Commercial Officer). Departments to be listed under each |  |
+| H2 | Which division does HR sit in? | Finance & Administration |  |
+| H3 | Who appoints staff, and on what terms? (Act, "Directorate of the Authority and staff") | ED appoints staff on terms approved by Council; Council appoints the ED. *Cite the section* |  |
+| H4 | Which appointments and establishment changes go to Council after the ED? | ED and executive appointments; any increase in approved posts; changes to grade bands |  |
+| H5 | What does the HR & Remuneration Committee receive? | Quarterly Board HR pack: headcount, vacancies, turnover, establishment changes, appraisal completion, case counts by kind. No names |  |
+
+**Competence, impartiality and confidentiality**
+
+| # | Question | Provisional answer | ESWASA answer |
+| --- | --- | --- | --- |
+| H6 | Who authorises staff for audit, review, testing and calibration work? | Head of the department, never the person being authorised |  |
+| H7 | Validity period and renewal evidence per competence | *To confirm per scheme and discipline* |  |
+| H8 | Is the impartiality declaration yearly, and what look-back period applies? | Yearly, by the financial year; 2-year look-back |  |
+| H9 | Must staff sign a confidentiality undertaking, and how often? | Yes, at joining and again each year with the impartiality declaration |  |
+| H10 | Are external people (contract auditors, technical experts, TC experts) used? Do they need the same competence and declaration records? | Yes; same records, no payroll |  |
+| H11 | Which records does SADCAS ask for at assessment? | Per-person authorisation, evidence, monitoring, declarations and training |  |
+
+**Employment terms**
+
+| # | Question | Provisional answer | ESWASA answer |
+| --- | --- | --- | --- |
+| H12 | Probation length, and what happens if no review is done | *To confirm* |  |
+| H13 | Notice periods by grade or contract type | *To confirm* |  |
+| H14 | Leave types and entitlement per grade; leave year; carry-over limit | *To confirm* (at least the Employment Act minimums) |  |
+| H15 | Does payroll run in EswasaOne (HRMS) or stay in the current system? | *To confirm* |  |
+| H16 | Statutory deductions and their tables (PAYE through ERS, ENPF, others) | *Finance to supply* |  |
+| H17 | Who may see personal data, and who may see pay? | Personal: HR User and HR Manager. Pay: HR Manager and payroll role only |  |
+| H18 | Should vacancies be published and applied for online? Is email to hr@eswasa.co.sz kept? | Yes, online through the Service Portal; email kept during transition |  |
+
 ## Sign-off
 
 By signing, ESWASA confirms these answers as the basis for configuring EswasaOne. Later changes go through change control.
@@ -233,5 +270,6 @@ By signing, ESWASA confirms these answers as the basis for configuring EswasaOne
 | E. Standards development |  |  |
 | F. Metrology, TBT, complaints, procurement, governance |  |  |
 | G. Service-level targets |  |  |
+| H. HR & People |  |  |
 
 **Approved for ESWASA:** _______________________ (Chief Executive Officer)  Date: ________

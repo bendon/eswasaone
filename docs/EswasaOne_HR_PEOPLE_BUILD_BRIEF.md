@@ -43,7 +43,30 @@ These are policy and regulatory inputs, not design choices. Don't invent them.
 | 9 | Probation length, what happens when it ends, notice periods | §4 |
 | 10 | Who may see personal data and who may see pay | §11 |
 
-**Done when** each row has a named ESWASA owner and a dated answer. Items 6 and 7 block §9 only; the rest of the build proceeds.
+| 11 | Who appoints staff and on what terms (Standards and Quality Act 10 of 2003, "Directorate of the Authority and staff") | §3, §4 |
+| 12 | Which appointments and establishment changes go to Council after the ED | §3, §12.1 |
+| 13 | Whether external personnel (contract auditors, technical experts, TC experts) are used, and the records they need | §6.5 |
+| 14 | Confidentiality undertaking wording and how often it is signed | §6.3 |
+
+**Done when** each row has a named ESWASA owner and a dated answer. Items 6 and 7 block §9 only; the rest of the build proceeds. The questions are also in the Confirmation Pack, section H.
+
+---
+
+## 0.6 What ESWASA's public sources tell us
+
+Researched Oct 2026 from eswasa.co.sz (About, Meet our team, Vacancies, Policies, Service charter), the ISO member listing, the US trade.gov country guide and the Act's table of contents. These are design inputs, not confirmed answers: each one feeds a Confirmation Pack row (H1–H18).
+
+| Finding | What it means for the build |
+|---|---|
+| ESWASA is a parastatal under the Ministry of Commerce, Industry and Trade, set up by the Standards and Quality Act 10 of 2003, amended 2023. A Council governs it; the confirmation pack lists an HR & Remuneration Committee | The Board HR pack (§12.3) goes to that committee. Senior appointments and establishment increases need a Council step after the ED (§3, §12.1) |
+| The executive is the Executive Director, CFO, Technical Manager and Chief Commercial Officer | Default tree: ED → Finance & Administration / Technical / Commercial. Departments sit under these. **Confirm before loading** (H1) |
+| SADCAS accredits ESWASA. Certification, testing and calibration therefore fall under ISO/IEC 17021-1, 17065 and 17025 | Personnel competence, authorisation, monitoring, impartiality and confidentiality are accreditation records. They must be exportable per person and per function (§6.6) |
+| ESWASA publishes an Impartiality Policy, a Complaints procedure (CER_PR_006) and a Requests for Information procedure (CER_PR_015). No HR policies are public | The yearly declaration covers impartiality **and** confidentiality (§6.3). HR policies come from ESWASA, not the web |
+| Vacancies are posted on the website. Applicants email a CV and cover letter to hr@eswasa.co.sz; only shortlisted candidates are contacted | Job Openings publish to the Service Portal careers page with an online application (§7.1). Email intake stays during transition |
+| ESWASA calls for national experts for ISO, IEC and ARSO mirror committees, and may use contract auditors | External personnel need competence and declaration records without payroll (§6.5) |
+| The service charter commits to fixed turnaround times (audit scheduling within 30 working days; complaints resolved within 30 days) | Leave without cover for people who hold that work is a service risk. This backs the cover prompt in §5 |
+
+Statutory items (Employment Act leave minimums, PAYE through the Eswatini Revenue Service, ENPF contributions) are listed for Finance to confirm. **No rate or entitlement is written into the build from research.**
 
 ---
 
@@ -189,8 +212,16 @@ Use native **Skill**, one per competence, e.g. "QMS lead auditor, ISO 9001". Add
 - **R-H5:** each year `sys-cron` opens a `do` ToDo per employee to complete it.
 - Guard `has_conflict(employee, customer, on_date)` looks back two years. An employee with no signed declaration for the current year fails every audit and decision guard.
 
+- **Confidentiality.** The same yearly declaration includes a signed confidentiality undertaking (17021-1, 17065 and 17025 all require one). A new joiner's onboarding cannot complete until the first declaration is signed.
+
 ### 6.4 Training
 Use native `Training Event` and `Training Result`, plus Frappe LMS completions, as evidence rows on an authorisation.
+
+### 6.5 External personnel (pending decision 0.5 #13)
+Contract auditors, technical experts and Technical Committee experts get a light register with no Employee record and no payroll. Proposed: a `Person` type External, linked to a Supplier or Contact. They use the same `Staff Authorisation` and `Impartiality Declaration` records and the same guards, so the audit planner treats them like staff.
+
+### 6.6 Accreditation evidence pack
+An export per person and per function (scheme or discipline) listing: current authorisations, the evidence behind each, monitoring (witnessed audits, proficiency tests), the signed declarations and training records. It is used at SADCAS assessments and internal audits.
 
 **Done when**
 - Assigning a lead auditor whose authorisation expires before the visit date is refused with a plain-language reason, in Desk and in the portal.
@@ -213,6 +244,9 @@ Chain: **Staffing Plan** vacancy → **Job Requisition** → **Job Opening** →
 | Candidates | Applicant counts per workflow state |
 | Days open | Today − `posted_on`, against a target held in settings |
 | "Not started" vacancies | Establishment vacancies with no open requisition |
+
+### 7.1 Public careers page
+A Job Opening with `publish = 1` appears on the Service Portal careers page and the website vacancies list. Applicants apply online (CV, cover letter, consent to keep their data), which creates a `Job Applicant`. The confirmation tells them that only shortlisted candidates are contacted. Email sent to hr@eswasa.co.sz stays as an intake route during transition; HR logs those emails as applicants by hand.
 
 **Done when** a requisition can't be opened for a post with no vacancy, and an accepted offer starts onboarding with the applicant's details carried over.
 
@@ -291,7 +325,7 @@ Chain: **Staffing Plan** vacancy → **Job Requisition** → **Job Opening** →
 |---|---|---|---|
 | Leave Application | approve | Employee's `leave_approver` | 2d → HR Manager |
 | Expense Claim | approve | Employee's `expense_approver` | 3d → Finance |
-| Staffing Plan (amend) | approve | CEO | 5d |
+| Staffing Plan (amend) | approve | CEO, then Council HR & Remuneration Committee when the increase is above the threshold (0.5 #12) | 5d |
 | Job Requisition | approve | Head of department, then HR Manager | 3d |
 | Job Offer | approve | HR Manager | 2d |
 | Employee Promotion / Transfer | approve | HR Manager | 3d |
@@ -335,7 +369,8 @@ KPI definitions:
 - Each tab reads its endpoint. No tab reads the local store. Until an endpoint is wired, the tab shows the shared `<NotConnected>` gate (Approvals brief §0.5).
 - **Move the setup checklist** to System Administration → HR setup. If no employees exist, Overview shows one line saying HR isn't set up yet, with a link there.
 - Tab order as in the mockup. Competence and Cases are new routes.
-- Board roll-up: `board_rollup: hr.summary` builds the Board HR pack from the same endpoints.
+- Board roll-up: `board_rollup: hr.summary` builds the Board HR pack from the same endpoints. It is addressed to the Council HR & Remuneration Committee and carries aggregates only.
+- **Screens and journeys** for every role (HR office, line managers, every employee, Finance, ED, Council, external personnel, applicants) are specified in `docs/EswasaOne_HR_SCREENS_AND_JOURNEYS.md`. Mockups: `docs/mocks/eswasaone-hr.html` and `docs/mocks/eswasaone-careers.html`.
 
 ---
 

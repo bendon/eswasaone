@@ -9,6 +9,9 @@
   Chrome (dark rail + top bar) comes from InstitutionLayout.
   React port: portals/institution-portal/src/pages/HrPage.tsx + src/hr/*
   Styles: portals/shared-ui/src/styles/hr.css (via institution.css)
+  Screens and journeys for every role: docs/EswasaOne_HR_SCREENS_AND_JOURNEYS.md.
+  Hash routes (#/hr, #/team, #/me, #/approvals, #/admin, #/board, #/journeys). The persona
+  switcher and sample journey state (sessionStorage) are mockup-only.
 -->
 <title>EswasaOne HR Mockup</title>
 
@@ -318,6 +321,186 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
 }
 @media (max-width:560px){ .top__user div,.pill{display:none} .dock span:last-child{display:none} .dock{padding:6px} }
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+
+/* ============ JOURNEYS — router views, wizards, persona switcher (NEW) ============ */
+.persona{display:flex;align-items:center;gap:8px}
+.persona label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.persona select{height:36px;border:1px solid var(--line);border-radius:9px;padding:0 10px;background:var(--card);font-size:12.5px;font-weight:600;max-width:220px}
+.nav .grp{font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--sidebar-fg-muted);padding:16px 12px 6px;text-transform:uppercase}
+.nav a.inert{opacity:.55}
+
+.hr-crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);padding-top:16px;margin-bottom:6px}
+.hr-crumbs a{font-weight:600;color:var(--navy-ink)}
+.hr-crumbs a:hover{text-decoration:underline}
+#view{padding-top:4px}
+#view .hr-head{margin-top:6px}
+#view > .hr-head:first-child{margin-top:20px}
+#view h2:focus{outline:0}
+.hr-view{display:flex;flex-direction:column;gap:16px}
+
+.hr-next{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--navy-l);border:1px solid color-mix(in srgb,var(--navy) 22%,transparent);border-radius:14px;padding:16px 18px}
+.hr-next > div{flex:1;min-width:220px}
+.hr-next b{display:block;font-size:14px}
+.hr-next p{font-size:12.5px;color:var(--muted);margin-top:2px}
+.hr-next__k{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--on-navy);background:var(--navy);border-radius:999px;padding:4px 10px;white-space:nowrap}
+
+.hr-banner{display:flex;gap:12px;align-items:flex-start;border-radius:12px;padding:12px 14px;font-size:13px;border:1px solid var(--line);background:var(--card)}
+.hr-banner svg{width:18px;height:18px;flex-shrink:0;margin-top:1px}
+.hr-banner b{display:block}
+.hr-banner.info{background:var(--blue-l);border-color:transparent;color:var(--blue-ink)}
+.hr-banner.warn{background:var(--amber-l);border-color:transparent;color:var(--amber-ink)}
+.hr-banner.bad{background:var(--red-l);border-color:var(--red-line);color:var(--red-ink)}
+.hr-banner.ok{background:var(--green-l);border-color:transparent;color:var(--green-ink)}
+.hr-banner.lock{border-style:dashed;color:var(--muted)}
+.hr-banner .btn,.hr-banner .hr-lnk{margin-left:auto;flex-shrink:0}
+
+/* Wizard stepper */
+.hr-wiz{list-style:none;display:flex;flex-wrap:wrap;gap:6px 4px;counter-reset:w;margin-bottom:2px}
+.hr-wiz li{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--muted);padding:6px 10px 6px 6px;border-radius:999px;background:var(--card);border:1px solid var(--line)}
+.hr-wiz li span{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;background:var(--bg);color:var(--muted)}
+.hr-wiz li.done{color:var(--green-ink);background:var(--green-l);border-color:transparent}
+.hr-wiz li.done span{background:var(--green);color:#fff}
+.hr-wiz li.now{color:var(--ink);border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+.hr-wiz li.now span{background:var(--navy);color:var(--on-navy)}
+.hr-wiz__nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hr-wiz__nav > :last-child{margin-left:auto}
+
+/* Forms */
+.hr-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
+.hr-form > .wide,.hr-form > .hr-banner,.hr-form > .hr-radios,.hr-form > .hr-out,.hr-form > .hr-scroll,.hr-form > p,.hr-form > h4,.hr-form > .hr-check,.hr-form > .hr-kv,.hr-form > .hr-tl,.hr-form > .hr-rows{grid-column:1/-1}
+.hr-form h4{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.hr-f{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;min-width:0}
+.hr-f small{font-weight:500;color:var(--muted);font-size:11.5px}
+.hr-in{min-height:40px;border:1px solid var(--line);border-radius:9px;padding:8px 12px;background:var(--card);font-size:13px;font-weight:500;width:100%}
+.hr-in:focus{border-color:var(--navy);outline:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--navy) 18%,transparent)}
+textarea.hr-in{resize:vertical}
+.hr-in[readonly]{background:var(--bg);color:var(--muted)}
+.hr-radios{display:flex;flex-direction:column;gap:8px}
+.hr-radio,.hr-check{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:11px 13px;cursor:pointer;font-size:13px;background:var(--card)}
+.hr-radio:has(input:checked){border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy);background:var(--navy-l)}
+.hr-radio input,.hr-check input{margin-top:3px;accent-color:var(--navy);flex-shrink:0}
+.hr-radio b{display:block;font-weight:700}
+.hr-radio small,.hr-check small{display:block;color:var(--muted);font-size:12px}
+.hr-check{border:0;padding:4px 0;background:transparent}
+.hr-rows{display:flex;flex-direction:column;gap:8px}
+.hr-row4{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);gap:8px}
+
+/* Segmented control, record tabs */
+.hr-seg{display:inline-flex;gap:2px;background:var(--line-2);border-radius:10px;padding:3px;margin-bottom:14px;flex-wrap:wrap}
+.hr-seg a{font-size:12.5px;font-weight:700;color:var(--muted);padding:7px 12px;border-radius:8px;white-space:nowrap}
+.hr-seg a.on{background:var(--card);color:var(--ink);box-shadow:var(--sh-xs)}
+.hr-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.hr-tabs a{padding:10px 12px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.hr-tabs a.on{color:var(--tab-on);border-bottom-color:var(--gold);font-weight:700}
+
+tr.link{cursor:pointer}
+tr.link td:first-child b{color:var(--navy-ink)}
+.hr-out__i a.hr-lnk{margin-left:auto}
+.hr-out__i .r + a.hr-lnk{margin-left:12px}
+
+/* Record header */
+.hr-rec{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.hr-rec .hr-av{width:52px;height:52px;font-size:16px}
+.hr-rec h2{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.hr-rec p{color:var(--muted);font-size:13px}
+.hr-mask{font-family:var(--font-mono);letter-spacing:.12em;color:var(--muted-2)}
+
+/* Card grids */
+.hr-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.hr-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--sh-xs);min-width:0}
+a.hr-card:hover{border-color:var(--navy)}
+.hr-card .l{font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+.hr-card .v{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.hr-card .v small{font-size:13px;font-weight:600;color:var(--muted)}
+.hr-card .d{font-size:12px;color:var(--muted)}
+
+/* Kanban */
+.hr-board{display:grid;grid-template-columns:repeat(5,minmax(190px,1fr));gap:12px;overflow-x:auto;padding-bottom:4px}
+.hr-col{background:var(--line-2);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:120px}
+.hr-col h4{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.hr-cand{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;font-size:12.5px}
+.hr-cand:hover{border-color:var(--navy)}
+.hr-cand b{font-size:13px}
+.hr-cand span{color:var(--muted)}
+.hr-col .empty{font-size:12px;color:var(--muted-2);text-align:center;padding:14px 0}
+
+/* Timeline */
+.hr-tl{list-style:none;display:flex;flex-direction:column;gap:0}
+.hr-tl li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;position:relative;padding-bottom:14px;font-size:13px}
+.hr-tl li::before{content:"";position:absolute;left:10px;top:20px;bottom:0;width:2px;background:var(--line)}
+.hr-tl li:last-child::before{display:none}
+.hr-tl i{width:22px;height:22px;border-radius:50%;background:var(--line-2);border:2px solid var(--line);display:block}
+.hr-tl li.done i{background:var(--green);border-color:var(--green)}
+.hr-tl li.now i{background:var(--card);border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-l)}
+.hr-tl b{display:block}
+.hr-tl span{font-size:12px;color:var(--muted)}
+
+/* Task checklist */
+.hr-tasks{list-style:none;display:flex;flex-direction:column}
+.hr-tasks li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line-2)}
+.hr-tasks li:first-child{border-top:0}
+.hr-tasks input{width:18px;height:18px;accent-color:var(--green)}
+.hr-tasks b{display:block;font-size:13.5px}
+.hr-tasks li.done b{color:var(--muted);text-decoration:line-through}
+.hr-tasks span.s{font-size:12px;color:var(--muted)}
+.hr-tick{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;background:var(--line-2);color:var(--muted)}
+.hr-tick.ok{background:var(--green);color:#fff}
+
+/* Org chart */
+.hr-org{display:flex;flex-direction:column;align-items:center;gap:18px}
+.hr-org__top{background:var(--navy);color:var(--on-navy);border-radius:12px;padding:12px 18px;text-align:center}
+.hr-org__top span{display:block;font-size:12px;opacity:.8}
+.hr-org__divs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;width:100%}
+.hr-org__div{border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden}
+.hr-org__div h4{background:var(--navy-l);color:var(--navy-ink);padding:10px 14px;font-size:13px}
+.hr-org__div h4 span{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.hr-org__div a{display:flex;justify-content:space-between;gap:8px;padding:9px 14px;border-top:1px solid var(--line-2);font-size:12.5px}
+.hr-org__div a:hover{background:var(--th)}
+.hr-org__div a span{color:var(--muted);white-space:nowrap}
+
+/* Approvals cards */
+.hr-appr{display:flex;flex-direction:column}
+.hr-appr a{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 18px;border-top:1px solid var(--line-2)}
+.hr-appr a:first-child{border-top:0}
+.hr-appr a:hover{background:var(--th)}
+.hr-appr b{display:block;font-size:13.5px}
+.hr-appr span.s{font-size:12px;color:var(--muted)}
+.hr-fam{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:6px;padding:3px 8px;background:var(--navy-l);color:var(--navy-ink)}
+.hr-fam.task{background:var(--gold-l);color:var(--amber-ink)}
+.hr-decide{display:flex;gap:10px;flex-wrap:wrap}
+.btn.ok{background:var(--green);color:#fff}
+.btn.no{background:var(--card);border-color:var(--red-line);color:var(--red-ink)}
+
+/* Journeys index */
+.hr-jny{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.hr-jny ol{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.hr-jny ol a{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:var(--card)}
+.hr-jny ol a:hover{border-color:var(--navy);color:var(--navy-ink)}
+.hr-jny ol a em{font-style:normal;font-size:10.5px;font-weight:800;color:var(--muted)}
+
+/* Modal (logged reveal) */
+.hr-modal{position:fixed;inset:0;display:grid;place-items:center;z-index:80;padding:16px}
+.hr-modal__b{background:var(--card);border-radius:16px;box-shadow:var(--sh-lg);width:min(460px,100%);padding:20px;display:flex;flex-direction:column;gap:14px;border:1px solid var(--line)}
+.hr-modal__b h3{font-size:16px;font-weight:800}
+.hr-modal__b p{font-size:13px;color:var(--muted)}
+.hr-modal__b .hr-decide{justify-content:flex-end}
+
+/* Payslip */
+.hr-slip{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 18px;font-size:13px}
+.hr-slip .h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);grid-column:1/-1;margin-top:8px}
+.hr-slip .n{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.hr-slip .t{border-top:1px solid var(--line);padding-top:6px;font-weight:800}
+
+@media (max-width:900px){ .persona label{display:none} .persona select{max-width:150px} .hr-org__divs{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:700px){
+  .hr-form{grid-template-columns:minmax(0,1fr)}
+  .hr-row4{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .hr-appr a{grid-template-columns:minmax(0,1fr)}
+  .hr-board{grid-template-columns:repeat(5,minmax(200px,80vw))}
+  .hr-wiz li{font-size:0;padding:4px} .hr-wiz li span{font-size:11px} .hr-wiz li.now{font-size:12px;padding-right:10px}
+  .top__user{display:none}
+}
+.hr-modal{background:rgba(8,12,22,.45)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -371,26 +554,28 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
   <div class="main">
     <header class="top">
       <button type="button" class="ibtn top__menu-btn" id="menuBtn" aria-label="Open navigation" aria-expanded="false" aria-controls="side"><svg><use href="#i-menu"/></svg></button>
-      <h1>HR &amp; People</h1>
+      <h1 id="topTitle">HR &amp; People</h1>
       <div class="top-search"><svg><use href="#i-search"/></svg><label class="sr-only" for="topSearch">Ask EswasaOne</label><input id="topSearch" type="text" placeholder="Ask EswasaOne"></div>
       <div class="top__r">
         <span class="pill">MOCKUP · SAMPLE DATA</span>
         <button type="button" class="ibtn" aria-label="Notifications"><svg><use href="#i-bell"/></svg></button>
-        <div class="top__user"><span class="top__av">NS</span><div><b>Nokuthula Shongwe</b><span>HR Manager</span></div></div>
+        <a class="btn ghost sm" href="#/journeys">Journeys</a>
+        <div class="persona"><label for="persona">Viewing as</label><select id="persona"><option value="hrm">HR Manager</option><option value="hro">HR Officer</option><option value="lm">Line manager</option><option value="hod">Head of department</option><option value="emp">Employee</option><option value="nj">New joiner</option><option value="fin">Finance Manager</option><option value="ed">Executive Director</option><option value="council">Council committee</option><option value="ext">External auditor</option></select></div>
+        <div class="top__user"><span class="top__av" id="pAv">NS</span><div><b id="pName">Nokuthula Shongwe</b><span id="pRole">HR Manager</span></div></div>
       </div>
     </header>
 
     <div class="content">
       <nav class="subtabs" aria-label="HR sections">
-        <a class="subtab on" aria-current="page" href="#overview" data-tab="overview">Overview</a>
-        <a class="subtab" href="#directory" data-tab="directory">Directory</a>
-        <a class="subtab" href="#structure" data-tab="structure">Structure</a>
-        <a class="subtab" href="#timeoff" data-tab="timeoff">Time off</a>
-        <a class="subtab" href="#competence" data-tab="competence">Competence<span class="subtab__badge">4</span></a>
-        <a class="subtab" href="#recruitment" data-tab="recruitment">Recruitment</a>
-        <a class="subtab" href="#performance" data-tab="performance">Performance</a>
-        <a class="subtab" href="#payroll" data-tab="payroll">Payroll<span class="subtab__badge">3</span></a>
-        <a class="subtab" href="#cases" data-tab="cases">Cases</a>
+        <a class="subtab on" aria-current="page" href="#/hr/overview" data-tab="overview">Overview</a>
+        <a class="subtab" href="#/hr/directory" data-tab="directory">Directory</a>
+        <a class="subtab" href="#/hr/structure" data-tab="structure">Structure</a>
+        <a class="subtab" href="#/hr/timeoff" data-tab="timeoff">Time off</a>
+        <a class="subtab" href="#/hr/competence" data-tab="competence">Competence<span class="subtab__badge">4</span></a>
+        <a class="subtab" href="#/hr/recruitment" data-tab="recruitment">Recruitment</a>
+        <a class="subtab" href="#/hr/performance" data-tab="performance">Performance</a>
+        <a class="subtab" href="#/hr/payroll" data-tab="payroll">Payroll<span class="subtab__badge">3</span></a>
+        <a class="subtab" href="#/hr/cases" data-tab="cases">Cases</a>
       </nav>
 
       <!-- ===================== OVERVIEW ===================== -->
@@ -398,8 +583,8 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
         <div class="hr-head">
           <div><h2>People overview</h2><p>As at Friday 9 October 2026. 86 employees in 10 departments.</p></div>
           <div class="hr-head__r">
-            <button type="button" class="btn ghost" data-toast="Builds the monthly HR pack for the Board: headcount, movements, vacancies, leave liability and competence cover.">Board HR pack</button>
-            <button type="button" class="btn pri" data-toast="Opens the new-employee form: person, position, contract, then onboarding tasks for ICT, Finance and the line manager.">Add employee</button>
+            <button type="button" class="btn ghost" data-go="#/board/hr-pack">Board HR pack</button>
+            <button type="button" class="btn pri" data-go="#/hr/people/new">Add employee</button>
           </div>
         </div>
 
@@ -417,12 +602,12 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
               <div class="hr-box__h"><div><h3>Needs attention</h3><p>Ordered by the date something stops working</p></div></div>
               <div class="hr-box__b flush">
                 <ul class="hr-attn">
-                  <li><span class="hr-st bad"><span class="d"></span>By 13 Oct</span><div><b>Zanele Nkosi is on leave 14 to 16 Oct with no cover</b><span class="s">3 technical reviews in Certification would wait until she is back.</span></div><button type="button" class="hr-lnk" data-jump="timeoff">Time off</button></li>
+                  <li><span class="hr-st bad"><span class="d"></span>By 13 Oct</span><div><b>Zanele Nkosi is on leave 14 to 16 Oct with no cover</b><span class="s">3 technical reviews in Certification would wait until she is back.</span></div><a class="hr-lnk" href="#/hr/timeoff/request/zn">Set cover</a></li>
                   <li><span class="hr-st leave"><span class="d"></span>By 20 Oct</span><div><b>3 payroll changes are waiting for approval</b><span class="s">October cut-off is 20 Oct. Unapproved changes roll to November.</span></div><button type="button" class="hr-lnk" data-jump="payroll">Payroll</button></li>
-                  <li><span class="hr-st leave"><span class="d"></span>By 31 Oct</span><div><b>2 probation reviews are due</b><span class="s">Bongani Dlamini and one other. No review means automatic confirmation.</span></div><button type="button" class="hr-lnk" data-jump="directory">Directory</button></li>
+                  <li><span class="hr-st leave"><span class="d"></span>By 31 Oct</span><div><b>2 probation reviews are due</b><span class="s">Bongani Dlamini and one other. No review means automatic confirmation.</span></div><a class="hr-lnk" href="#/hr/movements">Joiners &amp; leavers</a></li>
                   <li><span class="hr-st leave"><span class="d"></span>From 15 Nov</span><div><b>4 auditor and metrologist authorisations expire</b><span class="s">Once expired, Certification and Metrology can no longer assign these people to that work.</span></div><button type="button" class="hr-lnk" data-jump="competence">Competence</button></li>
-                  <li><span class="hr-st leave"><span class="d"></span>By 30 Nov</span><div><b>3 fixed-term contracts end</b><span class="s">Decide to renew, convert to permanent, or let them end.</span></div><button type="button" class="hr-lnk" data-jump="directory">Directory</button></li>
-                  <li><span class="hr-st info"><span class="d"></span>Open</span><div><b>6 impartiality declarations are outstanding for 2026/27</b><span class="s">80 of 86 signed. Unsigned staff are excluded from audit and decision work.</span></div><button type="button" class="hr-lnk" data-jump="competence">Competence</button></li>
+                  <li><span class="hr-st leave"><span class="d"></span>By 30 Nov</span><div><b>3 fixed-term contracts end</b><span class="s">Decide to renew, convert to permanent, or let them end.</span></div><a class="hr-lnk" href="#/hr/movements">Decide</a></li>
+                  <li><span class="hr-st info"><span class="d"></span>Open</span><div><b>6 impartiality declarations are outstanding for 2026/27</b><span class="s">80 of 86 signed. Unsigned staff are excluded from audit and decision work.</span></div><a class="hr-lnk" href="#/hr/competence/declarations">Declarations</a></li>
                 </ul>
               </div>
             </div>
@@ -468,9 +653,9 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
             <div class="hr-box">
               <div class="hr-box__h"><div><h3>Movements in October</h3><p>Joiners, leavers and changes</p></div></div>
               <div class="hr-box__b hr-out">
-                <div class="hr-out__i"><span class="hr-st ok">Joined</span><div><b>Sandile Ndwandwe</b><span class="s">Laboratory Technician, Metrology. Onboarding 5 of 8 tasks.</span></div></div>
-                <div class="hr-out__i"><span class="hr-st info">Promoted</span><div><b>Phindile Motsa</b><span class="s">Standards Officer to Senior Standards Officer, from 1 Oct</span></div></div>
-                <div class="hr-out__i"><span class="hr-st mute">Leaving</span><div><b>Mandla Zwane</b><span class="s">Accountant, Finance. Last day 31 Oct. Offboarding 2 of 7 tasks.</span></div></div>
+                <div class="hr-out__i"><span class="hr-st ok">Joined</span><div><b>Sandile Ndwandwe</b><span class="s">Laboratory Technician, Metrology. Onboarding in progress.</span></div><a class="hr-lnk" href="#/hr/onboarding/sn">Onboarding</a></div>
+                <div class="hr-out__i"><span class="hr-st info">Promoted</span><div><b>Phindile Motsa</b><span class="s">Standards Officer to Senior Standards Officer, from 1 Oct</span></div><a class="hr-lnk" href="#/hr/people/pm?tab=history">Record</a></div>
+                <div class="hr-out__i"><span class="hr-st mute">Leaving</span><div><b>Mandla Zwane</b><span class="s">Accountant, Finance. Last day 31 Oct.</span></div><a class="hr-lnk" href="#/hr/offboarding/mz">Offboarding</a></div>
               </div>
             </div>
 
@@ -490,8 +675,9 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
       <section data-panel="directory" hidden>
         <div class="hr-head">
           <div><h2>Directory</h2><p>Select a row to open the employee record.</p></div>
-          <div class="hr-head__r"><button type="button" class="btn ghost" data-toast="Exports the filtered list. Pay and personal fields are left out unless your role may see them.">Export</button><button type="button" class="btn pri" data-toast="Opens the new-employee form: person, position, contract, then onboarding tasks.">Add employee</button></div>
+          <div class="hr-head__r"><button type="button" class="btn ghost" data-toast="Exports the filtered list. Pay and personal fields are left out unless your role may see them.">Export</button><button type="button" class="btn pri" data-go="#/hr/people/new">Add employee</button></div>
         </div>
+        <nav class="hr-seg"><a href="#/hr/directory" class="on">People</a><a href="#/hr/movements">Joiners &amp; leavers</a></nav>
         <div class="hr-filters">
           <div class="hr-search"><svg><use href="#i-search"/></svg><label class="sr-only" for="dQ">Search people</label><input id="dQ" type="search" placeholder="Search by name, position or staff number"></div>
           <label class="sr-only" for="dDept">Department</label>
@@ -523,7 +709,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
       <section data-panel="structure" hidden>
         <div class="hr-head">
           <div><h2>Structure</h2><p>The approved establishment. A person can only be hired into a post that exists here.</p></div>
-          <div class="hr-head__r"><button type="button" class="btn ghost" data-toast="Starts a request to add, change or freeze a post. It goes to the CEO for approval before the establishment changes.">Request a change</button></div>
+          <div class="hr-head__r"><a class="btn ghost" href="#/hr/orgchart">Organisation chart</a><a class="btn pri" href="#/hr/structure/change">Request a change</a></div>
         </div>
         <div class="hr-stack">
           <div class="hr-box hr-scroll">
@@ -534,7 +720,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
             </table>
           </div>
           <div class="hr-box hr-scroll">
-            <div class="hr-box__h"><div><h3>Posts in Certification</h3><p>16 approved, 14 filled</p></div></div>
+            <div class="hr-box__h"><div><h3>Posts in Certification</h3><p>16 approved, 14 filled</p></div><a class="hr-lnk" href="#/hr/structure/certification">Open department</a></div>
             <table class="hr-table" style="margin-top:10px">
               <thead><tr><th>Post</th><th>Grade band</th><th>Approved</th><th>Filled</th><th>Held by</th><th>Status</th></tr></thead>
               <tbody>
@@ -552,7 +738,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
 
       <!-- ===================== TIME OFF ===================== -->
       <section data-panel="timeoff" hidden>
-        <div class="hr-head"><div><h2>Time off</h2><p>Who is away, what is waiting, and what leave the organisation owes.</p></div></div>
+        <div class="hr-head"><div><h2>Time off</h2><p>Who is away, what is waiting, and what leave the organisation owes.</p></div><div class="hr-head__r"><a class="btn ghost" href="#/hr/timeoff/policy">Leave policy</a></div></div>
         <div class="kpis">
           <button type="button" class="kpi" data-toast="Lists the 5 people away today."><span class="l">Away today</span><span class="v">5</span><span class="d">3 on leave, 2 on field work</span></button>
           <button type="button" class="kpi" data-toast="Requests are decided in Approvals by the line manager. HR sees them here read-only."><span class="l">Requests waiting</span><span class="v">3</span><span class="d warn">1 waiting more than 3 days</span></button>
@@ -588,7 +774,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
       <section data-panel="competence" hidden>
         <div class="hr-head">
           <div><h2>Competence</h2><p>Who is authorised to do what. Certification and Metrology only offer people who are authorised here on the day of the work.</p></div>
-          <div class="hr-head__r"><button type="button" class="btn ghost" data-toast="Opens the authorisation form: person, competence, evidence, valid from and to, approved by.">Record an authorisation</button></div>
+          <div class="hr-head__r"><a class="btn ghost" href="#/hr/competence/external">External personnel</a><a class="btn ghost" href="#/hr/competence/pack">Evidence pack</a><a class="btn pri" href="#/hr/competence/new">Record an authorisation</a></div>
         </div>
         <div class="hr-stack">
           <div class="hr-box hr-scroll">
@@ -602,18 +788,18 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
             <div class="hr-box">
               <div class="hr-box__h"><div><h3>Expiring in 60 days</h3><p>Renew before the date or the person drops out of assignment</p></div></div>
               <div class="hr-box__b hr-out">
-                <div class="hr-out__i"><div><b>Sipho Magagula, EMS auditor</b><span class="s">Needs 2 witnessed audits. 1 done.</span></div><span class="r">15 Nov</span></div>
+                <div class="hr-out__i"><div><b>Sipho Magagula, EMS auditor</b><span class="s">Needs 2 witnessed audits. 1 done.</span></div><span class="r">15 Nov</span><a class="hr-lnk" href="#/hr/competence/new">Renew</a></div>
                 <div class="hr-out__i"><div><b>Gcina Mavuso, mass calibration</b><span class="s">Proficiency test booked 3 Nov</span></div><span class="r">20 Nov</span></div>
-                <div class="hr-out__i"><div><b>Thandi Mamba, FSMS lead auditor</b><span class="s">Refresher course not yet booked</span></div><span class="r">30 Nov</span></div>
+                <div class="hr-out__i"><div><b>Thandi Mamba, FSMS lead auditor</b><span class="s">Refresher course done 4 Nov; certificate to upload</span></div><span class="r">30 Nov</span><a class="hr-lnk" href="#/hr/competence/auth/tm-fsms">Details</a></div>
                 <div class="hr-out__i"><div><b>Sifiso Hlophe, volume calibration</b><span class="s">Only person authorised. Nothing booked.</span></div><span class="r">2 Dec</span></div>
               </div>
             </div>
             <div class="hr-box">
-              <div class="hr-box__h"><div><h3>Impartiality declarations, 2026/27</h3><p>80 of 86 signed</p></div><span class="hr-st info">6 outstanding</span></div>
+              <div class="hr-box__h"><div><h3>Impartiality and confidentiality declarations, 2026/27</h3><p id="declCount">80 of 86 signed</p></div><a class="hr-lnk" href="#/hr/competence/declarations">Register</a></div>
               <div class="hr-box__b">
                 <div class="hr-prog"><i style="width:93%"></i></div>
-                <p class="hr-note" style="margin-top:12px">Each declaration lists the organisations a person has worked for or consulted to in the last two years. The audit planner uses that list to keep them off those clients' audits and decisions.</p>
-                <div style="margin-top:10px"><button type="button" class="btn ghost sm" data-toast="Reminder sent to the 6 people who haven't signed.">Remind the 6</button></div>
+                <p class="hr-note" style="margin-top:12px">Each declaration lists the organisations a person has worked for or consulted to in the last two years, and includes the confidentiality undertaking. The audit planner uses that list to keep them off those clients' audits and decisions.</p>
+                <div style="margin-top:10px"><button type="button" class="btn ghost sm" data-toast="Reminder sent to everyone who hasn't signed.">Remind outstanding</button></div>
               </div>
             </div>
           </div>
@@ -624,7 +810,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
       <section data-panel="recruitment" hidden>
         <div class="hr-head">
           <div><h2>Recruitment</h2><p>10 vacant posts: 4 in recruitment, 2 frozen, 4 not started.</p></div>
-          <div class="hr-head__r"><button type="button" class="btn pri" data-toast="Opens a requisition for one of the 4 vacant posts not yet started. You can only recruit to an approved post.">Open a requisition</button></div>
+          <div class="hr-head__r"><a class="btn ghost" href="eswasaone-careers.html">Careers page</a><a class="btn pri" href="#/hr/recruitment/new">Open a requisition</a></div>
         </div>
         <div class="hr-box hr-scroll">
           <table class="hr-table">
@@ -644,7 +830,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
       <section data-panel="performance" hidden>
         <div class="hr-head">
           <div><h2>Performance</h2><p>Mid-year review 2026/27. Closes Fri 30 Oct.</p></div>
-          <div class="hr-head__r"><button type="button" class="btn ghost" data-toast="Reminder sent to everyone with a step still open.">Remind everyone outstanding</button></div>
+          <div class="hr-head__r"><button type="button" class="btn ghost" data-toast="Reminder sent to everyone with a step still open.">Remind everyone outstanding</button><a class="btn pri" href="#/hr/performance/new">Start a cycle</a></div>
         </div>
         <div class="kpis">
           <button type="button" class="kpi" data-toast="Lists the 20 people who haven't finished their self-assessment."><span class="l">Self-assessments</span><span class="v">66 <small>of 86</small></span><span class="d">77% done</span></button>
@@ -664,6 +850,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
       <section data-panel="payroll" hidden>
         <div class="hr-head"><div><h2>Payroll</h2><p>October 2026 run. Cut-off Tue 20 Oct, pays Fri 23 Oct.</p></div></div>
         <div class="hr-stack">
+          <div class="hr-banner warn"><svg><use href="#i-alert"/></svg><div><b>Payroll scope not decided yet</b>If payroll stays in the current system (Confirmation Pack H15), steps 3 to 6 are hidden and approved changes are exported instead.</div></div>
           <ol class="hr-steps">
             <li class="done"><em>Step 1</em><b>Inputs open</b><span>Done 1 Oct</span></li>
             <li class="now"><em>Step 2</em><b>Approve changes</b><span>3 waiting</span></li>
@@ -672,10 +859,11 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
             <li><em>Step 5</em><b>Approve the run</b><span>Finance Manager</span></li>
             <li><em>Step 6</em><b>Pay and post</b><span>Fri 23 Oct</span></li>
           </ol>
+          <div id="payAct"></div>
           <div class="hr-grid c2">
             <div class="hr-box hr-scroll">
               <div class="hr-box__h"><div><h3>Changes this month</h3><p>Each needs approval before the cut-off</p></div></div>
-              <table class="hr-table" style="margin-top:10px">
+              <table class="hr-table" id="payTbl" style="margin-top:10px">
                 <thead><tr><th>Change</th><th>From</th><th>Status</th></tr></thead>
                 <tbody>
                   <tr><td><b>Sandile Ndwandwe joins</b><div class="sub">Laboratory Technician, band B. Bank details not yet on file.</div></td><td>1 Oct</td><td><span class="hr-st bad">Blocked</span></td></tr>
@@ -707,7 +895,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
       <section data-panel="cases" hidden>
         <div class="hr-head">
           <div><h2>Cases</h2><p>Grievances and disciplinary matters. Visible to the HR Manager and the case owner only.</p></div>
-          <div class="hr-head__r"><button type="button" class="btn pri" data-toast="Opens a new case: kind, people involved, what happened, and who owns it.">Open a case</button></div>
+          <div class="hr-head__r"><a class="btn pri" href="#/hr/cases/new">Open a case</a></div>
         </div>
         <div class="hr-box hr-scroll">
           <table class="hr-table">
@@ -721,6 +909,9 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
         </div>
         <p class="hr-note" style="margin-top:12px">Names of the people involved appear only inside the case. Counts by kind and time to close go to the Board HR pack; nothing else leaves this page.</p>
       </section>
+
+      <!-- Every other screen renders here (router) -->
+      <div id="view" hidden></div>
     </div>
   </div>
 
@@ -733,6 +924,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
       <button type="button" class="ibtn" id="dwClose" aria-label="Close record"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div class="hr-drawer__b">
+      <div class="hr-sec"><div class="hr-head__r" id="dwActs" style="margin-left:0"></div></div>
       <div class="hr-sec">
         <h4>Job</h4>
         <dl class="hr-kv">
@@ -746,7 +938,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
       </div>
       <div class="hr-sec">
         <h4>Personal and pay</h4>
-        <div class="hr-lock"><span>Hidden. Opening these is recorded against your name.</span><button type="button" class="btn ghost sm" data-toast="Shows ID, address, next of kin, bank and pay. The view is written to the access log.">Show details</button></div>
+        <div class="hr-lock"><span>Hidden. Opening these is recorded against your name.</span><button type="button" class="btn ghost sm" id="dwReveal" data-reveal="tm:personal">Show details</button></div>
       </div>
       <div class="hr-sec">
         <h4>Leave, 2026/27</h4>
@@ -756,18 +948,11 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
       </div>
       <div class="hr-sec">
         <h4>Authorisations</h4>
-        <div class="hr-out">
-          <div class="hr-out__i"><div><b>QMS lead auditor, ISO 9001</b><span class="s">Valid to 14 Jun 2028</span></div><span class="hr-st ok">Current</span></div>
-          <div class="hr-out__i"><div><b>FSMS lead auditor, ISO 22000</b><span class="s">Valid to 30 Nov 2026</span></div><span class="hr-st leave">Expiring</span></div>
-        </div>
+        <div id="dwAuth"></div>
       </div>
       <div class="hr-sec">
         <h4>Documents</h4>
-        <div class="hr-out">
-          <div class="hr-out__i"><div><b>Contract of employment</b></div><span class="hr-st ok">On file</span></div>
-          <div class="hr-out__i"><div><b>Qualification certificates</b></div><span class="hr-st ok">On file</span></div>
-          <div class="hr-out__i"><div><b>Impartiality declaration 2026/27</b></div><span class="hr-st ok">Signed 3 Jul</span></div>
-        </div>
+        <div id="dwDocs"></div>
       </div>
       <div class="hr-sec">
         <h4>History</h4>
@@ -781,6 +966,14 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
     </div>
   </aside>
 
+  <div class="hr-modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mdTitle">
+    <div class="hr-modal__b">
+      <h3 id="mdTitle">Show details?</h3>
+      <p>This view is recorded: your name, the record, the fields and the time. The employee can ask HR for the log.</p>
+      <label class="hr-f"><span>Why do you need them?</span><select class="hr-in" id="mdReason"><option>Payroll query</option><option>Preparing a contract or letter</option><option>Emergency contact</option><option>The employee asked for a copy</option><option>Other</option></select></label>
+      <div class="hr-decide"><button type="button" class="btn ghost" id="mdCancel">Cancel</button><button type="button" class="btn pri" id="mdOk">Show details</button></div>
+    </div>
+  </div>
   <div class="dock" aria-hidden="true"><span class="dock__av"><svg><use href="#i-chip"/></svg></span><span>Ask Esi anything</span></div>
   <div class="hr-toast" id="toast" role="status" aria-live="polite"></div>
 </div>
@@ -793,7 +986,6 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
   /* ---- toast ---- */
   var toastEl=$('#toast'), toastT;
   function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove('show')},4200); }
-  $$('[data-toast]').forEach(function(b){ b.addEventListener('click',function(e){ e.stopPropagation(); toast(b.dataset.toast); }); });
 
   /* ---- sample data (one source for the Overview bars and the Structure table) ---- */
   var DEPTS=[
@@ -921,48 +1113,917 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
   var hcT=$('#hcTable'); HC.forEach(function(d){ var tr=el('tr'); tr.appendChild(el('th',null,d[0])); tr.appendChild(el('td',null,String(d[1]))); hcT.appendChild(tr); });
   var rz; window.addEventListener('resize',function(){ clearTimeout(rz); rz=setTimeout(drawLine,120); });
 
-  /* ---- tabs ---- */
-  var tabs=$$('.subtab'), panels=$$('[data-panel]');
-  function show(name){
-    if(!panels.some(function(p){return p.dataset.panel===name})) name='overview';
-    tabs.forEach(function(t){ var on=t.dataset.tab===name; t.classList.toggle('on',on); if(on){ t.setAttribute('aria-current','page'); if(t.scrollIntoView) t.scrollIntoView({block:'nearest',inline:'nearest'}); } else t.removeAttribute('aria-current'); });
-    panels.forEach(function(p){ p.hidden=p.dataset.panel!==name; });
-    if(name==='overview') drawLine();
+  /* =====================================================================
+     JOURNEYS — hash router, personas, click-through state, and every screen
+     beyond the nine registers. Screen IDs match docs/EswasaOne_HR_SCREENS_AND_JOURNEYS.md
+     ===================================================================== */
+  var view=$('#view'), subtabsEl=$('.subtabs'), topTitle=$('#topTitle');
+  var STATIC=['overview','directory','structure','timeoff','competence','recruitment','performance','payroll','cases'];
+
+  /* ---- sample state so each journey carries from one screen to the next (per browser tab) ---- */
+  var S0={who:'hrm',leave:null,lsLeave:null,znCover:null,req:null,published:false,app:{},offer:null,hired:false,decl:{},evidence:false,auth:null,cycle:false,self:false,mgr:false,pay:{sn:'blocked',pm:'waiting',mz:'waiting'},payStep:2,pending:{},est:null,griev:null,caseStage:{},reveals:[],probation:null,onb:{},offb:{}};
+  var S; try{ S=JSON.parse(sessionStorage.getItem('hrMock')) }catch(e){ S=null }
+  if(!S||!S.pay) S=JSON.parse(JSON.stringify(S0));
+  function save(){ try{ sessionStorage.setItem('hrMock',JSON.stringify(S)) }catch(e){} }
+
+  /* ---- personas (mockup only; the portal derives these from roles) ---- */
+  var P={
+    hrm:{n:'Nokuthula Shongwe',r:'HR Manager',self:'ns',home:'#/hr/overview',hr:STATIC.slice(),team:true,me:true,admin:true,board:true},
+    hro:{n:'Lwazi Kunene',r:'HR Officer',self:'lk',home:'#/hr/overview',hr:['overview','directory','structure','timeoff','competence','recruitment','performance'],me:true},
+    lm:{n:'Sipho Magagula',r:'Certification Manager, line manager',self:'sm',home:'#/team',team:true,me:true},
+    hod:{n:'Nomvula Tsabedze',r:'Head of Certification',self:'nt',home:'#/team',hr:['competence'],team:true,head:true,me:true},
+    emp:{n:'Thandi Mamba',r:'Lead Auditor',self:'tm',home:'#/me',me:true},
+    nj:{n:'Ayanda Mthethwa',r:'Certification Officer, new joiner',self:'am',home:'#/me/first-days',me:true},
+    fin:{n:'Busisiwe Fakudze',r:'Finance Manager',self:'bf',home:'#/approvals',hr:['payroll'],team:true,me:true},
+    ed:{n:'Mbuso Hlatshwayo',r:'Executive Director',self:'mh',home:'#/approvals',hr:['overview','directory','structure','recruitment'],team:true,me:true,board:true},
+    council:{n:'Lomakhosi Vilakati',r:'Council, HR & Remuneration Committee',home:'#/board/hr-pack',board:true},
+    ext:{n:'Musa Shabangu',r:'External auditor (contract)',self:'ms',home:'#/me/external',ext:true}
+  };
+  var TEAM={sm:['tm','zn','bd','ls'],nt:['sm','nd','tm','zn','bd','ls'],bf:['mz'],mh:['nt','bf','ns'],ns:['lk']};
+  if(S.hired){ TEAM.sm=TEAM.sm.concat(['am']); }
+
+  var PPL={
+    ns:['Nokuthula Shongwe','ESW-0012','HR Manager','HR & Administration','Mbuso Hlatshwayo','Permanent','Active','Feb 2015','D'],
+    lk:['Lwazi Kunene','ESW-0071','HR Officer','HR & Administration','Nokuthula Shongwe','Permanent','Active','Jul 2024','B'],
+    nt:['Nomvula Tsabedze','ESW-0009','Head of Certification','Certification','Mbuso Hlatshwayo','Permanent','Active','May 2012','E'],
+    sm:['Sipho Magagula','ESW-0031','Certification Manager','Certification','Nomvula Tsabedze','Permanent','Active','Mar 2019','D'],
+    nd:['Nomsa Dube','ESW-0027','Certification Manager','Certification','Nomvula Tsabedze','Permanent','On leave','Aug 2018','D'],
+    tm:['Thandi Mamba','ESW-0044','Lead Auditor','Certification','Sipho Magagula','Permanent','Active','Jan 2021','C'],
+    zn:['Zanele Nkosi','ESW-0052','Technical Reviewer','Certification','Sipho Magagula','Permanent','Active','Jun 2022','C'],
+    bd:['Bongani Dlamini','ESW-0079','Certification Officer','Certification','Sipho Magagula','Permanent','Probation','May 2026','B'],
+    ls:['Lindiwe Simelane','ESW-0061','Auditor','Field Operations','Sipho Magagula','Permanent','Active','Sep 2023','C'],
+    sh:['Sifiso Hlophe','ESW-0038','Senior Metrologist','Metrology & Laboratories','Themba Ginindza','Permanent','Active','Feb 2020','C'],
+    gm:['Gcina Mavuso','ESW-0083','Metrologist','Metrology & Laboratories','Sifiso Hlophe','Fixed-term to 30 Nov','Active','Dec 2025','B'],
+    pm:['Phindile Motsa','ESW-0066','Senior Standards Officer','Standards Development','Sibusiso Maseko','Permanent','Active','Apr 2024','C'],
+    mz:['Mandla Zwane','ESW-0019','Accountant','Finance','Busisiwe Fakudze','Permanent','Notice','Oct 2016','C'],
+    sn:['Sandile Ndwandwe','ESW-0086','Laboratory Technician','Metrology & Laboratories','Sifiso Hlophe','Permanent','Probation','Oct 2026','B'],
+    bf:['Busisiwe Fakudze','ESW-0015','Finance Manager','Finance','Mbuso Hlatshwayo','Permanent','Active','Jan 2014','D'],
+    mh:['Mbuso Hlatshwayo','ESW-0001','Executive Director','Executive Office','Council','Fixed-term to Mar 2029','Active','Apr 2021','F'],
+    am:['Ayanda Mthethwa','ESW-0087','Certification Officer','Certification','Sipho Magagula','Permanent','Probation','Nov 2026','B']
+  };
+  function person(id){ var p=PPL[id]||PPL.tm; return {id:PPL[id]?id:'tm',n:p[0],no:p[1],pos:p[2],dept:p[3],mgr:p[4],ctr:p[5],st:p[6],start:p[7],grade:p[8]} }
+  function ini(n){ return n.split(' ').map(function(w){return w.charAt(0)}).slice(0,2).join('') }
+  function me(){ return P[S.who] }
+
+  /* ---- small HTML helpers (sample content only; nothing user-typed is rendered back) ---- */
+  function crumbs(list){ return '<nav class="hr-crumbs" aria-label="Breadcrumb">'+list.map(function(c,i){ return i<list.length-1?'<a href="'+c[1]+'">'+c[0]+'</a><span aria-hidden="true">/</span>':'<span aria-current="page">'+c[0]+'</span>' }).join('')+'</nav>' }
+  function head(t,sub,actions,cr){ return (cr?crumbs(cr):'')+'<div class="hr-head"><div><h2 tabindex="-1">'+t+'</h2>'+(sub?'<p>'+sub+'</p>':'')+'</div>'+(actions?'<div class="hr-head__r">'+actions+'</div>':'')+'</div>' }
+  function box(t,sub,body,right,flush){ return '<div class="hr-box">'+(t?'<div class="hr-box__h"><div><h3>'+t+'</h3>'+(sub?'<p>'+sub+'</p>':'')+'</div>'+(right||'')+'</div>':'')+'<div class="hr-box__b'+(flush?' flush':'')+'">'+body+'</div></div>' }
+  function st(c,t){ return '<span class="hr-st '+c+'"><span class="d"></span>'+t+'</span>' }
+  function next(title,body,href,label){ return '<aside class="hr-next"><span class="hr-next__k">Next step</span><div><b>'+title+'</b><p>'+body+'</p></div>'+(href?'<a class="btn pri" href="'+href+'">'+label+'<svg><use href="#i-arrow"/></svg></a>':'')+'</aside>' }
+  function banner(kind,title,body,extra){ var ic={info:'i-bell',warn:'i-alert',bad:'i-alert',ok:'i-done',lock:'i-shield'}[kind]; return '<div class="hr-banner '+kind+'"><svg><use href="#'+ic+'"/></svg><div><b>'+title+'</b>'+(body||'')+'</div>'+(extra||'')+'</div>' }
+  function lnk(label,href,cls){ return '<a class="btn '+(cls||'ghost')+'" href="'+href+'">'+label+'</a>' }
+  function doBtn(label,action,cls,toastMsg){ return '<button type="button" class="btn '+(cls||'pri')+'" data-do="'+action+'"'+(toastMsg?' data-toast="'+toastMsg+'"':'')+'>'+label+'</button>' }
+  function kv(pairs){ return '<dl class="hr-kv">'+pairs.map(function(p){return '<div><dt>'+p[0]+'</dt><dd>'+p[1]+'</dd></div>'}).join('')+'</dl>' }
+  function rows(list){ return '<div class="hr-out">'+list.map(function(i){ return '<div class="hr-out__i">'+(i.av?'<span class="hr-av">'+i.av+'</span>':'')+(i.pre||'')+'<div><b>'+i.t+'</b>'+(i.s?'<span class="s">'+i.s+'</span>':'')+'</div>'+(i.r?'<span class="r">'+i.r+'</span>':'')+(i.href?'<a class="hr-lnk" href="'+i.href+'">'+(i.l||'Open')+'</a>':'')+'</div>' }).join('')+'</div>' }
+  function table(h,body,foot){ return '<div class="hr-box hr-scroll"><table class="hr-table"><thead><tr>'+h.map(function(x){return '<th>'+x+'</th>'}).join('')+'</tr></thead><tbody>'+body.map(function(r){ return '<tr'+(r.href?' class="link" data-go="'+r.href+'" tabindex="0"':'')+'>'+r.c.map(function(x){return '<td>'+x+'</td>'}).join('')+'</tr>'}).join('')+'</tbody>'+(foot||'')+'</table></div>' }
+  function f(label,input,hint,wide){ return '<label class="hr-f'+(wide?' wide':'')+'"><span>'+label+'</span>'+input+(hint?'<small>'+hint+'</small>':'')+'</label>' }
+  function inp(v,type,ro){ return '<input class="hr-in" type="'+(type||'text')+'" value="'+(v||'')+'"'+(ro?' readonly':'')+'>' }
+  function sel(opts,v){ return '<select class="hr-in">'+opts.map(function(o){return '<option'+(o===v?' selected':'')+'>'+o+'</option>'}).join('')+'</select>' }
+  function area(v,ph){ return '<textarea class="hr-in" rows="3" placeholder="'+(ph||'')+'">'+(v||'')+'</textarea>' }
+  var rn=0;
+  function radios(opts,v){ rn++; return '<div class="hr-radios" role="radiogroup">'+opts.map(function(o){ return '<label class="hr-radio"><input type="radio" name="r'+rn+'"'+(o[0]===v?' checked':'')+'><span><b>'+o[0]+'</b>'+(o[1]?'<small>'+o[1]+'</small>':'')+'</span></label>' }).join('')+'</div>' }
+  function check(label,on,hint){ return '<label class="hr-check"><input type="checkbox"'+(on?' checked':'')+'><span>'+label+(hint?'<small>'+hint+'</small>':'')+'</span></label>' }
+  function tl(steps){ return '<ol class="hr-tl">'+steps.map(function(s){ return '<li class="'+(s[2]||'')+'"><i></i><div><b>'+s[0]+'</b><span>'+(s[1]||'')+'</span></div></li>' }).join('')+'</ol>' }
+  function qs(q,skip){ var o=[]; for(var k in q){ if(k!==skip&&k!=='as') o.push(k+'='+encodeURIComponent(q[k])) } return o.length?'&'+o.join('&'):'' }
+
+  /* Multi-step form: Back / Save draft / Continue, Review last */
+  function wizard(r,base,steps,done){
+    var n=Math.max(1,Math.min(steps.length,+(r.q.step||1))), cur=steps[n-1], keep=qs(r.q,'step');
+    var bar='<ol class="hr-wiz" aria-label="Steps">'+steps.map(function(s,i){ var c=i+1<n?'done':i+1===n?'now':''; return '<li class="'+c+'"'+(i+1===n?' aria-current="step"':'')+'><span>'+(i+1<n?'✓':i+1)+'</span>'+s[0]+'</li>' }).join('')+'</ol>';
+    var nav='<div class="hr-wiz__nav">'+(n>1?'<a class="btn ghost" href="'+base+'?step='+(n-1)+keep+'">Back</a>':'')+'<button type="button" class="btn ghost" data-toast="Draft saved. Open the same screen to carry on.">Save draft</button>'+(n<steps.length?'<a class="btn pri" href="'+base+'?step='+(n+1)+keep+'">Continue<svg><use href="#i-arrow"/></svg></a>':doBtn(done.label,done.action))+'</div>';
+    return bar+'<div class="hr-box"><div class="hr-box__h"><div><h3>Step '+n+' of '+steps.length+': '+cur[0]+'</h3>'+(cur[2]?'<p>'+cur[2]+'</p>':'')+'</div></div><div class="hr-box__b hr-form">'+cur[1]+'</div></div>'+nav;
   }
-  function go(name){ show(name); try{ history.replaceState(null,'','#'+name); }catch(e){} window.scrollTo(0,0); }
-  tabs.forEach(function(t){ t.addEventListener('click',function(e){ e.preventDefault(); go(t.dataset.tab); }); });
-  $$('[data-jump]').forEach(function(b){ b.addEventListener('click',function(){ go(b.dataset.jump); }); });
-  $$('.nav a').forEach(function(a){ a.addEventListener('click',function(e){ e.preventDefault(); }); });
-  show((location.hash||'#overview').slice(1));
+
+  /* ---- actions (data-do) ---- */
+  var DO={
+    set:function(path,val){ var o=S, ks=path.split('.'); for(var i=0;i<ks.length-1;i++){ o=o[ks[i]]=o[ks[i]]||{} } o[ks[ks.length-1]]=val==='true'?true:val==='false'?false:val==='null'?null:(/^\d+$/.test(val)?+val:val); },
+    reset:function(){ var w=S.who; S=JSON.parse(JSON.stringify(S0)); S.who=w; toast('Sample data reset. Every journey starts again.'); },
+    lifecycle:function(id,kind){ S.pending[id]={kind:kind,done:false}; },
+    decide:function(id,how){ var it=apprItem(id); if(!it) return; if(how==='approve'){ it.ok(); toast('Approved. '+it.after); } else { it.no(); toast(how==='return'?'Returned with your note. The requester can change it and send it again.':'Rejected. The requester is told why.'); } },
+    tick:function(group,key){ S[group][key]=!S[group][key]; },
+    hire:function(){ S.hired=true; S.app.am='Hired'; if(TEAM.sm.indexOf('am')<0) TEAM.sm.push('am'); }
+  };
+  function runDo(spec){ spec.split('|').forEach(function(one){ var a=one.split(':'); if(DO[a[0]]) DO[a[0]].apply(null,a.slice(1)); }); save(); }
+
+  /* ---- approvals stub (A0): one item per HR approval family. The real inbox is eswasaone-approvals.html ---- */
+  var LIFE={promote:'Promotion',transfer:'Transfer',contract:'Contract change',separate:'Separation',confirm:'Probation outcome'};
+  function apprList(){
+    var L=[];
+    function add(o){ L.push(o) }
+    if(!S.lsLeave) add({id:'leave-ls',who:'lm',fam:'Approve',t:'Approve leave for Lindiwe Simelane, 20 to 24 Oct',s:'Annual, 5 days, 9 left after. No audits in those dates.',due:st('leave','Waiting 2 days'),ctx:'#/team/calendar',ok:function(){S.lsLeave='approved'},no:function(){S.lsLeave='rejected'},after:'Lindiwe sees it in My HR and the team calendar updates.',next:['Check the team calendar','#/team/calendar','Team calendar']});
+    if(S.leave==='submitted') add({id:'leave-tm',who:'lm',fam:'Approve',t:'Approve leave for Thandi Mamba, 2 to 6 Nov',s:'Annual, 5 days, 7 left after. 1 audit on 4 Nov needs another lead auditor.',due:st('info','New'),cover:true,ctx:'#/team/member/tm',ok:function(){S.leave='approved'},no:function(){S.leave=null},after:'Certification gets a task to reassign the 4 Nov audit.',next:['Thandi is shown as away on the team calendar','#/team/calendar','Team calendar']});
+    if(!S.znCover) add({id:'cover-zn',who:'lm',fam:'Task',t:'Set cover for Zanele Nkosi, 14 to 16 Oct',s:'3 technical reviews would wait until she is back.',due:st('bad','By 13 Oct'),cover:true,ok:function(){S.znCover='Sipho Magagula'},no:function(){},after:'Technical reviews due in those dates go to the cover.',next:['Back to your team','#/team','My team']});
+    if(S.probation!=='submitted') add({id:'prob-bd',who:'lm',fam:'Task',t:'Review Bongani Dlamini\'s probation by 31 Oct',s:'No review means automatic confirmation under the current policy.',due:st('leave','By 31 Oct'),href:'#/team/probation/bd'});
+    if(S.req==='submitted') add({id:'req-018',who:'hrm',fam:'Approve',t:'Approve requisition: Certification Officer, Certification',s:'Raised by Nomvula Tsabedze. Approved post, 1 vacant, band B.',due:st('info','New'),ctx:'#/hr/structure/certification',ok:function(){S.req='approved'},no:function(){S.req=null},after:'HR can publish the opening.',next:['Publish the opening to the careers page','#/hr/recruitment/REQ-2026-018?as=hrm','Open requisition']});
+    if(S.offer==='submitted') add({id:'offer-am',who:'ed',fam:'Approve',t:'Approve offer: Ayanda Mthethwa, Certification Officer',s:'Band B entry point, start Mon 2 Nov. Interview panel recommends an offer.',due:st('info','New'),ctx:'#/hr/recruitment/REQ-2026-018/applicant/am',ok:function(){S.offer='approved'},no:function(){S.offer=null},after:'HR sends the offer letter.',next:['HR sends the offer and records the answer','#/hr/recruitment/REQ-2026-018/applicant/am?as=hrm','Open applicant as HR']});
+    if(S.auth==='submitted') add({id:'auth-tm',who:'hod',fam:'Approve',t:'Approve authorisation: Thandi Mamba, FSMS lead auditor (ISO 22000)',s:'Renewal. Evidence: refresher course 4 Nov, witnessed audit 22 Oct. Prepared by Nokuthula Shongwe.',due:st('info','New'),ctx:'#/hr/competence/auth/tm-fsms',ok:function(){S.auth='approved'},no:function(){S.auth=null},after:'Certification can assign Thandi to FSMS audits until 30 Nov 2029.',next:['See the competence matrix','#/hr/competence?as=hrm','Open Competence as HR']});
+    if(S.est==='submitted') add({id:'est',who:'ed',fam:'Approve',t:'Approve establishment change: add 2 Lead Auditor posts, Certification',s:'Food-safety audits depend on one or two people. Adds E 0.9m a year (sample). Above the Council threshold.',due:st('info','New'),ctx:'#/hr/structure/certification',ok:function(){S.est='council'},no:function(){S.est=null},after:'It goes to the Council HR & Remuneration Committee because it adds posts.',next:['The Council committee decides at its next meeting','#/board/hr-pack?as=council','See the Board HR pack']});
+    Object.keys(S.pending).forEach(function(id){ var pd=S.pending[id]; if(pd.done) return; var p=person(id);
+      add({id:'act-'+id,who:'ed',fam:'Approve',t:'Approve '+LIFE[pd.kind].toLowerCase()+': '+p.n,s:p.pos+', '+p.dept+'. Prepared by Nokuthula Shongwe.',due:st('info','New'),ctx:'#/hr/people/'+id,ok:function(){pd.done=true},no:function(){delete S.pending[id]},after:'The record and its history are updated.',next:['See the updated record','#/hr/people/'+id+'?tab=history&as=hrm','Open record as HR']}); });
+    ['sn','pm','mz'].forEach(function(k){ if(S.pay[k]==='waiting') add({id:'pay-'+k,who:'fin',fam:'Approve',t:'Approve payroll change: '+PAYCH[k][0],s:PAYCH[k][1],due:st('leave','Cut-off 20 Oct'),ctx:'#/hr/payroll/change/'+k,ok:function(){S.pay[k]='approved'},no:function(){S.pay[k]='returned'},after:'It is included in the October run.',next:['Back to the payroll run','#/hr/payroll','Payroll']}); });
+    if(S.payStep===5) add({id:'payrun',who:'fin',fam:'Approve',t:'Approve the October payroll run',s:'Prepared by Nokuthula Shongwe. 86 employees, net E 1,697,300, 1.7% above September.',due:st('leave','Pays Fri 23 Oct'),ctx:'#/hr/payroll',ok:function(){S.payStep=6},no:function(){S.payStep=4},after:'Payment and the journal posting are released.',next:['Back to the payroll run','#/hr/payroll','Payroll']});
+    if(!S.decl.tm) add({id:'decl-tm',who:'emp',fam:'Task',t:'Sign your 2026/27 impartiality and confidentiality declaration',s:'Until you sign, the audit planner can\'t assign you to audits or decisions.',due:st('bad','Overdue'),href:'#/me/declaration'});
+    if(S.hired && !S.decl.am) add({id:'decl-am',who:'nj',fam:'Task',t:'Sign your impartiality and confidentiality declaration',s:'Needed before onboarding can finish.',due:st('leave','First week'),href:'#/me/declaration'});
+    if(!S.self) add({id:'self-tm',who:'emp',fam:'Task',t:'Complete your mid-year self-assessment',s:'Mid-year review 2026/27 closes Fri 30 Oct.',due:st('leave','By 30 Oct'),href:'#/me/appraisal'});
+    if(S.self && !S.mgr) add({id:'rev-tm',who:'lm',fam:'Task',t:'Review Thandi Mamba\'s mid-year self-assessment',s:'She submitted her ratings. Add yours by 30 Oct.',due:st('leave','By 30 Oct'),href:'#/team/review/tm'});
+    if(S.evidence && !S.auth) add({id:'renew-tm',who:'hrm',fam:'Task',t:'Prepare the renewal: Thandi Mamba, FSMS lead auditor',s:'Thandi uploaded her refresher course certificate.',due:st('leave','Before 30 Nov'),href:'#/hr/competence/new?p=tm'});
+    if(S.pay.sn==='blocked') add({id:'bank-sn',who:'hrm',fam:'Task',t:'Get bank details from Sandile Ndwandwe',s:'His joiner change is blocked until they are on file.',due:st('bad','By 20 Oct'),href:'#/hr/payroll/change/sn'});
+    if(S.hired) add({id:'onb-am',who:'lm',fam:'Task',t:'Welcome meeting and first-week plan for Ayanda Mthethwa',s:'Onboarding task. Starts Mon 2 Nov.',due:st('leave','By 2 Nov'),href:'#/hr/onboarding/am'});
+    return L;
+  }
+  function apprItem(id){ return apprList().filter(function(i){return i.id===id})[0] }
+  function mine(){ return apprList().filter(function(i){ return i.who===S.who }) }
+  var PAYCH={sn:['Sandile Ndwandwe joins','Laboratory Technician, band B, from 1 Oct.'],pm:['Phindile Motsa promoted','Band B to band C, from 1 Oct.'],mz:['Mandla Zwane leaves','Final pay on 31 Oct with 6 leave days paid out.']};
+
+  /* ===================== SCREENS ===================== */
+  var R={};
+
+  /* ---- A0 Approvals ---- */
+  R['approvals']=function(r){
+    var L=mine(), dec=L.filter(function(i){return i.fam==='Approve'}), tasks=L.filter(function(i){return i.fam==='Task'});
+    var tab=r.q.tab==='tasks'?'tasks':'decide', list=tab==='tasks'?tasks:dec;
+    var body=list.length?'<div class="hr-appr">'+list.map(function(i){ return '<a href="'+(i.fam==='Task'&&i.href?i.href:'#/approvals/'+i.id)+'"><span class="hr-fam'+(i.fam==='Task'?' task':'')+'">'+(i.fam==='Task'?'Task':'Decide')+'</span><div><b>'+i.t+'</b><span class="s">'+i.s+'</span></div>'+i.due+'</a>' }).join('')+'</div>'
+      :'<p class="hr-note" style="padding:18px">Nothing waiting for you. '+(tab==='decide'?'Decisions land here when someone sends you a request.':'Tasks land here when a step needs you to do something.')+'</p>';
+    return head('Approvals','Every HR decision is made here. HR pages show status, never Approve or Reject. Full inbox: eswasaone-approvals.html',null)
+      +'<nav class="hr-seg" aria-label="Approvals"><a href="#/approvals" class="'+(tab==='decide'?'on':'')+'">To decide ('+dec.length+')</a><a href="#/approvals?tab=tasks" class="'+(tab==='tasks'?'on':'')+'">Tasks ('+tasks.length+')</a></nav>'
+      +'<div class="hr-box">'+body+'</div>';
+  };
+  R['approvals/:id']=function(r){
+    var it=apprItem(r.p.id);
+    if(!it){ return head('Done','This item has already been decided.',null,[['Approvals','#/approvals'],['Done']])+next('Back to your inbox','Anything else waiting for you is listed there.','#/approvals','Approvals'); }
+    if(it.who!==S.who) return noAccess('Only the person this was sent to can decide it. It is with '+P[it.who].n+'.');
+    var cover=it.cover?box('Who covers?','Pick someone who holds the same authorisations. They get the work due in those dates.',f('Cover',sel(['Zanele Nkosi (suggested: holds ISO 9001 and ISO 22000)','Sipho Magagula','No cover needed'])),null):'';
+    return head(it.t,it.s,null,[['Approvals','#/approvals'],[it.fam==='Task'?'Task':'Decision']])
+      +'<div class="hr-view">'+box('Request','',kv([['Family',it.fam==='Approve'?'Approve':'Do'],['Waiting',it.due],['Your role',me().r],['Rule','You can\'t decide your own request. Anything you don\'t decide in time goes to the next level.']])+'<p style="margin-top:12px">'+(it.ctx?'<a class="hr-lnk" href="'+it.ctx+'">Open the full context</a>':'')+'</p>')
+      +cover
+      +box('Your decision','A note is required when you return or reject.',f('Note to the requester',area('','Optional when approving'),null,true)+'<div class="hr-decide" style="margin-top:12px">'+'<button type="button" class="btn ok" data-do="decide:'+it.id+':approve" data-go="#/approvals/'+it.id+'/done">Approve</button>'+'<button type="button" class="btn ghost" data-do="decide:'+it.id+':return" data-go="#/approvals">Return for changes</button>'+'<button type="button" class="btn no" data-do="decide:'+it.id+':reject" data-go="#/approvals">Reject</button></div>')
+      +'</div>';
+  };
+  var LASTNEXT={};
+  R['approvals/:id/done']=function(r){
+    var n=LASTNEXT[r.p.id]||['Back to your inbox','#/approvals','Approvals'];
+    return head('Approved','Saved with your name and the time. The requester has been told.',null,[['Approvals','#/approvals'],['Approved']])
+      +'<div class="hr-view">'+banner('ok','Decision recorded','<span>Anything that depended on it has moved on.</span>')+next(n[0],'The journey continues with the next person.',n[1],n[2])+'</div>';
+  };
+
+  /* ---- generic "sent" confirmation ---- */
+  var SENT={
+    leave:['Leave request sent','Sipho Magagula, your line manager, decides it in Approvals. Target: 2 working days, then it goes to the HR Manager.','Sipho Magagula decides','#/approvals/leave-tm?as=lm','See it as Sipho'],
+    req:['Requisition sent','Nokuthula Shongwe, HR Manager, approves it before it is advertised.','HR Manager approves','#/approvals/req-018?as=hrm','See it as the HR Manager'],
+    offer:['Offer sent for approval','The Executive Director approves offers before the letter goes out.','Executive Director approves','#/approvals/offer-am?as=ed','See it as the Executive Director'],
+    auth:['Authorisation sent for approval','The head of the department approves it. They can\'t be the person being authorised.','Nomvula Tsabedze approves','#/approvals/auth-tm?as=hod','See it as the Head of Certification'],
+    est:['Establishment change sent','The Executive Director approves first. Because it adds posts, the Council HR & Remuneration Committee then decides.','Executive Director approves','#/approvals/est?as=ed','See it as the Executive Director'],
+    act:['Sent for approval','The Executive Director approves changes to a person\'s job or status.','Executive Director approves','#/approvals?as=ed','See it as the Executive Director'],
+    decl:['Declaration signed','No approval is needed. The audit planner uses your list from now, and you can be assigned to audits again.','On file','#/me','Back to My HR'],
+    self:['Self-assessment submitted','Your line manager adds their ratings next.','Sipho Magagula reviews','#/team/review/tm?as=lm','See it as Sipho'],
+    review:['Manager review submitted','HR sees completion in Performance. The final rating is shared with Thandi.','HR tracks completion','#/hr/performance?as=hrm','Open Performance as HR'],
+    probation:['Probation review submitted','HR records the confirmation and updates the record. An extension or ending also needs the HR Manager.','HR records it','#/hr/people/bd?tab=history&as=hrm','Open the record as HR'],
+    griev:['Your concern has been received','Only the HR Manager sees it. Your line manager isn\'t told unless you agree. Expect contact within 5 working days (sample target).','HR Manager responds','#/hr/cases/HRC-2026-006?as=hrm','See it as the HR Manager'],
+    case:['Case opened','The owner gets a task for the first step. Only the owner and the HR Manager can see it.','Owner investigates','#/hr/cases/HRC-2026-006','Open the case'],
+    cycle:['Appraisal cycle started','Everyone in the cycle gets a self-assessment task. Reminders go out 10 and 3 working days before it closes.','Staff self-assess','#/me/appraisal?as=emp','See it as Thandi'],
+    evidence:['Evidence sent to HR','HR prepares the renewal and sends it to your head of department.','HR prepares the renewal','#/hr/competence/new?p=tm&as=hrm','See it as the HR Manager'],
+    change:['Change request sent','HR checks it. A change to bank details also needs Finance.','HR checks it','#/me','Back to My HR']
+  };
+  R['sent/:what']=function(r){
+    var s=SENT[r.p.what]||SENT.act;
+    return head(s[0],'',null,[[me().me?'My HR':'Home',me().home],['Sent']])
+      +'<div class="hr-view">'+box('Where it is now','',tl([['Submitted','Just now, by '+me().n,'done'],[s[2],'',r.p.what==='decl'?'done':'now'],['Done','You\'ll see the result in My HR and in your notifications','']]))
+      +next(s[2],s[1],s[3],s[4])+'</div>';
+  };
+
+  /* ---- H1b Employee record ---- */
+  var RTABS=[['summary','Summary'],['job','Job & contract'],['leave','Leave'],['competence','Competence'],['documents','Documents'],['pay','Pay'],['history','History'],['access','Access log']];
+  function canSee(kind){ return kind==='personal'?(S.who==='hrm'||S.who==='hro'):(S.who==='hrm'); }
+  function revealed(id,kind){ return S.reveals.some(function(x){return x.id===id&&x.kind===kind&&x.by===me().n}) }
+  function masked(id,kind,pairs){
+    if(!canSee(kind)) return banner('lock','Not available to your role','<span>'+(kind==='pay'?'Pay and bank details are limited to the HR Manager and payroll.':'Personal details are limited to HR.')+'</span>');
+    if(revealed(id,kind)) return kv(pairs);
+    return kv(pairs.map(function(p){return [p[0],'<span class="hr-mask">••••••••</span>']}))+'<div class="hr-lock" style="margin-top:12px"><span>Hidden. Opening these is recorded against your name.</span><button type="button" class="btn ghost sm" data-reveal="'+id+':'+kind+'">Show details</button></div>';
+  }
+  function balances(){ return '<div class="hr-bal"><span>Annual</span><div class="hr-prog"><i style="width:57%"></i></div><b>12 of 21 left</b></div><div class="hr-bal"><span>Sick</span><div class="hr-prog"><i style="width:86%"></i></div><b>12 of 14 left</b></div><div class="hr-bal"><span>Study</span><div class="hr-prog"><i style="width:100%"></i></div><b>10 of 10 left</b></div><p class="hr-note" style="margin-top:8px">Sample entitlements. Real ones come from ESWASA\'s leave policy (Confirmation Pack H14).</p>' }
+  function auths(id){
+    if(id==='tm') return rows([{t:'QMS lead auditor, ISO 9001',s:'Valid to 14 Jun 2028',r:st('ok','Current')},{t:'FSMS lead auditor, ISO 22000',s:S.auth==='approved'?'Renewed. Valid to 30 Nov 2029':'Valid to 30 Nov 2026. Renewal '+(S.auth==='submitted'?'waiting for approval':'not started'),r:S.auth==='approved'?st('ok','Current'):st('leave','Expiring'),href:'#/hr/competence/auth/tm-fsms',l:'Details'},{t:'EMS auditor, ISO 14001',s:'Valid to 3 Mar 2028',r:st('ok','Current')}]);
+    if(id==='bd'||id==='am') return rows([{t:'QMS auditor, ISO 9001',s:'In training. 1 of 3 witnessed audits done.',r:st('info','In training')}]);
+    if(id==='gm') return rows([{t:'Mass calibration',s:'Valid to 20 Nov 2026. Proficiency test booked 3 Nov.',r:st('leave','Expiring')}]);
+    return '<p class="hr-note">No authorisations needed for this post.</p>';
+  }
+  function docs(id){
+    var d=[['ID document',true],['Contract of employment',true],['Qualification certificates',id!=='sn'],['Impartiality and confidentiality declaration 2026/27',!!(S.decl[id]||['sm','nt','zn','sh','pm','nd'].indexOf(id)>-1)],['Police clearance',id!=='am']];
+    return '<div class="hr-out">'+d.map(function(x){return '<div class="hr-out__i"><div><b>'+x[0]+'</b></div>'+(x[1]?st('ok','On file'):st('bad','Missing'))+'</div>'}).join('')+'</div>';
+  }
+  function history(id){
+    var h=[];
+    if(S.pending[id]&&S.pending[id].done) h.push(['12 Oct 2026',LIFE[S.pending[id].kind]+' approved by Mbuso Hlatshwayo']);
+    if(id==='bd'&&S.probation==='submitted') h.push(['12 Oct 2026','Probation review: confirm, from Sipho Magagula']);
+    if(id==='pm') h.push(['1 Oct 2026','Promoted: Standards Officer to Senior Standards Officer, band B to C']);
+    if(id==='tm') h.push(['1 Oct 2026','Acting allowance ended']);
+    if(id==='mz') h.push(['30 Sep 2026','Resignation received. Last day 31 Oct']);
+    h.push([person(id).start,'Joined as '+person(id).pos]);
+    return '<ul class="hr-hist">'+h.map(function(x){return '<li><time>'+x[0]+'</time><span>'+x[1]+'</span></li>'}).join('')+'</ul>';
+  }
+  function needsFor(id){
+    var n=[];
+    if(id==='bd') n.push({t:'Probation review due 31 Oct',s:'The line manager reviews in My team.',r:S.probation==='submitted'?st('ok','Submitted'):st('leave','Due'),href:'#/hr/people/bd/action/confirm',l:'Record outcome'});
+    if(id==='gm') n.push({t:'Fixed-term contract ends 30 Nov',s:'Renew, convert to permanent, or let it end.',r:st('leave','By 30 Nov'),href:'#/hr/people/gm/action/contract',l:'Decide'});
+    if(id==='tm'&&S.auth!=='approved') n.push({t:'FSMS lead auditor expires 30 Nov',s:'2 food-safety audits in December use her.',r:st('leave','Expiring'),href:'#/hr/competence/new?p=tm',l:'Renew'});
+    if(id==='tm'&&!S.decl.tm) n.push({t:'2026/27 declaration not signed',s:'Excluded from audit and decision work until signed.',r:st('bad','Outstanding'),href:'#/hr/competence/declarations',l:'Register'});
+    if(id==='mz') n.push({t:'Leaving 31 Oct',s:'Offboarding 2 of 7 tasks done.',r:st('mute','Notice'),href:'#/hr/offboarding/mz',l:'Offboarding'});
+    if(id==='sn'||id==='am') n.push({t:'Onboarding in progress',s:'Tasks with HR, ICT, Finance and the line manager.',r:st('info','Joiner'),href:'#/hr/onboarding/'+id,l:'Onboarding'});
+    if(S.pending[id]&&!S.pending[id].done) n.push({t:LIFE[S.pending[id].kind]+' waiting for approval',s:'With Mbuso Hlatshwayo in Approvals.',r:st('info','Waiting')});
+    return n.length?rows(n):'<p class="hr-note">Nothing needs doing for this person.</p>';
+  }
+  R['hr/people/:id']=function(r){
+    if(r.p.id==='new') return R['hr/people/new'](r);
+    var p=person(r.p.id), id=p.id, t=r.q.tab||'summary', body;
+    var acts='<a class="btn ghost sm" href="#/hr/people/'+id+'/action/promote">Promote</a><a class="btn ghost sm" href="#/hr/people/'+id+'/action/transfer">Transfer</a>'+(p.ctr.indexOf('Fixed')===0?'<a class="btn ghost sm" href="#/hr/people/'+id+'/action/contract">Contract</a>':'')+'<a class="btn ghost sm" href="#/hr/people/'+id+'/action/separate">Start separation</a>';
+    if(t==='summary') body='<div class="hr-grid c2">'+box('Needs doing','',needsFor(id))+box('Job','',kv([['Staff number','<span class="mono">'+p.no+'</span>'],['Status',p.st],['Post',p.pos],['Department',p.dept],['Line manager',p.mgr],['Grade band',p.grade]]))+'</div>';
+    else if(t==='job') body='<div class="hr-grid c2">'+box('Job','',kv([['Post',p.pos],['Department',p.dept],['Line manager',p.mgr],['Leave approver',p.mgr],['Grade band',p.grade],['Location','Head office, Matsapha']]))+box('Contract','',kv([['Type',p.ctr],['Started',p.start],['Probation',p.st==='Probation'?'Ends per policy (to confirm, H12)':'Confirmed'],['Notice period','Per policy (to confirm, H13)']]))+'</div>'+box('Personal details','ID, address, phone, next of kin',masked(id,'personal',[['National ID','9104 0612 3456 (sample)'],['Phone','+268 7612 3456'],['Home address','Plot 12, Ezulwini'],['Next of kin','Sibusiso Mamba, brother, +268 7698 1100']]));
+    else if(t==='leave') body=box('Leave, 2026/27','',balances())+next('Leave is requested by the employee','Requests are decided by the line manager in Approvals. HR sees them in Time off.','#/hr/timeoff','Time off');
+    else if(t==='competence') body=box('Authorisations','Certification and Metrology only offer people who are authorised on the day of the work',auths(id),'<a class="hr-lnk" href="#/hr/competence/new?p='+id+'">Record an authorisation</a>');
+    else if(t==='documents') body=box('Required documents','For a permanent employee',docs(id),'<button type="button" class="hr-lnk" data-toast="Uploads a file to the record. The employee can also upload from My HR.">Upload</button>');
+    else if(t==='pay') body=box('Pay and bank','Level 2: HR Manager and payroll only',masked(id,'pay',[['Grade and step',p.grade+', step 4'],['Basic pay (monthly)','E 31,450 (sample)'],['Bank account','Account ending 4821'],['Payment method','Bank transfer']]))+(canSee('pay')?'<p><a class="hr-lnk" href="#/hr/payroll/payslip/'+id+'">Open latest payslip</a></p>':'');
+    else if(t==='history') body=box('History','Promotions, transfers, contract changes and probation',history(id));
+    else body=box('Access log','Every time someone opens personal or pay details',S.reveals.filter(function(x){return x.id===id}).length?'<div class="hr-out">'+S.reveals.filter(function(x){return x.id===id}).map(function(x){return '<div class="hr-out__i"><div><b>'+x.by+' opened '+(x.kind==='pay'?'pay and bank':'personal details')+'</b><span class="s">Reason: '+x.reason+'</span></div><span class="r">'+x.at+'</span></div>'}).join('')+'</div>':'<p class="hr-note">Nobody has opened this person\'s personal or pay details in the last 12 months.</p>');
+    return crumbs([['HR & People','#/hr/overview'],['Directory','#/hr/directory'],[p.n]])
+      +'<div class="hr-head"><div class="hr-rec"><span class="hr-av">'+ini(p.n)+'</span><div><h2 tabindex="-1">'+p.n+'</h2><p>'+p.pos+', '+p.dept+' · <span class="mono">'+p.no+'</span> · '+p.st+'</p></div></div><div class="hr-head__r">'+acts+'</div></div>'
+      +'<nav class="hr-tabs" aria-label="Record sections" style="margin-bottom:16px">'+RTABS.map(function(x){return '<a href="#/hr/people/'+id+'?tab='+x[0]+'" class="'+(x[0]===t?'on':'')+'">'+x[1]+'</a>'}).join('')+'</nav>'
+      +'<div class="hr-view">'+body+'</div>';
+  };
+
+  /* ---- H2 Add employee ---- */
+  var VACANT=[['Certification Officer','Certification, band B. 1 vacant (REQ-2026-018)'],['Lead Auditor, food safety','Certification, band C. 1 in recruitment (REQ-2026-014)'],['Metrologist, volume','Metrology & Laboratories, band C. 1 in recruitment (REQ-2026-015)'],['Standards Officer','Standards Development, band B. 1 in recruitment (REQ-2026-017)']];
+  R['hr/people/new']=function(r){
+    var o=r.q.from==='offer';
+    var steps=[
+      ['Person',f('First name',inp(o?'Ayanda':''))+f('Surname',inp(o?'Mthethwa':''))+f('Date of birth',inp(o?'1997-03-14':'','date'))+f('Gender',sel(['Female','Male','Prefer not to say'],o?'Female':''))+f('National ID',inp(o?'9703 1401 2233':''),'Kept at personal level: only HR sees it')+f('Personal email',inp(o?'ayanda.m@example.com':'','email'))+(o?banner('info','Carried over from the accepted offer','<span>Name, contact details and documents come from the applicant record.</span>'):''),'Who is joining'],
+      ['Post',radios(VACANT,o?'Certification Officer':'')+'<p class="hr-note">Only posts with a vacancy are listed. Need another post? <a class="hr-lnk" href="#/hr/structure/change">Request an establishment change</a></p>','Choose the approved post this person fills'],
+      ['Reporting',f('Line manager',sel(['Sipho Magagula','Nomsa Dube','Nomvula Tsabedze'],'Sipho Magagula'),'Approvals route leave and probation to this person')+f('Leave approver',sel(['Same as line manager','Nomvula Tsabedze']))+f('Expense approver',sel(['Same as line manager','Nomvula Tsabedze']))+f('Holiday list',sel(['Eswatini public holidays 2026']))+f('Location',sel(['Head office, Matsapha','Manzini field office']))+f('Staff number',inp('ESW-0087','text',true),'Next in series'),'Who they report to'],
+      ['Contract',f('Employment type',sel(['Permanent','Fixed-term','Intern'],'Permanent'))+f('Start date',inp('2026-11-02','date'))+f('Probation ends',inp('Per policy','text',true),'Set by ESWASA\'s policy (Confirmation Pack H12)')+f('Contract end',inp('','date'),'Fixed-term only')+f('Grade band',sel(['A','B','C','D','E'],'B'))+f('Notice period',inp('Per policy','text',true)),'Terms of employment'],
+      ['Portal login',radios([['Invite them to EswasaOne','Sends an invite to their work email. Recommended.'],['Link an existing login','Only if they already sign in, e.g. a former intern']],'Invite them to EswasaOne')+f('Work email',inp(o?'ayanda.mthethwa@eswasa.co.sz':'','email'))+'<h4>Roles</h4>'+check('Employee and Employee Self Service',true,'Everyone gets these')+check('Certification Officer',o,'Only roles the post needs')+check('Leave Approver',false),'So approvals and self-service work from day one'],
+      ['Review',kv([['Name',o?'Ayanda Mthethwa':'(as entered)'],['Post','Certification Officer, band B'],['Line manager','Sipho Magagula'],['Starts','Mon 2 Nov 2026'],['Contract','Permanent, on probation'],['Login','Invite to ayanda.mthethwa@eswasa.co.sz']])+banner('info','What happens when you create the record','<span>Onboarding tasks go to ICT, Finance, the line manager and HR. The joiner gets a first-days checklist and the declaration to sign. Payroll gets a joiner change for Finance to approve.</span>'),'Check before creating']
+    ];
+    return head('Add employee','Creates the record, the login and the onboarding checklist in one go.',null,[['HR & People','#/hr/overview'],['Directory','#/hr/directory'],['Add employee']])
+      +'<div class="hr-view">'+wizard(r,'#/hr/people/new',steps,{label:'Create employee',action:'hire|set:who:hrm" data-go="#/hr/onboarding/am" data-toast="Ayanda Mthethwa added as ESW-0087. Onboarding has started.'})+'</div>';
+  };
+
+  /* ---- H2a Lifecycle actions ---- */
+  R['hr/people/:id/action/:kind']=function(r){
+    var p=person(r.p.id), k=r.p.kind, form;
+    if(k==='promote') form=f('Current post',inp(p.pos,'text',true))+f('New post',sel(['Senior '+p.pos,'Certification Manager']))+f('New grade band',sel(['B','C','D','E'],'D'))+f('Effective from',inp('2026-11-01','date'))+f('Reason',area('','What changed in the role or performance'),null,true)+banner('info','Pay follows','<span>Once approved, the band change goes to payroll as a change for Finance to approve.</span>');
+    else if(k==='transfer') form=f('New department',sel(['Field Operations','Standards Development','Metrology & Laboratories']))+f('New post (vacant only)',sel(['Auditor, Field Operations','Standards Officer']))+f('New line manager',sel(['Sipho Magagula','Sibusiso Maseko']))+f('Effective from',inp('2026-11-01','date'))+f('Reason',area(''),null,true);
+    else if(k==='contract') form=radios([['Renew the fixed-term contract','Same post, new end date'],['Convert to permanent','Needs a permanent post with a vacancy'],['Let it end on 30 Nov','Starts offboarding']],'Renew the fixed-term contract')+f('New end date',inp('2027-11-30','date'))+f('Reason',area(''),null,true);
+    else if(k==='confirm') form=banner('info','The line manager reviews first','<span>Sipho Magagula completes the probation review in My team. HR records the outcome here.</span>','<a class="hr-lnk" href="#/team/probation/'+p.id+'?as=lm">Open as Sipho</a>')+radios([['Confirm','Probation ends and the employee is confirmed'],['Extend','Set a new review date'],['End employment','Needs the HR Manager and the Executive Director']],'Confirm')+f('Effective from',inp('2026-10-31','date'));
+    else form=f('Kind',sel(['Resignation','End of fixed-term contract','Retirement','Dismissal (needs a closed case)','Death in service'],'Resignation'))+f('Notice received',inp('2026-09-30','date'))+f('Last working day',inp('2026-10-31','date'))+f('Leave days to pay out',inp('6','text',true),'From the leave balance on the last day')+f('Exit interview by',sel(['Nokuthula Shongwe','Lwazi Kunene']))+banner('info','On the last day','<span>The login is disabled, open approvals and tasks move to the line manager with the reason logged, and final pay goes to payroll.</span>');
+    return head(LIFE[k]+': '+p.n,p.pos+', '+p.dept,null,[['Directory','#/hr/directory'],[p.n,'#/hr/people/'+p.id],[LIFE[k]]])
+      +'<div class="hr-view"><div class="hr-box"><div class="hr-box__b hr-form">'+form+'</div></div>'
+      +'<div class="hr-wiz__nav"><a class="btn ghost" href="#/hr/people/'+p.id+'">Cancel</a>'+doBtn('Send for approval','lifecycle:'+p.id+':'+k+'" data-go="#/sent/act')+'</div>'
+      +next('Who decides','Goes to Mbuso Hlatshwayo, Executive Director, in Approvals. You can\'t approve your own request.',null)+'</div>';
+  };
+
+  /* ---- H1 Joiners & leavers, H7 onboarding, H7b offboarding ---- */
+  R['hr/movements']=function(){
+    var joins=[{c:['<b>Sandile Ndwandwe</b><div class="sub">Laboratory Technician, Metrology</div>','1 Oct',st('info','Onboarding 5 of 8')],href:'#/hr/onboarding/sn'}];
+    if(S.hired) joins.unshift({c:['<b>Ayanda Mthethwa</b><div class="sub">Certification Officer, Certification</div>','2 Nov',st('info','Onboarding '+onbDone('am')+' of 10')],href:'#/hr/onboarding/am'});
+    else if(S.offer) joins.unshift({c:['<b>Ayanda Mthethwa</b><div class="sub">Certification Officer, offer stage</div>','2 Nov (planned)',st('mute','Offer '+S.offer)],href:'#/hr/recruitment/REQ-2026-018/applicant/am'});
+    return head('Directory','Who is joining, leaving or due a decision.',null,[['HR & People','#/hr/overview'],['Directory','#/hr/directory'],['Joiners & leavers']])
+      +'<nav class="hr-seg"><a href="#/hr/directory">People</a><a href="#/hr/movements" class="on">Joiners &amp; leavers</a></nav>'
+      +'<div class="hr-view"><h3>Joining</h3>'+table(['Person','Starts','Onboarding'],joins)
+      +'<h3>Leaving</h3>'+table(['Person','Last day','Offboarding'],[{c:['<b>Mandla Zwane</b><div class="sub">Accountant, Finance</div>','31 Oct',st('mute','Offboarding '+(2+offbDone())+' of 7')],href:'#/hr/offboarding/mz'}])
+      +'<h3>Decisions due</h3>'+table(['Person','What','Due'],[{c:['<b>Bongani Dlamini</b>','Probation review',S.probation==='submitted'?st('ok','Reviewed'):st('leave','31 Oct')],href:'#/hr/people/bd'},{c:['<b>Gcina Mavuso</b>','Fixed-term contract ends',st('leave','30 Nov')],href:'#/hr/people/gm/action/contract'},{c:['<b>Sandile Ndwandwe</b>','Probation review','Jan 2027'],href:'#/hr/people/sn'}])+'</div>';
+  };
+  var ONB=[['HR','Create the record and login',true],['HR','Contract signed',true],['Finance','Bank details captured',false],['Finance','Payroll joiner change approved',false],['ICT','Email and EswasaOne login',true],['ICT','Laptop and access card',false],['Line manager','Welcome meeting and first-week plan',false],['Line manager','Assign a buddy',false],['New joiner','Upload ID and qualification certificates',false],['New joiner','Sign impartiality and confidentiality declaration',false]];
+  function onbState(id,i){ if(i===9) return !!S.decl[id]; var k=id+i; return S.onb[k]!==undefined?S.onb[k]:(id==='sn'?i<6&&i!==2:ONB[i][2]); }
+  function onbDone(id){ var n=0; ONB.forEach(function(x,i){ if(onbState(id,i)) n++ }); return n; }
+  R['hr/onboarding/:id']=function(r){
+    var p=person(r.p.id), id=p.id, done=onbDone(id);
+    var list='<ul class="hr-tasks">'+ONB.map(function(t,i){ var on=onbState(id,i), locked=i===9; return '<li class="'+(on?'done':'')+'">'+(locked?'<span class="hr-tick'+(on?' ok':'')+'">'+(on?'✓':'')+'</span>':'<input type="checkbox" aria-label="'+t[1]+'"'+(on?' checked':'')+' data-do="set:onb.'+id+i+':'+(!on)+'" data-go="'+location.hash+'">')+'<div><b>'+t[1]+'</b><span class="s">'+t[0]+(locked?'. Signed by the joiner in My HR; required before onboarding can finish':'')+'</span></div>'+(on?st('ok','Done'):'<button type="button" class="hr-lnk" data-toast="Reminder sent to the task owner. It sits in their Approvals, under Tasks.">Remind</button>')+'</li>' }).join('')+'</ul>';
+    return head('Onboarding: '+p.n,p.pos+', '+p.dept+'. Starts '+(id==='am'?'Mon 2 Nov 2026':'1 Oct 2026')+'.',lnk('Open record','#/hr/people/'+id),[['HR & People','#/hr/overview'],['Joiners & leavers','#/hr/movements'],['Onboarding']])
+      +'<div class="hr-view"><div class="hr-prog" style="height:10px"><i style="width:'+(done*10)+'%"></i></div><p class="hr-note">'+done+' of 10 tasks done. Each task is a to-do in its owner\'s Approvals, under Tasks.</p>'
+      +box('Tasks','Grouped by owner',list,null)
+      +(done===10?next('Mark onboarding complete','Everything is done. The record moves to normal status and probation tracking starts.',null):next('Waiting on '+(10-done)+' tasks',S.decl[id]?'Owners get reminders. Overdue tasks show on HR Overview.':'The joiner signs the declaration from their first-days checklist.',id==='am'?'#/me/first-days?as=nj':null,'See it as Ayanda'))+'</div>';
+  };
+  var OFFB=[['HR','Resignation accepted',true],['HR','Exit interview, Tue 27 Oct',true],['Line manager','Handover of open work',false],['ICT','Return laptop and access card',false],['System','Disable login on 31 Oct',false],['System','Move 2 open approvals and 3 tasks to Busisiwe Fakudze, with the reason logged',false],['Finance','Final pay with 6 leave days paid out',false]];
+  function offbDone(){ var n=0; OFFB.forEach(function(t,i){ if(i>1&&S.offb['mz'+i]) n++ }); return n; }
+  R['hr/offboarding/:id']=function(r){
+    var p=person(r.p.id);
+    var list='<ul class="hr-tasks">'+OFFB.map(function(t,i){ var on=i<2||!!S.offb['mz'+i], sys=t[0]==='System'; return '<li class="'+(on?'done':'')+'">'+(sys||i<2?'<span class="hr-tick'+(on?' ok':'')+'">'+(on?'✓':'')+'</span>':'<input type="checkbox" aria-label="'+t[1]+'"'+(on?' checked':'')+' data-do="tick:offb:mz'+i+'" data-go="'+location.hash+'">')+'<div><b>'+t[1]+'</b><span class="s">'+t[0]+(sys?', runs automatically on the last day':'')+'</span></div>'+(on?st('ok','Done'):sys?st('mute','31 Oct'):'<button type="button" class="hr-lnk" data-toast="Reminder sent to the task owner.">Remind</button>')+'</li>' }).join('')+'</ul>';
+    return head('Offboarding: '+p.n,p.pos+', '+p.dept+'. Last day Sat 31 Oct.',lnk('Open record','#/hr/people/'+p.id),[['HR & People','#/hr/overview'],['Joiners & leavers','#/hr/movements'],['Offboarding']])
+      +'<div class="hr-view">'+box('Tasks','',list)+next('Final pay goes through payroll','The leaver change is in this month\'s run, waiting for Finance.','#/hr/payroll/change/mz','Open the payroll change')+'</div>';
+  };
+
+  /* ---- H3a Department, H3b establishment change, org chart ---- */
+  R['hr/structure/:dept']=function(r){
+    if(r.p.dept==='change') return R['hr/structure/change'](r);
+    var d=DEPTS.filter(function(x){return slug(x[0])===r.p.dept})[0]||DEPTS[2], cert=d[0]==='Certification';
+    var posts=cert?table(['Post','Band','Approved','Filled','Status',''],[
+      {c:['<b>Head of Certification</b>','E','1','1',st('ok','Filled'),'']},{c:['<b>Certification Manager</b>','D','2','2',st('ok','Filled'),'']},
+      {c:['<b>Lead Auditor</b>','C','4'+(S.est==='approved'?' + 2':''),'3',st('info','1 in recruitment'),'<a class="hr-lnk" href="#/hr/recruitment/REQ-2026-014">REQ-2026-014</a>']},
+      {c:['<b>Technical Reviewer</b>','C','2','2',st('ok','Filled'),'']},
+      {c:['<b>Certification Officer</b>','B','5','4',S.req?st('info','Requisition '+(S.req==='submitted'?'waiting':'open')):st('leave','1 vacant, not started'),S.req?'<a class="hr-lnk" href="#/hr/recruitment/REQ-2026-018">REQ-2026-018</a>':'<a class="hr-lnk" href="#/hr/recruitment/new">Raise requisition</a>']},
+      {c:['<b>Certification Administrator</b>','A','2','2',st('ok','Filled'),'']}]):'<p class="hr-note">Posts load from the approved Staffing Plan for this department.</p>';
+    return head(d[0],'Head: '+d[1]+'. Cost centre: '+d[6]+'. '+d[3]+' of '+d[2]+' posts filled.',lnk('Request a change','#/hr/structure/change'),[['HR & People','#/hr/overview'],['Structure','#/hr/structure'],[d[0]]])
+      +'<div class="hr-view">'+(cert?banner('warn','Thin cover','<span>OH&amp;S audits (ISO 45001) depend on one person. Food-safety lead auditing depends on two, one expiring 30 Nov.</span>','<a class="hr-lnk" href="#/hr/competence">Competence</a>'):'')+posts+'</div>';
+  };
+  function slug(s){ return s.toLowerCase().replace(/&/g,'and').replace(/[^a-z]+/g,'-').replace(/-$/,'') }
+  R['hr/structure/change']=function(){
+    return head('Request an establishment change','Adds, removes, freezes or regrades approved posts. Nobody can be hired into a post that isn\'t approved.',null,[['HR & People','#/hr/overview'],['Structure','#/hr/structure'],['Request a change']])
+      +'<div class="hr-view"><div class="hr-box"><div class="hr-box__b hr-form">'
+      +radios([['Add posts','Increases the establishment'],['Remove posts','Only vacant posts'],['Freeze or unfreeze','Keeps the post but stops hiring'],['Regrade','Changes the grade band']],'Add posts')
+      +f('Department',sel(DEPTS.map(function(d){return d[0]}),'Certification'))+f('Post',sel(['Lead Auditor','Certification Officer','Technical Reviewer'],'Lead Auditor'))
+      +f('Number of posts',inp('2','number'))+f('Grade band',sel(['B','C','D'],'C'))
+      +f('Yearly cost',inp('E 0.9m (sample estimate)','text',true),'From the grade band midpoint')+f('Effective from',inp('2027-04-01','date'))
+      +f('Why',area('Food-safety and OH&S audits each depend on one or two authorised people. Demand grew 30% this year.'),null,true)
+      +'<h4>Who decides</h4>'+tl([['Executive Director','Approves in Approvals','now'],['Council HR & Remuneration Committee','Needed because it adds posts (threshold to confirm, H4)',''],['Structure updated','The Staffing Plan is amended','']])
+      +'</div></div><div class="hr-wiz__nav"><a class="btn ghost" href="#/hr/structure">Cancel</a>'+doBtn('Send for approval','set:est:submitted" data-go="#/sent/est')+'</div></div>';
+  };
+  R['hr/orgchart']=function(){
+    function dv(t,h,ds){ return '<div class="hr-org__div"><h4>'+t+'<span>'+h+'</span></h4>'+ds.map(function(n){ var d=DEPTS.filter(function(x){return x[0]===n})[0]; return '<a href="#/hr/structure/'+slug(n)+'"><b>'+n+'</b><span>'+d[3]+' of '+d[2]+'</span></a>' }).join('')+'</div>' }
+    return head('Organisation chart','Divisions follow ESWASA\'s published executive team. Department placement is proposed until ESWASA confirms it (Confirmation Pack H1).',lnk('Table view','#/hr/structure'),[['HR & People','#/hr/overview'],['Structure','#/hr/structure'],['Organisation chart']])
+      +'<div class="hr-box"><div class="hr-box__b"><div class="hr-org"><div class="hr-org__top"><b>Council</b><span>HR & Remuneration Committee</span></div><div class="hr-org__top"><b>Executive Director</b><span>Executive Office</span></div><div class="hr-org__divs">'
+      +dv('Finance & Administration','Chief Financial Officer',['Finance','HR & Administration','ICT'])
+      +dv('Technical','Technical Manager',['Standards Development','Certification','Field Operations','Metrology & Laboratories'])
+      +dv('Commercial','Chief Commercial Officer',['Training','Marketing & Communications'])+'</div></div></div></div>';
+  };
+
+  /* ---- H4a leave request, H4b policy ---- */
+  var LREQ={ls:['Lindiwe Simelane','Annual','20 to 24 Oct',5,9,'Sipho Magagula',S.lsLeave?'Approved':'Waiting 2 days','No audits planned in these dates.'],mg:['Musa Gamedze','Annual','27 to 28 Oct',2,14,'Sipho Magagula','Waiting 1 day','No work affected.'],tk:['Thabiso Mkhonta','Sick','8 to 9 Oct',2,8,'Busisiwe Fakudze','Waiting 4 days','Overdue. Goes to the HR Manager tomorrow.'],zn:['Zanele Nkosi','Annual','14 to 16 Oct',3,11,'Sipho Magagula','Approved, '+(S.znCover?'cover: '+S.znCover:'no cover set'),'3 technical reviews in Certification fall in these dates.'],pm:['Phindile Motsa','Study','19 to 23 Oct',5,5,'Sibusiso Maseko','Approved','Standards ballot closes 21 Oct; covered by Sibusiso Maseko.'],tm:['Thandi Mamba','Annual','2 to 6 Nov',5,7,'Sipho Magagula',S.leave==='approved'?'Approved':'Waiting','1 audit on 4 Nov needs another lead auditor.']};
+  R['hr/timeoff/request/:id']=function(r){
+    var q=LREQ[r.p.id]||LREQ.ls;
+    if(r.p.id==='ls') q[6]=S.lsLeave?'Approved':'Waiting 2 days';
+    if(r.p.id==='tm') q[6]=S.leave==='approved'?'Approved':'Waiting';
+    if(r.p.id==='zn') q[6]='Approved, '+(S.znCover?'cover: '+S.znCover:'no cover set');
+    var ok=q[6].indexOf('Approved')===0;
+    return head(q[0]+': '+q[1].toLowerCase()+' leave',q[2]+', '+q[3]+' working days. '+q[4]+' days left after.',null,[['HR & People','#/hr/overview'],['Time off','#/hr/timeoff'],[q[0]]])
+      +'<div class="hr-view"><div class="hr-grid c2">'+box('Request','',kv([['Kind',q[1]],['Dates',q[2]],['Days',q[3]],['Balance after',q[4]],['Decided by',q[5]],['Status',q[6]]]))
+      +box('Where it is','',tl([['Requested','By '+q[0],'done'],['Line manager decides',q[5]+', in Approvals',ok?'done':'now'],['Calendar updated','Field Visit assignment is blocked for these dates',ok?'done':'']]))+'</div>'
+      +box('Work affected','',banner(q[7].indexOf('No ')===0?'ok':'warn',q[7],''))
+      +banner('lock','HR can\'t decide leave here','<span>The line manager decides in Approvals. If they don\'t decide in 2 working days, it goes to the HR Manager.</span>')
+      +(r.p.id==='zn'&&!S.znCover?next('Ask Sipho to set cover','The cover gets the technical reviews due in those dates.','#/approvals/cover-zn?as=lm','See it as Sipho'):'')+'</div>';
+  };
+  R['hr/timeoff/policy']=function(){
+    return head('Leave policy','The rules the leave balances are worked out from.',null,[['HR & People','#/hr/overview'],['Time off','#/hr/timeoff'],['Leave policy']])
+      +'<div class="hr-view">'+banner('warn','Sample values','<span>Entitlements, carry-over and encashment come from ESWASA\'s policy and the Employment Act minimums (Confirmation Pack H14). Set them in HR setup.</span>','<a class="hr-lnk" href="#/admin/hr-setup?step=5">HR setup</a>')
+      +table(['Leave type','Days a year','Carry over','Paid out on leaving','Needs a document'],[{c:['<b>Annual</b>','21 (sample)','Up to 10 days','Yes','No']},{c:['<b>Sick</b>','14 (sample)','No','No','After 2 days']},{c:['<b>Study</b>','10 (sample)','No','No','Exam timetable']},{c:['<b>Maternity</b>','To confirm','No','No','Medical certificate']},{c:['<b>Family responsibility</b>','To confirm','No','No','No']},{c:['<b>Unpaid</b>','As agreed','No','No','No']}])+'</div>';
+  };
+
+  /* ---- H5a record authorisation, H5b detail, H5c declarations, H5d external, H5e evidence pack ---- */
+  R['hr/competence/new']=function(r){
+    var t=r.q.p==='tm';
+    var steps=[
+      ['Person and competence',f('Person',sel(['Thandi Mamba, Lead Auditor','Bongani Dlamini, Certification Officer','Lindiwe Simelane, Auditor','Gcina Mavuso, Metrologist'],t?'Thandi Mamba, Lead Auditor':''))+f('Competence',sel(['FSMS lead auditor, ISO 22000','QMS lead auditor, ISO 9001','OH&S auditor, ISO 45001','Mass calibration','Volume calibration'],t?'FSMS lead auditor, ISO 22000':''))+f('Kind',inp('Audit','text',true))+f('Required by the post',inp('Lead Auditor: yes','text',true))+(t?banner('info','This is a renewal','<span>Current authorisation ends 30 Nov 2026. Thandi uploaded new evidence.</span>'):''),'Who is being authorised, for what'],
+      ['Evidence',rows([{t:'Refresher course, ISO 22000',s:'Training Result, 4 Nov 2026. Uploaded by Thandi'+(S.evidence?'':' (not yet)'),r:S.evidence?st('ok','On file'):st('leave','Missing')},{t:'Witnessed audit, Sample Foods Ltd surveillance',s:'Witnessed by Zanele Nkosi, 22 Oct 2026',r:st('ok','On file')},{t:'Audit days in the last 3 years',s:'14 audits, 38 days (from Field Visits)',r:st('ok','Meets')}])+'<p><button type="button" class="hr-lnk" data-toast="Adds a file, a Training Result or a witnessed Field Visit as evidence.">Add evidence</button></p>','What shows the person is competent'],
+      ['Validity',f('Valid from',inp('2026-12-01','date'))+f('Valid to',inp('2029-11-30','date'),'Defaults to the competence\'s validity (36 months, to confirm H7)')+f('Monitoring',sel(['1 witnessed audit a year','Proficiency test a year']))+f('Scope',inp('Food sector categories C, D (sample)')),'How long it lasts'],
+      ['Approver',f('Approved by',sel(['Nomvula Tsabedze, Head of Certification']),'The head of the department. Can\'t be the person being authorised')+banner('lock','Four-eyes rule','<span>The approver must differ from the person. The person who prepared it can\'t approve it either.</span>'),'Who signs it off'],
+      ['Review',kv([['Person','Thandi Mamba'],['Competence','FSMS lead auditor, ISO 22000'],['Valid','1 Dec 2026 to 30 Nov 2029'],['Evidence','3 items'],['Approver','Nomvula Tsabedze']])+banner('info','Until it is approved','<span>The matrix shows it as in training. The current authorisation stays valid until 30 Nov.</span>'),'Check before sending']
+    ];
+    return head('Record an authorisation','Certification and Metrology assign only people who are authorised on the day of the work.',null,[['HR & People','#/hr/overview'],['Competence','#/hr/competence'],['Record an authorisation']])
+      +'<div class="hr-view">'+wizard(r,'#/hr/competence/new',steps,{label:'Send for approval',action:'set:auth:submitted" data-go="#/sent/auth'})+'</div>';
+  };
+  R['hr/competence/auth/:id']=function(){
+    var ok=S.auth==='approved';
+    return head('Thandi Mamba: FSMS lead auditor, ISO 22000',ok?'Current. Valid to 30 Nov 2029.':'Expiring. Valid to 30 Nov 2026.',ok?'':lnk('Renew','#/hr/competence/new?p=tm','pri'),[['HR & People','#/hr/overview'],['Competence','#/hr/competence'],['Authorisation']])
+      +'<div class="hr-view">'+(ok?banner('ok','Renewed','<span>Approved by Nomvula Tsabedze. Certification can assign Thandi to FSMS audits until 30 Nov 2029.</span>'):banner('warn','2 audits in December depend on this','<span>After 30 Nov, the audit planner refuses to assign Thandi to ISO 22000 audits. Reason shown: "authorisation expired on 30 Nov 2026".</span>'))
+      +'<div class="hr-grid c2">'+box('Authorisation','',kv([['Status',ok?st('ok','Current'):st('leave','Expiring')],['Valid',ok?'1 Dec 2026 to 30 Nov 2029':'1 Dec 2023 to 30 Nov 2026'],['Approved by','Nomvula Tsabedze'],['Monitoring','1 witnessed audit a year']]))
+      +box('Alerts','R-H3: 60, 30 and 7 days before the end date',tl([['60 days: 1 Oct','Thandi, Sipho Magagula and HR alerted','done'],['30 days: 31 Oct','',ok?'done':'now'],['7 days: 23 Nov','','']]))+'</div></div>';
+  };
+  R['hr/competence/declarations']=function(){
+    var out=[['tm','Thandi Mamba','Lead Auditor','2 audits next month'],['ls','Lindiwe Simelane','Auditor','1 audit next week'],['bd','Bongani Dlamini','Certification Officer',''],['sn','Sandile Ndwandwe','Laboratory Technician','New joiner, part of onboarding'],['gm','Gcina Mavuso','Metrologist','On-site calibrations'],['mg','Musa Gamedze','Auditor','']];
+    var signed=80+out.filter(function(o){return S.decl[o[0]]}).length;
+    return head('Impartiality and confidentiality declarations, 2026/27',signed+' of 86 signed. Unsigned staff are excluded from audit and decision work.','<button type="button" class="btn pri" data-toast="Reminder sent to everyone who hasn\'t signed. It stays in their Tasks until they do.">Remind all outstanding</button>',[['HR & People','#/hr/overview'],['Competence','#/hr/competence'],['Declarations']])
+      +'<div class="hr-view"><div class="hr-prog" style="height:10px"><i style="width:'+(signed/86*100)+'%"></i></div>'
+      +table(['Person','Status','Effect'],out.map(function(o){ var s=S.decl[o[0]]; return {c:['<b>'+o[1]+'</b><div class="sub">'+o[2]+'</div>',s?st('ok','Signed today'):st('bad','Outstanding'),s?'Can be assigned again':'Excluded'+(o[3]?'. '+o[3]:'')]} }))
+      +'<p class="hr-note">Each declaration lists organisations the person worked for or consulted to in the last two years, and includes the confidentiality undertaking. The audit planner keeps people off those clients\' audits and decisions.</p>'
+      +next('Signing happens in My HR','Each person signs from their task. You can see it as Thandi.','#/me/declaration?as=emp','Sign as Thandi')+'</div>';
+  };
+  R['hr/competence/external']=function(){
+    return head('External personnel','Contract auditors, technical experts and committee experts. Same competence and declaration checks as staff, no payroll.','<button type="button" class="btn pri" data-toast="Adds an external person: contact, engagement dates, competences, declaration.">Add external person</button>',[['HR & People','#/hr/overview'],['Competence','#/hr/competence'],['External personnel']])
+      +'<div class="hr-view">'+banner('warn','Proposed, waiting for ESWASA\'s decision','<span>Confirmation Pack H10: are external people used, and do they need the same records?</span>')
+      +table(['Person','Engagement','Authorisations','Declaration'],[{c:['<b>Musa Shabangu</b><div class="sub">Contract auditor</div>','Jan 2026 to Dec 2027','FSMS lead auditor, ISO 22000',S.decl.ms?st('ok','Signed'):st('bad','Outstanding')],href:'#/me/external?as=ext'},{c:['<b>Dr Lungile Nxumalo</b><div class="sub">Technical expert, food microbiology</div>','Per audit','Technical expert, food',st('ok','Signed')]},{c:['<b>Sabelo Gama</b><div class="sub">Expert, ISO/TC 34 mirror committee</div>','2026 to 2028','None needed',st('ok','Signed')]}])+'</div>';
+  };
+  R['hr/competence/pack']=function(){
+    return head('Accreditation evidence pack','For SADCAS assessments and internal audits under ISO/IEC 17021-1, 17065 and 17025.',null,[['HR & People','#/hr/overview'],['Competence','#/hr/competence'],['Evidence pack']])
+      +'<div class="hr-view"><div class="hr-box"><div class="hr-box__b hr-form">'
+      +radios([['By function','Everyone authorised for a scheme or discipline'],['By person','One person\'s full competence file']],'By function')
+      +f('Function',sel(['FSMS, ISO 22000','QMS, ISO 9001','Mass calibration','Volume calibration']))+f('Period',sel(['Last 3 years','Last 12 months']))
+      +'<h4>Contents</h4>'+check('Current authorisations and their approvers',true)+check('Evidence behind each authorisation',true)+check('Monitoring: witnessed audits and proficiency tests',true)+check('Signed impartiality and confidentiality declarations',true)+check('Training records',true)
+      +'</div></div>'+box('Preview','FSMS, ISO 22000, last 3 years',rows([{t:'Summary, 1 page',s:'4 people, 2 current, 1 expiring, 1 in training'},{t:'Thandi Mamba',s:'Authorisation, 3 evidence items, 2 declarations, 4 training records'},{t:'Zanele Nkosi',s:'Authorisation, 4 evidence items, 2 declarations'},{t:'Lindiwe Simelane',s:'In training, 1 witnessed audit'},{t:'Musa Shabangu (external)',s:'Authorisation, contract, declaration'}]))
+      +'<div class="hr-wiz__nav"><a class="btn ghost" href="#/hr/competence">Back</a><button type="button" class="btn pri" data-toast="Builds a ZIP: a PDF summary plus every evidence file, named by person. The download is logged.">Download pack</button></div></div>';
+  };
+
+  /* ---- H6a requisition, H6b pipeline, H6c applicant, H6d interview, H6e offer ---- */
+  function reqForm(r,base,cr){
+    var steps=[
+      ['Post',radios([['Certification Officer','Certification, band B. 1 vacant, not started'],['Metrologist, mass','Metrology & Laboratories, band C. 1 vacant, not started'],['Laboratory Assistant','Metrology & Laboratories, band A. 1 vacant, not started'],['Marketing Officer','Marketing & Communications, band B. 1 vacant, not started']],'Certification Officer')+'<p class="hr-note">Only approved posts with a vacancy are listed. Frozen posts are left out.</p>','Which vacant post'],
+      ['Details',f('Reason',sel(['Replacement','New post in the establishment','Growth'],'Replacement'))+f('Ideal start',inp('2026-12-01','date'))+f('Hiring manager',sel(['Sipho Magagula','Nomvula Tsabedze']))+f('Advert closes',inp('2026-10-30','date'))+f('Interview panel',inp('Sipho Magagula, Zanele Nkosi, HR'),'',true)+f('Why now',area('Bongani moves to auditing in January. Certification applications are up 20%.'),null,true)+check('Publish on the careers page and the ESWASA website',true,'Applicants apply online; email to hr@eswasa.co.sz still works'),'What and when'],
+      ['Review',kv([['Post','Certification Officer, band B'],['Department','Certification'],['Hiring manager','Sipho Magagula'],['Advert closes','Fri 30 Oct']])+'<h4>Who decides</h4>'+tl([['Head of department','Raised by you','done'],['HR Manager','Approves in Approvals','now'],['Advertised','HR publishes it','']]),'Check before sending']
+    ];
+    return head('Raise a requisition','Asks to fill an approved, vacant post.',null,cr)+'<div class="hr-view">'+wizard(r,base,steps,{label:'Send for approval',action:'set:req:submitted" data-go="#/sent/req'})+'</div>';
+  }
+  R['hr/recruitment/new']=function(r){ return reqForm(r,'#/hr/recruitment/new',[['HR & People','#/hr/overview'],['Recruitment','#/hr/recruitment'],['New requisition']]) };
+  R['team/requisition']=function(r){ return reqForm(r,'#/team/requisition',[['My team','#/team'],['Raise a requisition']]) };
+  var CANDS={am:['Ayanda Mthethwa','BSc Food Science. 3 years QA, Eswatini Dairy (sample).','Careers page'],nx:['Nosipho Xaba','BCom. Internal auditor course, ISO 9001.','Careers page'],kd:['Khanya Dube','BSc Chemistry. 2 years laboratory QA.','Email to hr@'],ts:['Thulani Simelane','Diploma. 5 years in manufacturing QC.','Careers page']};
+  function stageOf(id){ return S.app[id]||'Applied' }
+  R['hr/recruitment/:req']=function(r){
+    var q=r.p.req;
+    if(q==='new') return R['hr/recruitment/new'](r);
+    if(q!=='REQ-2026-018') return head(q,'Sample pipeline. Open REQ-2026-018 for the full click-through.',lnk('Open REQ-2026-018','#/hr/recruitment/REQ-2026-018'),[['Recruitment','#/hr/recruitment'],[q]])+'<div class="hr-board">'+['Applied','Shortlist','Interview','Offer','Hired'].map(function(c,i){return '<div class="hr-col"><h4>'+c+'<span>'+[31,5,3,1,0][i]+'</span></h4><div class="empty">Candidates show here</div></div>'}).join('')+'</div>';
+    if(!S.req||S.req==='submitted') return head('REQ-2026-018: Certification Officer',S.req?'Waiting for the HR Manager to approve.':'Not raised yet.',null,[['Recruitment','#/hr/recruitment'],['REQ-2026-018']])+next(S.req?'HR Manager approves the requisition':'Raise the requisition first',S.req?'Nothing can be advertised until it is approved.':'Heads of department raise requisitions from My team.',S.req?'#/approvals/req-018?as=hrm':'#/team/requisition?as=hod',S.req?'See it as the HR Manager':'Raise as Head of Certification');
+    var cols=['Applied','Shortlist','Interview','Offer','Hired'];
+    var board=S.published?'<div class="hr-board">'+cols.map(function(c){ var ids=Object.keys(CANDS).filter(function(id){ var s=stageOf(id); return (c==='Interview'?(s==='Interview'||s==='Interviewed'):s===c) }); return '<div class="hr-col"><h4>'+c+'<span>'+ids.length+'</span></h4>'+(ids.length?ids.map(function(id){return '<a class="hr-cand" href="#/hr/recruitment/REQ-2026-018/applicant/'+id+'"><b>'+CANDS[id][0]+'</b><span>'+CANDS[id][2]+'</span>'+(stageOf(id)==='Interviewed'?st('ok','Feedback in'):'')+'</a>'}).join(''):'<div class="empty">None yet</div>')+'</div>' }).join('')+'</div>'
+      +'<p class="hr-note">'+Object.keys(CANDS).filter(function(id){return stageOf(id)==='Not this time'}).length+' not taken forward. They get a regret email when the vacancy closes.</p>':'';
+    var nx=!S.published?next('Publish the opening','It appears on the Service Portal careers page and the ESWASA website. Applications come into this board.',null)
+      :stageOf('am')==='Applied'?next('Screen the applicants','Open each one, then shortlist or decline.','#/hr/recruitment/REQ-2026-018/applicant/am','Open Ayanda Mthethwa')
+      :S.hired?next('Ayanda is onboarding','The requisition closes when the post is filled.','#/hr/onboarding/am','Onboarding'):next('Keep the shortlisted candidates moving','Interview, record feedback, then make an offer.','#/hr/recruitment/REQ-2026-018/applicant/am','Open Ayanda Mthethwa');
+    return head('REQ-2026-018: Certification Officer','Certification, band B. Hiring manager Sipho Magagula. Closes Fri 30 Oct.',S.published?'<a class="btn ghost" href="eswasaone-careers.html#/vacancy/REQ-2026-018">View on careers page</a>':doBtn('Publish to careers page','set:published:true" data-go="#/hr/recruitment/REQ-2026-018','pri','Published to the careers page and the ESWASA website. 4 applications have come in (sample).'),[['HR & People','#/hr/overview'],['Recruitment','#/hr/recruitment'],['REQ-2026-018']])
+      +'<div class="hr-view">'+(S.published?'':banner('info','Approved, not advertised yet','<span>Approved by Nokuthula Shongwe.</span>'))+board+nx+'</div>';
+  };
+  R['hr/recruitment/:req/applicant/:id']=function(r){
+    var id=r.p.id, c=CANDS[id]||CANDS.am, s=stageOf(id), base='#/hr/recruitment/REQ-2026-018/applicant/'+id, actions, nx;
+    if(s==='Applied'){ actions=doBtn('Shortlist','set:app.'+id+':Shortlist" data-go="'+base)+doBtn('Not this time','set:app.'+id+':Not this time" data-go="#/hr/recruitment/REQ-2026-018','ghost','Declined. The regret email goes out when the vacancy closes.'); nx=next('Shortlist or decline','Only shortlisted candidates are contacted, as the careers page says.',null); }
+    else if(s==='Shortlist'){ actions=lnk('Schedule interview','#/hr/recruitment/REQ-2026-018/interview/'+id,'pri'); nx=next('Schedule the interview','The panel gets a calendar invite and the scorecard.','#/hr/recruitment/REQ-2026-018/interview/'+id,'Schedule'); }
+    else if(s==='Interview'){ actions=lnk('Record feedback','#/hr/recruitment/REQ-2026-018/interview/'+id+'?step=2','pri'); nx=next('Record the panel\'s feedback','Each panel member scores against the same criteria.','#/hr/recruitment/REQ-2026-018/interview/'+id+'?step=2','Record feedback'); }
+    else if(s==='Interviewed'&&!S.offer){ actions=lnk('Make an offer','#/hr/recruitment/REQ-2026-018/offer/'+id,'pri'); nx=next('Make an offer','The panel recommends an offer.','#/hr/recruitment/REQ-2026-018/offer/'+id,'Make an offer'); }
+    else if(S.offer==='submitted'){ actions=''; nx=next('Executive Director approves the offer','The letter can\'t go out until it is approved.','#/approvals/offer-am?as=ed','See it as the Executive Director'); }
+    else if(S.offer==='approved'){ actions=doBtn('Candidate accepted','set:offer:accepted|set:app.'+id+':Offer" data-go="'+base)+doBtn('Candidate declined','set:offer:null" data-go="'+base,'ghost'); nx=next('Send the offer letter and record the answer','The letter is generated from the approved offer.',null); }
+    else if(S.offer==='accepted'&&!S.hired){ actions=lnk('Create employee record','#/hr/people/new?from=offer','pri'); nx=next('Create the employee record','Details carry over from the application, so nothing is typed twice.','#/hr/people/new?from=offer','Create employee'); }
+    else { actions=lnk('Open onboarding','#/hr/onboarding/am','pri'); nx=next('Onboarding has started','Tasks are with HR, ICT, Finance and the line manager.','#/hr/onboarding/am','Onboarding'); }
+    var stages=['Applied','Shortlist','Interview','Offer','Hired'], cur=s==='Interviewed'?2:S.hired?4:S.offer==='accepted'?3:Math.max(0,stages.indexOf(s));
+    return head(c[0],'Certification Officer, REQ-2026-018. Applied 14 Oct through the '+c[2].toLowerCase()+'.',actions,[['Recruitment','#/hr/recruitment'],['REQ-2026-018','#/hr/recruitment/REQ-2026-018'],[c[0]]])
+      +'<div class="hr-view"><ol class="hr-wiz">'+stages.map(function(x,i){return '<li class="'+(i<cur?'done':i===cur?'now':'')+'"><span>'+(i<cur?'✓':i+1)+'</span>'+x+'</li>'}).join('')+'</ol>'
+      +'<div class="hr-grid c2">'+box('Application','',kv([['Background',c[1]],['Source',c[2]],['CV','<button type="button" class="hr-lnk" data-toast="Opens the CV (PDF).">CV.pdf</button>'],['Cover letter','<button type="button" class="hr-lnk" data-toast="Opens the cover letter (PDF).">Cover letter.pdf</button>']]))
+      +box('Screening','Against the post\'s requirements',rows([{t:'Degree in a science or quality field',r:st('ok','Meets')},{t:'2 years in quality assurance',r:st('ok','Meets')},{t:'ISO 9001 auditor course',r:id==='am'?st('ok','Meets'):st('leave','Not shown')}]))+'</div>'
+      +(s==='Interviewed'||S.offer?box('Interview feedback','3 Nov, panel of 3',rows([{t:'Average score 4.2 of 5',s:'Recommendation: offer'},{t:'Declared relationships',s:'None with the panel'}])):'')
+      +nx+'</div>';
+  };
+  R['hr/recruitment/:req/interview/:id']=function(r){
+    var id=r.p.id, c=CANDS[id]||CANDS.am;
+    function score(lbl){ return f(lbl,sel(['5 Excellent','4 Good','3 Meets','2 Below','1 Poor'],'4 Good')) }
+    var steps=[
+      ['Schedule',f('Date',inp('2026-11-03','date'))+f('Time',inp('10:00','time'))+f('Where',sel(['Head office, Matsapha','Video call']))+f('Panel',inp('Sipho Magagula, Zanele Nkosi, Nokuthula Shongwe'))+banner('info','Conflicts checked','<span>No panel member has declared a relationship with this candidate.</span>'),'When and who'],
+      ['Feedback',score('Knowledge of certification (ISO/IEC 17065, 17021-1)')+score('Audit communication')+score('Report writing exercise')+score('Values: professionalism, transparency')+f('Recommendation',sel(['Offer','Hold','Not this time'],'Offer'))+f('Comments',area('Strong on food-sector QA; needs coaching on management system audits.'),null,true),'The panel\'s scores']
+    ];
+    var n=+(r.q.step||1);
+    return head('Interview: '+c[0],'Certification Officer, REQ-2026-018',null,[['Recruitment','#/hr/recruitment'],['REQ-2026-018','#/hr/recruitment/REQ-2026-018'],[c[0],'#/hr/recruitment/REQ-2026-018/applicant/'+id],['Interview']])
+      +'<div class="hr-view">'+(n===1?wizard(r,'#/hr/recruitment/REQ-2026-018/interview/'+id,steps,{}).replace(/<a class="btn pri"[^>]*>Continue.*?<\/a>/,doBtn('Send invites','set:app.'+id+':Interview" data-go="#/hr/recruitment/REQ-2026-018/applicant/'+id,'pri','Invites sent to the candidate and the panel.')):wizard(r,'#/hr/recruitment/REQ-2026-018/interview/'+id,steps,{label:'Save feedback',action:'set:app.'+id+':Interviewed" data-go="#/hr/recruitment/REQ-2026-018/applicant/'+id}))+'</div>';
+  };
+  R['hr/recruitment/:req/offer/:id']=function(r){
+    var c=CANDS[r.p.id]||CANDS.am;
+    return head('Offer: '+c[0],'Certification Officer, REQ-2026-018',null,[['Recruitment','#/hr/recruitment'],['REQ-2026-018','#/hr/recruitment/REQ-2026-018'],[c[0],'#/hr/recruitment/REQ-2026-018/applicant/'+r.p.id],['Offer']])
+      +'<div class="hr-view"><div class="hr-box"><div class="hr-box__b hr-form">'
+      +f('Post',inp('Certification Officer','text',true))+f('Grade band',inp('B','text',true))+f('Pay point',S.who==='hrm'?sel(['Entry point','Step 2']):inp('Visible to the HR Manager only','text',true))+f('Start date',inp('2026-11-02','date'))
+      +f('Contract',sel(['Permanent, with probation','Fixed-term']))+f('Offer valid until',inp('2026-10-23','date'))
+      +'<h4>Conditions</h4>'+check('Qualifications verified',true)+check('Two references received',true)+check('Police clearance before start',true)+check('Signed impartiality and confidentiality declaration before the first audit',true)
+      +'</div></div><div class="hr-wiz__nav"><a class="btn ghost" href="#/hr/recruitment/REQ-2026-018/applicant/'+r.p.id+'">Cancel</a>'+doBtn('Send for approval','set:offer:submitted|set:app.'+r.p.id+':Offer" data-go="#/sent/offer')+'</div>'
+      +next('Who decides','The Executive Director approves offers (appointments are the ED\'s under the Act; to confirm, H3).',null)+'</div>';
+  };
+
+  /* ---- H8a cycle setup, department drill, H8b appraisal ---- */
+  R['hr/performance/new']=function(r){
+    var steps=[['Period',f('Cycle',sel(['End-of-year review 2026/27','Mid-year review 2027/28']))+f('Covers',inp('1 Apr 2026 to 31 Mar 2027','text',true)),'Which review'],
+      ['Template',rows([{t:'Auditors and reviewers',s:'Audit quality, timeliness, impartiality, development'},{t:'Laboratory',s:'Result accuracy, turnaround, proficiency tests'},{t:'Standards',s:'Committee support, publication targets'},{t:'Support services',s:'Service levels, accuracy'}])+'<p class="hr-note">One template per post family, each linked to the strategic plan goals.</p>','What people are rated on'],
+      ['Who is in it',kv([['Included','84 active employees'],['Left out','2 who joined after 1 Jan'],['Managers reviewing','14']]),'Who gets appraised'],
+      ['Dates',f('Self-assessment closes',inp('2027-03-12','date'))+f('Manager review closes',inp('2027-03-26','date'))+banner('info','Reminders (R-H6)','<span>Sent 10 and 3 working days before each date to anyone with a step still open.</span>'),'Deadlines'],
+      ['Review',kv([['Cycle','End-of-year review 2026/27'],['People','84'],['Self-assessment closes','12 Mar 2027'],['Manager review closes','26 Mar 2027']]),'Check before starting']];
+    return head('Start an appraisal cycle','',null,[['HR & People','#/hr/overview'],['Performance','#/hr/performance'],['New cycle']])+'<div class="hr-view">'+wizard(r,'#/hr/performance/new',steps,{label:'Start cycle',action:'set:cycle:true" data-go="#/sent/cycle'})+'</div>';
+  };
+  R['hr/performance/dept/:d']=function(){
+    var ppl=['tm','zn','bd','sm','nd','nt'];
+    return head('Certification: mid-year review','9 of 14 self-assessments, 4 of 14 manager reviews.','<button type="button" class="btn ghost" data-toast="Reminder sent to everyone in Certification with a step open.">Remind outstanding</button>',[['HR & People','#/hr/overview'],['Performance','#/hr/performance'],['Certification']])
+      +table(['Person','Self-assessment','Manager review'],ppl.map(function(id){ var p=person(id), selfD=id==='tm'?S.self:id!=='bd', mgr=id==='tm'?S.mgr:['zn','sm'].indexOf(id)>-1; return {c:['<b>'+p.n+'</b><div class="sub">'+p.pos+'</div>',selfD?st('ok','Done'):st('leave','Open'),mgr?st('ok','Done'):st('leave','Open')],href:'#/hr/performance/appraisal/'+id} }));
+  };
+  function goals(rateSelf,rateMgr){
+    var G=[['Close 40 audits on time','Strategic goal 2: faster certification','30%'],['No overturned audit decisions','Strategic goal 3: trusted marks','25%'],['Coach 2 auditors in training','Strategic goal 5: capable people','20%'],['Complete ISO 22000 refresher','Strategic goal 5: capable people','25%']];
+    return table(['Objective','Supports','Weight','Self','Manager'],G.map(function(g){ return {c:['<b>'+g[0]+'</b>',g[1],g[2],rateSelf===true?sel(['4 Exceeds','3 Meets','2 Partly','1 Not met'],'3 Meets'):rateSelf||'–',rateMgr===true?sel(['4 Exceeds','3 Meets','2 Partly','1 Not met'],'3 Meets'):rateMgr||'–']} }));
+  }
+  R['hr/performance/appraisal/:id']=function(r){
+    var p=person(r.p.id), tm=p.id==='tm';
+    return head('Appraisal: '+p.n,'Mid-year review 2026/27. '+p.pos+'.','<button type="button" class="btn ghost" data-toast="Reminder sent.">Remind</button>',[['Performance','#/hr/performance'],['Certification','#/hr/performance/dept/certification'],[p.n]])
+      +'<div class="hr-view">'+banner('lock','Read-only for HR','<span>The employee rates themselves, then the line manager. HR tracks progress.</span>')
+      +goals(tm&&S.self?'3 Meets':tm?'–':'3 Meets',tm&&S.mgr?'3 Meets':tm?'–':'–')+'</div>';
+  };
+
+  /* ---- H9a payroll change, H9b payslip ---- */
+  R['hr/payroll/change/:id']=function(r){
+    var k=r.p.id, c=PAYCH[k]||PAYCH.pm, s=S.pay[k]||'approved';
+    var blocked=s==='blocked';
+    return head(c[0],c[1],null,[['HR & People','#/hr/overview'],['Payroll','#/hr/payroll'],['Change']])
+      +'<div class="hr-view">'+(blocked?banner('bad','Blocked: bank details not on file','<span>The change can\'t go to Finance until Sandile\'s bank details are captured.</span>',doBtn('Bank details received','set:pay.sn:waiting" data-go="#/hr/payroll/change/sn','sm','Bank details captured. The change is now with Finance.')):'')
+      +'<div class="hr-grid c2">'+box('Change','',kv([['What',c[0]],['Effective',k==='mz'?'31 Oct':'1 Oct'],['Status',s==='blocked'?st('bad','Blocked'):s==='waiting'?st('leave','Waiting for Finance'):st('ok','Approved')],['Approver','Busisiwe Fakudze, Finance Manager']]))
+      +box('Where it is','',tl([['Raised','From the '+(k==='sn'?'joiner':k==='pm'?'promotion':'separation')+' record','done'],['Finance approves','In Approvals, before the 20 Oct cut-off',s==='approved'?'done':blocked?'':'now'],['In the October run','',s==='approved'?'done':'']]))+'</div>'
+      +(s==='waiting'?next('Finance decides in Approvals','HR can\'t approve its own payroll changes.','#/approvals/pay-'+k+'?as=fin','See it as Finance'):next('Back to the run','','#/hr/payroll','Payroll'))+'</div>';
+  };
+  R['hr/payroll/payslip/:id']=function(r){
+    var p=person(r.p.id);
+    var slip='<div class="hr-slip"><span class="h">Earnings</span><span>Basic pay</span><span class="n">31,450.00</span><span>Housing allowance</span><span class="n">3,000.00</span><span class="h">Deductions</span><span>PAYE (sample)</span><span class="n">−7,120.00</span><span>ENPF (sample)</span><span class="n">−450.00</span><span>Medical aid</span><span class="n">−1,480.00</span><span class="t">Net pay</span><span class="n t">E 25,400.00</span></div><p class="hr-note" style="margin-top:12px">Sample figures. Statutory tables come from Finance (Confirmation Pack H16); nothing is calculated from research.</p>';
+    var mine=P[S.who].self===p.id;
+    var body=mine||revealed(p.id,'pay')?slip:canSee('pay')?masked(p.id,'pay',[['Net pay','E 25,400.00']]):banner('lock','Not available to your role','<span>Individual pay is limited to the HR Manager, payroll and the employee.</span>');
+    return head('Payslip: '+p.n,'September 2026, paid Wed 23 Sep',mine||revealed(p.id,'pay')?'<button type="button" class="btn ghost" data-toast="Downloads the payslip as PDF.">Download PDF</button>':'',mine?[['My HR','#/me'],['Payslips','#/me/payslips'],['September 2026']]:[['Payroll','#/hr/payroll'],[p.n,'#/hr/people/'+p.id+'?tab=pay'],['Payslip']])+box('','',body);
+  };
+
+  /* ---- H10 new case, case detail ---- */
+  R['hr/cases/new']=function(){
+    return head('Open a case','Restricted from the moment it is saved. It stays out of search and Ask Esi.',null,[['HR & People','#/hr/overview'],['Cases','#/hr/cases'],['New case']])
+      +'<div class="hr-view"><div class="hr-box"><div class="hr-box__b hr-form">'+radios([['Grievance','An employee raises a concern'],['Disciplinary','A possible breach of conduct']],'Disciplinary')
+      +f('People involved',inp('Search people'),'Their names appear only inside the case')+f('Owner',sel(['Nokuthula Shongwe','Lwazi Kunene']),'Can\'t be one of the people involved')
+      +f('What happened',area('','Facts, dates, who saw it'),null,true)+f('Next step due',inp('2026-10-19','date'))+'</div></div>'
+      +'<div class="hr-wiz__nav"><a class="btn ghost" href="#/hr/cases">Cancel</a>'+doBtn('Open case','set:griev:submitted" data-go="#/sent/case')+'</div></div>';
+  };
+  var CSTG={g:['Open','Investigated','Resolved'],d:['Opened','Investigation','Hearing scheduled','Outcome issued','Appeal','Closed']};
+  R['hr/cases/:id']=function(r){
+    if(r.p.id==='new') return R['hr/cases/new'](r);
+    var id=r.p.id, kind=id==='HRC-2026-005'?'d':'g', stg=CSTG[kind], cur=S.caseStage[id]!==undefined?S.caseStage[id]:{'HRC-2026-005':2,'HRC-2026-004':0,'HRC-2026-003':2,'HRC-2026-006':0}[id]||0;
+    var title=id==='HRC-2026-006'?'Grievance raised through My HR':kind==='d'?'Alleged breach of the impartiality policy':'Grievance about workload allocation';
+    return head(id+': '+(kind==='d'?'Disciplinary':'Grievance'),title,cur<stg.length-1?doBtn('Move to '+stg[cur+1],'set:caseStage.'+id+':'+(cur+1)+'" data-go="#/hr/cases/'+id):'',[['HR & People','#/hr/overview'],['Cases','#/hr/cases'],[id]])
+      +'<div class="hr-view">'+banner('lock','Restricted','<span>Visible to Nokuthula Shongwe (owner) and the HR Manager only. Not in search, exports or Ask Esi. The Board sees counts only.</span>')
+      +'<ol class="hr-wiz">'+stg.map(function(x,i){return '<li class="'+(i<cur?'done':i===cur?'now':'')+'"><span>'+(i<cur?'✓':i+1)+'</span>'+x+'</li>'}).join('')+'</ol>'
+      +'<div class="hr-grid c2">'+box('Case','',kv([['People involved',id==='HRC-2026-006'?'Thandi Mamba (raised it)':'2 people'],['Owner','Nokuthula Shongwe'],['Opened',id==='HRC-2026-006'?'Today':'29 Sep'],['Next step due',kind==='d'?'Hearing, Fri 16 Oct':'Meet the employee, Mon 19 Oct']]))
+      +box('Notes','Newest first',rows([{t:'Statement received',s:'File attached. 9 Oct'},{t:'Case opened',s:'By Nokuthula Shongwe'}]))+'</div>'
+      +(kind==='d'?banner('info','If there is an appeal','<span>It goes to the Executive Director, never to whoever issued the outcome.</span>'):'')+'</div>';
+  };
+
+  /* ---- H14 HR setup ---- */
+  R['admin/hr-setup']=function(r){
+    function src(n){ return '<span class="hr-st mute">ESWASA input §0.5 #'+n+'</span>' }
+    var steps=[
+      ['Organisation',kv([['Company','Eswatini Standards Authority'],['Divisions','Finance & Administration, Technical, Commercial'],['Basis','Published executive team (CFO, Technical Manager, Chief Commercial Officer)']])+banner('warn','Confirm the structure','<span>Confirmation Pack H1 and H2.</span>')+src(1),'ESWASA and its divisions'],
+      ['Departments and heads',table(['Department','Division','Head'],DEPTS.map(function(d){return {c:['<b>'+d[0]+'</b>',['Finance','HR & Administration','ICT'].indexOf(d[0])>-1?'Finance & Administration':['Training','Marketing & Communications'].indexOf(d[0])>-1?'Commercial':d[0]==='Executive Office'?'Executive':'Technical',d[1]]}}))+'<p class="hr-note">ERPNext\'s sample departments (Dispatch, Production, Sales…) are switched off and can\'t be picked anywhere.</p>','The real tree, each with a head'],
+      ['Posts and grades',kv([['Grade bands','A to F'],['Approved posts','96, in 10 Staffing Plans'],['Frozen','2']])+'<button type="button" class="btn ghost sm" data-toast="Downloads the establishment template: department, post, band, approved, frozen.">Download template</button>'+src(2),'The approved establishment'],
+      ['Holidays',rows([{t:'Eswatini public holidays 2026',s:'Shared with service-level targets. Umhlanga and Incwala dates are set each year.',r:st('ok','Loaded')}]),'Used by leave and SLAs'],
+      ['Leave policy',table(['Leave type','Entitlement','Status'],[{c:['Annual','Per grade',st('leave','Awaiting ESWASA')]},{c:['Sick','',st('leave','Awaiting ESWASA')]},{c:['Maternity','At least the statutory minimum',st('leave','Awaiting ESWASA')]}])+src(4),'Types, entitlement, carry-over'],
+      ['Competence catalogue',table(['Competence','Kind','Validity'],[{c:['QMS lead auditor, ISO 9001','Audit','To confirm']},{c:['FSMS lead auditor, ISO 22000','Audit','To confirm']},{c:['Mass calibration','Calibration','To confirm']}])+src(8),'What people are authorised for'],
+      ['Required documents',check('ID document',true)+check('Contract of employment',true)+check('Qualification certificates',true)+check('Police clearance',true)+check('Impartiality and confidentiality declaration',true,'Yearly'),'Per employment type'],
+      ['Approvers and privacy',kv([['Personal details','HR User, HR Manager'],['Pay and bank','HR Manager, payroll role'],['Line managers see','Their direct and indirect reports, no personal or pay fields'],['Every reveal','Logged']])+src(10),'Who sees what'],
+      ['Import employees',rows([{t:'Pass 1: create records',s:'86 rows. 84 ready, 2 need fixing.',r:st('leave','2 to fix')},{t:'Row 14: no line manager',s:'Only the Executive Director may have none.'},{t:'Row 52: department "Lab" not found',s:'Pick Metrology & Laboratories.'},{t:'Pass 2: link line managers and approvers',s:'Runs after pass 1.'}])+'<button type="button" class="btn ghost sm" data-toast="Upload the corrected file. Validation runs again before anything is saved.">Upload corrected file</button>'+src(3),'Two passes, validated first'],
+      ['Payroll scope',radios([['Run payroll in EswasaOne','Salary structures, the monthly run and payslips'],['Keep the current payroll system','EswasaOne sends approved changes; steps 3 to 6 are hidden']],'')+banner('warn','Decision needed','<span>Confirmation Pack H15 and H16.</span>'),'Where pay is calculated']
+    ];
+    return head('HR setup','System Administration. One-time configuration before HR & People goes live.',null,[['System Administration','#/admin/hr-setup'],['HR setup']])
+      +'<div class="hr-view">'+wizard(r,'#/admin/hr-setup',steps,{label:'Finish setup',action:'set:who:hrm" data-go="#/hr/overview" data-toast="HR is set up: 86 employees imported. The Overview now shows live numbers.'})+'</div>';
+  };
+  R['hr/welcome']=function(){
+    return head('HR & People','HR isn\'t set up yet, so there is nothing to show.',null)
+      +'<div class="hr-view">'+box('Before HR goes live','10 steps in System Administration. Some need answers from ESWASA first.',rows([{t:'Organisation and departments',r:st('leave','To do')},{t:'Approved posts and grades',r:st('leave','To do')},{t:'Leave policy',r:st('mute','Waiting for ESWASA')},{t:'Import employees',r:st('leave','To do')}]))
+      +next('Start HR setup','About 30 minutes once ESWASA\'s inputs are in.','#/admin/hr-setup','Start HR setup')+'</div>';
+  };
+
+  /* ---- H15 Board HR pack ---- */
+  R['board/hr-pack']=function(){
+    var dec=S.est==='council'||S.est==='approved';
+    return head('Board HR pack','Council HR & Remuneration Committee, quarter 2 of 2026/27 (Jul to Sep). Aggregates only, no names.',S.who==='hrm'?'<button type="button" class="btn pri" data-toast="Added to the HR & Remuneration Committee pack for the 5 Nov meeting.">Add to committee pack</button>':'<button type="button" class="btn ghost" data-toast="Downloads the pack as PDF.">Download PDF</button>',[['Board & Governance','#/board/hr-pack'],['HR pack']])
+      +'<div class="hr-view">'+(dec?banner(S.est==='approved'?'ok':'info',S.est==='approved'?'Decided: 2 Lead Auditor posts added':'For decision: add 2 Lead Auditor posts, Certification','<span>Approved by the Executive Director. Adds E 0.9m a year (sample). Reason: food-safety and OH&S audits depend on one or two people.</span>',S.who==='council'&&S.est==='council'?doBtn('Record committee decision','set:est:approved" data-go="#/board/hr-pack','sm','Recorded as a resolution. The Staffing Plan is amended.'):''):'')
+      +'<div class="hr-cards">'
+      +'<div class="hr-card"><span class="l">Headcount</span><span class="v">86 <small>of 96 posts</small></span><span class="d">90% of the establishment</span></div>'
+      +'<div class="hr-card"><span class="l">Turnover, 12 months</span><span class="v">8.4%</span><span class="d">7 leavers, 12 joiners</span></div>'
+      +'<div class="hr-card"><span class="l">Vacancies</span><span class="v">10</span><span class="d">4 in recruitment, average 38 days open</span></div>'
+      +'<div class="hr-card"><span class="l">Competence cover</span><span class="v">2 <small>at risk</small></span><span class="d">Competences with one holder</span></div>'
+      +'<div class="hr-card"><span class="l">Appraisals</span><span class="v">49%</span><span class="d">Manager reviews done, closes 30 Oct</span></div>'
+      +'<div class="hr-card"><span class="l">Leave owed</span><span class="v">1,142 <small>days</small></span><span class="d">4 people above carry-over</span></div>'
+      +'<div class="hr-card"><span class="l">Cases</span><span class="v">3</span><span class="d">2 grievances, 1 disciplinary. 34 days average to close</span></div>'
+      +'<div class="hr-card"><span class="l">Declarations</span><span class="v">'+(80+Object.keys(S.decl).length)+' <small>of 86</small></span><span class="d">Impartiality and confidentiality, 2026/27</span></div>'
+      +'</div><p class="hr-note">Built from the same numbers as HR Overview. Names, pay and case details never appear in the pack.</p></div>';
+  };
+
+  /* ---- T: My team ---- */
+  function teamOf(){ return (TEAM[me().self]||[]).map(person) }
+  R['team']=function(){
+    var p=me(), team=teamOf(), L=mine(), dec=L.filter(function(i){return i.fam==='Approve'}).length, tasks=L.filter(function(i){return i.fam==='Task'});
+    var needs=L.map(function(i){return {t:i.t,s:i.s,r:i.due,href:i.fam==='Task'&&i.href?i.href:'#/approvals/'+i.id,l:i.fam==='Task'?'Do it':'Decide'}});
+    if(p.head){ needs.push({t:'OH&S auditing depends on one person',s:'Lindiwe Simelane is the only ISO 45001 auditor.',r:st('bad','Cover'),href:'#/team/cover',l:'Cover'}); }
+    return head('My team',team.length+' people report to you'+(p.head?' (department-wide view)':'')+'.',(p.head?lnk('Raise a requisition','#/team/requisition','ghost'):'')+lnk('Team calendar','#/team/calendar','ghost'))
+      +'<div class="hr-view"><div class="kpis"><a class="kpi" href="#/approvals"><span class="l">Decisions waiting</span><span class="v">'+dec+'</span><span class="d">In Approvals</span></a><a class="kpi" href="#/approvals?tab=tasks"><span class="l">Tasks</span><span class="v">'+tasks.length+'</span><span class="d">Probation, reviews, onboarding</span></a><a class="kpi" href="#/team/calendar"><span class="l">Away today</span><span class="v">1</span><span class="d">Lindiwe Simelane, field work</span></a></div>'
+      +box('Needs you','Decisions happen in Approvals; this list takes you there',needs.length?rows(needs):'<p class="hr-note">Nothing needs you right now.</p>',null)
+      +table(['Person','Post','Status','Leave left'],team.map(function(t){return {c:['<div class="hr-who"><span class="hr-av">'+ini(t.n)+'</span><div><b>'+t.n+'</b><span class="id">'+t.no+'</span></div></div>',t.pos,t.st,'12 days'],href:'#/team/member/'+t.id}}))+'</div>';
+  };
+  R['team/calendar']=function(){
+    var D=[['Mon',2],['Tue',3],['Wed',4],['Thu',5],['Fri',6],['Mon',9],['Tue',10],['Wed',11],['Thu',12],['Fri',13]];
+    var C=[['Thandi Mamba',S.leave==='approved'?'AAAAA.....':S.leave==='submitted'?'aaaaa.....':'..F.......'],['Zanele Nkosi','..........'],['Bongani Dlamini','.FF.......'],['Lindiwe Simelane','.....FF...']];
+    if(S.hired) C.push(['Ayanda Mthethwa','..........']);
+    var g='<div class="hr-cal" style="min-width:640px"><div class="h"></div>'+D.map(function(d,i){return '<div class="h'+(i===5?' w2':'')+'">'+d[0]+'<b>'+d[1]+'</b></div>'}).join('')+C.map(function(c){ return '<div class="n">'+c[0]+'</div>'+c[1].split('').map(function(ch,i){return '<div class="c'+(i===5?' w2':'')+(ch==='.'?'':ch==='a'?' pend':' on')+'">'+(ch==='.'?'':ch.toUpperCase())+'</div>'}).join('') }).join('')+'</div>';
+    return head('Team calendar','2 to 13 November',null,[['My team','#/team'],['Calendar']])
+      +'<div class="hr-view">'+box('','',('<div class="hr-scroll">'+g+'</div><div class="hr-key"><span><b>A</b> Annual</span><span><b>F</b> Field work, from Field Operations</span><span>Dashed: requested, not yet approved</span></div>'))
+      +(S.leave==='approved'?banner('info','Audit on 4 Nov needs another lead auditor','<span>Thandi is on approved leave. Certification has a task to reassign it; the audit planner won\'t offer her for those dates.</span>'):'')+'</div>';
+  };
+  R['team/member/:id']=function(r){
+    var p=person(r.p.id);
+    return head(p.n,p.pos+'. Reports to '+p.mgr+'.',null,[['My team','#/team'],[p.n]])
+      +'<div class="hr-view"><div class="hr-grid c2">'+box('Job','',kv([['Post',p.pos],['Status',p.st],['Started',p.start],['Contract',p.ctr]]))+box('Leave','',balances())+'</div>'
+      +box('Authorisations','',auths(p.id))+banner('lock','Personal and pay details aren\'t shown to line managers','<span>Ask HR if you need them for a specific reason.</span>')
+      +(p.id==='bd'?next('Probation review due 31 Oct','Confirm, extend or recommend ending.','#/team/probation/bd','Start review'):p.id==='tm'&&S.self&&!S.mgr?next('Review Thandi\'s self-assessment','She submitted her ratings.','#/team/review/tm','Start review'):'')+'</div>';
+  };
+  R['team/probation/:id']=function(r){
+    var p=person(r.p.id);
+    return head('Probation review: '+p.n,p.pos+'. Started 4 May 2026. Review due 31 Oct.',null,[['My team','#/team'],[p.n,'#/team/member/'+p.id],['Probation review']])
+      +'<div class="hr-view"><div class="hr-grid c2">'+box('What the record shows','',rows([{t:'Objectives',s:'3 set, 2 on track'},{t:'Authorisation',s:'QMS auditor, in training. 1 of 3 witnessed audits'},{t:'Absence',s:'2 days sick'}]))
+      +box('Rules','',rows([{t:'If no review is done',s:'Confirmation is automatic under the current policy (to confirm, H12).'},{t:'Extending or ending',s:'Also needs the HR Manager.'}]))+'</div>'
+      +'<div class="hr-box"><div class="hr-box__b hr-form">'+radios([['Confirm','Ends probation'],['Extend by 3 months','Set what must improve'],['Recommend ending employment','HR Manager and Executive Director decide']],'Confirm')
+      +f('Strengths',area('Reliable document reviews; good with clients.'),null,true)+f('To develop',area('Complete the witnessed audits for QMS authorisation.'),null,true)+'</div></div>'
+      +'<div class="hr-wiz__nav"><a class="btn ghost" href="#/team">Cancel</a>'+doBtn('Submit review','set:probation:submitted" data-go="#/sent/probation')+'</div></div>';
+  };
+  R['team/review/:id']=function(r){
+    var p=person(r.p.id);
+    return head('Mid-year review: '+p.n,'Closes Fri 30 Oct.',null,[['My team','#/team'],[p.n,'#/team/member/'+p.id],['Review']])
+      +'<div class="hr-view">'+(S.self?'':banner('warn','Thandi hasn\'t submitted her self-assessment','<span>You can prepare your ratings, but you can\'t submit until she does.</span>','<a class="hr-lnk" href="#/me/appraisal?as=emp">Do it as Thandi</a>'))
+      +goals(S.self?'3 Meets':'–',true)+'<div class="hr-box"><div class="hr-box__b hr-form">'+f('Overall comment',area('Strong half-year; on track for the ISO 22000 renewal.'),null,true)+'</div></div>'
+      +'<div class="hr-wiz__nav"><a class="btn ghost" href="#/team">Cancel</a>'+(S.self?doBtn('Submit review','set:mgr:true" data-go="#/sent/review'):'<button type="button" class="btn pri" disabled>Submit review</button>')+'</div></div>';
+  };
+  R['team/cover']=function(){
+    return head('Department cover: Certification','Competences with too few current holders.',null,[['My team','#/team'],['Cover']])
+      +'<div class="hr-view">'+table(['Competence','Current holders','Expiring','Risk'],[{c:['<b>OH&S auditor, ISO 45001</b>','1, Lindiwe Simelane','–',st('bad','1 person only')]},{c:['<b>FSMS lead auditor, ISO 22000</b>','2',S.auth==='approved'?'–':'Thandi Mamba, 30 Nov',S.auth==='approved'?st('ok','2 people'):st('leave','1 expiring')]},{c:['<b>EMS auditor, ISO 14001</b>','2','Sipho Magagula, 15 Nov',st('leave','1 expiring')]},{c:['<b>QMS lead auditor, ISO 9001</b>','4','–',st('ok','Covered')]}])
+      +'<p class="hr-note">Alert R-H4 goes to the head of department when a competence has one or zero current holders.</p>'
+      +next('Build cover','Put someone into training for ISO 45001, or ask for more posts.','#/team/requisition','Raise a requisition')+'</div>';
+  };
+
+  /* ---- E: My HR ---- */
+  R['me']=function(){
+    var p=me(), id=p.self, L=mine().filter(function(i){return i.fam==='Task'});
+    if(S.who==='nj') return R['me/first-days']();
+    return head('My HR','Hello '+p.n.split(' ')[0]+'. Everything about your job, leave and pay in one place.',lnk('Apply for leave','#/me/leave/new','pri'))
+      +'<div class="hr-view"><div class="hr-cards">'
+      +'<a class="hr-card" href="#/me/leave"><span class="l">Annual leave</span><span class="v">'+(S.leave?'7':'12')+' <small>days left</small></span><span class="d">'+(S.leave==='submitted'?'2 to 6 Nov waiting for Sipho':S.leave==='approved'?'2 to 6 Nov approved':'Leave year ends 31 Mar')+'</span></a>'
+      +'<a class="hr-card" href="#/me/payslips"><span class="l">Next pay</span><span class="v">Fri 23 Oct</span><span class="d">September payslip available</span></a>'
+      +'<a class="hr-card" href="#/me/competence"><span class="l">My authorisations</span><span class="v">3</span><span class="d">'+(S.auth==='approved'?'All current':'1 expiring 30 Nov')+'</span></a>'
+      +'<a class="hr-card" href="#/me/appraisal"><span class="l">Mid-year review</span><span class="v">'+(S.self?'Submitted':'To do')+'</span><span class="d">Closes Fri 30 Oct</span></a></div>'
+      +box('My tasks','From Approvals, under Tasks',L.length?rows(L.map(function(i){return {t:i.t,s:i.s,r:i.due,href:i.href,l:'Do it'}})):'<p class="hr-note">You\'re up to date.</p>')
+      +'<div class="hr-grid c2">'+box('Quick links','',rows([{t:'My profile and documents',href:'#/me/profile'},{t:'My leave history',href:'#/me/leave'},{t:'Raise a concern in confidence',href:'#/me/grievance'}]))
+      +box('On your phone','',rows([{t:'Field app, Me tab',s:'Leave, payslips and claims on the go. Mockup: eswasaone-field.html',href:'eswasaone-field.html',l:'Open'}]))+'</div></div>';
+  };
+  R['me/leave/new']=function(){
+    return head('Apply for leave','',null,[['My HR','#/me'],['Apply for leave']])
+      +'<div class="hr-view"><div class="hr-box"><div class="hr-box__b hr-form">'
+      +radios([['Annual','12 days left'],['Sick','12 days left'],['Study','10 days left'],['Family responsibility','To confirm']],'Annual')
+      +f('From',inp('2026-11-02','date'))+f('To',inp('2026-11-06','date'))
+      +'<div class="wide">'+kv([['Working days','5 (public holidays excluded)'],['Balance after','7 days']])+'</div>'
+      +banner('warn','Your work in those dates','<span>1 audit on Wed 4 Nov: surveillance, ISO 22000 (sample client). Certification will need another lead auditor.</span>')
+      +f('Suggested cover',sel(['Zanele Nkosi (holds ISO 9001 and ISO 22000)','Sipho Magagula','No cover needed']),'Your manager confirms it')+f('Note for your manager',inp(''))
+      +'</div></div>'+next('Who decides','Goes to Sipho Magagula, your line manager, in Approvals.',null)
+      +'<div class="hr-wiz__nav"><a class="btn ghost" href="#/me">Cancel</a>'+doBtn('Send request','set:leave:submitted" data-go="#/sent/leave')+'</div></div>';
+  };
+  R['me/leave']=function(){
+    var rowsL=[]; if(S.leave) rowsL.push({c:['<b>Annual</b>','2 to 6 Nov','5',S.leave==='approved'?st('ok','Approved'):st('leave','With Sipho Magagula')]});
+    rowsL.push({c:['<b>Annual</b>','10 to 14 Aug','5',st('ok','Taken')]},{c:['<b>Sick</b>','2 to 3 Jun','2',st('ok','Taken')]});
+    return head('My leave','2026/27 leave year',lnk('Apply for leave','#/me/leave/new','pri'),[['My HR','#/me'],['My leave']])
+      +'<div class="hr-view">'+box('Balances','',balances())+table(['Kind','Dates','Days','Status'],rowsL)+'</div>';
+  };
+  R['me/payslips']=function(){
+    var id=me().self||'tm';
+    return head('Payslips','Only you, the HR Manager and payroll can see these.',null,[['My HR','#/me'],['Payslips']])
+      +table(['Month','Paid','Net pay',''],[{c:['<b>September 2026</b>','23 Sep','E 25,400.00','Open'],href:'#/hr/payroll/payslip/'+id},{c:['<b>August 2026</b>','24 Aug','E 25,400.00','Open'],href:'#/hr/payroll/payslip/'+id},{c:['<b>July 2026</b>','23 Jul','E 24,950.00','Open'],href:'#/hr/payroll/payslip/'+id}])
+      +'<p class="hr-note" style="margin-top:10px">Sample figures. <button type="button" class="hr-lnk" data-toast="Downloads your 2025/26 tax certificate.">Tax certificate 2025/26</button></p>';
+  };
+  R['me/profile']=function(){
+    var p=person(me().self||'tm');
+    return head('My profile and documents','',null,[['My HR','#/me'],['Profile']])
+      +'<div class="hr-view"><div class="hr-grid c2">'+box('About me','You can see all of your own details',kv([['Name',p.n],['Staff number',p.no],['Phone','+268 7612 3456'],['Home address','Plot 12, Ezulwini'],['Next of kin','Sibusiso Mamba, brother'],['Bank','Account ending 4821']]))
+      +box('Request a change','HR checks it; bank changes also need Finance','<div class="hr-form">'+f('What to change',sel(['Phone','Home address','Next of kin','Bank account']))+f('New value',inp(''))+'</div><div style="margin-top:12px">'+doBtn('Send to HR','set:x:1" data-go="#/sent/change')+'</div>')+'</div>'
+      +box('My documents','Upload anything marked missing',docs(p.id),'<button type="button" class="hr-lnk" data-toast="Choose a file to upload. HR is told.">Upload</button>')+'</div>';
+  };
+  R['me/declaration']=function(r){
+    var id=me().self||'tm', back=S.who==='nj'?'#/me/first-days':S.who==='ext'?'#/me/external':'#/me';
+    var steps=[
+      ['Your interests','<p class="hr-note">List every organisation you have worked for, consulted to, owned part of, or have a close family member at, in the last two years (since Oct 2024). The audit planner keeps you off their audits and decisions.</p>'
+        +'<div class="hr-rows"><div class="hr-row4">'+inp('Sample Foods Ltd')+sel(['Former employer','Consultancy client','Family member works there','Shareholding'],'Former employer')+inp('2019-01-01','date')+inp('2020-12-31','date')+'</div><div class="hr-row4">'+inp('')+sel(['Former employer','Consultancy client','Family member works there','Shareholding'])+inp('','date')+inp('','date')+'</div></div>'
+        +'<p><button type="button" class="hr-lnk" data-toast="Adds another row.">Add another</button></p>'+check('I have nothing else to declare',true),'Organisation, relationship, from, to'],
+      ['Confidentiality','<div class="wide hr-note" style="max-width:none;border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--card-2)">I will keep confidential all information about clients, applicants and certification, testing and calibration work that I obtain through my work at ESWASA, except where the law requires me to disclose it or the client has agreed. This continues after I leave ESWASA. <b>(Sample wording. ESWASA confirms the text, Confirmation Pack H9.)</b></div>'+check('I have read and accept the confidentiality undertaking',true),'Required by ISO/IEC 17021-1, 17065 and 17025'],
+      ['Sign',kv([['Declaration year','2026/27'],['Interests listed','1 (older than two years, kept for the record)'],['Confidentiality','Accepted']])+f('Type your full name to sign',inp(me().n),null,true),'Your signature']
+    ];
+    return head('Impartiality and confidentiality declaration','2026/27. About 3 minutes.',null,[[S.who==='ext'?'My record':'My HR',back],['Declaration']])
+      +'<div class="hr-view">'+wizard(r,'#/me/declaration',steps,{label:'Sign declaration',action:'set:decl.'+id+':true" data-go="#/sent/decl'})+'</div>';
+  };
+  R['me/appraisal']=function(){
+    if(S.self) return head('Mid-year review','Submitted. Sipho Magagula is adding his ratings.',null,[['My HR','#/me'],['Mid-year review']])+goals('3 Meets',S.mgr?'3 Meets':'Waiting');
+    return head('Mid-year review','Rate yourself against your objectives. Closes Fri 30 Oct.',null,[['My HR','#/me'],['Mid-year review']])
+      +'<div class="hr-view">'+goals(true,'After you submit')+'<div class="hr-box"><div class="hr-box__b hr-form">'+f('What went well',area('40 audits on track; no decisions overturned.'),null,true)+f('What you need',area('Time for the ISO 22000 refresher in November.'),null,true)+'</div></div>'
+      +'<div class="hr-wiz__nav"><a class="btn ghost" href="#/me">Cancel</a>'+doBtn('Submit to my manager','set:self:true" data-go="#/sent/self')+'</div></div>';
+  };
+  R['me/competence']=function(){
+    var back=S.who==='ext'?'#/me/external':'#/me';
+    return head('My authorisations','The work you can be assigned to.',null,[[S.who==='ext'?'My record':'My HR',back],['Authorisations']])
+      +'<div class="hr-view">'+box('Authorisations','',auths(S.who==='ext'?'tm':me().self))
+      +(S.auth==='approved'?banner('ok','FSMS lead auditor renewed to 30 Nov 2029',''):box('Renew FSMS lead auditor, ISO 22000','Expires 30 Nov 2026',rows([{t:'Refresher course, ISO 22000',s:S.evidence?'Certificate uploaded':'Done 4 Nov. Upload the certificate',r:S.evidence?st('ok','Uploaded'):st('leave','To upload')},{t:'Witnessed audit',s:'Done 22 Oct, by Zanele Nkosi',r:st('ok','Recorded')}])+'<div style="margin-top:12px">'+(S.evidence?st('info','With HR'):doBtn('Upload certificate and ask HR to renew','set:evidence:true" data-go="#/sent/evidence'))+'</div>'))+'</div>';
+  };
+  R['me/grievance']=function(){
+    return head('Raise a concern in confidence','Only the HR Manager sees this. Your line manager isn\'t told unless you agree.',null,[['My HR','#/me'],['Raise a concern']])
+      +'<div class="hr-view"><div class="hr-box"><div class="hr-box__b hr-form">'+f('What is it about?',sel(['Working conditions','How a colleague treats me','How a manager treats me','Pay or benefits','Something else']))
+      +f('Anyone who should not handle it?',inp(''),'Optional')+f('What happened',area('','Facts, dates, anyone who saw it'),null,true)+check('I\'d like to talk to HR before anything is investigated',true)+'</div></div>'
+      +'<div class="hr-wiz__nav"><a class="btn ghost" href="#/me">Cancel</a>'+doBtn('Send in confidence','set:griev:submitted" data-go="#/sent/griev')+'</div></div>';
+  };
+  R['me/first-days']=function(){
+    var d=!!S.decl.am;
+    if(!S.hired) return head('Welcome','Ayanda\'s record doesn\'t exist yet.',null)+next('Create Ayanda through the hiring journey','Raise the requisition, shortlist, interview, offer, then create the employee.','#/journeys','Open journeys');
+    return head('Welcome to ESWASA, Ayanda','Your first days. Start Mon 2 Nov, Head office, Matsapha.',null)
+      +'<div class="hr-view">'+box('Your checklist','',
+        '<ul class="hr-tasks">'+[['Sign your impartiality and confidentiality declaration','Needed before you can be assigned audit work',d,'#/me/declaration'],['Upload your ID and qualification certificates','',false,'#/me/profile'],['Meet Sipho Magagula, your line manager','Mon 2 Nov, 9:00',false,''],['Induction course in Training','About 2 hours, any time this week',false,''],['Read the Impartiality Policy and the Quality Manual','',false,''],['Set up the Field app on your phone','For leave, payslips and audits',false,'eswasaone-field.html']].map(function(t){return '<li class="'+(t[2]?'done':'')+'"><span class="hr-tick'+(t[2]?' ok':'')+'">'+(t[2]?'✓':'')+'</span><div><b>'+t[0]+'</b><span class="s">'+t[1]+'</span></div>'+(t[2]?st('ok','Done'):t[3]?'<a class="hr-lnk" href="'+t[3]+'">Start</a>':'')+'</li>'}).join('')+'</ul>')
+      +'<div class="hr-grid c2">'+box('Who to ask','',rows([{av:'SM',t:'Sipho Magagula',s:'Line manager'},{av:'ZN',t:'Zanele Nkosi',s:'Your buddy'},{av:'LK',t:'Lwazi Kunene',s:'HR Officer'}]))+box('Your probation','',kv([['Started','2 Nov 2026'],['Review','Set by policy (to confirm)'],['Authorisation','QMS auditor, in training']]))+'</div>'
+      +(d?next('Next: upload your documents','HR checks them and marks them on file.','#/me/profile','Upload documents'):next('Sign your declaration first','It takes about 3 minutes.','#/me/declaration','Sign now'))+'</div>';
+  };
+  R['me/external']=function(){
+    var d=!!S.decl.ms;
+    return head('My record','Musa Shabangu, external auditor on contract with ESWASA.',null)
+      +'<div class="hr-view"><div class="hr-grid c2">'+box('Engagement','',kv([['Role','Contract auditor'],['From','Jan 2026'],['To','Dec 2027'],['Contact at ESWASA','Sipho Magagula']]))
+      +box('Authorisations','',rows([{t:'FSMS lead auditor, ISO 22000',s:'Valid to 31 Jul 2027',r:st('ok','Current')}]))+'</div>'
+      +box('Declaration 2026/27','Same impartiality and confidentiality declaration as staff',d?st('ok','Signed'):'<a class="btn pri" href="#/me/declaration">Sign declaration</a>')
+      +banner('lock','No leave or pay here','<span>You are paid through your contract, not ESWASA payroll.</span>')+'</div>';
+  };
+
+  /* ---- journeys index ---- */
+  var J=[
+    ['J1','Set up HR','HR Manager',[['Not set up','#/hr/welcome?as=hrm'],['HR setup','#/admin/hr-setup?as=hrm'],['Import','#/admin/hr-setup?step=9&as=hrm'],['Overview','#/hr/overview?as=hrm']]],
+    ['J2','Hire','Head of dept, HR, applicant, ED, new joiner, line manager',[['Raise requisition','#/team/requisition?as=hod'],['HR approves','#/approvals?as=hrm'],['Publish','#/hr/recruitment/REQ-2026-018?as=hrm'],['Apply (public)','eswasaone-careers.html'],['Shortlist','#/hr/recruitment/REQ-2026-018/applicant/am?as=hrm'],['Interview','#/hr/recruitment/REQ-2026-018/interview/am?as=hrm'],['Offer','#/hr/recruitment/REQ-2026-018/offer/am?as=hrm'],['ED approves','#/approvals?as=ed'],['Create employee','#/hr/recruitment/REQ-2026-018/applicant/am?as=hrm'],['Onboarding','#/hr/onboarding/am?as=hrm'],['First days','#/me/first-days?as=nj'],['Probation review','#/team/probation/bd?as=lm']]],
+    ['J3','Leave','Employee, line manager',[['Apply','#/me/leave/new?as=emp'],['Manager decides','#/approvals?as=lm'],['Team calendar','#/team/calendar?as=lm'],['HR view','#/hr/timeoff?as=hrm']]],
+    ['J4','Authorise an auditor','Employee, HR, head of dept',[['Upload evidence','#/me/competence?as=emp'],['HR prepares','#/hr/competence/new?p=tm&as=hrm'],['Head approves','#/approvals?as=hod'],['Matrix','#/hr/competence?as=hrm'],['Detail','#/hr/competence/auth/tm-fsms?as=hrm']]],
+    ['J5','Yearly declaration','Employee, HR',[['Task','#/me?as=emp'],['Sign','#/me/declaration?as=emp'],['Register','#/hr/competence/declarations?as=hrm']]],
+    ['J6','Appraisal cycle','HR, employee, line manager',[['Start cycle','#/hr/performance/new?as=hrm'],['Self-assess','#/me/appraisal?as=emp'],['Manager review','#/team/review/tm?as=lm'],['Progress','#/hr/performance?as=hrm'],['Board pack','#/board/hr-pack?as=hrm']]],
+    ['J7','Monthly payroll','HR, Finance',[['Run','#/hr/payroll?as=hrm'],['Blocked change','#/hr/payroll/change/sn?as=hrm'],['Finance approves changes','#/approvals?as=fin'],['Calculate and review','#/hr/payroll?as=hrm'],['Finance approves run','#/approvals?as=fin']]],
+    ['J8','Promotion or transfer','HR, ED',[['Record','#/hr/people/pm?as=hrm'],['Promote','#/hr/people/pm/action/promote?as=hrm'],['ED approves','#/approvals?as=ed'],['History','#/hr/people/pm?tab=history&as=hrm']]],
+    ['J9','Leaver','HR, ED',[['Record','#/hr/people/mz?as=hrm'],['Separation','#/hr/people/mz/action/separate?as=hrm'],['Offboarding','#/hr/offboarding/mz?as=hrm'],['Final pay','#/hr/payroll/change/mz?as=hrm']]],
+    ['J10','Case','Employee, HR Manager',[['Raise a concern','#/me/grievance?as=emp'],['Cases','#/hr/cases?as=hrm'],['Case','#/hr/cases/HRC-2026-006?as=hrm'],['HR Officer can\'t see it','#/hr/cases?as=hro']]],
+    ['J11','Establishment change','HR, ED, Council',[['Request','#/hr/structure/change?as=hrm'],['ED approves','#/approvals?as=ed'],['Council decides','#/board/hr-pack?as=council'],['Department','#/hr/structure/certification?as=hrm']]],
+    ['J12','Sensitive data','HR Manager, line manager',[['Record','#/hr/people/tm?tab=job&as=hrm'],['Pay tab','#/hr/people/tm?tab=pay&as=hrm'],['Access log','#/hr/people/tm?tab=access&as=hrm'],['Line manager view','#/team/member/tm?as=lm']]]
+  ];
+  R['journeys']=function(){
+    return head('Journeys','Each chip opens a step as the person who does it. Steps carry state forward, so follow them in order. Mockup only.',doBtn('Reset sample data','reset" data-go="#/journeys','ghost'))
+      +'<div class="hr-jny">'+J.map(function(j){ return '<div class="hr-card"><span class="l">'+j[0]+' · '+j[2]+'</span><b style="font-size:15px">'+j[1]+'</b><ol>'+j[3].map(function(s,i){return '<li><a href="'+s[1]+'"><em>'+(i+1)+'</em>'+s[0]+'</a></li>'}).join('')+'</ol></div>' }).join('')+'</div>';
+  };
+
+  /* ---- access denied ---- */
+  function noAccess(msg){
+    return head('Not available to your role',msg||'This screen belongs to another role.',null)
+      +next('Go to your home screen','Or switch persona at the top right to see it as someone who has access.',me().home,'Home');
+  }
+
+  /* ===================== ROUTER ===================== */
+  function parse(){
+    var h=location.hash.slice(1)||''; if(h && h.charAt(0)!=='/') h='/hr/'+h;
+    var q={}, qi=h.indexOf('?'); if(qi>-1){ h.slice(qi+1).split('&').forEach(function(kv){ if(!kv) return; var p=kv.split('='); q[p[0]]=decodeURIComponent(p[1]||'') }); h=h.slice(0,qi); }
+    return {parts:h.split('/').filter(Boolean),q:q,p:{}};
+  }
+  var ROUTES=Object.keys(R).map(function(k){ return [k.split('/'),R[k]] }).sort(function(a,b){ return b[0].filter(function(x){return x.charAt(0)!==':'}).length-a[0].filter(function(x){return x.charAt(0)!==':'}).length });
+  function match(r){
+    for(var i=0;i<ROUTES.length;i++){ var pat=ROUTES[i][0]; if(pat.length!==r.parts.length) continue; var ok=true, p={};
+      for(var j=0;j<pat.length;j++){ if(pat[j].charAt(0)===':') p[pat[j].slice(1)]=decodeURIComponent(r.parts[j]); else if(pat[j]!==r.parts[j]){ ok=false; break; } }
+      if(ok){ r.p=p; return ROUTES[i][1]; } }
+    return null;
+  }
+  var TABOF={people:'directory',movements:'directory',onboarding:'directory',offboarding:'directory',orgchart:'structure',welcome:'overview'};
+  function hrTab(parts){ return TABOF[parts[1]]||parts[1] }
+  function guard(parts){
+    var p=me(), a=parts[0];
+    if(a==='hr'){ if(!p.hr) return 'HR & People is for HR, Finance (payroll) and the Executive Director.'; if(p.hr.indexOf(hrTab(parts))<0) return hrTab(parts)==='cases'?'Cases are restricted to the HR Manager and the case owner.':hrTab(parts)==='payroll'?'Payroll is limited to the HR Manager and Finance.':'Your role doesn\'t include this part of HR & People.'; if(parts[1]==='people' && parts[2]==='new' && S.who!=='hrm' && S.who!=='hro') return 'Only HR adds employees.'; }
+    if(a==='team'){ if(!p.team) return 'My team is for people who manage others.'; if((parts[1]==='requisition'||parts[1]==='cover') && !p.head && S.who!=='hrm') return 'Requisitions and department cover are for heads of department.'; }
+    if(a==='me'){ if(parts[1]==='external'){ if(!p.ext) return 'This is the external personnel view.'; } else if(!p.me && !(p.ext && (parts[1]==='declaration'||parts[1]==='competence'))) return p.ext?'External personnel see their record, competence and declaration only.':'Council members don\'t have an employee record.'; }
+    if(a==='admin' && !p.admin) return 'HR setup is for the HR Manager in System Administration.';
+    if(a==='board' && !p.board) return 'The Board HR pack is for the Council committee, the Executive Director and the HR Manager.';
+    if(a==='approvals' && (S.who==='council')) return 'Council decisions are recorded in Board & Governance.';
+    return null;
+  }
+  var AREA={hr:'HR & People',team:'My team',me:'My HR',approvals:'Approvals',admin:'System Administration',board:'Board & Governance',sent:'Sent',journeys:'Journeys'};
+
+  function buildRail(area){
+    var p=me(), n=mine().length;
+    function a(href,ic,label,on,badge,inert){ return '<a href="'+href+'"'+(on?' class="on" aria-current="page"':'')+(inert?' class="inert" data-toast="Outside this mockup. HR links to it where it needs to."':'')+'><svg><use href="#'+ic+'"/></svg>'+label+(badge?'<span class="badge">'+badge+'</span>':'')+'</a>' }
+    var h='';
+    if(S.who!=='council' && S.who!=='ext') h+=a('#/approvals','i-done','Approvals',area==='approvals',n||'');
+    if(p.hr) h+=a(p.hr.indexOf('overview')>-1?'#/hr/overview':'#/hr/'+p.hr[0],'i-users','HR & People',area==='hr');
+    if(p.board) h+=a('#/board/hr-pack','i-trend','Board & Governance',area==='board');
+    if(p.admin) h+=a('#/admin/hr-setup','i-sliders','System Administration',area==='admin');
+    h+='<div class="grp">Me</div>';
+    if(p.team) h+=a('#/team','i-users','My team',area==='team');
+    if(p.me) h+=a('#/me','i-task','My HR',area==='me');
+    if(p.ext) h+=a('#/me/external','i-task','My record',area==='me');
+    h+=a('#/journeys','i-map','Journeys (mockup)',area==='journeys');
+    h+='<div class="grp">Other modules</div>'+[['i-grid','Dashboard'],['i-case','CRM & Commercial'],['i-award','Certification'],['i-book','Standards Dev'],['i-gauge','Metrology & LIMS'],['i-map','Field Operations']].map(function(m){return a('#','i'+m[0].slice(1),m[1],false,'',true)}).join('');
+    $('.nav').innerHTML=h;
+  }
+
+  function render(){
+    var r=parse(); if(r.q.as && P[r.q.as] && S.who!==r.q.as){ S.who=r.q.as; save(); }
+    var p=me();
+    $('#persona').value=S.who; $('#pAv').textContent=ini(p.n); $('#pName').textContent=p.n; $('#pRole').textContent=p.r;
+    drawer.hidden=true; scrim.hidden=true; closeModal();
+    if(!r.parts.length){ location.replace(p.home); return; }
+    var area=r.parts[0], denied=guard(r.parts), isStatic=area==='hr' && r.parts.length===2 && STATIC.indexOf(r.parts[1])>-1;
+    buildRail(area); topTitle.textContent=AREA[area]||'HR & People';
+    subtabsEl.hidden=!(area==='hr' && p.hr && !denied);
+    var tab=area==='hr'?hrTab(r.parts):'';
+    $$('.subtab').forEach(function(t){ var on=t.dataset.tab===tab; t.hidden=!p.hr||p.hr.indexOf(t.dataset.tab)<0; t.classList.toggle('on',on); if(on) t.setAttribute('aria-current','page'); else t.removeAttribute('aria-current'); });
+    if(isStatic && !denied){
+      view.hidden=true; view.innerHTML='';
+      $$('[data-panel]').forEach(function(x){ x.hidden=x.dataset.panel!==r.parts[1]; });
+      refreshStatic(r.parts[1]);
+      if(r.parts[1]==='overview') drawLine();
+    } else {
+      $$('[data-panel]').forEach(function(x){ x.hidden=true; });
+      var fn=denied?null:match(r);
+      view.innerHTML='<div class="hr-view">'+(denied?noAccess(denied):fn?fn(r):noAccess('That screen doesn\'t exist in this mockup.'))+'</div>';
+      view.hidden=false;
+      var h2=$('h2',view); if(h2 && document.activeElement && document.activeElement!==document.body) h2.focus();
+    }
+    window.scrollTo(0,0);
+  }
+
+  /* ---- keep the nine register tabs in step with the journeys ---- */
+  function inj(tbody,key,html,href){ var old=$('tr[data-inj="'+key+'"]',tbody); if(old) old.remove(); if(!html) return; var tr=document.createElement('tr'); tr.dataset.inj=key; tr.className='link'; tr.tabIndex=0; tr.dataset.go=href; tr.innerHTML=html; tbody.insertBefore(tr,tbody.firstChild); }
+  function refreshStatic(tab){
+    if(tab==='recruitment') inj($('[data-panel="recruitment"] tbody'),'018',S.req&&S.req!=='submitted'?'<td><b>Certification Officer</b><div class="sub mono">REQ-2026-018</div></td><td>Certification</td><td>'+(S.hired?st('ok','Hired'):S.offer?st('ok','Offer '+S.offer):S.published?st('info','Screening'):st('mute','Approved, not advertised'))+'</td><td><div class="hr-funnel"><span><b>'+(S.published?4:0)+'</b>Applied</span><span><b>'+Object.keys(S.app).filter(function(k){return S.app[k]!=='Not this time'}).length+'</b>Shortlist</span><span><b>'+(['Interview','Interviewed','Offer','Hired'].indexOf(stageOf('am'))>-1?1:0)+'</b>Interview</span><span><b>'+(S.offer?1:0)+'</b>Offer</span></div></td><td class="num">1</td><td>Sipho Magagula</td>':null,'#/hr/recruitment/REQ-2026-018');
+    if(tab==='timeoff') inj($('[data-panel="timeoff"] table tbody'),'tm',S.leave?'<td><b>Thandi Mamba</b></td><td>Annual</td><td>2 to 6 Nov</td><td class="num">5</td><td class="num">7</td><td>Sipho Magagula</td><td>'+(S.leave==='approved'?st('ok','Approved'):st('leave','Waiting, new'))+'</td>':null,'#/hr/timeoff/request/tm');
+    if(tab==='directory') inj($('#dirTbl tbody'),'am',S.hired?'<td><div class="hr-who"><span class="hr-av">AM</span><div><b>Ayanda Mthethwa</b><span class="id">ESW-0087</span></div></div></td><td>Certification Officer</td><td>Certification</td><td>Sipho Magagula</td><td>Permanent</td><td>'+st('probation','Probation')+'</td><td>Nov 2026</td>':null,'#/hr/people/am');
+    if(tab==='cases') inj($('[data-panel="cases"] tbody'),'006',S.griev?'<td class="mono">HRC-2026-006</td><td>Grievance</td><td>Today</td><td>'+st('leave','Open')+'</td><td>Nokuthula Shongwe</td><td>Meet the employee, Mon 19 Oct</td>':null,'#/hr/cases/HRC-2026-006');
+    if(tab==='competence'){ var c=$('#mx tr td:nth-child(3)'); if(c) c.innerHTML=S.auth==='approved'?'<span class="hr-st ok">Current</span>':S.auth==='submitted'?'<span class="hr-st info">Renewal waiting</span>':'<span class="hr-st leave">To 30 Nov</span>'; var dc=$('#declCount'); if(dc) dc.textContent=(80+Object.keys(S.decl).filter(function(k){return S.decl[k]}).length)+' of 86 signed'; }
+    if(tab==='payroll'){
+      var map={sn:0,pm:1,mz:2};
+      Object.keys(map).forEach(function(k){ var td=$$('#payTbl tbody tr')[map[k]]; if(!td) return; var s=S.pay[k]; td.lastElementChild.innerHTML=s==='blocked'?'<span class="hr-st bad">Blocked</span>':s==='waiting'?'<span class="hr-st leave">Waiting for Finance</span>':s==='approved'?'<span class="hr-st ok">Approved</span>':'<span class="hr-st mute">Returned</span>'; });
+      var allOk=['sn','pm','mz'].every(function(k){return S.pay[k]==='approved'}), step=S.payStep;
+      $$('.hr-steps li').forEach(function(li,i){ li.className=i+1<step||step===6&&i===5?'done':i+1===step?'now':''; });
+      var waiting=['sn','pm','mz'].filter(function(k){return S.pay[k]!=='approved'}).length;
+      $$('.hr-steps li')[1].querySelector('span').textContent=step>2?'Done':waiting+' waiting';
+      var h;
+      if(step===2) h=allOk?banner('ok','All changes approved','<span>You can calculate the run once the cut-off passes.</span>',S.who==='hrm'?doBtn('Calculate the run','set:payStep:4" data-go="#/hr/payroll','sm','Salary slips calculated for 86 employees. Review the differences next.'):''):banner('warn',waiting+' changes still need Finance','<span>'+(S.pay.sn==='blocked'?'Sandile Ndwandwe is blocked: bank details missing. ':'')+'Unapproved changes roll to November after 20 Oct.</span>','<a class="hr-lnk" href="#/approvals?as=fin">See it as Finance</a>');
+      else if(step===4) h=banner('info','Review the differences','<span>The October estimate is 1.7% above September: 1 joiner, 1 promotion, 1 leaver. Nothing unexplained.</span>',S.who==='hrm'?doBtn('Send the run to Finance','set:payStep:5" data-go="#/hr/payroll','sm','Sent to Busisiwe Fakudze. She can approve because she didn\'t prepare it.'):'');
+      else if(step===5) h=banner('info','With Finance for approval','<span>Busisiwe Fakudze approves. The person who prepared the run can\'t approve it.</span>','<a class="hr-lnk" href="#/approvals/payrun?as=fin">See it as Finance</a>');
+      else h=banner('ok','Run approved','<span>Payment file released and the journal posted (ERPNext or Pastel, per decision H15). Payslips appear in My HR on Fri 23 Oct.</span>');
+      $('#payAct').innerHTML=h;
+    }
+  }
+
+  /* ---- logged reveal dialog (H1c) ---- */
+  var modal=$('#modal');
+  function closeModal(){ if(modal) modal.hidden=true; }
+  function openReveal(spec){
+    var a=spec.split(':'), p=person(a[0]), kind=a[1];
+    $('#mdTitle').textContent='Show '+(kind==='pay'?'pay and bank':'personal')+' details for '+p.n+'?';
+    modal.dataset.spec=spec; modal.hidden=false; $('#mdReason').focus();
+  }
+  $('#mdCancel').addEventListener('click',closeModal);
+  $('#mdOk').addEventListener('click',function(){
+    var a=modal.dataset.spec.split(':');
+    S.reveals.unshift({id:a[0],kind:a[1],by:me().n,reason:$('#mdReason').value,at:'Mon 12 Oct 2026, '+new Date().toTimeString().slice(0,5)}); save();
+    closeModal(); toast('Shown. The view is in this person\'s access log.'); render();
+  });
+  modal.addEventListener('keydown',function(e){ if(e.key==='Escape') closeModal(); });
+
+  /* ---- one delegated handler for every link-like action ---- */
+  document.addEventListener('click',function(e){
+    var t=e.target.closest('[data-toast],[data-do],[data-go],[data-jump],[data-reveal]'); if(!t) return;
+    if(t.classList.contains('inert')){ e.preventDefault(); }
+    if(t.dataset.reveal){ e.preventDefault(); e.stopPropagation(); openReveal(t.dataset.reveal); return; }
+    if(t.dataset.do){ var d=t.dataset.do; runDo(d); var m=d.match(/^decide:([^:]+):approve/); if(m){ var it=lastDecided; if(it) LASTNEXT[m[1]]=it.next; } }
+    if(t.dataset.toast) toast(t.dataset.toast);
+    if(t.dataset.jump){ e.preventDefault(); location.hash='#/hr/'+t.dataset.jump; return; }
+    if(t.dataset.go){ e.preventDefault(); if(location.hash===t.dataset.go) render(); else location.hash=t.dataset.go; return; }
+    if(t.dataset.do) render();
+  });
+  document.addEventListener('keydown',function(e){ if((e.key==='Enter'||e.key===' ') && e.target.matches && e.target.matches('tr[data-go]')){ e.preventDefault(); e.target.click(); } });
+  /* remember the next step of the item being approved before it disappears from the list */
+  var lastDecided=null, origDecide=DO.decide;
+  DO.decide=function(id,how){ lastDecided=apprItem(id); origDecide(id,how); };
+
+  $('#persona').addEventListener('change',function(){ S.who=this.value; save(); location.hash=me().home; });
+  window.addEventListener('hashchange',render);
+
+  /* ---- static registers: rows open their detail screens ---- */
+  function linkRows(sel,hrefs){ $$(sel).forEach(function(tr,i){ if(!hrefs[i]) return; tr.classList.add('link'); tr.tabIndex=0; tr.dataset.go=hrefs[i]; }); }
+  linkRows('[data-panel="timeoff"] table tbody tr',['#/hr/timeoff/request/ls','#/hr/timeoff/request/mg','#/hr/timeoff/request/tk','#/hr/timeoff/request/zn','#/hr/timeoff/request/pm']);
+  linkRows('[data-panel="recruitment"] tbody tr',['#/hr/recruitment/REQ-2026-013','#/hr/recruitment/REQ-2026-014','#/hr/recruitment/REQ-2026-015','#/hr/recruitment/REQ-2026-017']);
+  linkRows('#payTbl tbody tr',['#/hr/payroll/change/sn','#/hr/payroll/change/pm','#/hr/payroll/change/mz']);
+  linkRows('[data-panel="cases"] tbody tr',['#/hr/cases/HRC-2026-005','#/hr/cases/HRC-2026-004','#/hr/cases/HRC-2026-003']);
+  linkRows('#estTbl tr',DEPTS.map(function(d){return '#/hr/structure/'+slug(d[0])}));
+  linkRows('#perfTbl tr',DEPTS.map(function(){return '#/hr/performance/dept/certification'}));
 
   /* ---- phone navigation ---- */
   var app=$('#app'), menuBtn=$('#menuBtn');
   menuBtn.addEventListener('click',function(e){ e.stopPropagation(); var o=app.classList.toggle('nav-open'); menuBtn.setAttribute('aria-expanded',o); });
   $('.main').addEventListener('click',function(){ app.classList.remove('nav-open'); menuBtn.setAttribute('aria-expanded','false'); });
+  $('.side').addEventListener('click',function(e){ if(e.target.closest('a')) app.classList.remove('nav-open'); });
 
   /* ---- directory filter ---- */
-  var rows=$$('#dirTbl tbody tr');
+  var rowsD=$$('#dirTbl tbody tr');
   function filt(){
-    var q=$('#dQ').value.trim().toLowerCase(), d=$('#dDept').value, st=$('#dStatus').value, n=0;
-    rows.forEach(function(r){ var c=r.children, ok=(!q||r.textContent.toLowerCase().indexOf(q)>-1)&&(!d||c[2].textContent===d)&&(!st||c[5].textContent.trim()===st); r.hidden=!ok; if(ok) n++; });
-    $('#dirCount').textContent = n===rows.length ? 'Showing 10 of 86 employees.' : n ? 'Showing '+n+' that match.' : 'Nobody matches. Clear a filter to see more people.';
+    var q=$('#dQ').value.trim().toLowerCase(), d=$('#dDept').value, stt=$('#dStatus').value, n=0;
+    $$('#dirTbl tbody tr').forEach(function(r){ var c=r.children, ok=(!q||r.textContent.toLowerCase().indexOf(q)>-1)&&(!d||c[2].textContent===d)&&(!stt||c[5].textContent.trim()===stt); r.hidden=!ok; if(ok) n++; });
+    $('#dirCount').textContent = !q&&!d&&!stt ? 'Showing '+n+' of 86 employees.' : n ? 'Showing '+n+' that match.' : 'Nobody matches. Clear a filter to see more people.';
   }
   ['#dQ','#dDept','#dStatus'].forEach(function(id){ $(id).addEventListener('input',filt); });
 
-  /* ---- employee record drawer ---- */
+  /* ---- employee record drawer (H1a) ---- */
   var drawer=$('#drawer'), scrim=$('#scrim'), lastFocus;
   function openRec(r){
-    var c=r.children;
+    var c=r.children, id=$('.hr-av',r).textContent.toLowerCase(), p=person(id);
     $('#dwAv').textContent=$('.hr-av',r).textContent; $('#dwName').textContent=$('b',r).textContent;
     $('#dwSub').textContent=c[1].textContent+' · '+c[2].textContent; $('#dwId').textContent=$('.id',r).textContent;
     $('#dwMgr').textContent=c[3].textContent; $('#dwType').textContent=c[4].textContent; $('#dwStatus').textContent=c[5].textContent.trim();
     $('#dwStart').textContent=c[6].textContent; $('#dwJoined').textContent=c[6].textContent;
+    $('#dwActs').innerHTML='<a class="btn pri sm" href="#/hr/people/'+id+'">Open full record</a><a class="btn ghost sm" href="#/hr/people/'+id+'/action/promote">Promote</a><a class="btn ghost sm" href="#/hr/people/'+id+'/action/transfer">Transfer</a>'+(p.st==='Probation'?'<a class="btn ghost sm" href="#/hr/people/'+id+'/action/confirm">Probation outcome</a>':'')+(p.ctr.indexOf('Fixed')===0?'<a class="btn ghost sm" href="#/hr/people/'+id+'/action/contract">Contract</a>':'')+'<a class="btn ghost sm" href="#/hr/people/'+id+'/action/separate">Start separation</a>';
+    $('#dwReveal').dataset.reveal=id+':personal';
+    $('#dwAuth').innerHTML=auths(id); $('#dwDocs').innerHTML=docs(id);
     lastFocus=r; drawer.hidden=false; scrim.hidden=false; $('#dwClose').focus();
   }
   function closeRec(){ drawer.hidden=true; scrim.hidden=true; if(lastFocus) lastFocus.focus(); }
-  rows.forEach(function(r){ r.addEventListener('click',function(){ openRec(r); }); r.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openRec(r); } }); });
+  rowsD.forEach(function(r){ r.addEventListener('click',function(){ openRec(r); }); r.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openRec(r); } }); });
   $('#dwClose').addEventListener('click',closeRec); scrim.addEventListener('click',closeRec);
   drawer.addEventListener('keydown',function(e){ if(e.key==='Escape') closeRec(); });
+
+  render();
 })();
 </script>
+
 </html>

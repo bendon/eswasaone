@@ -13,7 +13,7 @@
 | **`eswasaone-institution-dashboard.html`** | **Institution Dashboard SoT** — ops strip (not marketing hero), KPI strip, priority queue, system status, revenue/plan, restrained modules grid | `portals/institution-portal` `/` |
 | **`eswasaone-approvals.html`** | **Approvals inbox SoT** — SLA summary, Approvals/Tasks/Alerts tabs, bulk bar, expandable rows | `portals/institution-portal` `/approvals` |
 | **`eswasaone-certification-institution.html`** | **Institution Certification SoT** — pipeline board (6 stages), list view, detail drawer with lifecycle timeline | `portals/institution-portal` `/certification` |
-| **`eswasaone-hr.html`** | **HR & People SoT** — lifecycle ribbon (Plan→Hire→Onboard→Develop→Pay), Overview/Directory/Time off/Recruitment/Performance/Payroll | `portals/institution-portal` `/hr` |
+| **`eswasaone-hr.html`** | **HR & People SoT** — nine registers plus every screen and journey for every role: record pages, wizards, My team, My HR, Approvals hand-off, HR setup, Board HR pack. Persona switcher and **Journeys** index (top bar). Spec: `docs/EswasaOne_HR_SCREENS_AND_JOURNEYS.md` | `portals/institution-portal` `/hr`, `/team`, `/me` |
 | **`eswasaone-governance.html`** | **Board & Governance SoT** — Overview (next-meeting + pack track), Meetings, Board pack, Resolutions & actions, Risk heat map, Members & committees | `portals/institution-portal` `/board` |
 | `eswasaone-system-administration.html` | **System Administration SoT** — Overview/Updates/Settings/**Access Security**/Users/Automation/Backups/Logs/Integrations (System Manager) | `portals/institution-portal` `/admin` |
 | `eswasaone-guided-flow.html` | **Superseded for chrome** (old 248px rail). Keep for progressive-auth interaction notes only. |

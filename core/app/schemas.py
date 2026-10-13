@@ -3691,3 +3691,65 @@ class HrBulkReminderResult(BaseModel):
     sent: int = 0
     skipped: int = 0
     note: str | None = None
+
+
+# --- HR additions: plan 07 ---
+# HR reports (H16): a catalogue filtered to the caller's roles, JSON rows for the screen, and a logged CSV/XLSX export.
+
+
+class HrReportColumn(BaseModel):
+    key: str
+    label: str
+    type: str = "text"  # text | date | number | percent
+
+
+class HrReportFilter(BaseModel):
+    key: str
+    label: str
+    type: str  # department | date | number | select
+    default: Any = None
+    options: list[str] | None = None
+
+
+class HrReportMeta(BaseModel):
+    """OpenAPI: HrReportMeta. ``scope`` is "all", or "team" for a line manager's reports only."""
+
+    id: str
+    title: str
+    description: str | None = None
+    group: str
+    team_scoped: bool = False
+    names: bool = False  # the report names people, so its export needs a reason
+    scope: str = "all"
+    columns: list[HrReportColumn] = Field(default_factory=list)
+    filters: list[HrReportFilter] = Field(default_factory=list)
+
+
+class HrReportCatalogue(BaseModel):
+    items: list[HrReportMeta] = Field(default_factory=list)
+    groups: list[str] = Field(default_factory=list)
+
+
+class HrReportSummaryItem(BaseModel):
+    label: str
+    value: Any = None
+
+
+class HrReportResult(HrReportMeta):
+    """OpenAPI: HrReportResult — up to 5,000 rows for the screen; ``total`` counts them all."""
+
+    applied: dict[str, Any] = Field(default_factory=dict)
+    rows: list[dict[str, Any]] = Field(default_factory=list)
+    total: int = 0
+    truncated: bool = False
+    summary: list[HrReportSummaryItem] = Field(default_factory=list)
+    note: str | None = None
+
+
+class HrReportExportBody(BaseModel):
+    """OpenAPI: HrReportExportBody. A POST so filters and the reason stay out of URLs and request logs."""
+
+    format: Literal["csv", "xlsx"] = "csv"
+    filters: dict[str, Any] = Field(default_factory=dict)
+    reason: str | None = None
+    confirm: bool = False

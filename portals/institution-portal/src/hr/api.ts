@@ -64,3 +64,36 @@ export function fileToBase64(file: File): Promise<string> {
     r.readAsDataURL(file);
   });
 }
+
+/** POST JSON (with `confirm: true`) to a route that answers with a file, and have the browser save it.
+ *  Used by report exports (plan 07): a POST keeps filters and the reason out of URLs. Returns the file name. */
+export async function hrSaveFile(path: string, body: Record<string, unknown>, fallbackName = "download"): Promise<string> {
+  const headers: Record<string, string> = { Accept: "*/*", "Content-Type": "application/json" };
+  const bearer = getStoredToken();
+  if (bearer) headers.Authorization = `Bearer ${bearer}`;
+  const csrf = getCsrfToken();
+  if (csrf) headers["X-CSRF-Token"] = csrf;
+  const res = await fetch(`${apiBase()}${path}`, { method: "POST", body: JSON.stringify({ ...body, confirm: true }), headers, credentials: "include" });
+  if (!res.ok) {
+    const text = await res.text();
+    let data: unknown = { detail: text };
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      /* plain text detail */
+    }
+    if (res.status === 401) throw new AuthError(401, (data || {}) as { detail?: string });
+    throw apiErrorFromResponse(res.status, data, path);
+  }
+  const disposition = res.headers.get("content-disposition") ?? "";
+  const name = decodeURIComponent(/filename="?([^";]+)"?/.exec(disposition)?.[1] ?? fallbackName);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.rel = "noopener";
+  a.click();
+  URL.revokeObjectURL(url);
+  return name;
+}

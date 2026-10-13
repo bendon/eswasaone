@@ -800,6 +800,15 @@ export const router = createBrowserRouter(
                     path: "bulk/:id",
                     element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.BulkActionDetail }))} skeleton="panel" />,
                   },
+                  // HR additions plan 07: H16 Reports (literal path before :id); line managers reach it with ?team=1
+                  {
+                    path: "reports",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.ReportsHome }))} skeleton="list" />,
+                  },
+                  {
+                    path: "reports/:id",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.ReportView }))} skeleton="list" />,
+                  },
                   // HR additions plan 05: H17 Training (literal paths before :id)
                   {
                     path: "training",

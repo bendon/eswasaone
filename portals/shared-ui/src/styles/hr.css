@@ -612,3 +612,24 @@ select.hr-in,.hr-invite select{appearance:none;-webkit-appearance:none;padding-r
 .hr-staff__pager button[aria-current="page"]{background:var(--navy);border-color:var(--navy);color:#fff}
 @media (max-width:1100px){.hr-staff__stats{grid-template-columns:repeat(2,minmax(0,1fr))}.hr-staff__grid{grid-template-columns:1fr}}
 @media (max-width:640px){.hr-staff__stats{grid-template-columns:1fr}.hr-staff__search{min-width:0;flex:1 1 100%}.hr-staff__filters select.hr-in{flex:1 1 140px}.hr-staff__vac li{grid-template-columns:minmax(0,1fr) 30px}.hr-staff__vac small{display:none}}
+/* HR additions plan 07: H16 reports. Print hides the app chrome and the controls, keeps the table. */
+.hr-report-group{margin-bottom:22px}
+.hr-report-group h3{margin:0 0 10px;font-size:14px}
+.hr-report-summary{margin:12px 0}
+.hr-th-sort{all:unset;cursor:pointer}
+.hr-th-sort:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+.hr-report-export{display:flex;flex-direction:column;gap:10px;margin-top:16px;max-width:640px}
+.hr-report-export__btns{display:flex;gap:8px;flex-wrap:wrap}
+.hr-report-export__note{margin:0;font-size:12px;color:var(--muted)}
+.hr-report-printonly{display:none}
+@media print{
+  body *{visibility:hidden}
+  .hr-report-print,.hr-report-print *{visibility:visible}
+  .hr-report-print{position:absolute;left:0;top:0;width:100%}
+  .hr-report-noprint{display:none !important}
+  .hr-report-printonly{display:block;font-size:11px}
+  .hr-report-print .hr-scroll{overflow:visible}
+  .hr-report-print .hr-table{min-width:0;font-size:10px}
+  .hr-report-print .hr-table th,.hr-report-print .hr-table td{padding:4px 6px}
+  .hr-report-print tr{break-inside:avoid}
+}

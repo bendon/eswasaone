@@ -19,6 +19,7 @@ export function HrPage() {
         { to: "expenses", label: "Expenses", icon: "i-file" },
         // { to: "payroll", label: "Payroll", icon: "i-dollar" },  // off: no payroll in EswasaOne
         { to: "cases", label: "Cases", icon: "i-case" },
+        { to: "reports", label: "Reports", icon: "i-chart" },
       ]}
     />
   );

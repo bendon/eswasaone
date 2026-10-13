@@ -6547,6 +6547,61 @@ async def retry_hr_bulk_action(
     return HrBulkAction.model_validate(await _hr_write(auth, frappe, f"{_BULK}.retry", json={"name": name, "confirm": 1}))
 
 
+# --- HR additions: plan 07 ---
+# HR reports (H16): the catalogue, a report as JSON, and a logged CSV/XLSX export. Roles, team scope, the reason
+# rule and the access-log row (written before any row is read) all live in eswasa_hr.hr_reports. Never reads pay.
+from app.schemas import HrReportCatalogue, HrReportExportBody, HrReportResult  # noqa: E402  (kept in this block so parallel HR additions merge cleanly)
+
+_REPORTS = "eswasa_hr.hr_reports"
+_REPORT_TYPES = {"csv": "text/csv; charset=utf-8", "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+
+
+@router.get("/hr/reports", response_model=HrReportCatalogue, tags=["hr"])
+async def list_hr_reports(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    team: bool = False,
+) -> HrReportCatalogue:
+    """The reports the caller may run; ``team`` lists only the ones a line manager runs for their reports."""
+    params = {"team": 1} if team else None
+    return HrReportCatalogue.model_validate(await _hr_call(auth, frappe, f"{_REPORTS}.catalogue", params=params))
+
+
+@router.get("/hr/reports/{report_id}", response_model=HrReportResult, tags=["hr"])
+async def run_hr_report(
+    report_id: str,
+    request: Request,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrReportResult:
+    """The report's rows (up to 5,000) for the screen. Every query parameter is a filter; eswasa_hr drops unknown ones."""
+    import json as _json
+
+    filters = {k: v for k, v in request.query_params.items() if v != ""}
+    raw = await _hr_call(auth, frappe, f"{_REPORTS}.run", params={"report": report_id, "filters": _json.dumps(filters)})
+    return HrReportResult.model_validate(raw)
+
+
+@router.post("/hr/reports/{report_id}/export", tags=["hr"])
+async def export_hr_report(
+    report_id: str,
+    body: HrReportExportBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> Response:
+    """CSV or XLSX as an attachment. Logged twice: Core's audit log, and the HR Access Log row eswasa_hr writes."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.report.export", actor=auth.user.username, resource=f"HR Report:{report_id}",
+              detail={"format": body.format, "filters": body.filters, "reason": bool((body.reason or "").strip())}, confirmed=True)
+    payload: dict[str, Any] = {"report": report_id, "filters": body.filters, "format": body.format, "confirm": 1}
+    if body.reason:
+        payload["reason"] = body.reason
+    raw = await _hr_write(auth, frappe, f"{_REPORTS}.export", json=payload) or {}
+    name = str(raw.get("file_name") or f"eswasa-hr-{report_id}.{body.format}")
+    return Response(content=base64.b64decode(raw.get("content") or ""), media_type=_REPORT_TYPES[body.format],
+                    headers={"Content-Disposition": f'attachment; filename="{quote(name)}"', "Cache-Control": "no-store"})
+
+
 @router.get("/crm/leads", tags=["crm"])
 async def list_crm_leads(
     auth: Annotated[AuthContext, Depends(require_auth)],

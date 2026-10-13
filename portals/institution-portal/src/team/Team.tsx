@@ -42,6 +42,9 @@ export function TeamHome() {
                 <Link className="btn ghost" to="/team/training">
                   Team training
                 </Link>
+                <Link className="btn ghost" to="/hr/reports?team=1">
+                  Reports
+                </Link>
               </div>
             ) : null}
           </div>

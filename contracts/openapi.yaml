@@ -4824,6 +4824,68 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/HrBulkAction" }
 
+  # plan 07: HR reports (H16); every export is logged (Core audit + HR Access Log "Report export")
+  /hr/reports:
+    get:
+      tags: [hr]
+      operationId: listHrReports
+      summary: Reports the caller may run; team=true lists only a line manager's team-scoped ones
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: team, in: query, required: false, schema: { type: boolean } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrReportCatalogue" }
+        "403":
+          description: Not allowed
+  /hr/reports/{report_id}:
+    get:
+      tags: [hr]
+      operationId: runHrReport
+      summary: A report's rows (up to 5,000) for the screen; every other query parameter is a filter
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: report_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrReportResult" }
+        "403":
+          description: Not allowed
+        "404":
+          description: No such report
+  /hr/reports/{report_id}/export:
+    post:
+      tags: [hr]
+      operationId: exportHrReport
+      summary: CSV or XLSX attachment; confirm required, a reason when the report names people; logged before it is built
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: report_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrReportExportBody" }
+      responses:
+        "200":
+          description: The file (Content-Disposition attachment, Cache-Control no-store)
+          content:
+            text/csv:
+              schema: { type: string }
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "400":
+          description: confirm=true required
+        "403":
+          description: Not allowed
+        "422":
+          description: A rule the input breaks (plain text), such as a missing reason
 components:
   securitySchemes:
     bearerAuth:
@@ -13015,3 +13077,63 @@ components:
         sent: { type: integer }
         skipped: { type: integer }
         note: { anyOf: [{ type: string }, { type: "null" }] }
+    # plan 07: HR reports
+    HrReportColumn:
+      type: object
+      required: [key, label]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        type: { type: string, enum: [text, date, number, percent] }
+    HrReportFilter:
+      type: object
+      required: [key, label, type]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        type: { type: string, enum: [department, date, number, select] }
+        default: {}
+        options: { anyOf: [{ type: array, items: { type: string } }, { type: "null" }] }
+    HrReportMeta:
+      type: object
+      required: [id, title, group]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { anyOf: [{ type: string }, { type: "null" }] }
+        group: { type: string, enum: [People, Time off, Competence and training, Movements, Cases] }
+        team_scoped: { type: boolean }
+        names: { type: boolean, description: The report names people, so its export needs a reason }
+        scope: { type: string, enum: [all, team] }
+        columns: { type: array, items: { $ref: "#/components/schemas/HrReportColumn" } }
+        filters: { type: array, items: { $ref: "#/components/schemas/HrReportFilter" } }
+    HrReportCatalogue:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/HrReportMeta" } }
+        groups: { type: array, items: { type: string } }
+    HrReportResult:
+      allOf:
+        - $ref: "#/components/schemas/HrReportMeta"
+        - type: object
+          properties:
+            applied: { type: object, additionalProperties: true }
+            rows: { type: array, items: { type: object, additionalProperties: true } }
+            total: { type: integer }
+            truncated: { type: boolean }
+            summary:
+              type: array
+              items:
+                type: object
+                required: [label]
+                properties:
+                  label: { type: string }
+                  value: {}
+            note: { anyOf: [{ type: string }, { type: "null" }] }
+    HrReportExportBody:
+      type: object
+      properties:
+        format: { type: string, enum: [csv, xlsx] }
+        filters: { type: object, additionalProperties: true }
+        reason: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }

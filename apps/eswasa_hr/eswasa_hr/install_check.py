@@ -221,6 +221,13 @@ def _check_plan_06() -> dict[str, Any]:
     return {"plan_06": [f"DocType {dt} (HRMS)" for dt in gone]} if gone else {}
 
 
+def _check_plan_07() -> dict[str, Any]:
+    """HR additions plan 07: report exports are logged at level ``Report export`` (no DocType of its own)."""
+    if _option_missing("HR Access Log", "level", "Report export"):
+        return {"plan_07": ["HR Access Log.level option Report export"]}
+    return {}
+
+
 def run() -> dict[str, Any]:
     from eswasa_hr import hooks
 
@@ -233,6 +240,7 @@ def run() -> dict[str, Any]:
     missing.update(_check_plan_08())
     missing.update(_check_plan_05())
     missing.update(_check_plan_06())
+    missing.update(_check_plan_07())
     result = {
         "ok": not missing,
         "missing": missing,

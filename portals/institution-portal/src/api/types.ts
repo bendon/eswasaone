@@ -803,3 +803,28 @@ export type HrBulkOptions = {
   allocation_note?: string | null;
 };
 export type HrBulkReminderResult = { kind: HrBulkReminderKind; count: number; sent: number; skipped: number; note?: string | null };
+
+// --- HR additions: plan 07 (H16 reports; hand-written until contracts/types.ts is regenerated) ---
+export type HrReportGroup = "People" | "Time off" | "Competence and training" | "Movements" | "Cases";
+export type HrReportColumn = { key: string; label: string; type: "text" | "date" | "number" | "percent" };
+export type HrReportFilter = { key: string; label: string; type: "department" | "date" | "number" | "select"; default?: unknown; options?: string[] | null };
+export type HrReportMeta = {
+  id: string;
+  title: string;
+  description?: string | null;
+  group: HrReportGroup;
+  team_scoped: boolean;
+  names: boolean;
+  scope: "all" | "team";
+  columns: HrReportColumn[];
+  filters: HrReportFilter[];
+};
+export type HrReportCatalogue = { items: HrReportMeta[]; groups: HrReportGroup[] };
+export type HrReportResult = HrReportMeta & {
+  applied: Record<string, unknown>;
+  rows: Array<Record<string, unknown>>;
+  total: number;
+  truncated: boolean;
+  summary: Array<{ label: string; value: unknown }>;
+  note?: string | null;
+};

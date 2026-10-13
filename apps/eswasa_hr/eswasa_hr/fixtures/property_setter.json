@@ -1,162 +1,232 @@
 [
- {
-  "doctype": "Property Setter",
-  "name": "Employee-date_of_birth-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "date_of_birth",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "1"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-marital_status-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "marital_status",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "1"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-personal_email-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "personal_email",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "1"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-cell_number-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "cell_number",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "1"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-current_address-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "current_address",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "1"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-permanent_address-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "permanent_address",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "1"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-person_to_be_contacted-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "person_to_be_contacted",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "1"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-relation-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "relation",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "1"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-emergency_phone_number-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "emergency_phone_number",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "1"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-passport_number-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "passport_number",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "1"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-ctc-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "ctc",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "2"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-salary_currency-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "salary_currency",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "2"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-salary_mode-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "salary_mode",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "2"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-bank_name-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "bank_name",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "2"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-bank_ac_no-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "bank_ac_no",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "2"
- },
- {
-  "doctype": "Property Setter",
-  "name": "Employee-iban-permlevel",
-  "doc_type": "Employee",
-  "doctype_or_field": "DocField",
-  "field_name": "iban",
-  "property": "permlevel",
-  "property_type": "Int",
-  "value": "2"
- }
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "date_of_birth",
+    "name": "Employee-date_of_birth-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "1"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "marital_status",
+    "name": "Employee-marital_status-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "1"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "personal_email",
+    "name": "Employee-personal_email-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "1"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "cell_number",
+    "name": "Employee-cell_number-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "1"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "current_address",
+    "name": "Employee-current_address-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "1"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "permanent_address",
+    "name": "Employee-permanent_address-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "1"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "person_to_be_contacted",
+    "name": "Employee-person_to_be_contacted-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "1"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "relation",
+    "name": "Employee-relation-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "1"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "emergency_phone_number",
+    "name": "Employee-emergency_phone_number-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "1"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "passport_number",
+    "name": "Employee-passport_number-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "1"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "ctc",
+    "name": "Employee-ctc-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "2"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "salary_currency",
+    "name": "Employee-salary_currency-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "2"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "salary_mode",
+    "name": "Employee-salary_mode-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "2"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "bank_name",
+    "name": "Employee-bank_name-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "2"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "bank_ac_no",
+    "name": "Employee-bank_ac_no-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "2"
+  },
+  {
+    "doc_type": "Employee",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "iban",
+    "name": "Employee-iban-permlevel",
+    "property": "permlevel",
+    "property_type": "Int",
+    "value": "2"
+  },
+  {
+    "doc_type": "HR Settings",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "check_vacancies",
+    "name": "HR Settings-check_vacancies-default",
+    "property": "default",
+    "property_type": "Check",
+    "value": "1"
+  },
+  {
+    "doc_type": "HR Settings",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "emp_created_by",
+    "name": "HR Settings-emp_created_by-default",
+    "property": "default",
+    "property_type": "Data",
+    "value": "Naming Series"
+  },
+  {
+    "doc_type": "HR Settings",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "leave_approver_mandatory_in_leave_application",
+    "name": "HR Settings-leave_approver_mandatory_in_leave_application-default",
+    "property": "default",
+    "property_type": "Check",
+    "value": "1"
+  },
+  {
+    "doc_type": "HR Settings",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "expense_approver_mandatory_in_expense_claim",
+    "name": "HR Settings-expense_approver_mandatory_in_expense_claim-default",
+    "property": "default",
+    "property_type": "Check",
+    "value": "1"
+  },
+  {
+    "doc_type": "HR Settings",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "prevent_self_leave_approval",
+    "name": "HR Settings-prevent_self_leave_approval-default",
+    "property": "default",
+    "property_type": "Check",
+    "value": "1"
+  },
+  {
+    "doc_type": "HR Settings",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "prevent_self_expense_approval",
+    "name": "HR Settings-prevent_self_expense_approval-default",
+    "property": "default",
+    "property_type": "Check",
+    "value": "1"
+  },
+  {
+    "doc_type": "HR Settings",
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "restrict_backdated_leave_application",
+    "name": "HR Settings-restrict_backdated_leave_application-default",
+    "property": "default",
+    "property_type": "Check",
+    "value": "1"
+  }
 ]

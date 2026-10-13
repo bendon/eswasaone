@@ -7,22 +7,28 @@ import { StatusPill } from "../me/parts";
 /** H0 department staffing: filled against approved posts, from the live overview's establishment (no new fetch). */
 
 type Dept = HrLiveOverview["establishment"]["departments"][number];
-type Status = "critical" | "under" | "full" | "over" | "na";
+export type StaffStatus = "critical" | "under" | "full" | "over" | "na";
 type Sort = "vacant" | "rate" | "name" | "approved";
 
-const STATUS: Record<Status, { cls: string; label: string }> = {
-  critical: { cls: "bad", label: "Critical" },
-  under: { cls: "leave", label: "Understaffed" },
-  full: { cls: "ok", label: "Fully staffed" },
-  over: { cls: "info", label: "Over establishment" },
-  na: { cls: "mute", label: "Not applicable" },
-};
+export const STAFF_STATUS: Record<StaffStatus, { cls: string; label: string }> =
+  {
+    critical: { cls: "bad", label: "Critical" },
+    under: { cls: "leave", label: "Understaffed" },
+    full: { cls: "ok", label: "Fully staffed" },
+    over: { cls: "info", label: "Over establishment" },
+    na: { cls: "mute", label: "Not applicable" },
+  };
 
-const SORTS: Record<Sort, string> = { vacant: "Vacant (high to low)", rate: "Fill rate (low to high)", name: "Department (A to Z)", approved: "Approved (high to low)" };
+const SORTS: Record<Sort, string> = {
+  vacant: "Vacant (high to low)",
+  rate: "Fill rate (low to high)",
+  name: "Department (A to Z)",
+  approved: "Approved (high to low)",
+};
 const PAGE = 10;
 const TOP_VACANCIES = 5;
 
-export function statusOf(d: Pick<Dept, "approved" | "filled">): Status {
+export function statusOf(d: Pick<Dept, "approved" | "filled">): StaffStatus {
   if (!d.approved) return "na";
   if (d.filled > d.approved) return "over";
   if (d.filled === d.approved) return "full";
@@ -49,7 +55,12 @@ function Donut({ filled, vacant }: { filled: number; vacant: number }) {
     { key: "vacant", len: c - fLen, off: fLen, n: vacant },
   ].filter((a) => a.n > 0);
   return (
-    <svg viewBox="0 0 100 100" className="hr-staff__donut" role="img" aria-label={`${filled} filled and ${vacant} vacant of ${total} posts`}>
+    <svg
+      viewBox="0 0 100 100"
+      className="hr-staff__donut"
+      role="img"
+      aria-label={`${filled} filled and ${vacant} vacant of ${total} posts`}
+    >
       <circle cx="50" cy="50" r={r} className="hr-staff__donut-bg" />
       {arcs.map((a) => (
         <circle
@@ -81,7 +92,14 @@ function Ring({ value }: { value: number }) {
   return (
     <svg viewBox="0 0 64 64" className="hr-staff__ring" aria-hidden="true">
       <circle cx="32" cy="32" r={r} className="bg" />
-      <circle cx="32" cy="32" r={r} className="fg" strokeDasharray={`${(Math.min(100, value) / 100) * c} ${c}`} transform="rotate(-90 32 32)" />
+      <circle
+        cx="32"
+        cy="32"
+        r={r}
+        className="fg"
+        strokeDasharray={`${(Math.min(100, value) / 100) * c} ${c}`}
+        transform="rotate(-90 32 32)"
+      />
       <text x="32" y="37">
         {value}%
       </text>
@@ -92,12 +110,13 @@ function Ring({ value }: { value: number }) {
 export function StaffingOverview({ live }: { live: HrLiveOverview }) {
   const est = live.establishment;
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState<Status | "">("");
+  const [status, setStatus] = useState<StaffStatus | "">("");
   const [sort, setSort] = useState<Sort>("vacant");
   const [page, setPage] = useState(0);
 
   const depts = est.departments;
-  const approved = est.totals?.approved ?? depts.reduce((s, d) => s + d.approved, 0);
+  const approved =
+    est.totals?.approved ?? depts.reduce((s, d) => s + d.approved, 0);
   const filled = est.totals?.filled ?? depts.reduce((s, d) => s + d.filled, 0);
   const vacant = est.totals?.vacant ?? depts.reduce((s, d) => s + d.vacant, 0);
   const frozen = depts.reduce((s, d) => s + (d.frozen || 0), 0);
@@ -105,14 +124,20 @@ export function StaffingOverview({ live }: { live: HrLiveOverview }) {
 
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const out = depts.filter((d) => (!needle || d.department.toLowerCase().includes(needle)) && (!status || statusOf(d) === status));
+    const out = depts.filter(
+      (d) =>
+        (!needle || d.department.toLowerCase().includes(needle)) &&
+        (!status || statusOf(d) === status),
+    );
     const by: Record<Sort, (a: Dept, b: Dept) => number> = {
       vacant: (a, b) => b.vacant - a.vacant || rate(a) - rate(b),
       rate: (a, b) => rate(a) - rate(b) || b.vacant - a.vacant,
       name: (a, b) => a.department.localeCompare(b.department),
       approved: (a, b) => b.approved - a.approved,
     };
-    return [...out].sort((a, b) => by[sort](a, b) || a.department.localeCompare(b.department));
+    return [...out].sort(
+      (a, b) => by[sort](a, b) || a.department.localeCompare(b.department),
+    );
   }, [depts, q, status, sort]);
 
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
@@ -120,10 +145,21 @@ export function StaffingOverview({ live }: { live: HrLiveOverview }) {
   const shown = rows.slice(cur * PAGE, cur * PAGE + PAGE);
 
   const vacancyList = useMemo(() => {
-    const withVacancies = depts.filter((d) => d.vacant > 0).sort((a, b) => b.vacant - a.vacant || a.department.localeCompare(b.department));
-    const top = withVacancies.slice(0, TOP_VACANCIES).map((d) => ({ name: d.department, n: d.vacant }));
+    const withVacancies = depts
+      .filter((d) => d.vacant > 0)
+      .sort(
+        (a, b) =>
+          b.vacant - a.vacant || a.department.localeCompare(b.department),
+      );
+    const top = withVacancies
+      .slice(0, TOP_VACANCIES)
+      .map((d) => ({ name: d.department, n: d.vacant }));
     const rest = withVacancies.slice(TOP_VACANCIES);
-    if (rest.length) top.push({ name: `Other departments (${rest.length})`, n: rest.reduce((s, d) => s + d.vacant, 0) });
+    if (rest.length)
+      top.push({
+        name: `Other departments (${rest.length})`,
+        n: rest.reduce((s, d) => s + d.vacant, 0),
+      });
     return top;
   }, [depts]);
 
@@ -144,13 +180,26 @@ export function StaffingOverview({ live }: { live: HrLiveOverview }) {
         <div className="hr-staff__filters">
           <label className="hr-staff__search">
             <Icon name="i-search" />
-            <input type="search" placeholder="Search department…" aria-label="Search department" value={q} onChange={(e) => reset(setQ)(e.target.value)} />
+            <input
+              type="search"
+              placeholder="Search department…"
+              aria-label="Search department"
+              value={q}
+              onChange={(e) => reset(setQ)(e.target.value)}
+            />
           </label>
-          <select className="hr-in" aria-label="Status" value={status} onChange={(e) => reset(setStatus)(e.target.value as Status | "")}>
+          <select
+            className="hr-in"
+            aria-label="Status"
+            value={status}
+            onChange={(e) =>
+              reset(setStatus)(e.target.value as StaffStatus | "")
+            }
+          >
             <option value="">All statuses</option>
-            {(Object.keys(STATUS) as Status[]).map((s) => (
+            {(Object.keys(STAFF_STATUS) as StaffStatus[]).map((s) => (
               <option key={s} value={s}>
-                {STATUS[s].label}
+                {STAFF_STATUS[s].label}
               </option>
             ))}
           </select>
@@ -160,7 +209,11 @@ export function StaffingOverview({ live }: { live: HrLiveOverview }) {
         </div>
       </div>
 
-      <div className="hr-staff__stats" role="group" aria-label="Establishment totals">
+      <div
+        className="hr-staff__stats"
+        role="group"
+        aria-label="Establishment totals"
+      >
         <div className="hr-staff__stat">
           <span className="hr-staff__ic navy">
             <Icon name="i-users" />
@@ -168,7 +221,11 @@ export function StaffingOverview({ live }: { live: HrLiveOverview }) {
           <div>
             <span className="l">Approved posts</span>
             <span className="v">{approved}</span>
-            <span className="d">{frozen ? `Across all departments · ${frozen} frozen` : "Across all departments"}</span>
+            <span className="d">
+              {frozen
+                ? `Across all departments · ${frozen} frozen`
+                : "Across all departments"}
+            </span>
           </div>
         </div>
         <div className="hr-staff__stat">
@@ -178,7 +235,9 @@ export function StaffingOverview({ live }: { live: HrLiveOverview }) {
           <div>
             <span className="l">Filled</span>
             <span className="v">{filled}</span>
-            <span className="d">{pct(filled, approved)}% of approved posts</span>
+            <span className="d">
+              {pct(filled, approved)}% of approved posts
+            </span>
           </div>
         </div>
         <Link to="/hr/recruitment" className="hr-staff__stat vacant">
@@ -188,7 +247,9 @@ export function StaffingOverview({ live }: { live: HrLiveOverview }) {
           <div>
             <span className="l">Vacant</span>
             <span className="v">{vacant}</span>
-            <span className="d">{pct(vacant, approved)}% of approved posts</span>
+            <span className="d">
+              {pct(vacant, approved)}% of approved posts
+            </span>
           </div>
         </Link>
         <div className="hr-staff__stat rate">
@@ -261,7 +322,12 @@ export function StaffingOverview({ live }: { live: HrLiveOverview }) {
             </div>
             <label className="hr-staff__sort">
               <span>Sort by</span>
-              <select className="hr-in" aria-label="Sort by" value={sort} onChange={(e) => reset(setSort)(e.target.value as Sort)}>
+              <select
+                className="hr-in"
+                aria-label="Sort by"
+                value={sort}
+                onChange={(e) => reset(setSort)(e.target.value as Sort)}
+              >
                 {(Object.keys(SORTS) as Sort[]).map((s) => (
                   <option key={s} value={s}>
                     {SORTS[s]}
@@ -272,7 +338,10 @@ export function StaffingOverview({ live }: { live: HrLiveOverview }) {
           </div>
           {shown.length ? (
             <div className="hr-scroll">
-              <table className="hr-table hr-staff__table" aria-label="Department details">
+              <table
+                className="hr-table hr-staff__table"
+                aria-label="Department details"
+              >
                 <thead>
                   <tr>
                     <th>Department</th>
@@ -280,22 +349,26 @@ export function StaffingOverview({ live }: { live: HrLiveOverview }) {
                     <th className="n">Approved</th>
                     <th className="n">Vacant</th>
                     <th>Fill rate</th>
-                    <th>Status</th>
+                    <th>StaffStatus</th>
                   </tr>
                 </thead>
                 <tbody>
                   {shown.map((d) => {
-                    const st = STATUS[statusOf(d)];
+                    const st = STAFF_STATUS[statusOf(d)];
                     const r = rate(d);
                     return (
                       <tr key={d.department}>
                         <td>
                           <b>{d.department}</b>
-                          {d.frozen ? <small className="sub"> · {d.frozen} frozen</small> : null}
+                          {d.frozen ? (
+                            <small className="sub"> · {d.frozen} frozen</small>
+                          ) : null}
                         </td>
                         <td className="n">{d.filled}</td>
                         <td className="n">{d.approved}</td>
-                        <td className={`n${d.vacant ? " vac" : ""}`}>{d.vacant}</td>
+                        <td className={`n${d.vacant ? " vac" : ""}`}>
+                          {d.vacant}
+                        </td>
                         <td>{d.approved ? `${r}%` : "—"}</td>
                         <td>
                           <StatusPill cls={st.cls} label={st.label} />
@@ -315,19 +388,35 @@ export function StaffingOverview({ live }: { live: HrLiveOverview }) {
           )}
           <div className="hr-staff__pager">
             <span>
-              Showing {shown.length} of {rows.length} department{rows.length === 1 ? "" : "s"}
+              Showing {shown.length} of {rows.length} department
+              {rows.length === 1 ? "" : "s"}
             </span>
             {pages > 1 ? (
               <div>
-                <button type="button" aria-label="Previous page" disabled={cur === 0} onClick={() => setPage(cur - 1)}>
+                <button
+                  type="button"
+                  aria-label="Previous page"
+                  disabled={cur === 0}
+                  onClick={() => setPage(cur - 1)}
+                >
                   ‹
                 </button>
                 {Array.from({ length: pages }, (_, i) => (
-                  <button key={i} type="button" aria-current={i === cur ? "page" : undefined} onClick={() => setPage(i)}>
+                  <button
+                    key={i}
+                    type="button"
+                    aria-current={i === cur ? "page" : undefined}
+                    onClick={() => setPage(i)}
+                  >
                     {i + 1}
                   </button>
                 ))}
-                <button type="button" aria-label="Next page" disabled={cur === pages - 1} onClick={() => setPage(cur + 1)}>
+                <button
+                  type="button"
+                  aria-label="Next page"
+                  disabled={cur === pages - 1}
+                  onClick={() => setPage(cur + 1)}
+                >
                   ›
                 </button>
               </div>

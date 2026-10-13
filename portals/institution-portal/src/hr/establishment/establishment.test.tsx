@@ -72,7 +72,9 @@ describe("Establishment", () => {
   it("shows filled against approved posts and the changes waiting", async () => {
     stub();
     mount("/hr/structure");
-    expect(await screen.findByRole("img", { name: "3 of 6 posts filled" })).toBeInTheDocument();
+    const row = (await screen.findByRole("link", { name: "Certification" })).closest("tr")!;
+    expect(row).toHaveTextContent("50%");
+    expect(row).toHaveTextContent("Understaffed");
     expect(screen.getByRole("link", { name: "Certification" })).toHaveAttribute("href", "/hr/structure/departments/Certification");
     expect(screen.getByRole("link", { name: "Add 1 Auditor post" })).toHaveAttribute("href", "/hr/structure/changes/EC-1");
     expect(screen.getByText("With the Council")).toBeInTheDocument();

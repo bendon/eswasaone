@@ -98,6 +98,13 @@
 .hr-invite form{display:grid;gap:12px}
 .hr-invite label{display:grid;gap:6px;font-weight:600;font-size:13px}
 .hr-invite input,.hr-invite select{height:38px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font:inherit;font-size:13px}
+.hr-req{color:var(--red);font-weight:700;margin-left:2px}
+.hr-modal-overlay{z-index:79}
+.hr-modal{width:100%;max-width:460px;margin:0;max-height:calc(100vh - 40px);overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.35);animation:pop .22s cubic-bezier(.2,.8,.3,1) both}
+.hr-modal .hr-box__h{position:relative;padding-right:48px}
+.hr-modal__x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:10px;background:none;border:0;color:var(--muted-2);font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center}
+.hr-modal__x:hover{background:var(--bg);color:var(--ink)}
+.hr-modal__actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
 
 /* Org-first overview */
 .hr .kpis.kpis--5{grid-template-columns:repeat(5,1fr)}

@@ -1,6 +1,19 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { useSearchParams } from "react-router-dom";
-import { apiFetch, AuthError, Icon, useDialogs, Select } from "@eswasaone/shared-ui";
+import {
+  apiFetch,
+  AuthError,
+  Icon,
+  useDialogs,
+  Select,
+} from "@eswasaone/shared-ui";
 import { errorText, hrSend } from "./api";
 import { useApiResource } from "../hooks/useApiResource";
 import { ResourceGate } from "../components/PageStates";
@@ -26,7 +39,13 @@ import type {
   HrLocationsResponse,
 } from "../api/types";
 
-type StructureTab = "establishment" | "departments" | "designations" | "locations" | "cost-centres" | "grades";
+type StructureTab =
+  | "establishment"
+  | "departments"
+  | "designations"
+  | "locations"
+  | "cost-centres"
+  | "grades";
 
 const TABS: { id: StructureTab; label: string }[] = [
   { id: "establishment", label: "Establishment" },
@@ -49,29 +68,42 @@ export function StructureView() {
   const [params, setParams] = useSearchParams();
   const tab = parseTab(params.get("tab"));
 
-  const depts = useApiResource<HrDepartmentsResponse>("/hr/departments?limit=200", {
-    enabled: Boolean(user),
-    refreshKey: sessionKey,
-  });
-  const designations = useApiResource<HrDesignationsResponse>("/hr/designations?limit=200", {
-    enabled: Boolean(user),
-    refreshKey: sessionKey,
-  });
+  const depts = useApiResource<HrDepartmentsResponse>(
+    "/hr/departments?limit=200",
+    {
+      enabled: Boolean(user),
+      refreshKey: sessionKey,
+    },
+  );
+  const designations = useApiResource<HrDesignationsResponse>(
+    "/hr/designations?limit=200",
+    {
+      enabled: Boolean(user),
+      refreshKey: sessionKey,
+    },
+  );
   const locations = useApiResource<HrLocationsResponse>("/hr/locations", {
     enabled: Boolean(user),
     refreshKey: sessionKey,
   });
-  const costCentres = useApiResource<HrCostCentresResponse>("/hr/cost-centres", {
-    enabled: Boolean(user),
-    refreshKey: sessionKey,
-  });
+  const costCentres = useApiResource<HrCostCentresResponse>(
+    "/hr/cost-centres",
+    {
+      enabled: Boolean(user),
+      refreshKey: sessionKey,
+    },
+  );
   const grades = useApiResource<HrGradeBandsResponse>("/hr/grade-bands", {
     enabled: Boolean(user),
     refreshKey: sessionKey,
   });
 
   const loading =
-    depts.loading || designations.loading || locations.loading || costCentres.loading || grades.loading;
+    depts.loading ||
+    designations.loading ||
+    locations.loading ||
+    costCentres.loading ||
+    grades.loading;
   const refreshing =
     depts.refreshing ||
     designations.refreshing ||
@@ -79,7 +111,11 @@ export function StructureView() {
     costCentres.refreshing ||
     grades.refreshing;
   const error =
-    depts.error || designations.error || locations.error || costCentres.error || grades.error;
+    depts.error ||
+    designations.error ||
+    locations.error ||
+    costCentres.error ||
+    grades.error;
   const authRequired =
     depts.authRequired ||
     designations.authRequired ||
@@ -130,7 +166,10 @@ export function StructureView() {
             <div className="hr-box__h">
               <div>
                 <h3>Organisation structure</h3>
-                <p>Approved establishment, departments, designations, locations, cost centres and grade bands</p>
+                <p>
+                  Approved establishment, departments, designations, locations,
+                  cost centres and grade bands
+                </p>
               </div>
             </div>
             <div className="hr-box__b" style={{ paddingTop: 8 }}>
@@ -236,7 +275,10 @@ function DepartmentsPanel({
         method: "POST",
         body: JSON.stringify(body),
       });
-      await dialogs.alert({ message: `Created department “${name.trim()}”`, kind: "success" });
+      await dialogs.alert({
+        message: `Created department “${name.trim()}”`,
+        kind: "success",
+      });
       setName("");
       setCode("");
       setShow(false);
@@ -245,7 +287,8 @@ function DepartmentsPanel({
       if (err instanceof AuthError && err.authRequired) openAuth(err.reason);
       else
         await dialogs.alert({
-          message: err instanceof Error ? err.message : "Could not create department",
+          message:
+            err instanceof Error ? err.message : "Could not create department",
           kind: "error",
         });
     } finally {
@@ -255,42 +298,74 @@ function DepartmentsPanel({
 
   return (
     <>
-      <div className="hr-filters">
-        <button type="button" className="btn gold sm" onClick={() => setShow((v) => !v)}>
+      <div className="hr-filters" style={{ justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          className="btn gold sm"
+          onClick={() => setShow(true)}
+        >
           <Icon name="i-plus" />
           Add department
         </button>
       </div>
       {show ? (
-        <div className="hr-box hr-invite" style={{ marginBottom: 16 }}>
-          <div className="hr-box__h">
-            <div>
-              <h3>New department</h3>
-              <p>Name the unit and save to add it to the organisation.</p>
-            </div>
-          </div>
-          <div className="hr-box__b">
-            <form onSubmit={(e) => void onCreate(e)}>
-              <label>
-                Name
-                <input required value={name} onChange={(e) => setName(e.target.value)} />
-              </label>
-              <label>
-                Code
-                <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Optional" />
-              </label>
+        <StructModal
+          title="New department"
+          sub="Name the unit and save to add it to the organisation."
+          onClose={() => setShow(false)}
+        >
+          <form onSubmit={(e) => void onCreate(e)}>
+            <label>
+              <span>
+                Name{" "}
+                <span className="hr-req" aria-hidden="true">
+                  *
+                </span>
+              </span>
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+            <label>
+              Code
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Optional"
+              />
+            </label>
+            <div className="hr-modal__actions">
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={busy}
+                onClick={() => setShow(false)}
+              >
+                Cancel
+              </button>
               <button type="submit" className="btn pri" disabled={busy}>
                 {busy ? "Saving…" : "Create department"}
               </button>
-            </form>
-          </div>
-        </div>
+            </div>
+          </form>
+        </StructModal>
       ) : null}
       {editing && items.find((r) => r.id === editing) ? (
         <MasterEdit
           key={editing}
           path={`/hr/departments/${encodeURIComponent(editing)}`}
-          fields={((x) => [{ key: "name", label: "Name", value: x.name }, { key: "code", label: "Code", value: x.code ?? "" }, { key: "status", label: "Status", value: x.status, options: ["active", "archived"] }])(items.find((r) => r.id === editing)!)}
+          fields={((x) => [
+            { key: "name", label: "Name", value: x.name },
+            { key: "code", label: "Code", value: x.code ?? "" },
+            {
+              key: "status",
+              label: "Status",
+              value: x.status,
+              options: ["active", "archived"],
+            },
+          ])(items.find((r) => r.id === editing)!)}
           onDone={() => {
             setEditing(null);
             onReload();
@@ -301,7 +376,9 @@ function DepartmentsPanel({
       <div className="hr-box">
         <div className="hr-box__b" style={{ paddingTop: 8, overflowX: "auto" }}>
           {items.length === 0 ? (
-            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>No departments yet.</p>
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
+              No departments yet.
+            </p>
           ) : (
             <table className="hr-table">
               <thead>
@@ -329,13 +406,19 @@ function DepartmentsPanel({
                       {d.total_positions ? ` / ${d.total_positions}` : ""}
                     </td>
                     <td>
-                      <span className={`hr-st ${d.status === "active" ? "ok" : "leave"}`}>
+                      <span
+                        className={`hr-st ${d.status === "active" ? "ok" : "leave"}`}
+                      >
                         <span className="d" />
                         {d.status}
                       </span>
                     </td>
                     <td style={{ textAlign: "right" }}>
-                      <button type="button" className="btn ghost sm" onClick={() => setEditing(d.id)}>
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        onClick={() => setEditing(d.id)}
+                      >
                         Edit
                       </button>
                     </td>
@@ -374,7 +457,10 @@ function DesignationsPanel({
   const [headcount, setHeadcount] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const deptOptions = useMemo(() => departments.slice().sort((a, b) => a.name.localeCompare(b.name)), [departments]);
+  const deptOptions = useMemo(
+    () => departments.slice().sort((a, b) => a.name.localeCompare(b.name)),
+    [departments],
+  );
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
@@ -398,7 +484,10 @@ function DesignationsPanel({
         method: "POST",
         body: JSON.stringify(body),
       });
-      await dialogs.alert({ message: `Created designation “${title.trim()}”`, kind: "success" });
+      await dialogs.alert({
+        message: `Created designation “${title.trim()}”`,
+        kind: "success",
+      });
       setTitle("");
       setCode("");
       setDepartmentId("");
@@ -410,7 +499,8 @@ function DesignationsPanel({
       if (err instanceof AuthError && err.authRequired) openAuth(err.reason);
       else
         await dialogs.alert({
-          message: err instanceof Error ? err.message : "Could not create designation",
+          message:
+            err instanceof Error ? err.message : "Could not create designation",
           kind: "error",
         });
     } finally {
@@ -420,73 +510,110 @@ function DesignationsPanel({
 
   return (
     <>
-      <div className="hr-filters">
-        <button type="button" className="btn gold sm" onClick={() => setShow((v) => !v)}>
+      <div className="hr-filters" style={{ justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          className="btn gold sm"
+          onClick={() => setShow(true)}
+        >
           <Icon name="i-plus" />
           Add designation
         </button>
       </div>
       {show ? (
-        <div className="hr-box hr-invite" style={{ marginBottom: 16, maxWidth: 520 }}>
-          <div className="hr-box__h">
-            <div>
-              <h3>New designation</h3>
-              <p>Define the job title and link it to a department.</p>
-            </div>
-          </div>
-          <div className="hr-box__b">
-            <form onSubmit={(e) => void onCreate(e)}>
-              <label>
-                Title
-                <input required value={title} onChange={(e) => setTitle(e.target.value)} />
-              </label>
-              <label>
-                Code
-                <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Optional" />
-              </label>
-              <label>
-                Department
-                <Select
-                  block
-                  value={departmentId}
-                  onChange={setDepartmentId}
-                  options={[{ value: "", label: "Unassigned" }, ...deptOptions.map((d) => ({ value: d.id, label: d.name }))]}
-                />
-              </label>
-              <label>
-                Grade band
-                <Select
-                  block
-                  value={gradeId}
-                  onChange={setGradeId}
-                  options={[
-                    { value: "", label: "None" },
-                    ...grades.map((g) => ({ value: g.id, label: `${g.code}${g.name ? `: ${g.name}` : ""}` })),
-                  ]}
-                />
-              </label>
-              <label>
-                Approved headcount
-                <input
-                  type="number"
-                  min={0}
-                  value={headcount}
-                  onChange={(e) => setHeadcount(e.target.value)}
-                  placeholder="Optional"
-                />
-              </label>
+        <StructModal
+          title="New designation"
+          sub="Define the job title and link it to a department."
+          onClose={() => setShow(false)}
+        >
+          <form onSubmit={(e) => void onCreate(e)}>
+            <label>
+              <span>
+                Title{" "}
+                <span className="hr-req" aria-hidden="true">
+                  *
+                </span>
+              </span>
+              <input
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </label>
+            <label>
+              Code
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Optional"
+              />
+            </label>
+            <label>
+              Department
+              <Select
+                block
+                value={departmentId}
+                onChange={setDepartmentId}
+                options={[
+                  { value: "", label: "Unassigned" },
+                  ...deptOptions.map((d) => ({ value: d.id, label: d.name })),
+                ]}
+              />
+            </label>
+            <label>
+              Grade band
+              <Select
+                block
+                value={gradeId}
+                onChange={setGradeId}
+                options={[
+                  { value: "", label: "None" },
+                  ...grades.map((g) => ({
+                    value: g.id,
+                    label: `${g.code}${g.name ? `: ${g.name}` : ""}`,
+                  })),
+                ]}
+              />
+            </label>
+            <label>
+              Approved headcount
+              <input
+                type="number"
+                min={0}
+                value={headcount}
+                onChange={(e) => setHeadcount(e.target.value)}
+                placeholder="Optional"
+              />
+            </label>
+            <div className="hr-modal__actions">
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={busy}
+                onClick={() => setShow(false)}
+              >
+                Cancel
+              </button>
               <button type="submit" className="btn pri" disabled={busy}>
                 {busy ? "Saving…" : "Create designation"}
               </button>
-            </form>
-          </div>
-        </div>
+            </div>
+          </form>
+        </StructModal>
       ) : null}
       {editing && items.find((r) => r.id === editing) ? (
         <MasterEdit
           key={editing}
           path={`/hr/designations/${encodeURIComponent(editing)}`}
-          fields={((x) => [{ key: "title", label: "Title", value: x.title }, { key: "code", label: "Code", value: x.code ?? "" }, { key: "description", label: "Description", value: x.description ?? "" }])(items.find((r) => r.id === editing)!)}
+          fields={((x) => [
+            { key: "title", label: "Title", value: x.title },
+            { key: "code", label: "Code", value: x.code ?? "" },
+            {
+              key: "description",
+              label: "Description",
+              value: x.description ?? "",
+            },
+          ])(items.find((r) => r.id === editing)!)}
           onDone={() => {
             setEditing(null);
             onReload();
@@ -497,7 +624,9 @@ function DesignationsPanel({
       <div className="hr-box">
         <div className="hr-box__b" style={{ paddingTop: 8, overflowX: "auto" }}>
           {items.length === 0 ? (
-            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>No designations yet.</p>
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
+              No designations yet.
+            </p>
           ) : (
             <table className="hr-table">
               <thead>
@@ -515,19 +644,28 @@ function DesignationsPanel({
                     <td>
                       <b style={{ fontWeight: 700 }}>{row.title}</b>
                       {row.code ? (
-                        <div className="mono" style={{ fontSize: 11, color: "var(--muted-2)" }}>
+                        <div
+                          className="mono"
+                          style={{ fontSize: 11, color: "var(--muted-2)" }}
+                        >
                           {row.code}
                         </div>
                       ) : null}
                     </td>
                     <td>{row.department?.name || "—"}</td>
-                    <td>{row.grade_band?.code || row.grade_band?.name || "—"}</td>
+                    <td>
+                      {row.grade_band?.code || row.grade_band?.name || "—"}
+                    </td>
                     <td>
                       {row.filled}
                       {row.total != null ? ` / ${row.total}` : ""}
                     </td>
                     <td style={{ textAlign: "right" }}>
-                      <button type="button" className="btn ghost sm" onClick={() => setEditing(row.id)}>
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        onClick={() => setEditing(row.id)}
+                      >
                         Edit
                       </button>
                     </td>
@@ -580,7 +718,10 @@ function LocationsPanel({
         method: "POST",
         body: JSON.stringify(body),
       });
-      await dialogs.alert({ message: `Created location “${name.trim()}”`, kind: "success" });
+      await dialogs.alert({
+        message: `Created location “${name.trim()}”`,
+        kind: "success",
+      });
       setName("");
       setCode("");
       setType("");
@@ -590,7 +731,8 @@ function LocationsPanel({
       if (err instanceof AuthError && err.authRequired) openAuth(err.reason);
       else
         await dialogs.alert({
-          message: err instanceof Error ? err.message : "Could not create location",
+          message:
+            err instanceof Error ? err.message : "Could not create location",
           kind: "error",
         });
     } finally {
@@ -600,56 +742,95 @@ function LocationsPanel({
 
   return (
     <>
-      <div className="hr-filters">
-        <button type="button" className="btn gold sm" onClick={() => setShow((v) => !v)}>
+      <div className="hr-filters" style={{ justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          className="btn gold sm"
+          onClick={() => setShow(true)}
+        >
           <Icon name="i-plus" />
           Add location
         </button>
       </div>
       {show ? (
-        <div className="hr-box hr-invite" style={{ marginBottom: 16 }}>
-          <div className="hr-box__h">
-            <div>
-              <h3>New location</h3>
-              <p>Add a site where staff can be based.</p>
-            </div>
-          </div>
-          <div className="hr-box__b">
-            <form onSubmit={(e) => void onCreate(e)}>
-              <label>
-                Name
-                <input required value={name} onChange={(e) => setName(e.target.value)} />
-              </label>
-              <label>
-                Code
-                <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Optional" />
-              </label>
-              <label>
-                Type
-                <Select
-                  block
-                  value={type}
-                  onChange={(v) => setType(v as "" | "hq" | "lab" | "satellite")}
-                  options={[
-                    { value: "", label: "Unspecified" },
-                    { value: "hq", label: "HQ" },
-                    { value: "lab", label: "Lab" },
-                    { value: "satellite", label: "Satellite" },
-                  ]}
-                />
-              </label>
+        <StructModal
+          title="New location"
+          sub="Add a site where staff can be based."
+          onClose={() => setShow(false)}
+        >
+          <form onSubmit={(e) => void onCreate(e)}>
+            <label>
+              <span>
+                Name{" "}
+                <span className="hr-req" aria-hidden="true">
+                  *
+                </span>
+              </span>
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+            <label>
+              Code
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Optional"
+              />
+            </label>
+            <label>
+              Type
+              <Select
+                block
+                value={type}
+                onChange={(v) => setType(v as "" | "hq" | "lab" | "satellite")}
+                options={[
+                  { value: "", label: "Unspecified" },
+                  { value: "hq", label: "HQ" },
+                  { value: "lab", label: "Lab" },
+                  { value: "satellite", label: "Satellite" },
+                ]}
+              />
+            </label>
+            <div className="hr-modal__actions">
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={busy}
+                onClick={() => setShow(false)}
+              >
+                Cancel
+              </button>
               <button type="submit" className="btn pri" disabled={busy}>
                 {busy ? "Saving…" : "Create location"}
               </button>
-            </form>
-          </div>
-        </div>
+            </div>
+          </form>
+        </StructModal>
       ) : null}
       {editing && items.find((r) => r.id === editing) ? (
         <MasterEdit
           key={editing}
           path={`/hr/locations/${encodeURIComponent(editing)}`}
-          fields={((x) => [{ key: "name", label: "Name", value: x.name }, { key: "code", label: "Code", value: x.code ?? "" }, { key: "address", label: "Address", value: x.address ?? "" }, { key: "type", label: "Type", value: x.type ?? "", options: ["hq", "lab", "satellite"] }, { key: "status", label: "Status", value: x.status, options: ["active", "closed"] }])(items.find((r) => r.id === editing)!)}
+          fields={((x) => [
+            { key: "name", label: "Name", value: x.name },
+            { key: "code", label: "Code", value: x.code ?? "" },
+            { key: "address", label: "Address", value: x.address ?? "" },
+            {
+              key: "type",
+              label: "Type",
+              value: x.type ?? "",
+              options: ["hq", "lab", "satellite"],
+            },
+            {
+              key: "status",
+              label: "Status",
+              value: x.status,
+              options: ["active", "closed"],
+            },
+          ])(items.find((r) => r.id === editing)!)}
           onDone={() => {
             setEditing(null);
             onReload();
@@ -660,7 +841,9 @@ function LocationsPanel({
       <div className="hr-box">
         <div className="hr-box__b" style={{ paddingTop: 8, overflowX: "auto" }}>
           {items.length === 0 ? (
-            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>No locations yet.</p>
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
+              No locations yet.
+            </p>
           ) : (
             <table className="hr-table">
               <thead>
@@ -683,13 +866,19 @@ function LocationsPanel({
                     <td>{loc.type || "—"}</td>
                     <td>{loc.employee_count}</td>
                     <td>
-                      <span className={`hr-st ${loc.status === "active" ? "ok" : "leave"}`}>
+                      <span
+                        className={`hr-st ${loc.status === "active" ? "ok" : "leave"}`}
+                      >
                         <span className="d" />
                         {loc.status}
                       </span>
                     </td>
                     <td style={{ textAlign: "right" }}>
-                      <button type="button" className="btn ghost sm" onClick={() => setEditing(loc.id)}>
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        onClick={() => setEditing(loc.id)}
+                      >
                         Edit
                       </button>
                     </td>
@@ -741,7 +930,10 @@ function CostCentresPanel({
         method: "POST",
         body: JSON.stringify(body),
       });
-      await dialogs.alert({ message: `Created cost centre “${name.trim()}”`, kind: "success" });
+      await dialogs.alert({
+        message: `Created cost centre “${name.trim()}”`,
+        kind: "success",
+      });
       setName("");
       setCode("");
       setShow(false);
@@ -750,7 +942,8 @@ function CostCentresPanel({
       if (err instanceof AuthError && err.authRequired) openAuth(err.reason);
       else
         await dialogs.alert({
-          message: err instanceof Error ? err.message : "Could not create cost centre",
+          message:
+            err instanceof Error ? err.message : "Could not create cost centre",
           kind: "error",
         });
     } finally {
@@ -760,42 +953,79 @@ function CostCentresPanel({
 
   return (
     <>
-      <div className="hr-filters">
-        <button type="button" className="btn gold sm" onClick={() => setShow((v) => !v)}>
+      <div className="hr-filters" style={{ justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          className="btn gold sm"
+          onClick={() => setShow(true)}
+        >
           <Icon name="i-plus" />
           Add cost centre
         </button>
       </div>
       {show ? (
-        <div className="hr-box hr-invite" style={{ marginBottom: 16 }}>
-          <div className="hr-box__h">
-            <div>
-              <h3>New cost centre</h3>
-              <p>Register a budget line for payroll and finance.</p>
-            </div>
-          </div>
-          <div className="hr-box__b">
-            <form onSubmit={(e) => void onCreate(e)}>
-              <label>
-                Name
-                <input required value={name} onChange={(e) => setName(e.target.value)} />
-              </label>
-              <label>
-                Code
-                <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Optional" />
-              </label>
+        <StructModal
+          title="New cost centre"
+          sub="Register a budget line for payroll and finance."
+          onClose={() => setShow(false)}
+        >
+          <form onSubmit={(e) => void onCreate(e)}>
+            <label>
+              <span>
+                Name{" "}
+                <span className="hr-req" aria-hidden="true">
+                  *
+                </span>
+              </span>
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+            <label>
+              Code
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Optional"
+              />
+            </label>
+            <div className="hr-modal__actions">
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={busy}
+                onClick={() => setShow(false)}
+              >
+                Cancel
+              </button>
               <button type="submit" className="btn pri" disabled={busy}>
                 {busy ? "Saving…" : "Create cost centre"}
               </button>
-            </form>
-          </div>
-        </div>
+            </div>
+          </form>
+        </StructModal>
       ) : null}
       {editing && items.find((r) => r.id === editing) ? (
         <MasterEdit
           key={editing}
           path={`/hr/cost-centres/${encodeURIComponent(editing)}`}
-          fields={((x) => [{ key: "name", label: "Name", value: x.name }, { key: "code", label: "Code", value: x.code ?? "" }, { key: "description", label: "Description", value: x.description ?? "" }, { key: "status", label: "Status", value: x.status, options: ["active", "draft", "archived"] }])(items.find((r) => r.id === editing)!)}
+          fields={((x) => [
+            { key: "name", label: "Name", value: x.name },
+            { key: "code", label: "Code", value: x.code ?? "" },
+            {
+              key: "description",
+              label: "Description",
+              value: x.description ?? "",
+            },
+            {
+              key: "status",
+              label: "Status",
+              value: x.status,
+              options: ["active", "draft", "archived"],
+            },
+          ])(items.find((r) => r.id === editing)!)}
           onDone={() => {
             setEditing(null);
             onReload();
@@ -806,7 +1036,9 @@ function CostCentresPanel({
       <div className="hr-box">
         <div className="hr-box__b" style={{ paddingTop: 8, overflowX: "auto" }}>
           {items.length === 0 ? (
-            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>No cost centres yet.</p>
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
+              No cost centres yet.
+            </p>
           ) : (
             <table className="hr-table">
               <thead>
@@ -827,13 +1059,19 @@ function CostCentresPanel({
                     <td className="mono">{cc.code || "—"}</td>
                     <td>{cc.employee_count}</td>
                     <td>
-                      <span className={`hr-st ${cc.status === "active" ? "ok" : "leave"}`}>
+                      <span
+                        className={`hr-st ${cc.status === "active" ? "ok" : "leave"}`}
+                      >
                         <span className="d" />
                         {cc.status}
                       </span>
                     </td>
                     <td style={{ textAlign: "right" }}>
-                      <button type="button" className="btn ghost sm" onClick={() => setEditing(cc.id)}>
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        onClick={() => setEditing(cc.id)}
+                      >
                         Edit
                       </button>
                     </td>
@@ -888,7 +1126,10 @@ function GradesPanel({
         method: "POST",
         body: JSON.stringify(body),
       });
-      await dialogs.alert({ message: `Created grade “${code.trim()}”`, kind: "success" });
+      await dialogs.alert({
+        message: `Created grade “${code.trim()}”`,
+        kind: "success",
+      });
       setCode("");
       setName("");
       setLevel("");
@@ -898,7 +1139,8 @@ function GradesPanel({
       if (err instanceof AuthError && err.authRequired) openAuth(err.reason);
       else
         await dialogs.alert({
-          message: err instanceof Error ? err.message : "Could not create grade band",
+          message:
+            err instanceof Error ? err.message : "Could not create grade band",
           kind: "error",
         });
     } finally {
@@ -908,51 +1150,83 @@ function GradesPanel({
 
   return (
     <>
-      <div className="hr-filters">
-        <button type="button" className="btn gold sm" onClick={() => setShow((v) => !v)}>
+      <div className="hr-filters" style={{ justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          className="btn gold sm"
+          onClick={() => setShow(true)}
+        >
           <Icon name="i-plus" />
           Add grade band
         </button>
       </div>
       {show ? (
-        <div className="hr-box hr-invite" style={{ marginBottom: 16 }}>
-          <div className="hr-box__h">
-            <div>
-              <h3>New grade band</h3>
-              <p>Define a grade band used by designations and pay.</p>
-            </div>
-          </div>
-          <div className="hr-box__b">
-            <form onSubmit={(e) => void onCreate(e)}>
-              <label>
-                Code
-                <input required value={code} onChange={(e) => setCode(e.target.value)} />
-              </label>
-              <label>
-                Name
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Optional" />
-              </label>
-              <label>
-                Level
-                <input
-                  type="number"
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value)}
-                  placeholder="Optional"
-                />
-              </label>
+        <StructModal
+          title="New grade band"
+          sub="Define a grade band used by designations and pay."
+          onClose={() => setShow(false)}
+        >
+          <form onSubmit={(e) => void onCreate(e)}>
+            <label>
+              <span>
+                Code{" "}
+                <span className="hr-req" aria-hidden="true">
+                  *
+                </span>
+              </span>
+              <input
+                required
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </label>
+            <label>
+              Name
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Optional"
+              />
+            </label>
+            <label>
+              Level
+              <input
+                type="number"
+                value={level}
+                onChange={(e) => setLevel(e.target.value)}
+                placeholder="Optional"
+              />
+            </label>
+            <div className="hr-modal__actions">
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={busy}
+                onClick={() => setShow(false)}
+              >
+                Cancel
+              </button>
               <button type="submit" className="btn pri" disabled={busy}>
                 {busy ? "Saving…" : "Create grade band"}
               </button>
-            </form>
-          </div>
-        </div>
+            </div>
+          </form>
+        </StructModal>
       ) : null}
       {editing && items.find((r) => r.id === editing) ? (
         <MasterEdit
           key={editing}
           path={`/hr/grade-bands/${encodeURIComponent(editing)}`}
-          fields={((x) => [{ key: "code", label: "Code", value: x.code }, { key: "name", label: "Name", value: x.name ?? "" }, { key: "level", label: "Level", value: x.level == null ? "" : String(x.level), number: true }])(items.find((r) => r.id === editing)!)}
+          fields={((x) => [
+            { key: "code", label: "Code", value: x.code },
+            { key: "name", label: "Name", value: x.name ?? "" },
+            {
+              key: "level",
+              label: "Level",
+              value: x.level == null ? "" : String(x.level),
+              number: true,
+            },
+          ])(items.find((r) => r.id === editing)!)}
           onDone={() => {
             setEditing(null);
             onReload();
@@ -963,7 +1237,9 @@ function GradesPanel({
       <div className="hr-box">
         <div className="hr-box__b" style={{ paddingTop: 8, overflowX: "auto" }}>
           {items.length === 0 ? (
-            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>No grade bands yet.</p>
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
+              No grade bands yet.
+            </p>
           ) : (
             <table className="hr-table">
               <thead>
@@ -987,7 +1263,11 @@ function GradesPanel({
                         : "—"}
                     </td>
                     <td style={{ textAlign: "right" }}>
-                      <button type="button" className="btn ghost sm" onClick={() => setEditing(g.id)}>
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        onClick={() => setEditing(g.id)}
+                      >
                         Edit
                       </button>
                     </td>
@@ -1002,11 +1282,29 @@ function GradesPanel({
   );
 }
 
-type EditField = { key: string; label: string; value: string; options?: string[]; number?: boolean };
+type EditField = {
+  key: string;
+  label: string;
+  value: string;
+  options?: string[];
+  number?: boolean;
+};
 
 /** Edit one master-data row (PATCH). eswasa_hr.master_data refuses a disable that would strand people, with the reason. */
-function MasterEdit({ path, fields, onDone, onCancel }: { path: string; fields: EditField[]; onDone: () => void; onCancel: () => void }) {
-  const [vals, setVals] = useState<Record<string, string>>(() => Object.fromEntries(fields.map((f) => [f.key, f.value])));
+function MasterEdit({
+  path,
+  fields,
+  onDone,
+  onCancel,
+}: {
+  path: string;
+  fields: EditField[];
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const [vals, setVals] = useState<Record<string, string>>(() =>
+    Object.fromEntries(fields.map((f) => [f.key, f.value])),
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -1016,7 +1314,11 @@ function MasterEdit({ path, fields, onDone, onCancel }: { path: string; fields: 
     const changes: Record<string, unknown> = {};
     for (const f of fields) {
       if (vals[f.key] === f.value) continue;
-      changes[f.key] = f.number ? (vals[f.key] === "" ? null : Number(vals[f.key])) : vals[f.key];
+      changes[f.key] = f.number
+        ? vals[f.key] === ""
+          ? null
+          : Number(vals[f.key])
+        : vals[f.key];
     }
     if (!Object.keys(changes).length) return setErr("Nothing to change.");
     setBusy(true);
@@ -1031,43 +1333,117 @@ function MasterEdit({ path, fields, onDone, onCancel }: { path: string; fields: 
   }
 
   return (
-    <div className="hr-box hr-invite" style={{ marginBottom: 16 }}>
-      <div className="hr-box__h">
-        <div>
-          <h3>Edit</h3>
-          <p>Changes apply straight away and are audited.</p>
-        </div>
-      </div>
-      <div className="hr-box__b">
-        <form onSubmit={(e) => void save(e)}>
-          {fields.map((f) => (
-            <label key={f.key}>
-              {f.label}
-              {f.options ? (
-                <select value={vals[f.key]} onChange={(e) => setVals((v) => ({ ...v, [f.key]: e.target.value }))} disabled={busy}>
-                  {(f.options.includes(vals[f.key]) ? f.options : [vals[f.key], ...f.options]).map((o) => (
-                    <option key={o} value={o}>
-                      {o || "—"}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input type={f.number ? "number" : "text"} value={vals[f.key]} onChange={(e) => setVals((v) => ({ ...v, [f.key]: e.target.value }))} disabled={busy} />
-              )}
-            </label>
-          ))}
-          {err ? (
-            <p className="page-note" role="alert">
-              {err}
-            </p>
-          ) : null}
-          <button type="submit" className="btn pri" disabled={busy}>
-            {busy ? "Saving…" : "Save"}
-          </button>{" "}
-          <button type="button" className="btn ghost" disabled={busy} onClick={onCancel}>
+    <StructModal
+      title="Edit"
+      sub="Changes apply straight away and are audited."
+      onClose={onCancel}
+    >
+      <form onSubmit={(e) => void save(e)}>
+        {fields.map((f) => (
+          <label key={f.key}>
+            {f.label}
+            {f.options ? (
+              <select
+                value={vals[f.key]}
+                onChange={(e) =>
+                  setVals((v) => ({ ...v, [f.key]: e.target.value }))
+                }
+                disabled={busy}
+              >
+                {(f.options.includes(vals[f.key])
+                  ? f.options
+                  : [vals[f.key], ...f.options]
+                ).map((o) => (
+                  <option key={o} value={o}>
+                    {o || "—"}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type={f.number ? "number" : "text"}
+                value={vals[f.key]}
+                onChange={(e) =>
+                  setVals((v) => ({ ...v, [f.key]: e.target.value }))
+                }
+                disabled={busy}
+              />
+            )}
+          </label>
+        ))}
+        {err ? (
+          <p className="page-note" role="alert">
+            {err}
+          </p>
+        ) : null}
+        <div className="hr-modal__actions">
+          <button
+            type="button"
+            className="btn ghost"
+            disabled={busy}
+            onClick={onCancel}
+          >
             Cancel
           </button>
-        </form>
+          <button type="submit" className="btn pri" disabled={busy}>
+            {busy ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </form>
+    </StructModal>
+  );
+}
+
+/** Centered modal for create/edit forms. Esc and backdrop click close it. */
+function StructModal({
+  title,
+  sub,
+  onClose,
+  children,
+}: {
+  title: string;
+  sub?: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const titleId = useId();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // A confirm/alert stacked above owns Esc while it is open.
+      if (e.key === "Escape" && !document.querySelector(".dialog-modal"))
+        onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="overlay show hr-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      onMouseDown={onClose}
+    >
+      <div
+        className="hr-box hr-invite hr-modal"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="hr-box__h">
+          <div>
+            <h3 id={titleId}>{title}</h3>
+            {sub ? <p>{sub}</p> : null}
+          </div>
+          <button
+            type="button"
+            className="hr-modal__x"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+        <div className="hr-box__b">{children}</div>
       </div>
     </div>
   );

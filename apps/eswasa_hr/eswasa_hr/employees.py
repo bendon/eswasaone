@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from eswasa_hr.sensitive import LEVELS
+from eswasa_hr.sensitive import protected_labels
 
 DOCTYPE = "Employee"
 HR_ROLES = ("HR Manager", "HR User", "System Manager")
@@ -75,8 +75,8 @@ def _s(v: Any) -> str:
 
 
 def protected_fields() -> dict[str, str]:
-    """fieldname -> label for every permlevel 1 and 2 Employee field."""
-    return {f: label for spec in LEVELS.values() for f, label in spec["fields"]}
+    """fieldname -> label for every permlevel 1 to 3 Employee field (tables included)."""
+    return protected_labels()
 
 
 def split_name(employee_name: str, first: str | None = None, last: str | None = None) -> tuple[str, str]:

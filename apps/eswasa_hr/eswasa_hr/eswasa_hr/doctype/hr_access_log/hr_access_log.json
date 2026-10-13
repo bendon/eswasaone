@@ -44,7 +44,7 @@
    "fieldtype": "Select",
    "label": "Level",
    "read_only": 1,
-   "options": "Personal\nPay and bank\nEvidence pack",
+   "options": "Personal\nPay and bank\nEvidence pack\nFamily and medical",
    "in_list_view": 1
   },
   {

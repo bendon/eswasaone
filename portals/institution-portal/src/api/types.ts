@@ -230,7 +230,7 @@ export type HrEstChangeDetail = HrEstChange & {
   deciders: Array<{ user: string; name: string }>;
   track: HrTrackStep[];
 };
-export type HrSensitive = components["schemas"]["HrSensitive"];
+export type HrSensitive = components["schemas"]["HrSensitive"] & { tables?: HrSensitiveTable[] };
 export type HrAccessLog = components["schemas"]["HrAccessLog"];
 export type HrAttentionItem = components["schemas"]["HrAttentionItem"];
 export type HrTurnover = components["schemas"]["HrTurnover"];
@@ -250,6 +250,9 @@ export type HrLiveOverview = {
   record_quality: Array<{ field: string; label: string; count: number }>;
   record_checked_on?: string | null;
   cycles: HrCycleStatus[];
+  /** Additions plan 08: this month's and next month's service milestones; years empty = awaiting ESWASA (A8). */
+  milestones?: HrServiceMilestone[];
+  milestone_years?: number[];
 };
 export type HrSetupStepState = "done" | "partial" | "todo" | "awaiting" | "excluded";
 export type HrSetupStatus = {
@@ -273,7 +276,7 @@ export type HrSeparationDefaults = components["schemas"]["HrSeparationDefaults"]
 export type HrPickItem = { id: string; name?: string | null; title?: string | null; employee_name?: string | null };
 export type HrVacancy = components["schemas"]["HrVacancy"];
 export type HrRequisition = components["schemas"]["HrRequisition"];
-export type HrLeavePreview = components["schemas"]["HrLeavePreview"];
+export type HrLeavePreview = components["schemas"]["HrLeavePreview"] & { certificate_required?: boolean; certificate_after_days?: number | null };
 export type HrAppraisalsResponse = { items: HrAppraisalSummary[] };
 
 /** Org-first HR structure schemas */
@@ -504,7 +507,7 @@ export type AnalyticsReportSummary = components["schemas"]["AnalyticsReportSumma
 export type AnalyticsReportsResponse = { items: AnalyticsReportSummary[] };
 
 /* Screen ↔ backend sweep (2026-10-12): routes that had no screen. */
-export type HrLeaveRequest = components["schemas"]["HrLeaveRequest"];
+export type HrLeaveRequest = components["schemas"]["HrLeaveRequest"] & { certificate_required?: boolean; has_certificate?: boolean };
 export type HrLeaveRequests = components["schemas"]["HrLeaveRequests"];
 export type HrLeaveCalendar = components["schemas"]["HrLeaveCalendar"];
 export type HrSettings = components["schemas"]["HrSettings"];
@@ -556,3 +559,8 @@ export type HrEmployeeItems = {
 export type HrMyItems = { employee?: string | null; items: HrIssuedItem[]; waiting: number };
 export type HrOffboardingActivity = HrOnboardingActivity & { blocked?: string | null };
 export type HrOffboardingDetail = Omit<HrOnboarding, "activities"> & { activities: HrOffboardingActivity[]; items_out: HrIssuedItem[] };
+
+/* HR additions plan 04 / plan 08 (hand-written until contracts/types.ts is regenerated). */
+export type HrSensitiveTable = { label: string; columns: string[]; rows: Array<Record<string, unknown>> };
+export type HrServiceMilestone = { employee: string; name?: string | null; years: number; date: string };
+export type HrLeaveCertificate = { ok?: boolean; name: string; has_certificate?: boolean; message?: string | null };

@@ -77,6 +77,8 @@ def _fake_frappe(monkeypatch: pytest.MonkeyPatch, *, linked: bool = True, days: 
             if isinstance(days, Exception):
                 raise days
             return days
+        if method == "eswasa_hr.leave.certificate_rule":  # plan 08: threshold for the type (H14)
+            return {"certificate_required": payload.get("leave_type") == "Sick Leave", "certificate_after_days": 2 if payload.get("leave_type") == "Sick Leave" else None}
         raise AssertionError(method)
 
     monkeypatch.setattr(FrappeClient, "health", _ok)
@@ -146,6 +148,7 @@ async def test_preview_balance_after_and_conflicts(client: AsyncClient, monkeypa
         {"id": "FV-0091", "title": "Surveillance audit, ISO 22000", "date": "2026-11-04", "kind": "Field visit"}
     ]
     assert body["warnings"] == []
+    assert (body["certificate_required"], body["certificate_after_days"]) == (False, None)
     visit_query = next(p for m, p in calls if m == "frappe.client.get_list" and p["doctype"] == "Field Visit")
     assert ["lead_auditor", "=", "thandi@eswasa.co.sz"] in visit_query["filters"]
     # Preview never writes.

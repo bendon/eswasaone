@@ -7,6 +7,7 @@ import type { HrEmployeeRecord, HrProfileChanges } from "../api/types";
 import { errorText, hrSend } from "../hr/api";
 import { DocumentsPanel } from "../hr/record/Documents";
 import { CompetenceSection, HistorySection, JobSection, LeaveSection, OpenItems } from "../hr/record/RecordParts";
+import { DependantRequest, MyFamilyBox } from "./MyFamily";
 import { Banner, Crumbs, fmtDay, StatusPill, Tabs } from "./parts";
 
 /**
@@ -60,6 +61,7 @@ export function MyProfile() {
                 </div>
               </div>
               <HistorySection r={r} />
+              <MyFamilyBox />
             </div>
           ) : null}
         </ResourceGate>
@@ -216,7 +218,8 @@ function Corrections() {
     if (!field) return setErr("Choose the detail to correct.");
     if (!value.trim()) return setErr("Say what it should be.");
     if (!reason.trim()) return setErr("Say why it needs changing.");
-    if (chosen?.evidence_required && !evidence) return setErr("A change to your name needs evidence, such as your ID or a marriage certificate.");
+    if (chosen?.evidence_required && !evidence)
+      return setErr(field.startsWith("custom_medical_aid") ? "A medical aid change needs evidence, such as your medical aid card." : "A change to your name needs evidence, such as your ID or a marriage certificate.");
     setBusy(true);
     try {
       const link = evidence ? (await uploadMedia(evidence, "hr/evidence", { allowMock: false })).url : undefined;
@@ -242,7 +245,7 @@ function Corrections() {
           <div className="hr-box__h">
             <div>
               <h3>Ask HR to correct a detail</h3>
-              <p>Personal details and the spelling of your name. Job details change through HR; pay and bank details through an HR Manager.</p>
+              <p>Personal details, medical aid and the spelling of your name. Job details change through HR; pay and bank details through an HR Manager.</p>
             </div>
           </div>
           <div className="hr-box__b hr-view" style={{ gap: 10 }}>
@@ -259,7 +262,15 @@ function Corrections() {
             </label>
             <label className="hr-f">
               <span>What it should be</span>
-              <input className="hr-in" value={value} onChange={(e) => setValue(e.target.value)} disabled={busy} />
+              {field === "custom_medical_aid_main_member" ? (
+                <select className="hr-in" value={value} onChange={(e) => setValue(e.target.value)} disabled={busy}>
+                  <option value="">Choose…</option>
+                  <option>Yes</option>
+                  <option>No</option>
+                </select>
+              ) : (
+                <input className="hr-in" value={value} onChange={(e) => setValue(e.target.value)} disabled={busy} />
+              )}
             </label>
             <label className="hr-f">
               <span>Why</span>
@@ -286,6 +297,8 @@ function Corrections() {
             </div>
           </div>
         </div>
+
+        <DependantRequest onSent={res.reload} />
 
         {res.data?.items.length ? (
           <div className="hr-box hr-scroll">

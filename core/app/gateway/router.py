@@ -140,6 +140,8 @@ from app.schemas import (
     HrEstablishment,
     HrSensitive,
     HrSensitiveBody,
+    HrLeaveCertificate,
+    HrLeaveCertificateBody,
     HrEstChangeBody,
     HrEstChangeDetail,
     HrEstDepartment,
@@ -3944,9 +3946,11 @@ async def request_profile_change(
     _require_confirm(body.confirm)
     evidence = _absolute_attachment(body.evidence, request) if body.evidence else None
     audit_log(action="hr.profile_change.request", actor=auth.user.username, resource="Profile Change Request",
-              detail={"field": body.field, "evidence": bool(evidence)}, confirmed=True)
-    raw = await _hr_write(auth, frappe, f"{_PROFILE}.submit",
-                          json={"field": body.field, "requested_value": body.requested_value, "reason": body.reason, "evidence": evidence, "confirm": True})
+              detail={"field": body.field, "kind": body.kind or "field", "evidence": bool(evidence)}, confirmed=True)
+    payload: dict[str, Any] = {"field": body.field, "requested_value": body.requested_value, "reason": body.reason, "evidence": evidence, "confirm": True}
+    if body.kind and body.kind != "field":  # plan 04: a dependant row
+        payload.update({"kind": body.kind, "row": body.row, "dependant": body.dependant, "shares": body.shares})
+    raw = await _hr_write(auth, frappe, f"{_PROFILE}.submit", json=payload)
     return HrProfileChange.model_validate(raw)
 
 
@@ -4161,6 +4165,10 @@ async def preview_hr_leave(
             warnings.append(f"You have no {body.leave_type} allocated this leave year.")
         if approver is None:
             warnings.append("You have no leave approver yet. HR needs to set one before you can apply.")
+        try:  # plan 08: the leave type's certificate threshold (H14); a site before migrate has none
+            cert = await session.method(f"{_LEAVE}.certificate_rule", params={"leave_type": body.leave_type, "days": days}) or {}
+        except FrappeError:
+            cert = {}
         return HrLeavePreview(
             days=days,
             balance=balance,
@@ -4168,6 +4176,8 @@ async def preview_hr_leave(
             approver=approver,
             conflicts=conflicts,
             warnings=warnings,
+            certificate_required=bool(cert.get("certificate_required")),
+            certificate_after_days=cert.get("certificate_after_days"),
         )
     except FrappeError as exc:
         _raise_from_frappe(exc)
@@ -5741,10 +5751,12 @@ async def get_offboarding(
 )
 async def create_hr_leave(
     body: CreateHrLeaveBody,
+    request: Request,
     auth: Annotated[AuthContext, Depends(require_auth_csrf)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> HrLeaveSummary:
     _require_confirm(body.confirm)
+    certificate = _absolute_attachment(body.certificate, request) if body.certificate else None
     audit_log(
         action="hr.leave.create",
         actor=auth.user.username,
@@ -5753,6 +5765,7 @@ async def create_hr_leave(
             "leave_type": body.leave_type,
             "from_date": body.from_date,
             "to_date": body.to_date,
+            "certificate": bool(certificate),
         },
         confirmed=True,
     )
@@ -5761,7 +5774,7 @@ async def create_hr_leave(
     # eswasa_hr.leave.apply: always the caller's own Employee and leave approver (no raw insert; plan 01).
     raw = await _hr_write(auth, frappe, f"{_LEAVE}.apply", json={
         "leave_type": body.leave_type, "from_date": body.from_date, "to_date": body.to_date,
-        "reason": body.reason, "confirm": True,
+        "reason": body.reason, "confirm": True, **({"certificate": certificate} if certificate else {}),
     })
     return _as_hr_leave(raw)
 
@@ -6095,6 +6108,38 @@ async def acknowledge_my_hr_item(
     audit_log(action="hr.item.acknowledge", actor=auth.user.username, resource=f"HR Issued Item:{name}", detail={}, confirmed=True)
     raw = await _hr_write(auth, frappe, f"{_ITEMS}.acknowledge", json={"name": name, "confirm": 1})
     return HrMyItems.model_validate(raw)
+
+
+# --- HR additions: plan 04 / plan 08 ---
+# Family and medical (level 3): the person's own view, logged in eswasa_hr.sensitive. A sick-leave medical
+# certificate sent after applying, while the request is open (eswasa_hr.leave checks it is the applicant's).
+
+
+@router.get("/hr/me/sensitive", response_model=HrSensitive, tags=["hr"])
+async def view_my_sensitive_details(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    level: int = 3,
+) -> HrSensitive:
+    """My family and medical details (level 3 only). No reason is asked; eswasa_hr logs the view first."""
+    audit_log(action="hr.sensitive.view_own", actor=auth.user.username, resource="Employee:me", detail={"level": level}, confirmed=True)
+    return HrSensitive.model_validate(await _hr_call(auth, frappe, f"{_SENSITIVE}.my_view", params={"level": level}))
+
+
+@router.post("/hr/me/leave/{name}/certificate", response_model=HrLeaveCertificate, tags=["hr"])
+async def add_my_leave_certificate(
+    name: str,
+    body: HrLeaveCertificateBody,
+    request: Request,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrLeaveCertificate:
+    """Send the medical certificate for my open leave request; HR checks it as a document."""
+    _require_confirm(body.confirm)
+    certificate = _absolute_attachment(body.certificate, request)
+    audit_log(action="hr.leave.certificate", actor=auth.user.username, resource=f"Leave Application:{name}", detail={}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_LEAVE}.add_certificate", json={"name": name, "certificate": certificate, "confirm": True})
+    return HrLeaveCertificate.model_validate(raw)
 
 
 @router.get("/crm/leads", tags=["crm"])

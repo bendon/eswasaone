@@ -532,5 +532,90 @@
   "insert_after": "custom_hr_email",
   "description": "One item type per line. Awaiting ESWASA (A2): until this list has entries, HR can't issue items.",
   "name": "HR Settings-custom_issued_item_types"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "fieldname": "custom_medical_aid_scheme",
+  "label": "Medical aid scheme",
+  "fieldtype": "Data",
+  "insert_after": "emergency_phone_number",
+  "permlevel": 3,
+  "description": "Family and medical (level 3): HR Managers only, every view logged. Provisional until ESWASA answers A5.",
+  "name": "Employee-custom_medical_aid_scheme"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "fieldname": "custom_medical_aid_number",
+  "label": "Medical aid number",
+  "fieldtype": "Data",
+  "insert_after": "custom_medical_aid_scheme",
+  "permlevel": 3,
+  "name": "Employee-custom_medical_aid_number"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "fieldname": "custom_medical_aid_plan",
+  "label": "Medical aid plan",
+  "fieldtype": "Data",
+  "insert_after": "custom_medical_aid_number",
+  "permlevel": 3,
+  "name": "Employee-custom_medical_aid_plan"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "fieldname": "custom_medical_aid_main_member",
+  "label": "Main member",
+  "fieldtype": "Check",
+  "default": "0",
+  "insert_after": "custom_medical_aid_plan",
+  "permlevel": 3,
+  "name": "Employee-custom_medical_aid_main_member"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee",
+  "fieldname": "custom_dependants",
+  "label": "Dependants and beneficiaries",
+  "fieldtype": "Table",
+  "options": "Employee Dependant",
+  "insert_after": "custom_medical_aid_main_member",
+  "permlevel": 3,
+  "description": "Changed through profile change requests with evidence. Beneficiary shares are empty or add up to 100.",
+  "name": "Employee-custom_dependants"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Leave Type",
+  "fieldname": "custom_certificate_after_days",
+  "label": "Medical certificate after (days)",
+  "fieldtype": "Int",
+  "insert_after": "max_continuous_days_allowed",
+  "description": "A request longer than this needs a medical certificate. Empty: never required. Set from ESWASA's leave policy (H14); provisional.",
+  "name": "Leave Type-custom_certificate_after_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Leave Application",
+  "fieldname": "custom_medical_certificate",
+  "label": "Medical certificate",
+  "fieldtype": "Data",
+  "insert_after": "description",
+  "read_only": 1,
+  "description": "Stored file key (Core media store). HR checks it as an Employee Document (Medical certificate).",
+  "name": "Leave Application-custom_medical_certificate"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_service_milestones",
+  "label": "Service milestone years",
+  "fieldtype": "Data",
+  "insert_after": "custom_hr_email",
+  "description": "Years separated by commas, such as 5, 10, 20. Awaiting ESWASA (A8): empty means no milestones are raised.",
+  "name": "HR Settings-custom_service_milestones"
  }
 ]

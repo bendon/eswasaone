@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Icon } from "@eswasaone/shared-ui";
+import { Icon, uploadMedia } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
-import type { HrLeaveSummary, HrMe } from "../api/types";
+import type { HrLeaveRequest, HrLeaveRequests, HrLeaveSummary, HrMe } from "../api/types";
 import { errorText, hrSend } from "../hr/api";
 import { Banner, leaveStatus, fmtRange, StatusPill } from "./parts";
 
@@ -15,11 +15,16 @@ function cancellable(l: HrLeaveSummary): boolean {
   return s === "open" || (s === "approved" && Boolean(l.from_date) && (l.from_date as string) > today);
 }
 
-/** E3 My leave: own requests and their status, and cancel. Live GET /hr/me; POST /hr/leave/{id}/cancel. */
+/** E3 My leave: own requests and their status, and cancel. Live GET /hr/me; POST /hr/leave/{id}/cancel.
+ * Open requests that need a medical certificate (plan 08) get "Add certificate": POST /hr/me/leave/{id}/certificate. */
 export function MyLeave() {
   const { user, sessionKey } = useInstitution();
   const me = useApiResource<HrMe>("/hr/me", { enabled: Boolean(user), refreshKey: sessionKey });
+  const open = useApiResource<HrLeaveRequests>("/hr/leave/requests?status=Open", { enabled: Boolean(user), refreshKey: sessionKey });
+  const needsCert = new Set(((open.data?.items ?? []) as HrLeaveRequest[]).filter((r) => r.certificate_required && !r.has_certificate).map((r) => r.id));
   const leave = me.data?.leave ?? [];
+  const [adding, setAdding] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,6 +48,24 @@ export function MyLeave() {
     }
   }
 
+  async function addCertificate(id: string) {
+    setErr(null);
+    if (!file) return setErr("Attach the certificate.");
+    setBusy(true);
+    try {
+      const link = (await uploadMedia(file, "hr/evidence", { allowMock: false })).url;
+      await hrSend(`/hr/me/leave/${encodeURIComponent(id)}/certificate`, { certificate: link });
+      setDone("Certificate sent. HR will check it.");
+      setAdding(null);
+      setFile(null);
+      open.reload();
+    } catch (e) {
+      setErr(errorText(e, "Not sent."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <ResourceGate loading={me.loading} error={me.error} onRetry={me.reload} refreshing={me.refreshing} hasData={Boolean(me.data)}>
       <div className="hr-view">
@@ -59,7 +82,7 @@ export function MyLeave() {
           </div>
         </div>
         {err ? (
-          <Banner kind="bad" title="Not cancelled">
+          <Banner kind="bad" title={adding ? "Not sent" : "Not cancelled"}>
             {err}
           </Banner>
         ) : null}
@@ -92,6 +115,24 @@ export function MyLeave() {
                         <StatusPill cls={s.cls} label={s.label} />
                       </td>
                       <td style={{ textAlign: "right" }}>
+                        {needsCert.has(l.id) && adding !== l.id ? (
+                          <button type="button" className="btn ghost sm" onClick={() => (setAdding(l.id), setCancelling(null), setErr(null), setDone(null))}>
+                            Add certificate
+                          </button>
+                        ) : null}{" "}
+                        {adding === l.id ? (
+                          <div className="hr-view" style={{ gap: 6, minWidth: 240 }}>
+                            <input className="hr-in" type="file" aria-label="Medical certificate" accept="application/pdf,image/jpeg,image/png" onChange={(e) => setFile(e.target.files?.[0] ?? null)} disabled={busy} />
+                            <div>
+                              <button type="button" className="btn pri sm" disabled={busy} onClick={() => void addCertificate(l.id)}>
+                                {busy ? "Sending…" : "Send certificate"}
+                              </button>{" "}
+                              <button type="button" className="btn ghost sm" disabled={busy} onClick={() => (setAdding(null), setErr(null))}>
+                                Not now
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
                         {cancellable(l) && cancelling !== l.id ? (
                           <button type="button" className="btn ghost sm" onClick={() => (setCancelling(l.id), setErr(null), setDone(null))}>
                             Cancel

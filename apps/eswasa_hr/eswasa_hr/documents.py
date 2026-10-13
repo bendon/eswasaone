@@ -23,7 +23,8 @@ REQUIRED_FIELD = "custom_required_documents"
 HR_ROLES = ("HR Manager", "HR User", "System Manager")
 VERIFIERS = ("HR Manager", "HR User")
 TO_CHECK, VERIFIED = "To check", "Verified"
-TYPES = ("ID", "Contract", "Qualification", "Impartiality declaration", "Work permit", "Professional registration", "Other")
+TYPES = ("ID", "Contract", "Qualification", "Impartiality declaration", "Work permit", "Professional registration", "Other",
+         "Medical certificate")  # HR additions plan 08: sick-leave certificates, filed from leave
 RULE = "Document expiry"  # HR Alert rule
 
 

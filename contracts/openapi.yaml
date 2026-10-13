@@ -4275,6 +4275,47 @@ paths:
         "422":
           description: Already acknowledged or returned
 
+  # plan 04 / plan 08: my family and medical details; a sick-leave certificate sent later
+  /hr/me/sensitive:
+    get:
+      tags: [hr]
+      operationId: viewMySensitiveDetails
+      summary: My family and medical details (level 3 only; the view is logged)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: level, in: query, required: false, schema: { type: integer, enum: [3], default: 3 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrSensitive" }
+        "403":
+          description: Not a level the person may open on their own record
+  /hr/me/leave/{name}/certificate:
+    post:
+      tags: [hr]
+      operationId: addMyLeaveCertificate
+      summary: Send the medical certificate for my open leave request (HR checks it as a document)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrLeaveCertificateBody" }
+      responses:
+        "200":
+          description: Sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLeaveCertificate" }
+        "403":
+          description: Not your leave request
+        "422":
+          description: The request has been decided
+
 components:
   securitySchemes:
     bearerAuth:
@@ -6488,6 +6529,9 @@ components:
         confirm:
           type: boolean
           title: Confirm
+        certificate:  # plan 08
+          anyOf: [{ type: string }, { type: "null" }]
+          description: An uploaded medical certificate's link (POST /api/media)
       type: object
       required:
       - leave_type
@@ -7843,6 +7887,8 @@ components:
         warnings:
           type: array
           items: { type: string }
+        certificate_required: { type: boolean, default: false }  # plan 08 (H14)
+        certificate_after_days: { anyOf: [{ type: integer }, { type: "null" }] }
     HrDeclarationInterest:
       type: object
       required: [organisation, relationship]
@@ -8967,7 +9013,7 @@ components:
       type: object
       required: [level, reason, confirm]
       properties:
-        level: { type: integer, enum: [1, 2] }
+        level: { type: integer, enum: [1, 2, 3] }  # 3 family and medical (plan 04)
         reason: { type: string, minLength: 10 }
         confirm: { type: boolean }
     HrSensitive:
@@ -8976,7 +9022,7 @@ components:
       properties:
         employee: { type: string }
         employee_name: { type: string }
-        level: { type: integer, enum: [1, 2] }
+        level: { type: integer, enum: [1, 2, 3] }  # 3 family and medical (plan 04)
         level_label: { type: string }
         fields:
           type: array
@@ -8987,6 +9033,9 @@ components:
               field: { type: string }
               label: { type: string }
               value: { anyOf: [{ type: string }, { type: "null" }] }
+        tables:  # plan 04: level 3 dependants
+          type: array
+          items: { $ref: "#/components/schemas/HrSensitiveTable" }
         log: { type: string, description: HR Access Log row written for this view }
     HrAccessLog:
       type: object
@@ -9137,6 +9186,8 @@ components:
               count: { type: integer }
         record_checked_on: { type: string, nullable: true, description: "R-H7: when the nightly integrity check last ran" }
         cycles: { type: array, items: { $ref: "#/components/schemas/HrCycleStatus" } }
+        milestones: { type: array, items: { $ref: "#/components/schemas/HrServiceMilestone" } }  # plan 08
+        milestone_years: { type: array, items: { type: integer }, description: Empty while ESWASA hasn't set them (A8) }
     HrSetupStatus:
       type: object
       required: [steps, done, total, pct]
@@ -9528,6 +9579,8 @@ components:
           default: false
           title: Escalated
           type: boolean
+        certificate_required: { type: boolean, default: false }  # plan 08
+        has_certificate: { type: boolean, default: false }
       title: HrLeaveRequest
       type: object
       required: [id, status, overdue, escalated]
@@ -10074,6 +10127,10 @@ components:
           - type: 'null'
           default: null
           title: Employee Name
+        kind:  # plan 04
+          type: string
+          enum: [field, dependant_add, dependant_update, dependant_remove]
+          default: field
         field:
           title: Field
           type: string
@@ -10215,9 +10272,16 @@ components:
           default: false
           title: Confirm
           type: boolean
+        # plan 04: a dependant row instead of one field
+        kind: { anyOf: [{ type: string, enum: [field, dependant_add, dependant_update, dependant_remove] }, { type: "null" }] }
+        row:
+          anyOf: [{ type: object, additionalProperties: true }, { type: "null" }]
+          description: The dependant (full_name, relationship, date_of_birth, id_number, on_medical_aid, beneficiary_share, phone)
+        dependant: { anyOf: [{ type: string }, { type: "null" }], description: The row being changed or removed }
+        shares:
+          anyOf: [{ type: object, additionalProperties: { type: number } }, { type: "null" }]
+          description: Other dependants' rebalanced beneficiary shares, by row
       required:
-      - field
-      - requested_value
       - reason
       title: HrProfileChangeBody
       type: object
@@ -11945,3 +12009,35 @@ components:
           properties:
             activities: { type: array, items: { $ref: "#/components/schemas/HrOffboardingActivity" } }
             items_out: { type: array, items: { $ref: "#/components/schemas/HrIssuedItem" } }
+    # plan 04 / plan 08: family and medical tables, sick-leave certificate, service milestones
+    HrSensitiveTable:
+      type: object
+      required: [label, columns, rows]
+      properties:
+        label: { type: string }
+        columns: { type: array, items: { type: string } }
+        rows:
+          type: array
+          items: { type: object, additionalProperties: true, description: Keyed by column label, plus the row id }
+    HrLeaveCertificateBody:
+      type: object
+      required: [certificate, confirm]
+      properties:
+        certificate: { type: string, description: An uploaded file's link (POST /api/media) }
+        confirm: { type: boolean }
+    HrLeaveCertificate:
+      type: object
+      required: [name]
+      properties:
+        ok: { type: boolean, default: true }
+        name: { type: string }
+        has_certificate: { type: boolean, default: true }
+        message: { anyOf: [{ type: string }, { type: "null" }] }
+    HrServiceMilestone:
+      type: object
+      required: [employee, years, date]
+      properties:
+        employee: { type: string }
+        name: { anyOf: [{ type: string }, { type: "null" }] }
+        years: { type: integer }
+        date: { type: string, format: date }

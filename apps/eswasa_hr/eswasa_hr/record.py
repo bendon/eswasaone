@@ -3,7 +3,7 @@ The full person record (plan 06, H1b and E5; brief §12.2): job, leave, authoris
 contract and open items for one employee, in one call.
 
 Scoped by ``eswasa_hr.scope``: HR sees anyone, a person themselves, a line manager their reports. Only job
-fields are read. Protected fields (``sensitive.LEVELS``, levels 1 and 2) never appear here; they open only
+fields are read. Protected fields (``sensitive.LEVELS``, levels 1 to 3) never appear here; they open only
 through ``sensitive.view`` with a reason. Document files are returned to HR and the person only.
 
 Pure rules sit at the top and are tested without Frappe.
@@ -39,9 +39,9 @@ JOB_FIELDS = (
 
 
 def protected() -> set[str]:
-    from eswasa_hr.sensitive import LEVELS
+    from eswasa_hr.sensitive import protected_labels
 
-    return {f for spec in LEVELS.values() for f, _ in spec["fields"]}
+    return set(protected_labels())
 
 
 def _s(v: Any) -> str | None:

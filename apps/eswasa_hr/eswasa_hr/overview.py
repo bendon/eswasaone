@@ -297,6 +297,7 @@ def overview_impl() -> dict[str, Any]:
         "record_quality": quality,
         "record_checked_on": snap["ran_on"],
         "cycles": cycles,
+        **_milestones(day),  # additions plan 08
     }
 
 
@@ -427,6 +428,13 @@ def setup_status_impl() -> dict[str, Any]:
         # _payroll_step(),  # off: ESWASA doesn't run payroll in EswasaOne; restore when it does
     ]
     return {"steps": steps, **progress(steps)}
+
+
+def _milestones(day: date) -> dict[str, Any]:
+    """HR additions plan 08: this month's and next month's service milestones, and the years set (A8)."""
+    from eswasa_hr.milestones import overview_block
+
+    return overview_block(day)
 
 
 def _code_step() -> dict[str, Any]:

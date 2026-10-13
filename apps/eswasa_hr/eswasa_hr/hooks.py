@@ -67,6 +67,16 @@ fixtures = [
                     "HR Settings-custom_written_warning_months",
                     "HR Settings-custom_final_warning_months",
                     "HR Settings-custom_issued_item_types",
+                    # HR additions plan 04: family and medical (permlevel 3 on the field itself)
+                    "Employee-custom_medical_aid_scheme",
+                    "Employee-custom_medical_aid_number",
+                    "Employee-custom_medical_aid_plan",
+                    "Employee-custom_medical_aid_main_member",
+                    "Employee-custom_dependants",
+                    # HR additions plan 08: sick-note threshold and service milestones
+                    "Leave Type-custom_certificate_after_days",
+                    "Leave Application-custom_medical_certificate",
+                    "HR Settings-custom_service_milestones",
                 ],
             ]
         ],

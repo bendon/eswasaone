@@ -71,6 +71,31 @@ describe("Show details", () => {
   });
 });
 
+describe("Family and medical (plan 04)", () => {
+  it("offers the third level and renders its dependants table", async () => {
+    const calls: Array<{ body?: unknown }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const settings = settingsResponse(String(input));
+        if (settings) return settings;
+        calls.push({ body: init?.body ? JSON.parse(String(init.body)) : undefined });
+        const out = { ...VIEW, level: 3, level_label: "Family and medical", fields: [{ field: "custom_medical_aid_scheme", label: "Medical aid scheme", value: "Swazi Med" }],
+          tables: [{ label: "Dependants", columns: ["Name", "Relationship"], rows: [{ id: "D1", Name: "Lwazi Nxumalo", Relationship: "Child" }] }] };
+        return new Response(JSON.stringify(out), { status: 200, headers: { "Content-Type": "application/json" } });
+      }),
+    );
+    mount(<SensitivePanel employee="EMP-9" />);
+    fireEvent.click(screen.getByRole("button", { name: "Show details" }));
+    expect(screen.getAllByRole("radio")).toHaveLength(3);
+    fireEvent.click(screen.getByRole("radio", { name: /Family and medical/ }));
+    fireEvent.change(screen.getByLabelText(/Why do you need them/), { target: { value: "Medical aid claim query" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show and record" }));
+    expect(await screen.findByRole("table", { name: "Dependants" })).toHaveTextContent("Lwazi Nxumalo");
+    expect(calls[0].body).toEqual({ level: 3, reason: "Medical aid claim query", confirm: true });
+  });
+});
+
 describe("Access log", () => {
   it("lists who looked and why", async () => {
     stub();

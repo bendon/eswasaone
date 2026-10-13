@@ -77,6 +77,35 @@ function NoEstablishment() {
   );
 }
 
+/** Additions plan 08: service milestones this month and next. Hidden when none fall due; says so while ESWASA
+ * hasn't set the years (A8). */
+export function MilestonesBox({ live }: { live: HrLiveOverview }) {
+  const years = live.milestone_years ?? [];
+  const items = live.milestones ?? [];
+  if (years.length && !items.length) return null;
+  return (
+    <div className="hr-box">
+      <div className="hr-box__h">
+        <div>
+          <h3>Service milestones</h3>
+          <p>{years.length ? "This month and next" : "Milestone years not set (awaiting ESWASA A8)"}</p>
+        </div>
+      </div>
+      {items.length ? (
+        <ul className="hr-attn">
+          {items.map((m) => (
+            <li key={`${m.employee}:${m.years}`}>
+              <span className="s">{m.years} years</span>
+              <b>{m.name ?? m.employee}</b>
+              <span className="s">{fmtDay(m.date)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 function Side({ live }: { live: HrLiveOverview }) {
   return (
     <>
@@ -149,6 +178,7 @@ function Side({ live }: { live: HrLiveOverview }) {
           )}
         </div>
       </div>
+      <MilestonesBox live={live} />
     </>
   );
 }

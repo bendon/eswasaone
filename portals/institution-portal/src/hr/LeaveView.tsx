@@ -142,6 +142,12 @@ export function LeaveView() {
                 <b>Decides</b>
                 <span>{selected.approver_name || selected.approver || "No approver set"}</span>
               </div>
+              {selected.certificate_required || selected.has_certificate ? (
+                <div className="kv">
+                  <b>Medical certificate</b>
+                  <span>{selected.has_certificate ? "Attached. HR checks it in the person's documents." : "Needed, not sent yet"}</span>
+                </div>
+              ) : null}
               {selected.sla_date ? (
                 <div className="kv">
                   <b>Due</b>
@@ -284,6 +290,8 @@ export function LeaveView() {
                           <td>
                             <span className="stagechip">{item.status}</span>
                             {item.overdue ? <small style={{ display: "block", color: "var(--bad, #b42318)" }}>Overdue{item.escalated ? ", with HR" : ""}</small> : null}
+                            {item.certificate_required && !item.has_certificate ? <small style={{ display: "block" }}>Certificate needed</small> : null}
+                            {item.has_certificate ? <small style={{ display: "block" }}>Medical certificate attached</small> : null}
                           </td>
                           <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                             <button type="button" className="btn ghost sm" onClick={() => setOpenRef(item.id)}>

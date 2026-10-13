@@ -39,6 +39,26 @@ class RuleTests(unittest.TestCase):
         self.assertIn("your own", pc.decider_error("hr1@x", ["HR Manager"], "someone@x", "hr1@x"))
         self.assertIn("Only HR", pc.decider_error("sipho@x", ["Employee"], "thandi@x", "thandi@x"))
 
+    def test_dependant_rules(self):
+        rows = [{"name": "D1", "full_name": "Sipho Mamba", "relationship": "Spouse", "beneficiary_share": 100}]
+        add = {"full_name": "Lwazi Mamba", "relationship": "Child", "date_of_birth": "2019-03-01", "beneficiary_share": 50}
+        errs = pc.dependant_request_errors(pc.ADD, rows, None, add, "New baby", None, "2026-10-13")
+        self.assertTrue(any("birth or marriage certificate" in e for e in errs))
+        errs = pc.dependant_request_errors(pc.ADD, rows, None, add, "New baby", "hr/evidence/birth.pdf", "2026-10-13")
+        self.assertTrue(any("add up to 150" in e for e in errs))
+        self.assertEqual(pc.dependant_request_errors(pc.ADD, rows, None, add, "New baby", "hr/evidence/birth.pdf", "2026-10-13", {"D1": 50}), [])
+        self.assertIn("Choose one of your dependants.", pc.dependant_request_errors(pc.REMOVE, rows, "D9", None, "x", None, "2026-10-13"))
+        self.assertEqual(pc.dependant_summary(pc.ADD, add, rows, None), "Add Lwazi Mamba (child)")
+        self.assertEqual(pc.apply_rows(rows, pc.REMOVE, "D1", None), [])
+
+    def test_medical_aid_needs_evidence_and_is_family(self):
+        self.assertTrue(any("medical aid card" in e for e in pc.request_errors("custom_medical_aid_number", "123", "New card", None, "99")))
+        self.assertIn("Choose yes or no.", pc.request_errors("custom_medical_aid_main_member", "maybe", "x", "card.pdf", 0))
+        self.assertIn("That's what your record already says.", pc.request_errors("custom_medical_aid_main_member", "No", "x", "card.pdf", 0))
+        self.assertTrue(pc.is_family("custom_medical_aid_plan") and pc.is_family("custom_dependants", pc.ADD))
+        self.assertFalse(pc.is_family("cell_number"))
+        self.assertIn("HR Manager", pc.decider_error("hr2@x", ["HR User"], "thandi@x", "thandi@x", family=True))
+
     def test_titles(self):
         self.assertEqual(pc.todo_title("Thandi Mamba", "Mobile"), "Review profile change for Thandi Mamba: mobile")
         self.assertEqual(pc.log_reason("PCR-00001"), "Profile change PCR-00001")
@@ -49,6 +69,8 @@ def _store():
         "Employee": [{"name": "E1", "employee_name": "Thandi Mamba", "user_id": "thandi@x", "status": "Active", "cell_number": "7612 3456",
                       "last_name": "Mamba"},
                      {"name": "E5", "employee_name": "Hlobi HR", "user_id": "hr1@x", "status": "Active"}],
+        "Employee Dependant": [{"name": "D1", "parent": "E1", "parenttype": "Employee", "parentfield": "custom_dependants",
+                                "full_name": "Sipho Mamba", "relationship": "Spouse", "beneficiary_share": 100}],
         "Has Role": [{"parent": "hr1@x", "role": "HR Manager", "parenttype": "User"}, {"parent": "hr2@x", "role": "HR User", "parenttype": "User"},
                      {"parent": "thandi@x", "role": "HR User", "parenttype": "User"}],
         "User": [{"name": "hr1@x", "enabled": 1}, {"name": "hr2@x", "enabled": 1}, {"name": "thandi@x", "enabled": 1}],
@@ -74,7 +96,8 @@ class GlueTests(unittest.TestCase):
             if d == "Employee" and a:
                 row = next(r for r in store["Employee"] if r["name"] == a[0])
                 emp = SimpleNamespace(**row, flags=SimpleNamespace())
-                emp.save = lambda: row.update({k: v for k, v in vars(emp).items() if k not in ("flags", "save")})
+                emp.set = lambda field, value: setattr(emp, field, value)
+                emp.save = lambda: row.update({k: v for k, v in vars(emp).items() if k not in ("flags", "save", "set")})
                 return emp
             return base(d, *a)
 
@@ -136,6 +159,37 @@ class GlueTests(unittest.TestCase):
         f = self._install("thandi@x", ("Employee",))
         with self.assertRaisesRegex(f.ValidationError, "evidence"):
             pc.submit("last_name", "Dlamini", "Married", confirm=1)
+
+
+    def _add_dependant(self):
+        self._install("thandi@x", ("Employee",))
+        out = pc.submit(kind=pc.ADD, row={"full_name": "Lwazi Mamba", "relationship": "Child", "date_of_birth": "2019-03-01", "beneficiary_share": 40},
+                        shares={"D1": 60}, reason="New baby", evidence="hr/evidence/birth.pdf", confirm=1)
+        self.store["Profile Change Request"][-1]["owner"] = "thandi@x"
+        return out
+
+    def test_dependant_request_goes_to_hr_managers_only(self):
+        out = self._add_dependant()
+        self.assertEqual((out["kind"], out["field_label"], out["requested_value"], out["current_value"]), (pc.ADD, "Dependants", "Add Lwazi Mamba (child)", None))
+        self.assertEqual([t["allocated_to"] for t in self.store["ToDo"]], ["hr1@x"])
+        self.assertNotIn("Lwazi", self.store["ToDo"][0]["description"])
+        f = self._install("hr2@x", ("HR User",))
+        with self.assertRaisesRegex(f.PermissionError, "HR Manager"):
+            pc.decide(out["id"], "approve")
+
+    def test_dependant_add_without_evidence_is_refused(self):
+        f = self._install("thandi@x", ("Employee",))
+        with self.assertRaisesRegex(f.ValidationError, "birth or marriage certificate"):
+            pc.submit(kind=pc.ADD, row={"full_name": "Lwazi Mamba", "relationship": "Child"}, reason="New baby", confirm=1)
+
+    def test_approved_dependant_writes_the_rows_and_logs_family(self):
+        out = self._add_dependant()
+        self._install("hr1@x", ("HR Manager",))
+        self.assertEqual(pc.decide(out["id"], "approve")["status"], "Approved")
+        rows = self.store["Employee"][0]["custom_dependants"]
+        self.assertEqual([(r["full_name"], r["beneficiary_share"]) for r in rows], [("Sipho Mamba", 60), ("Lwazi Mamba", 40)])
+        log = self.store["HR Access Log"][0]
+        self.assertEqual((log["level"], log["fields"]), ("Family and medical", "custom_dependants"))
 
 
 if __name__ == "__main__":

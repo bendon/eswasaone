@@ -633,6 +633,7 @@ class CreateHrLeaveBody(BaseModel):
     to_date: str
     reason: str | None = None
     confirm: bool
+    certificate: str | None = None  # plan 08: an uploaded medical certificate's link (POST /api/media)
 
 
 class HrLeaveActBody(BaseModel):
@@ -708,6 +709,8 @@ class HrLeavePreview(BaseModel):
     approver: HrPersonRef | None = None
     conflicts: list[HrWorkConflict] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+    certificate_required: bool = False  # plan 08: over the leave type's threshold (H14)
+    certificate_after_days: int | None = None
 
 
 class HrDeclarationInterest(BaseModel):
@@ -1757,7 +1760,7 @@ class HrEstChangeBody(BaseModel):
 
 
 class HrSensitiveBody(BaseModel):
-    level: int  # 1 personal, 2 pay and bank
+    level: int  # 1 personal, 2 pay and bank, 3 family and medical (plan 04)
     reason: str
     confirm: bool
 
@@ -1776,6 +1779,7 @@ class HrSensitive(BaseModel):
     level: int
     level_label: str
     fields: list[HrSensitiveField] = Field(default_factory=list)
+    tables: list[HrSensitiveTable] = Field(default_factory=list)  # level 3: dependants (plan 04)
     log: str
 
 
@@ -1866,6 +1870,8 @@ class HrLiveOverview(BaseModel):
     record_quality: list[HrRecordGap] = Field(default_factory=list)
     record_checked_on: str | None = None  # R-H7: when the nightly integrity check last ran (None = live, not yet run)
     cycles: list[HrCycleStatus] = Field(default_factory=list)
+    milestones: list[HrServiceMilestone] = Field(default_factory=list)  # plan 08: this month and next
+    milestone_years: list[int] = Field(default_factory=list)  # empty: awaiting ESWASA (A8)
 
 
 class HrSettingsLists(BaseModel):
@@ -2006,6 +2012,8 @@ class HrLeaveRequest(BaseModel):
     sla_date: str | None = None
     overdue: bool = False
     escalated: bool = False
+    certificate_required: bool = False  # plan 08
+    has_certificate: bool = False
 
 
 class HrLeaveRequests(BaseModel):
@@ -2191,6 +2199,7 @@ class HrProfileChange(BaseModel):
     id: str
     employee: str | None = None
     employee_name: str | None = None
+    kind: str = "field"  # field | dependant_add | dependant_update | dependant_remove (plan 04)
     field: str
     field_label: str | None = None
     current_value: str | None = None
@@ -2231,11 +2240,15 @@ class HrEmployeeOptions(BaseModel):
 
 
 class HrProfileChangeBody(BaseModel):
-    field: str
-    requested_value: str
+    field: str = ""
+    requested_value: str = ""
     reason: str
-    evidence: str | None = None  # an uploaded file's link (POST /api/media); required for a name change
+    evidence: str | None = None  # an uploaded file's link (POST /api/media); required for a name, medical aid or new dependant
     confirm: bool = False
+    kind: str | None = None  # plan 04: dependant_add | dependant_update | dependant_remove; omitted = one field
+    row: dict[str, Any] | None = None  # the dependant's details
+    dependant: str | None = None  # the row being changed or removed
+    shares: dict[str, float] | None = None  # other dependants' rebalanced beneficiary shares, by row
 
 
 class HrImportError(BaseModel):
@@ -3158,3 +3171,38 @@ class HrOffboardingDetail(HrOnboarding):
 
     activities: list[HrOffboardingActivity] = Field(default_factory=list)
     items_out: list[HrIssuedItem] = Field(default_factory=list)
+
+
+# --- HR additions: plan 04 / plan 08 ---
+# Family and medical (level 3) tables; sick-leave medical certificate; long-service milestones.
+
+
+class HrSensitiveTable(BaseModel):
+    """A level's table (dependants): column labels, and rows keyed by those labels plus the row ``id``."""
+
+    label: str
+    columns: list[str] = Field(default_factory=list)
+    rows: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class HrLeaveCertificateBody(BaseModel):
+    certificate: str  # an uploaded file's link (POST /api/media)
+    confirm: bool
+
+
+class HrLeaveCertificate(BaseModel):
+    ok: bool = True
+    name: str
+    has_certificate: bool = True
+    message: str | None = None
+
+
+class HrServiceMilestone(BaseModel):
+    employee: str
+    name: str | None = None
+    years: int
+    date: str
+
+
+HrSensitive.model_rebuild()
+HrLiveOverview.model_rebuild()

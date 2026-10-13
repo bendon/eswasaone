@@ -552,5 +552,69 @@ class ApplyTests(unittest.TestCase):
         self.assertFalse(self.store.get(leave.DOCTYPE))
 
 
+class CertificateTests(unittest.TestCase):
+    """HR additions plan 08: a medical certificate past the type's threshold (H14, provisional)."""
+
+    def setUp(self):
+        from tests import _fakefrappe as ff
+
+        self.ff = ff
+        self.store = {
+            "Employee": [{"name": "EMP-44", "employee_name": "Thandi Mamba", "user_id": "thandi@x", "status": "Active",
+                          "leave_approver": "sipho@x", "company": "ESWASA"}],
+            "Leave Type": [{"name": "Sick Leave", leave.CERT_FIELD: 2}, {"name": "Annual", leave.CERT_FIELD: 0}],
+        }
+        self.addCleanup(ff.uninstall)
+
+    def _install(self, user="thandi@x"):
+        return self.ff.install(self.store, user=user, roles=("Employee",), today="2026-10-16",
+                               meta_fields={"Leave Type": [leave.CERT_FIELD], leave.DOCTYPE: [leave.CERT_LINK]})
+
+    def test_rule(self):
+        self.assertFalse(leave.certificate_required({leave.CERT_FIELD: None}, 30))  # empty: never
+        self.assertFalse(leave.certificate_required({leave.CERT_FIELD: 0}, 30))
+        self.assertFalse(leave.certificate_required({leave.CERT_FIELD: 2}, 2))  # boundary day: not more than 2
+        self.assertTrue(leave.certificate_required({leave.CERT_FIELD: 2}, 2.5))
+        self.assertEqual(leave.apply_error("Sick Leave", "2026-11-02", "2026-11-04", None, 2, 3, date(2026, 10, 16)),
+                         "Sick Leave for more than 2 days needs a medical certificate.")
+        self.assertIsNone(leave.apply_error("Sick Leave", "2026-11-02", "2026-11-04", "hr/evidence/cert.pdf", 2, 3, date(2026, 10, 16)))
+        # Already started: the certificate may follow.
+        self.assertIsNone(leave.apply_error("Sick Leave", "2026-10-14", "2026-10-16", None, 2, 3, date(2026, 10, 16)))
+
+    def test_apply_refuses_then_files_the_certificate(self):
+        f = self._install()
+        with self.assertRaisesRegex(f.ValidationError, "needs a medical certificate"):
+            leave.apply_impl("Sick Leave", "2026-11-02", "2026-11-04")
+        out = leave.apply_impl("Sick Leave", "2026-11-02", "2026-11-04", None, "hr/evidence/cert.pdf")
+        [row] = self.store[leave.DOCTYPE]
+        self.assertEqual(row[leave.CERT_LINK], "hr/evidence/cert.pdf")
+        self.assertEqual((out["certificate_required"], out["has_certificate"]), (True, True))
+        [doc] = self.store["Employee Document"]
+        self.assertEqual((doc["employee"], doc["document_type"], doc["status"]), ("EMP-44", "Medical certificate", "To check"))
+        leave.apply_impl("Annual", "2026-11-09", "2026-11-20")  # threshold not set: never required
+
+    def test_late_certificate_on_an_open_request(self):
+        self._install()
+        out = leave.apply_impl("Sick Leave", "2026-10-14", "2026-10-16")
+        name = out["name"]
+        self.store[leave.DOCTYPE][0].update({"docstatus": 0})
+        f = self._install(user="sipho@x")
+        with self.assertRaises(f.PermissionError):
+            leave.add_certificate_impl(name, "hr/evidence/cert.pdf")
+        self._install()
+        self.assertTrue(leave.add_certificate_impl(name, "hr/evidence/cert.pdf")["has_certificate"])
+        self.assertEqual(self.store[leave.DOCTYPE][0][leave.CERT_LINK], "hr/evidence/cert.pdf")
+        self.store[leave.DOCTYPE][0]["status"] = "Approved"
+        f = self._install()
+        with self.assertRaisesRegex(f.ValidationError, "decided"):
+            leave.add_certificate_impl(name, "hr/evidence/cert2.pdf")
+
+    def test_request_row_flags(self):
+        row = {"name": "LA-1", "status": "Open", "docstatus": 0, "total_leave_days": 3}
+        out = leave.request_row(row, None, False, date(2026, 10, 16), 2)
+        self.assertEqual((out["certificate_required"], out["has_certificate"]), (True, False))
+        self.assertFalse(leave.request_row(row, None, False, date(2026, 10, 16))["certificate_required"])
+
+
 if __name__ == "__main__":
     unittest.main()

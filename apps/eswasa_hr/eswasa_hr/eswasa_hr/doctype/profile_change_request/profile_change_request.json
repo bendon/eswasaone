@@ -20,9 +20,12 @@
  "field_order": [
   "employee",
   "employee_name",
+  "kind",
   "field",
   "current_value",
   "requested_value",
+  "dependant",
+  "dependant_row",
   "reason",
   "evidence",
   "decision_section",
@@ -48,13 +51,23 @@
    "read_only": 1
   },
   {
+   "fieldname": "kind",
+   "fieldtype": "Select",
+   "label": "Kind",
+   "options": "field\ndependant_add\ndependant_update\ndependant_remove",
+   "default": "field",
+   "in_list_view": 1,
+   "read_only": 1,
+   "description": "field: one Employee field. dependant_*: a row of the dependants table (HR additions plan 04)."
+  },
+  {
    "fieldname": "field",
    "fieldtype": "Data",
    "label": "Field",
    "reqd": 1,
    "in_list_view": 1,
    "read_only": 1,
-   "description": "One of eswasa_hr.profile_changes.ALLOWED"
+   "description": "One of eswasa_hr.profile_changes.ALLOWED, or custom_dependants for a dependant change"
   },
   {
    "fieldname": "current_value",
@@ -68,6 +81,21 @@
    "label": "Requested Value",
    "reqd": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "dependant",
+   "fieldtype": "Data",
+   "label": "Dependant",
+   "read_only": 1,
+   "description": "Employee Dependant row name (update or remove)"
+  },
+  {
+   "fieldname": "dependant_row",
+   "fieldtype": "Code",
+   "label": "Dependant Row",
+   "options": "JSON",
+   "read_only": 1,
+   "description": "{row, shares}: the dependant's details and any rebalanced beneficiary shares"
   },
   {
    "fieldname": "reason",

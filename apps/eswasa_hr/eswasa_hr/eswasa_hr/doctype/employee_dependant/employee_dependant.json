@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-10-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "links": [],
+ "modified": "2026-10-13 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa HR",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "name": "Employee Dependant",
+ "istable": 1,
+ "editable_grid": 1,
+ "autoname": "hash",
+ "naming_rule": "Random",
+ "field_order": [
+  "full_name",
+  "relationship",
+  "date_of_birth",
+  "id_number",
+  "on_medical_aid",
+  "beneficiary_share",
+  "phone"
+ ],
+ "fields": [
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "label": "Full Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "relationship",
+   "fieldtype": "Select",
+   "label": "Relationship",
+   "options": "Spouse\nChild\nParent\nOther",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "id_number",
+   "fieldtype": "Data",
+   "label": "ID Number"
+  },
+  {
+   "fieldname": "on_medical_aid",
+   "fieldtype": "Check",
+   "label": "On Medical Aid",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "beneficiary_share",
+   "fieldtype": "Percent",
+   "label": "Beneficiary Share",
+   "description": "Death-benefit nomination. Empty for everyone, or the shares add up to 100."
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone"
+  }
+ ],
+ "permissions": []
+}

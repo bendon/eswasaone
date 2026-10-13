@@ -28,7 +28,7 @@ from datetime import date
 from typing import Any
 
 from eswasa_hr.declarations import LOOK_BACK_YEARS, declaration_year, year_label
-from eswasa_hr.sensitive import LEVELS
+from eswasa_hr.sensitive import protected_labels
 
 DOCTYPE = "HR Evidence Pack"
 LOG = "HR Access Log"
@@ -39,7 +39,7 @@ SCOPES = ("employee", "external_person", "scheme", "discipline")
 SECTIONS = ("authorisations", "monitoring", "declarations", "training")  # H11: provisional, configurable
 MONITORING_TYPES = ("Witnessed audit", "Proficiency test")
 PERSON_FIELDS = ("type", "id", "name", "department", "designation")
-PROTECTED = frozenset(f for lv in LEVELS.values() for f, _ in lv["fields"])
+PROTECTED = frozenset(protected_labels())
 FRAPPE_FILE = ("/files/", "/private/files/")
 
 

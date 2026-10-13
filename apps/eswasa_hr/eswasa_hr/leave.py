@@ -13,6 +13,10 @@ HRMS ships no Workflow on Leave Application, so the generic Approvals engine can
 - The applicant can cancel an Open request, or Approved leave that hasn't started (the ledger is reversed).
 - Reads for H4 (requests, calendar, balances from the Leave Ledger, policy) are scoped with ``scope.py``.
 - :func:`on_leave` lists approved leave in a date range, for the assignment guards (wired in plan 07).
+- Medical certificate (HR additions plan 08): ``Leave Type.custom_certificate_after_days`` (ESWASA's leave
+  policy, H14; empty or 0 = never) makes a longer request need a certificate. Leave that has already started may
+  send it later while the request is open. The file is filed as an ``Employee Document`` ("Medical certificate",
+  "To check") so HR verifies it through the documents flow; the approver sees only that one is attached.
 
 Pure rules sit at the top and are tested without Frappe.
 """
@@ -33,6 +37,9 @@ RULE_APPROVER = "Leave approver"  # HR Alert rules
 RULE_CANCELLED = "Leave cancelled"
 RULE_COVER = "Leave cover"
 _DECISIONS = {"approve": "Approved", "reject": "Rejected"}
+CERT_FIELD = "custom_certificate_after_days"  # Leave Type
+CERT_LINK = "custom_medical_certificate"  # Leave Application: Core media key
+CERT_DOC = "Medical certificate"  # Employee Document type
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
 
@@ -159,8 +166,29 @@ def range_error(start: Any, end: Any) -> str | None:
     return None
 
 
-def apply_error(leave_type: str | None, from_date: Any, to_date: Any) -> str | None:
-    """POST /hr/leave: what's wrong with a new request before HRMS checks balance, overlaps and holidays."""
+def certificate_after(leave_type_row: dict[str, Any] | None) -> int | None:
+    """The type's certificate threshold in days; None when it isn't set (Int fields store an empty value as 0)."""
+    try:
+        n = int((leave_type_row or {}).get(CERT_FIELD) or 0)
+    except (TypeError, ValueError):
+        return None
+    return n if n > 0 else None
+
+
+def certificate_required(leave_type_row: dict[str, Any] | None, days: Any) -> bool:
+    n = certificate_after(leave_type_row)
+    try:
+        return n is not None and days is not None and float(days) > n
+    except (TypeError, ValueError):
+        return False
+
+
+def apply_error(leave_type: str | None, from_date: Any, to_date: Any, certificate: str | None = None, after_days: int | None = None,
+                days: Any = None, today: date | None = None) -> str | None:
+    """POST /hr/leave: what's wrong with a new request before HRMS checks balance, overlaps and holidays.
+
+    A request over the type's certificate threshold needs one, unless the leave has already started (``today`` on
+    or after the first day): sickness is usually reported afterwards, so the certificate may follow."""
     if not (leave_type or "").strip():
         return "Choose a leave type."
     try:
@@ -169,6 +197,8 @@ def apply_error(leave_type: str | None, from_date: Any, to_date: Any) -> str | N
         return "Choose the first and last day of your leave."
     if b < a:
         return "The last day can't be before the first day."
+    if certificate_required({CERT_FIELD: after_days}, days) and not (certificate or "").strip() and (today is None or a > today):
+        return f"{leave_type.strip()} for more than {after_days} days needs a medical certificate."
     return None
 
 
@@ -176,8 +206,9 @@ def request_status(status: str | None, docstatus: int | None) -> str:
     return "Cancelled" if int(docstatus or 0) == 2 else (status or "Open")
 
 
-def request_row(row: dict[str, Any], sla: Any, escalated: bool, today: date) -> dict[str, Any]:
-    """One row of GET /hr/leave/requests. No reason text: it can carry health details."""
+def request_row(row: dict[str, Any], sla: Any, escalated: bool, today: date, after_days: int | None = None) -> dict[str, Any]:
+    """One row of GET /hr/leave/requests. No reason text: it can carry health details. The certificate is a flag
+    only; HR opens the file from the person's documents."""
     st = request_status(row.get("status"), row.get("docstatus"))
     due = _as_date(sla) if sla else None
     return {
@@ -195,6 +226,8 @@ def request_row(row: dict[str, Any], sla: Any, escalated: bool, today: date) -> 
         "sla_date": due.isoformat() if due and st == "Open" else None,
         "overdue": bool(due and st == "Open" and due < today),
         "escalated": bool(escalated and st == "Open"),
+        "certificate_required": certificate_required({CERT_FIELD: after_days}, row.get("total_leave_days")),
+        "has_certificate": bool(row.get(CERT_LINK)),
     }
 
 
@@ -504,7 +537,58 @@ def cancel_impl(name: str, reason: str) -> dict[str, Any]:
     return {"ok": True, "name": name, "status": "Cancelled", "message": _("Leave cancelled")}
 
 
-def apply_impl(leave_type: str, from_date: str, to_date: str, reason: str | None = None) -> dict[str, Any]:
+def _certificate_after(leave_type: str | None) -> int | None:
+    import frappe
+
+    if not leave_type or not frappe.get_meta("Leave Type").has_field(CERT_FIELD):
+        return None
+    return certificate_after({CERT_FIELD: frappe.db.get_value("Leave Type", leave_type.strip(), CERT_FIELD)})
+
+
+def _leave_days(employee: str, leave_type: str, from_date: str, to_date: str) -> float:
+    """HRMS's count (holidays and half days); calendar days when HRMS isn't importable (tests)."""
+    try:
+        from hrms.hr.doctype.leave_application.leave_application import get_number_of_leave_days
+    except ImportError:
+        return float((_as_date(to_date) - _as_date(from_date)).days + 1)
+    return float(get_number_of_leave_days(employee, leave_type, from_date, to_date))
+
+
+def _file_certificate(employee: str, certificate: str) -> None:
+    """The person's certificate goes to HR to check, like any document they upload themselves."""
+    import frappe
+
+    from eswasa_hr import documents
+
+    frappe.get_doc({"doctype": documents.DOCTYPE, "employee": employee, "document_type": CERT_DOC, "file": certificate.strip(),
+                    "status": documents.TO_CHECK}).insert(ignore_permissions=True)
+
+
+def certificate_rule_impl(leave_type: str, days: Any) -> dict[str, Any]:
+    """For the preview: does this many days of this type need a medical certificate?"""
+    after = _certificate_after(leave_type)
+    return {"certificate_required": certificate_required({CERT_FIELD: after}, days), "certificate_after_days": after}
+
+
+def add_certificate_impl(name: str, certificate: str) -> dict[str, Any]:
+    """The applicant sends the certificate after applying, while the request is still open."""
+    import frappe
+
+    doc = frappe.db.get_value(DOCTYPE, name, ["name", "employee", "status", "docstatus"], as_dict=True)
+    if not doc:
+        frappe.throw("Leave request not found.", frappe.DoesNotExistError)
+    if frappe.db.get_value("Employee", doc["employee"], "user_id") != frappe.session.user:
+        frappe.throw("You can only add a certificate to your own leave request.", frappe.PermissionError)
+    if not is_open(doc.get("status"), doc.get("docstatus")):
+        frappe.throw("This request has been decided. Give the certificate to HR.", frappe.ValidationError)
+    if not (certificate or "").strip():
+        frappe.throw("Attach the certificate.", frappe.ValidationError)
+    frappe.db.set_value(DOCTYPE, name, CERT_LINK, certificate.strip())
+    _file_certificate(doc["employee"], certificate)
+    return {"ok": True, "name": name, "has_certificate": True, "message": "Certificate sent. HR will check it."}
+
+
+def apply_impl(leave_type: str, from_date: str, to_date: str, reason: str | None = None, certificate: str | None = None) -> dict[str, Any]:
     """The caller's own leave request (plan 01: no raw insert from Core). Always for the caller's Employee;
     the leave approver comes from that record, HRMS validates balance, overlaps and holidays, and
     ``sync_todo`` (doc_events) routes it to the named approver."""
@@ -514,7 +598,9 @@ def apply_impl(leave_type: str, from_date: str, to_date: str, reason: str | None
                               ["name", "employee_name", "leave_approver", "company"], as_dict=True)
     if not emp:
         frappe.throw("Your login isn't linked to an employee record. Ask HR to link it.", frappe.DoesNotExistError)
-    err = apply_error(leave_type, from_date, to_date)
+    after = _certificate_after(leave_type)
+    days = _leave_days(emp["name"], leave_type.strip(), str(from_date)[:10], str(to_date)[:10]) if after and not apply_error(leave_type, from_date, to_date) else None
+    err = apply_error(leave_type, from_date, to_date, certificate, after, days, _today())
     if err:
         frappe.throw(err, frappe.ValidationError)
     values = {"doctype": DOCTYPE, "employee": emp["name"], "leave_type": leave_type.strip(), "from_date": str(from_date)[:10],
@@ -523,10 +609,15 @@ def apply_impl(leave_type: str, from_date: str, to_date: str, reason: str | None
         values["leave_approver"] = emp["leave_approver"]
     if (reason or "").strip():
         values["description"] = reason.strip()
+    if (certificate or "").strip():
+        values[CERT_LINK] = certificate.strip()
     doc = frappe.get_doc(values)
     doc.insert()
+    if (certificate or "").strip():
+        _file_certificate(emp["name"], certificate)
     return {"name": doc.name, "employee": emp["name"], "employee_name": emp.get("employee_name"), "leave_type": doc.leave_type,
-            "from_date": str(doc.from_date), "to_date": str(doc.to_date), "status": doc.status}
+            "from_date": str(doc.from_date), "to_date": str(doc.to_date), "status": doc.status,
+            "certificate_required": certificate_required({CERT_FIELD: after}, days), "has_certificate": bool((certificate or "").strip())}
 
 
 def _employee_ref(user_or_employee: str) -> str | None:
@@ -619,10 +710,12 @@ def requests_impl(status: str | None = None, department: str | None = None, from
         DOCTYPE,
         filters=filters,
         or_filters=_scope_filters(v),
-        fields=["name", "employee", "employee_name", "department", "leave_type", "from_date", "to_date", "total_leave_days", "status", "docstatus", "leave_approver", "leave_approver_name"],
+        fields=["name", "employee", "employee_name", "department", "leave_type", "from_date", "to_date", "total_leave_days", "status", "docstatus", "leave_approver", "leave_approver_name"]
+        + ([CERT_LINK] if frappe.get_meta(DOCTYPE).has_field(CERT_LINK) else []),
         order_by="from_date desc",
         limit=500,
     )
+    after = {t: _certificate_after(t) for t in {r.get("leave_type") for r in rows} - {None}}
     names = [r["name"] for r in rows]
     sla: dict[str, Any] = {}
     escalated: set[str] = set()
@@ -633,7 +726,7 @@ def requests_impl(status: str | None = None, department: str | None = None, from
             elif t.get("date"):
                 sla[t["reference_name"]] = t["date"]
     day = _today()
-    return [request_row(r, sla.get(r["name"]), r["name"] in escalated, day) for r in rows]
+    return [request_row(r, sla.get(r["name"]), r["name"] in escalated, day, after.get(r.get("leave_type"))) for r in rows]
 
 
 def calendar_impl(start: str, end: str, department: str | None = None) -> dict[str, Any]:
@@ -733,11 +826,25 @@ def _whitelist(fn):
 
 
 @_whitelist
-def apply(leave_type: str = "", from_date: str = "", to_date: str = "", reason: str | None = None, confirm: Any = False) -> dict[str, Any]:
+def apply(leave_type: str = "", from_date: str = "", to_date: str = "", reason: str | None = None, confirm: Any = False,
+          certificate: str | None = None) -> dict[str, Any]:
     from eswasa_hr.lifecycle import _confirm
 
     _confirm(confirm)
-    return apply_impl(leave_type, from_date, to_date, reason)
+    return apply_impl(leave_type, from_date, to_date, reason, certificate)
+
+
+@_whitelist
+def certificate_rule(leave_type: str = "", days: Any = None) -> dict[str, Any]:
+    return certificate_rule_impl(leave_type, days)
+
+
+@_whitelist
+def add_certificate(name: str, certificate: str = "", confirm: Any = False) -> dict[str, Any]:
+    from eswasa_hr.lifecycle import _confirm
+
+    _confirm(confirm)
+    return add_certificate_impl(name, certificate)
 
 
 @_whitelist

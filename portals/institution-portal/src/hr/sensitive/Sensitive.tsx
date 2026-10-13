@@ -4,19 +4,59 @@ import { useApiResource } from "../../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../../components/PageStates";
 import { RequireStaff } from "../../components/RequireStaff";
 import { useInstitution } from "../../layout/InstitutionLayout";
-import type { HrAccessLog, HrSensitive } from "../../api/types";
+import type { HrAccessLog, HrSensitive, HrSensitiveTable } from "../../api/types";
 import { Banner, Crumbs, fmtDay, NextStep } from "../../me/parts";
 
 /**
  * Sensitive data (journey J12; brief §11). Personal details (level 1: HR User and HR Manager) and pay and bank
  * details (level 2: HR Manager only) stay hidden until you give a reason. Every view is recorded against your
- * name before anything is shown, and the person can see who looked.
+ * name before anything is shown, and the person can see who looked. Level 3 (HR additions plan 04): family and
+ * medical, HR Manager only until ESWASA answers A5. Only the levels your roles hold are offered; the server decides.
  */
 
-const LEVELS = [
-  { level: 1 as const, title: "Personal", detail: "Date of birth, contacts, addresses, emergency contact, passport" },
-  { level: 2 as const, title: "Pay and bank", detail: "Cost to company, salary mode, bank and account. HR Managers only." },
+type Level = 1 | 2 | 3;
+const MANAGERS = ["HR Manager", "System Manager"];
+const LEVELS: Array<{ level: Level; title: string; detail: string; roles: string[] }> = [
+  { level: 1, title: "Personal", detail: "Date of birth, contacts, addresses, emergency contact, passport", roles: ["HR User", ...MANAGERS] },
+  { level: 2, title: "Pay and bank", detail: "Cost to company, salary mode, bank and account. HR Managers only.", roles: MANAGERS },
+  { level: 3, title: "Family and medical", detail: "Dependants, beneficiaries and medical aid. HR Manager only.", roles: MANAGERS },
 ];
+
+/** A level's table (dependants), shown below the fields. */
+export function SensitiveTables({ tables }: { tables?: HrSensitiveTable[] | null }) {
+  return (
+    <>
+      {(tables ?? []).map((t) => (
+        <div key={t.label} className="hr-box hr-scroll">
+          <table className="hr-table" aria-label={t.label}>
+            <thead>
+              <tr>
+                {t.columns.map((c) => (
+                  <th key={c}>{c}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {t.rows.length ? (
+                t.rows.map((r, i) => (
+                  <tr key={String(r.id ?? i)}>
+                    {t.columns.map((c) => (
+                      <td key={c}>{r[c] == null || r[c] === "" ? "—" : String(r[c])}</td>
+                    ))}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={t.columns.length}>No {t.label.toLowerCase()} recorded.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </>
+  );
+}
 
 function when(iso?: string | null): string {
   if (!iso) return "—";
@@ -25,8 +65,11 @@ function when(iso?: string | null): string {
 
 /** "Show details": choose the level, say why, then see the fields. */
 export function SensitivePanel({ employee, onViewed }: { employee: string; onViewed?: () => void }) {
+  const { user } = useInstitution();
+  const roles = user?.roles ?? [];
+  const offered = LEVELS.filter((l) => l.roles.some((r) => roles.includes(r)));
   const [open, setOpen] = useState(false);
-  const [level, setLevel] = useState<1 | 2>(1);
+  const [level, setLevel] = useState<Level>(1);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -69,6 +112,7 @@ export function SensitivePanel({ employee, onViewed }: { employee: string; onVie
             </div>
           ))}
         </dl>
+        <SensitiveTables tables={shown.tables} />
         <div>
           <button type="button" className="btn ghost sm" onClick={hide}>
             Hide details
@@ -93,7 +137,7 @@ export function SensitivePanel({ employee, onViewed }: { employee: string; onVie
   return (
     <div className="hr-view" style={{ gap: 10 }}>
       <div className="hr-radios" role="radiogroup" aria-label="Which details">
-        {LEVELS.map((l) => (
+        {(offered.length ? offered : LEVELS.slice(0, 1)).map((l) => (
           <label className="hr-radio" key={l.level}>
             <input type="radio" name={`sensitive_level_${employee}`} checked={level === l.level} onChange={() => setLevel(l.level)} />
             <span>
@@ -191,7 +235,7 @@ export function MyAccessLog() {
             <div className="hr-head">
               <div>
                 <h2>Who looked at my record</h2>
-                <p>Your personal and pay details are hidden from HR until someone gives a reason. Each time, it's recorded here.</p>
+                <p>Your personal, pay, and family and medical details are hidden from HR until someone gives a reason. Each time, it's recorded here.</p>
               </div>
             </div>
             {d.items.length ? <LogTable items={d.items} /> : <EmptyState title="No one has opened your personal or pay details" />}

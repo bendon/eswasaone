@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiFetch } from "@eswasaone/shared-ui";
+import { apiFetch, uploadMedia } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
@@ -10,7 +10,9 @@ import { Banner, Crumbs, fmtDay, fmtDays, fmtRange, NextStep, Track } from "./pa
 /**
  * E2 Apply for leave. Shows what the request means (working days, balance after, who decides, work
  * in those dates) from POST /hr/leave/preview before anything is sent, then POST /hr/leave.
- * The decision is made by the leave approver in Approvals, never here.
+ * The decision is made by the leave approver in Approvals, never here. When the leave type's threshold says so
+ * (ESWASA's leave policy, H14), a medical certificate is uploaded first and its link sent with the request; leave
+ * that has already started may send it later from My leave.
  */
 export function ApplyLeave() {
   const { user, sessionKey } = useInstitution();
@@ -21,6 +23,7 @@ export function ApplyLeave() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [reason, setReason] = useState("");
+  const [certificate, setCertificate] = useState<File | null>(null);
   const [preview, setPreview] = useState<HrLeavePreview | null>(null);
   const [previewErr, setPreviewErr] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
@@ -53,12 +56,15 @@ export function ApplyLeave() {
     };
   }, [leaveType, from, to]);
 
-  const blocked = !preview || preview.days <= 0 || !preview.approver;
+  const started = Boolean(from) && from <= new Date().toISOString().slice(0, 10);
+  const needsCertificate = Boolean(preview?.certificate_required) && !started && !certificate;
+  const blocked = !preview || preview.days <= 0 || !preview.approver || needsCertificate;
 
   async function send() {
     setBusy(true);
     setErr(null);
     try {
+      const link = certificate && preview?.certificate_required ? (await uploadMedia(certificate, "hr/evidence", { allowMock: false })).url : undefined;
       const res = await apiFetch<HrLeaveSummary>("/hr/leave", {
         method: "POST",
         body: JSON.stringify({
@@ -66,6 +72,7 @@ export function ApplyLeave() {
           from_date: from,
           to_date: to,
           reason: reason.trim() || undefined,
+          certificate: link,
           confirm: true,
         }),
       });
@@ -189,6 +196,22 @@ export function ApplyLeave() {
                 {previewErr ? <Banner kind="bad" title="Couldn't check these dates">{previewErr}</Banner> : null}
                 {preview ? <PreviewPanel p={preview} /> : null}
               </div>
+
+              {preview?.certificate_required ? (
+                <label className="hr-f wide">
+                  <span>Medical certificate{started ? " (you can send it later)" : " (needed)"}</span>
+                  <input
+                    className="hr-in"
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png"
+                    onChange={(e) => setCertificate(e.target.files?.[0] ?? null)}
+                    disabled={busy}
+                  />
+                  <small>
+                    {leaveType} for more than {preview.certificate_after_days} days needs one. HR checks it; your approver only sees that it's attached.
+                  </small>
+                </label>
+              ) : null}
 
               {err ? (
                 <div className="wide">

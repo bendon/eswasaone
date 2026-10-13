@@ -168,6 +168,37 @@ def _check_plan_02() -> dict[str, Any]:
     return {"plan_02": ["HR Alert.rule option Items not returned"]}
 
 
+def _option_missing(doctype: str, field: str, option: str) -> bool:
+    import frappe
+
+    if not frappe.db.exists("DocType", doctype):
+        return False  # the DocType itself is reported above
+    f = frappe.get_meta(doctype).get_field(field)
+    return bool(f) and option not in (f.options or "").split("\n")
+
+
+def _check_plan_04() -> dict[str, Any]:
+    """HR additions plan 04: the access-log level and HR Manager's level-3 Employee permission (fields are covered above)."""
+    import frappe
+
+    gone = []
+    if _option_missing("HR Access Log", "level", "Family and medical"):
+        gone.append("HR Access Log.level option Family and medical")
+    if frappe.db.exists("Role", "HR Manager") and not frappe.db.exists("Custom DocPerm", {"parent": "Employee", "role": "HR Manager", "permlevel": 3}):
+        gone.append("Employee permlevel 3 DocPerm for HR Manager (eswasa_hr.sensitive.apply_field_levels)")
+    return {"plan_04": gone} if gone else {}
+
+
+def _check_plan_08() -> dict[str, Any]:
+    """HR additions plan 08: the ``Service milestone`` alert rule and the ``Medical certificate`` document type."""
+    gone = []
+    if _option_missing("HR Alert", "rule", "Service milestone"):
+        gone.append("HR Alert.rule option Service milestone")
+    if _option_missing("Employee Document", "document_type", "Medical certificate"):
+        gone.append("Employee Document.document_type option Medical certificate")
+    return {"plan_08": gone} if gone else {}
+
+
 def run() -> dict[str, Any]:
     from eswasa_hr import hooks
 
@@ -175,6 +206,8 @@ def run() -> dict[str, Any]:
     missing = compare(want, site_state(want))
     missing.update(_check_plan_01())
     missing.update(_check_plan_02())
+    missing.update(_check_plan_04())
+    missing.update(_check_plan_08())
     result = {
         "ok": not missing,
         "missing": missing,

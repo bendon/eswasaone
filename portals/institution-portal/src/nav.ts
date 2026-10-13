@@ -47,7 +47,10 @@ export const INSTITUTION_NAV: InstitutionNavDef[] = [
   { id: "metrology", path: "/metrology", label: "Metrology & LIMS", icon: "i-gauge", title: "Metrology & LIMS" },
   { id: "field", path: "/field", label: "Field Operations", icon: "i-map", title: "Field Operations" },
   { id: "tbt", path: "/tbt", label: "WTO/TBT Alerts", icon: "i-globe", title: "WTO/TBT Alerts" },
+  { id: "finance", path: "/finance", label: "Finance", icon: "i-dollar", title: "Finance" },
   { id: "hr", path: "/hr", label: "HR & People", icon: "i-users", title: "HR & People" },
+  { id: "lms", path: "/lms", label: "Learning", icon: "i-cap", title: "Learning & Training" },
+  { id: "marketing", path: "/marketing", label: "Marketing", icon: "i-mega", title: "Marketing & Outreach" },
   { id: "reports", path: "/reports", label: "Reports & Analytics", icon: "i-chart", title: "Reports & Analytics" },
   {
     id: "admin",

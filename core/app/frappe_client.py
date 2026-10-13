@@ -193,6 +193,7 @@ class FrappeClient:
 
         # Profile (name/email) from User doc. Roles child table is often
         # stripped for non-managers, so we never rely on it alone.
+        otp_enabled = True
         try:
             user_resp = await client.post(
                 f"{self.base_url}/api/method/frappe.client.get",
@@ -206,6 +207,9 @@ class FrappeClient:
                     full_name = str(doc.get("full_name") or doc.get("first_name") or username)
                     email = doc.get("email")
                     roles = _roles_from_user_doc(doc)
+                    # custom_otp_enabled defaults to 1 (True) in Frappe;
+                    # treat missing field as OTP-on for safety.
+                    otp_enabled = bool(doc.get("custom_otp_enabled", 1))
         except Exception as exc:  # noqa: BLE001
             logger.warning("User profile fetch failed for %s: %s", username, exc)
 
@@ -226,6 +230,7 @@ class FrappeClient:
             "full_name": full_name,
             "email": email,
             "roles": roles or ["Guest"],
+            "otp_enabled": otp_enabled,
         }
 
     async def _fetch_roles_has_role(
@@ -394,6 +399,106 @@ class FrappeClient:
             raise FrappeError(f"Role {role} not found on {user}", status_code=404)
         doc["roles"] = kept
         await self.method("frappe.client.save", json={"doc": doc})
+
+    async def set_otp_enabled(self, username: str, enabled: bool) -> bool:
+        """Toggle ``custom_otp_enabled`` on the User doc via admin credentials.
+
+        Uses the admin client because ``frappe.client.get/save`` require Desk
+        access that regular portal users don't have.
+        """
+        admin_user = self.settings.frappe_admin_user
+        admin_password = self.settings.frappe_admin_password
+        if not admin_user or not admin_password:
+            raise FrappeError("Admin credentials not configured", status_code=500)
+        try:
+            async with httpx.AsyncClient(
+                timeout=self.timeout,
+                headers={"Host": self.settings.frappe_site},
+            ) as client:
+                resp = await client.post(
+                    f"{self.base_url}/api/method/login",
+                    data={"usr": admin_user, "pwd": admin_password},
+                )
+                if resp.status_code >= 400:
+                    raise FrappeError("Admin login failed", resp.status_code)
+                admin_sid = resp.cookies.get("sid")
+                if not admin_sid:
+                    raise FrappeError("No admin sid cookie")
+                cookies = {"sid": admin_sid}
+                headers = {
+                    "Host": self.settings.frappe_site,
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                }
+                # Fetch the full User doc
+                user_resp = await client.post(
+                    f"{self.base_url}/api/method/frappe.client.get",
+                    json={"doctype": "User", "name": username},
+                    cookies=cookies,
+                    headers=headers,
+                )
+                if user_resp.status_code >= 400:
+                    raise FrappeError(f"User {username} not found", user_resp.status_code)
+                doc = user_resp.json().get("message") or {}
+                if not isinstance(doc, dict):
+                    raise FrappeError(f"User {username} not found", status_code=404)
+                doc["custom_otp_enabled"] = 1 if enabled else 0
+                save_resp = await client.post(
+                    f"{self.base_url}/api/method/frappe.client.save",
+                    json={"doc": doc},
+                    cookies=cookies,
+                    headers=headers,
+                )
+                if save_resp.status_code >= 400:
+                    raise FrappeError("Failed to save User doc", save_resp.status_code)
+                saved = save_resp.json().get("message") or {}
+                return bool((saved or {}).get("custom_otp_enabled", 1 if enabled else 0))
+        except httpx.HTTPError as exc:
+            raise FrappeError(f"Frappe unreachable: {exc}") from exc
+
+    async def get_otp_enabled(self, username: str) -> bool:
+        """Read ``custom_otp_enabled`` from the User doc via admin credentials."""
+        admin_user = self.settings.frappe_admin_user
+        admin_password = self.settings.frappe_admin_password
+        if not admin_user or not admin_password:
+            return True
+        try:
+            async with httpx.AsyncClient(
+                timeout=self.timeout,
+                headers={"Host": self.settings.frappe_site},
+            ) as client:
+                resp = await client.post(
+                    f"{self.base_url}/api/method/login",
+                    data={"usr": admin_user, "pwd": admin_password},
+                )
+                if resp.status_code >= 400:
+                    return True
+                admin_sid = resp.cookies.get("sid")
+                if not admin_sid:
+                    return True
+                value_resp = await client.post(
+                    f"{self.base_url}/api/method/frappe.client.get_value",
+                    json={
+                        "doctype": "User",
+                        "filters": {"name": username},
+                        "fieldname": "custom_otp_enabled",
+                    },
+                    cookies={"sid": admin_sid},
+                    headers={
+                        "Host": self.settings.frappe_site,
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                    },
+                )
+                if value_resp.status_code < 400:
+                    data = value_resp.json().get("message")
+                    if isinstance(data, dict):
+                        return bool(int(data.get("custom_otp_enabled", 1)))
+                    if isinstance(data, (int, float)):
+                        return bool(int(data))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("get_otp_enabled failed for %s: %s", username, exc)
+        return True
 
     async def resource(
         self,

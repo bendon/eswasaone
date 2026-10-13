@@ -526,6 +526,39 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/SessionUser" }
 
+  /auth/preferences:
+    get:
+      tags: [identity]
+      operationId: getUserPreferences
+      summary: Get the authenticated user's security preferences
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: User preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserPreferences" }
+        "401":
+          description: Authentication required
+    put:
+      tags: [identity]
+      operationId: updateUserPreferences
+      summary: Update the authenticated user's security preferences (e.g. toggle OTP)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserPreferencesUpdate" }
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserPreferences" }
+        "401":
+          description: Authentication required
+
   /adapters/momo/callback:
     post:
       tags: [adapters]
@@ -4353,6 +4386,10 @@ components:
         roles:
           type: array
           items: { type: string }
+        otp_enabled:
+          type: boolean
+          default: true
+          description: Whether OTP (two-factor) is required at login for this user.
 
     AllowedAction:
       type: object
@@ -10761,6 +10798,23 @@ components:
           default: false
       type: object
       title: NotificationPrefs
+    UserPreferences:
+      type: object
+      required: [otp_enabled]
+      properties:
+        otp_enabled:
+          type: boolean
+          default: true
+          description: Whether OTP (two-factor) is required at login for this user.
+      title: UserPreferences
+    UserPreferencesUpdate:
+      type: object
+      properties:
+        otp_enabled:
+          type: boolean
+          nullable: true
+          description: Toggle OTP (two-factor) on/off. Null = no change.
+      title: UserPreferencesUpdate
     OtpRequest:
       properties:
         email:

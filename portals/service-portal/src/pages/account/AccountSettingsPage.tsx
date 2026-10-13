@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Icon, type NotificationPrefs } from "@eswasaone/shared-ui";
+import { Icon, getPreferences, updatePreferences, type NotificationPrefs, type UserPreferences } from "@eswasaone/shared-ui";
 import { useAccount } from "./AccountContext";
 import { getNotificationPrefs, updateNotificationPrefs, updateProfile } from "../../api/account";
 import { useToast } from "../../ui/Toast";
@@ -26,9 +26,12 @@ export function AccountSettingsPage() {
     setLoading(true);
     void getNotificationPrefs().then((p) => {
       setPrefs(p);
-      setTwoFactor(p.two_factor);
       setLoading(false);
     });
+    // Load OTP state from Core API (auth/preferences) — the real source of truth
+    void getPreferences()
+      .then((p: UserPreferences) => setTwoFactor(p.otp_enabled))
+      .catch(() => setTwoFactor(false));
   }, []);
 
   useEffect(() => {
@@ -46,13 +49,16 @@ export function AccountSettingsPage() {
     void updateNotificationPrefs(updated);
   };
 
-  const toggle2FA = () => {
+  const toggle2FA = async () => {
     const next = !twoFactor;
-    setTwoFactor(next);
-    if (prefs) {
-      const updated = { ...prefs, two_factor: next };
-      setPrefs(updated);
-      void updateNotificationPrefs(updated);
+    setTwoFactor(next); // optimistic
+    try {
+      const result = await updatePreferences({ otp_enabled: next });
+      setTwoFactor(result.otp_enabled);
+      showToast(next ? "Two-factor authentication enabled" : "Two-factor authentication disabled");
+    } catch (e: any) {
+      setTwoFactor(!next); // revert on error
+      showToast(e.message || "Failed to update security setting");
     }
   };
 

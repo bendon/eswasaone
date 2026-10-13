@@ -191,10 +191,10 @@ export function CertificationApplyPage() {
   }
 
   const crumbs = (
-    <Breadcrumbs
-      items={[
-        { label: "Home", to: "/" },
-        { label: "Certification", to: "/certification" },
+      <Breadcrumbs
+        items={[
+          { label: "Home", to: "/" },
+          { label: "Certification", to: "/certification" },
         { label: s.flow === "ingelo" ? "Ingelo application" : "Apply" },
       ]}
     />
@@ -515,7 +515,7 @@ export function CertificationApplyPage() {
             <span className="grow" />
             <button type="button" className="cf-btn cf-btn--gold" onClick={() => void submit()} disabled={busy}>
               <Icon name="i-send" /> {busy ? "Submitting…" : "Confirm & submit"}
-            </button>
+        </button>
           </div>
         </Sheet>
       ) : null}

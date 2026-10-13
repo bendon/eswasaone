@@ -72,6 +72,18 @@ fixtures = [
     ]
    ]
   ]
+ },
+ {
+  "dt": "Custom Field",
+  "filters": [
+   [
+    "name",
+    "in",
+    [
+     "User-custom_otp_enabled"
+    ]
+   ]
+  ]
  }
 ]
 

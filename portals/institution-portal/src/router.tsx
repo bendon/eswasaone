@@ -1107,6 +1107,10 @@ export const router = createBrowserRouter(
                     path: "expenses",
                     element: <L factory={() => import("./me/sub-views").then((m) => ({ default: m.MyExpenses }))} skeleton="list" />,
                   },
+                  {
+                    path: "security",
+                    element: <L factory={() => import("./me/sub-views").then((m) => ({ default: m.SecuritySettings }))} skeleton="panel" />,
+                  },
                 ],
               ),
             },

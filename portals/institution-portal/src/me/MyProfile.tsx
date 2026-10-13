@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { uploadMedia } from "@eswasaone/shared-ui";
+import { useEffect, useState } from "react";
+import { getPreferences, updatePreferences, uploadMedia, type UserPreferences } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
@@ -13,7 +13,7 @@ import { Banner, Crumbs, fmtDay, StatusPill, Tabs } from "./parts";
  * E5 My profile and documents. Live GET /hr/me/record, /hr/me/documents, /hr/me/profile-changes.
  * Corrections go to HR (decided in Approvals); job and pay details aren't changed by request.
  */
-type Tab = "record" | "documents" | "corrections";
+type Tab = "record" | "documents" | "corrections" | "security";
 
 export function MyProfile() {
   const { user, sessionKey } = useInstitution();
@@ -38,6 +38,7 @@ export function MyProfile() {
           ["record", "Record"],
           ["documents", "Documents"],
           ["corrections", "Ask for a correction"],
+          ["security", "Security"],
         ]}
       />
       {tab === "record" ? (
@@ -65,6 +66,7 @@ export function MyProfile() {
       ) : null}
       {tab === "documents" ? <DocumentsPanel base="/hr/me/documents" self /> : null}
       {tab === "corrections" ? <Corrections /> : null}
+      {tab === "security" ? <SecurityTab /> : null}
     </div>
   );
 }
@@ -73,6 +75,125 @@ function changePill(status: string) {
   if (status === "Approved") return <StatusPill cls="ok" label="Changed" />;
   if (status === "Rejected") return <StatusPill cls="bad" label="Not changed" />;
   return <StatusPill cls="leave" label="With HR" />;
+}
+
+/* ------------------------------------------------------------------ */
+/* Security tab — OTP (two-factor) toggle                             */
+/* ------------------------------------------------------------------ */
+
+function SecurityTab() {
+  const { user } = useInstitution();
+  const [prefs, setPrefs] = useState<UserPreferences | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    void getPreferences()
+      .then((p) => setPrefs(p))
+      .catch((e) => setErr(errorText(e, "Could not load preferences.")))
+      .finally(() => setLoading(false));
+  }, [user]);
+
+  async function toggleOtp() {
+    if (!prefs || busy) return;
+    setErr(null);
+    setOk(null);
+    setBusy(true);
+    const next = !prefs.otp_enabled;
+    try {
+      const updated = await updatePreferences({ otp_enabled: next });
+      setPrefs(updated);
+      setOk(
+        next
+          ? "Two-factor authentication is ON. You will need a one-time code at every sign-in."
+          : "Two-factor authentication is OFF. You can sign in with just your password.",
+      );
+    } catch (e) {
+      setErr(errorText(e, "Could not update. Try again."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="hr-box">
+        <div className="hr-box__b">
+          <p className="page-note">Loading security settings…</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="hr-view">
+      <div className="hr-box">
+        <div className="hr-box__h">
+          <div>
+            <h3>Two-factor authentication (OTP)</h3>
+            <p>When enabled, you must enter a one-time code sent to your email each time you sign in. Disable for password-only sign-in.</p>
+          </div>
+        </div>
+        <div className="hr-box__b" style={{ gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, justifyContent: "space-between" }}>
+            <div>
+              <strong>Require one-time code at login</strong>
+              <p style={{ color: "var(--muted)", margin: "4px 0 0", fontSize: "0.875rem" }}>
+                {prefs?.otp_enabled
+                  ? "Enabled — a code is emailed at each sign-in."
+                  : "Disabled — password-only sign-in."}
+              </p>
+            </div>
+            <label style={{ position: "relative", display: "inline-block", width: 48, height: 26, flexShrink: 0 }}>
+              <input
+                type="checkbox"
+                checked={prefs?.otp_enabled ?? true}
+                onChange={() => void toggleOtp()}
+                disabled={busy}
+                style={{ opacity: 0, width: 0, height: 0 }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  cursor: busy ? "wait" : "pointer",
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: prefs?.otp_enabled ? "var(--brand, #313391)" : "#ccc",
+                  transition: "0.3s",
+                  borderRadius: 26,
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    height: 20, width: 20,
+                    left: prefs?.otp_enabled ? 25 : 4,
+                    bottom: 3,
+                    backgroundColor: "white",
+                    transition: "0.3s",
+                    borderRadius: "50%",
+                  }}
+                />
+              </span>
+            </label>
+          </div>
+          {err ? (
+            <Banner kind="bad" title="Not saved">
+              {err}
+            </Banner>
+          ) : null}
+          {ok ? (
+            <p className="page-note" role="status">
+              {ok}
+            </p>
+          ) : null}
+          {busy ? <p className="page-note" style={{ color: "var(--muted)" }}>Saving…</p> : null}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Corrections() {

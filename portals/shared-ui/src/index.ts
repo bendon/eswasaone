@@ -135,6 +135,8 @@ export {
   inviteStaff,
   logout,
   me,
+  getPreferences,
+  updatePreferences,
   isLoginChallenge,
   getStoredToken,
   setStoredToken,
@@ -167,6 +169,8 @@ export type {
   PasswordResetRequest,
   PasswordResetResponse,
   Session,
+  type UserPreferences,
+  type UserPreferencesUpdate,
 } from "./auth";
 
 export {

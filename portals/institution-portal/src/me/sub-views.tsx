@@ -10,3 +10,4 @@ export { RaiseConcern } from "./RaiseConcern";
 export { MyAccessLog } from "../hr/sensitive/Sensitive";
 export { MyProfile } from "./MyProfile";
 export { MyExpenses } from "./MyExpenses";
+export { SecuritySettings } from "./SecuritySettings";

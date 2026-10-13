@@ -28,6 +28,7 @@ def daily() -> None:
     expire_warnings()
     items_not_returned()
     service_milestones()
+    training_needs()
 
 
 def release_deciders() -> int:
@@ -173,5 +174,12 @@ def items_not_returned() -> int:
 def service_milestones() -> int:
     """HR additions plan 08: a long-service milestone 30 days ahead alerts HR Managers and the line manager, once."""
     from eswasa_hr.milestones import service_milestones as run
+
+    return run()
+
+
+def training_needs() -> int:
+    """HR additions plan 05: an Expiring authorisation raises one training need for the person, once."""
+    from eswasa_hr.training_plan import training_needs as run
 
     return run()

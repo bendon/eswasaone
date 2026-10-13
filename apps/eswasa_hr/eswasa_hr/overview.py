@@ -255,6 +255,8 @@ def overview_impl() -> dict[str, Any]:
     leavers = alerts.get("Items not returned", {})  # additions plan 02
     items.append(attention("items_not_returned", leavers.get("count", 0), "1 leaver hasn't returned issued items", "{n} leavers haven't returned issued items",
                            "/hr/items?status=out", leavers.get("due"), "Items not returned by leavers. Take them back or have an HR Manager write them off.", 2))
+    items.append(attention("training_plans", _training_waiting(), "1 training plan waiting for approval", "{n} training plans waiting for approval",
+                           "/hr/training"))  # additions plan 05
     if manager and (_has("Employee Grievance") or _has("Disciplinary Case")):
         from eswasa_hr.cases import board_impl
 
@@ -343,6 +345,7 @@ def board_pack_impl() -> dict[str, Any]:
         "cases": cases,
         "declarations": declarations,
         "establishment_changes": [{k: c[k] for k in ("summary", "department", "state", "council_required")} for c in pending],
+        "training": _training_pack(),  # additions plan 05: totals only
     }
 
 
@@ -426,6 +429,7 @@ def setup_status_impl() -> dict[str, Any]:
         _code_step(),
         _items_step(),
         _letters_step(),
+        _training_step(),
         # _payroll_step(),  # off: ESWASA doesn't run payroll in EswasaOne; restore when it does
     ]
     return {"steps": steps, **progress(steps)}
@@ -457,6 +461,27 @@ def _letters_step() -> dict[str, Any]:
     from eswasa_hr.letters import setup_step
 
     return setup_step()
+
+
+def _training_waiting() -> int:
+    """HR additions plan 05: department training plans waiting for an HR Manager."""
+    from eswasa_hr.training_plan import waiting_count
+
+    return waiting_count()
+
+
+def _training_step() -> dict[str, Any]:
+    """HR additions plan 05: every department has an approved training plan for this year."""
+    from eswasa_hr.training_plan import setup_step
+
+    return setup_step()
+
+
+def _training_pack() -> dict[str, Any] | None:
+    """HR additions plan 05: planned against attended training, estimated against actual cost."""
+    from eswasa_hr.training_plan import board_block
+
+    return board_block()
 
 
 def _import_step(active: int, linked: int) -> dict[str, Any]:

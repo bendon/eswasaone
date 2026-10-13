@@ -604,3 +604,129 @@ export type HrLetterList = {
   can_cancel: boolean;
 };
 export type HrMyLetters = { employee?: string | null; letters: HrLetter[]; can_request: boolean; ready: boolean; reason?: string | null };
+
+// HR additions plan 05: training plan (H17), team training (T8), my training (E13). Hand-written until types.ts is regenerated.
+export type HrTrainingNeedStatus = "Open" | "Planned" | "Met" | "Dropped";
+export type HrTrainingNeed = {
+  name: string;
+  employee: string;
+  employee_name?: string | null;
+  department?: string | null;
+  topic: string;
+  skill?: string | null;
+  source: string;
+  source_name?: string | null;
+  raised_by?: string | null;
+  priority?: string | null;
+  status: HrTrainingNeedStatus;
+  plan?: string | null;
+  plan_line?: string | null;
+  event?: string | null;
+  note?: string | null;
+  creation?: string | null;
+};
+export type HrTrainingNeedList = { needs: HrTrainingNeed[]; open: number; sources?: string[]; departments?: string[] };
+export type HrTrainingTotals = {
+  lines: number;
+  people: number;
+  scheduled: number;
+  estimated_direct: number;
+  estimated_indirect: number;
+  estimated: number;
+  actual_direct: number;
+  actual_indirect: number;
+  actual: number;
+};
+export type HrTrainingPlanStatus = "Draft" | "Waiting" | "Approved" | "Sent back";
+export type HrTrainingPlanLine = {
+  name: string;
+  idx?: number | null;
+  topic: string;
+  skill?: string | null;
+  reason?: string | null;
+  quarter?: string | null;
+  people?: number | null;
+  provider?: string | null;
+  needs: HrTrainingNeed[];
+  estimated_direct?: number | null;
+  estimated_indirect?: number | null;
+  event?: string | null;
+  event_status?: string | null;
+  start_time?: string | null;
+  can_schedule: boolean;
+};
+export type HrTrainingPlanRow = {
+  name: string;
+  department: string;
+  year: string;
+  status: HrTrainingPlanStatus;
+  prepared_by?: string | null;
+  approved_by?: string | null;
+  decided_on?: string | null;
+  note?: string | null;
+  decision_note?: string | null;
+  totals: HrTrainingTotals;
+};
+export type HrTrainingPlan = HrTrainingPlanRow & {
+  lines: HrTrainingPlanLine[];
+  deciders: string[];
+  can_edit: boolean;
+  can_decide: boolean;
+  approver_note?: string | null;
+};
+export type HrTrainingPlanList = {
+  plans: HrTrainingPlanRow[];
+  years: string[];
+  departments: string[];
+  can_prepare: boolean;
+  waiting: number;
+  approver_note?: string | null;
+};
+export type HrTrainingNominee = {
+  name?: string | null;
+  employee: string;
+  employee_name?: string | null;
+  department?: string | null;
+  status?: string | null;
+  attendance?: string | null;
+  present?: boolean | null;
+};
+export type HrTrainingEvent = {
+  name: string;
+  event_name?: string | null;
+  event_status?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  location?: string | null;
+  trainer_name?: string | null;
+  skill?: string | null;
+  plan?: string | null;
+  department?: string | null;
+  direct_cost?: number | null;
+  indirect_cost?: number | null;
+  nominees: HrTrainingNominee[];
+  team: Array<{ name: string; employee_name?: string | null }>;
+  can_nominate: boolean;
+  can_record: boolean;
+  result_url?: string | null;
+};
+export type HrTrainingUpcoming = {
+  name: string;
+  event_name?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  location?: string | null;
+  skill?: string | null;
+  nominated: string[];
+};
+export type HrTeamTraining = { team: Array<{ name: string; employee_name?: string | null }>; needs: HrTrainingNeed[]; events: HrTrainingUpcoming[] };
+export type HrMyTrainingCourse = {
+  event: string;
+  event_name?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  location?: string | null;
+  event_status?: string | null;
+  attendance?: string | null;
+};
+export type HrMyTraining = { employee?: string | null; needs: HrTrainingNeed[]; upcoming: HrMyTrainingCourse[]; history: HrMyTrainingCourse[] };

@@ -16,6 +16,7 @@ export function TeamReview() {
   const [a, setA] = useState<HrAppraisal | null>(null);
   const [stars, setStars] = useState<Record<string, number>>({});
   const [comment, setComment] = useState("");
+  const [needs, setNeeds] = useState<string[]>([]); // additions plan 05: each becomes a training need
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => setA(res.data?.appraisal ?? null), [res.data]);
@@ -30,7 +31,12 @@ export function TeamReview() {
       setA(
         await apiFetch<HrAppraisal>(`/hr/team/${encodeURIComponent(employee)}/review`, {
           method: "POST",
-          body: JSON.stringify({ ratings: a.criteria.map((c) => ({ criteria: c.criteria, stars: stars[c.criteria] })), feedback: comment.trim(), confirm: true }),
+          body: JSON.stringify({
+            ratings: a.criteria.map((c) => ({ criteria: c.criteria, stars: stars[c.criteria] })),
+            feedback: comment.trim(),
+            ...(needs.some((t) => t.trim()) ? { training_needs: needs.map((t) => t.trim()).filter(Boolean).map((topic) => ({ topic })) } : {}),
+            confirm: true,
+          }),
         }),
       );
     } catch (e) {
@@ -91,6 +97,28 @@ export function TeamReview() {
                     <span>Your comment to {a.employee_name}</span>
                     <textarea className="hr-in" rows={4} value={comment} onChange={(e) => setComment(e.target.value)} />
                   </label>
+                  <div className="hr-f">
+                    <span>Training needs (optional)</span>
+                    {needs.map((t, i) => (
+                      <div key={i} style={{ display: "flex", gap: 6 }}>
+                        <input
+                          className="hr-in"
+                          aria-label={`Training need ${i + 1}`}
+                          placeholder="e.g. ISO/IEC 17025 internal audit"
+                          value={t}
+                          onChange={(e) => setNeeds((cur) => cur.map((x, j) => (j === i ? e.target.value : x)))}
+                        />
+                        <button type="button" className="btn ghost sm" onClick={() => setNeeds((cur) => cur.filter((_, j) => j !== i))}>
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <div>
+                      <button type="button" className="btn ghost sm" onClick={() => setNeeds((cur) => [...cur, ""])}>
+                        Add training need
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : a.manager_feedback ? (

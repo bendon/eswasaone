@@ -80,6 +80,10 @@ fixtures = [
                     "Leave Type-custom_certificate_after_days",
                     "Leave Application-custom_medical_certificate",
                     "HR Settings-custom_service_milestones",
+                    # HR additions plan 05: training plan lines scheduled as events, with recorded cost
+                    "Training Event-custom_plan_line",
+                    "Training Event-custom_direct_cost",
+                    "Training Event-custom_indirect_cost",
                 ],
             ]
         ],
@@ -140,6 +144,9 @@ permission_query_conditions = {
     "HR Issued Item": "eswasa_hr.issued_items.query",
     # HR additions plan 03: warning letters follow the case rule; staff see their own issued letters.
     "HR Letter": "eswasa_hr.letters.query",
+    # HR additions plan 05: needs for HR, the person, their managers and department head; plans for HR and the head.
+    "Training Need": "eswasa_hr.training_plan.need_query",
+    "Training Plan": "eswasa_hr.training_plan.plan_query",
 }
 has_permission = {
     "Employee Grievance": "eswasa_hr.cases.has_permission",
@@ -153,6 +160,8 @@ has_permission = {
     "Exit Interview": "eswasa_hr.lifecycle.exit_interview_has_permission",
     "HR Issued Item": "eswasa_hr.issued_items.has_permission",
     "HR Letter": "eswasa_hr.letters.has_permission",
+    "Training Need": "eswasa_hr.training_plan.need_has_permission",
+    "Training Plan": "eswasa_hr.training_plan.plan_has_permission",
 }
 
 after_migrate = ["eswasa_hr.setup.after_migrate"]
@@ -232,4 +241,6 @@ eswasa_approval_handlers = {
     "HR Issued Item": "eswasa_hr.issued_items.decide",
     # HR additions plan 03: "Prepare employment confirmation letter …" do card; Done prepares it.
     "HR Letter": "eswasa_hr.letters.decide",
+    # HR additions plan 05: "Approve training plan …"; a named HR Manager other than the preparer (provisional, A6).
+    "Training Plan": "eswasa_hr.training_plan.decide",
 }

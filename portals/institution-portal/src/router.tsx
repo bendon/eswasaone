@@ -787,6 +787,27 @@ export const router = createBrowserRouter(
                       />
                     ),
                   },
+                  // HR additions plan 05: H17 Training (literal paths before :id)
+                  {
+                    path: "training",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.TrainingPlans }))} skeleton="list" />,
+                  },
+                  {
+                    path: "training/needs",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.TrainingNeeds }))} skeleton="list" />,
+                  },
+                  {
+                    path: "training/plans/new",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.NewTrainingPlan }))} skeleton="panel" />,
+                  },
+                  {
+                    path: "training/plans/:id",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.TrainingPlanDetail }))} skeleton="panel" />,
+                  },
+                  {
+                    path: "training/events/:id",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.TrainingEventView }))} skeleton="panel" />,
+                  },
                   {
                     path: "offboarding/:id",
                     element: (
@@ -959,6 +980,11 @@ export const router = createBrowserRouter(
                       />
                     ),
                   },
+                  // HR additions plan 05: T8 (a literal path, before :employee)
+                  {
+                    path: "training",
+                    element: <L factory={() => import("./team/sub-views").then((m) => ({ default: m.TeamTraining }))} skeleton="list" />,
+                  },
                   {
                     path: ":employee",
                     element: (
@@ -1076,6 +1102,11 @@ export const router = createBrowserRouter(
                         skeleton="list"
                       />
                     ),
+                  },
+                  // HR additions plan 05: E13
+                  {
+                    path: "training",
+                    element: <L factory={() => import("./me/sub-views").then((m) => ({ default: m.MyTraining }))} skeleton="list" />,
                   },
                   {
                     path: "interviews",

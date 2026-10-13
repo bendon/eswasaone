@@ -3,7 +3,7 @@ import { Icon } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
-import type { HrAppraisal, HrMe, HrMyDeclaration, HrMyItems, HrOnboarding } from "../api/types";
+import type { HrAppraisal, HrMe, HrMyDeclaration, HrMyItems, HrMyTraining, HrOnboarding } from "../api/types";
 import { Banner, fmtDay, fmtDays, fmtRange, leaveStatus, NextStep, StatusPill } from "./parts";
 
 /** E1 My HR — the signed-in person's own record, balances and leave. Live GET /hr/me only. */
@@ -53,6 +53,8 @@ function Linked({ me }: { me: HrMe }) {
   const selfDue = apr.data?.appraisal?.can_self && !apr.data.appraisal.self_done ? apr.data.appraisal : null;
   const items = useApiResource<HrMyItems>("/hr/me/items", { refreshKey: sessionKey });
   const toAcknowledge = items.data?.waiting ?? 0;
+  const training = useApiResource<HrMyTraining>("/hr/me/training", { refreshKey: sessionKey }); // additions plan 05
+  const nextCourse = training.data?.upcoming?.[0] ?? null;
   const emp = me.employee;
   const first = (emp?.employee_name ?? "").split(" ")[0] || "there";
   const annual = me.balances.find((b) => /annual/i.test(b.leave_type)) ?? me.balances[0];
@@ -147,6 +149,20 @@ function Linked({ me }: { me: HrMe }) {
         </Banner>
       ) : null}
 
+      {nextCourse ? (
+        <Banner
+          kind="info"
+          title={`You're nominated for ${nextCourse.event_name ?? "a course"} on ${fmtDay(nextCourse.start_time, true)}`}
+          action={
+            <Link className="btn pri sm" to="training">
+              My training
+            </Link>
+          }
+        >
+          {nextCourse.location ? `At ${nextCourse.location}.` : "HR will confirm the venue."}
+        </Banner>
+      ) : null}
+
       {declDue ? (
         <Banner
           kind="bad"
@@ -231,7 +247,8 @@ function Linked({ me }: { me: HrMe }) {
       <p className="hr-note">
         <Link to="profile">My profile and documents</Link>: check your record, upload documents, ask for a correction.{" "}
         <Link to="expenses">Expense claims</Link>: claim back money spent for work.{" "}
-        <Link to="letters">My letters</Link>: ask for an employment confirmation letter and download letters HR has issued you.
+        <Link to="letters">My letters</Link>: ask for an employment confirmation letter and download letters HR has issued you.{" "}
+        <Link to="training">My training</Link>: your courses and training needs.
       </p>
       <p className="hr-note">
         Something wrong at work? <Link to="concern">Raise a concern in confidence</Link>. Only one HR Manager sees it.

@@ -514,8 +514,9 @@ def add_goal_impl(employee: str, goal_name: str, kra: str | None, strategic_goal
     return detail_impl(name)
 
 
-def submit_review_impl(employee: str, ratings: list[dict[str, Any]], feedback: str) -> dict[str, Any]:
-    """T5: the direct line manager rates the criteria and comments; submitted as Employee Performance Feedback."""
+def submit_review_impl(employee: str, ratings: list[dict[str, Any]], feedback: str, training_needs: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """T5: the direct line manager rates the criteria and comments; submitted as Employee Performance Feedback.
+    ``training_needs`` ([{topic, skill?}]) each become a Training Need (source Appraisal, additions plan 05)."""
     import frappe
 
     from eswasa_hr.hiring import rating_to_frappe
@@ -533,6 +534,9 @@ def submit_review_impl(employee: str, ratings: list[dict[str, Any]], feedback: s
     errs = rating_errors([c["criteria"] for c in d["criteria"]], stars)
     if not (feedback or "").strip():
         errs.append("Add a comment for the person.")
+    from eswasa_hr.training_plan import needs_from_review, review_need_errors
+
+    errs += review_need_errors(training_needs)
     if errs:
         frappe.throw(" ".join(errs), frappe.ValidationError)
     fb = frappe.get_doc(
@@ -548,6 +552,7 @@ def submit_review_impl(employee: str, ratings: list[dict[str, Any]], feedback: s
     )
     fb.insert(ignore_permissions=True)
     fb.submit()
+    needs_from_review(employee, training_needs, name)
     _close_todos(name, frappe.session.user)
     return detail_impl(name)
 
@@ -647,6 +652,6 @@ def add_goal(employee: str, goal_name: str, kra: str | None = None, strategic_go
 
 
 @_whitelist
-def submit_review(employee: str, ratings: Any = None, feedback: str = "", confirm: Any = False) -> dict[str, Any]:
+def submit_review(employee: str, ratings: Any = None, feedback: str = "", training_needs: Any = None, confirm: Any = False) -> dict[str, Any]:
     _confirm(confirm)
-    return submit_review_impl(employee, _json(ratings) or [], feedback)
+    return submit_review_impl(employee, _json(ratings) or [], feedback, _json(training_needs) or [])

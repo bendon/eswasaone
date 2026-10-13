@@ -1483,6 +1483,7 @@ class HrGoalBody(BaseModel):
 class HrReviewBody(BaseModel):
     ratings: list[HrStarRating]
     feedback: str
+    training_needs: list[HrReviewTrainingNeed] = Field(default_factory=list)  # HR additions plan 05
     confirm: bool
 
 
@@ -1961,6 +1962,7 @@ class HrBoardPack(BaseModel):
     cases: list[HrBoardCaseKind] | None = None
     declarations: dict[str, Any] | None = None
     establishment_changes: list[HrBoardEstChange] = Field(default_factory=list)
+    training: HrTrainingSummary | None = None  # HR additions plan 05: totals only
 
 
 class HrModuleAccessRequest(BaseModel):
@@ -3305,3 +3307,252 @@ class HrServiceMilestone(BaseModel):
 
 HrSensitive.model_rebuild()
 HrLiveOverview.model_rebuild()
+
+# --- HR additions: plan 05 ---
+# Training plan (H17), team training (T8), my training (E13); needs from reviews and expiring authorisations.
+
+
+class HrReviewTrainingNeed(BaseModel):
+    topic: str
+    skill: str | None = None
+
+
+class HrTrainingNeed(BaseModel):
+    """OpenAPI: HrTrainingNeed."""
+
+    name: str
+    employee: str
+    employee_name: str | None = None
+    department: str | None = None
+    topic: str
+    skill: str | None = None
+    source: str  # Appraisal | Authorisation expiry | Manager | Self
+    source_name: str | None = None
+    raised_by: str | None = None
+    priority: str | None = None
+    status: str  # Open | Planned | Met | Dropped
+    plan: str | None = None
+    plan_line: str | None = None
+    event: str | None = None
+    note: str | None = None
+    creation: str | None = None
+
+
+class HrTrainingNeedList(BaseModel):
+    needs: list[HrTrainingNeed] = Field(default_factory=list)
+    open: int = 0
+    sources: list[str] = Field(default_factory=list)
+    departments: list[str] = Field(default_factory=list)
+
+
+class HrTrainingNeedBody(BaseModel):
+    employee: str
+    topic: str
+    skill: str | None = None
+    priority: Literal["Low", "Medium", "High"] | None = None
+    note: str | None = None
+    confirm: bool
+
+
+class HrTrainingTotals(BaseModel):
+    lines: int = 0
+    people: int = 0
+    scheduled: int = 0
+    estimated_direct: float = 0
+    estimated_indirect: float = 0
+    estimated: float = 0
+    actual_direct: float = 0
+    actual_indirect: float = 0
+    actual: float = 0
+
+
+class HrTrainingPlanLine(BaseModel):
+    """OpenAPI: HrTrainingPlanLine."""
+
+    name: str
+    idx: int | None = None
+    topic: str
+    skill: str | None = None
+    reason: str | None = None
+    quarter: str | None = None
+    people: int | None = None
+    provider: str | None = None
+    needs: list[HrTrainingNeed] = Field(default_factory=list)
+    estimated_direct: float | None = None
+    estimated_indirect: float | None = None
+    event: str | None = None
+    event_status: str | None = None
+    start_time: str | None = None
+    can_schedule: bool = False
+
+
+class HrTrainingPlanRow(BaseModel):
+    name: str
+    department: str
+    year: str
+    status: str  # Draft | Waiting | Approved | Sent back
+    prepared_by: str | None = None
+    approved_by: str | None = None
+    decided_on: str | None = None
+    note: str | None = None
+    decision_note: str | None = None
+    modified: str | None = None
+    totals: HrTrainingTotals = Field(default_factory=HrTrainingTotals)
+
+
+class HrTrainingPlan(HrTrainingPlanRow):
+    """OpenAPI: HrTrainingPlan — detail with lines and who decides."""
+
+    lines: list[HrTrainingPlanLine] = Field(default_factory=list)
+    deciders: list[str] = Field(default_factory=list)
+    can_edit: bool = False
+    can_decide: bool = False
+    approver_note: str | None = None
+
+
+class HrTrainingPlanList(BaseModel):
+    plans: list[HrTrainingPlanRow] = Field(default_factory=list)
+    years: list[str] = Field(default_factory=list)
+    departments: list[str] = Field(default_factory=list)
+    can_prepare: bool = False
+    waiting: int = 0
+    approver_note: str | None = None
+
+
+class HrTrainingPlanLineBody(BaseModel):
+    topic: str
+    skill: str | None = None
+    reason: Literal["Need", "Compliance", "Accreditation", "Development"] = "Need"
+    quarter: str
+    people: int | None = None
+    provider: str | None = None
+    needs: list[str] = Field(default_factory=list)
+    estimated_direct: float = 0
+    estimated_indirect: float = 0
+
+
+class HrTrainingPlanBody(BaseModel):
+    name: str | None = None  # an existing Draft or Sent back plan
+    department: str
+    year: str
+    lines: list[HrTrainingPlanLineBody] = Field(default_factory=list)
+    note: str | None = None
+    submit: bool = False
+    confirm: bool
+
+
+class HrTrainingScheduleBody(BaseModel):
+    start: str
+    end: str
+    venue: str | None = None
+    trainer: str | None = None
+    event_type: str | None = None
+    confirm: bool
+
+
+class HrTrainingNominee(BaseModel):
+    name: str | None = None
+    employee: str
+    employee_name: str | None = None
+    department: str | None = None
+    status: str | None = None
+    attendance: str | None = None
+    present: bool | None = None
+
+
+class HrTeamMember(BaseModel):
+    name: str
+    employee_name: str | None = None
+
+
+class HrTrainingEvent(BaseModel):
+    """OpenAPI: HrTrainingEvent — nominees, attendance and cost (cost for HR only)."""
+
+    name: str
+    event_name: str | None = None
+    event_status: str | None = None
+    start_time: str | None = None
+    end_time: str | None = None
+    location: str | None = None
+    trainer_name: str | None = None
+    skill: str | None = None
+    plan: str | None = None
+    department: str | None = None
+    direct_cost: float | None = None
+    indirect_cost: float | None = None
+    nominees: list[HrTrainingNominee] = Field(default_factory=list)
+    team: list[HrTeamMember] = Field(default_factory=list)
+    can_nominate: bool = False
+    can_record: bool = False
+    result_url: str | None = None
+
+
+class HrTrainingNominateBody(BaseModel):
+    employees: list[str]
+    confirm: bool
+
+
+class HrTrainingAttendanceRow(BaseModel):
+    employee: str
+    present: bool
+
+
+class HrTrainingAttendanceBody(BaseModel):
+    rows: list[HrTrainingAttendanceRow]
+    confirm: bool
+
+
+class HrTrainingCostBody(BaseModel):
+    direct: float = 0
+    indirect: float = 0
+    confirm: bool
+
+
+class HrTrainingUpcoming(BaseModel):
+    name: str
+    event_name: str | None = None
+    start_time: str | None = None
+    end_time: str | None = None
+    location: str | None = None
+    skill: str | None = None
+    nominated: list[str] = Field(default_factory=list)
+
+
+class HrTeamTraining(BaseModel):
+    team: list[HrTeamMember] = Field(default_factory=list)
+    needs: list[HrTrainingNeed] = Field(default_factory=list)
+    events: list[HrTrainingUpcoming] = Field(default_factory=list)
+
+
+class HrMyTrainingCourse(BaseModel):
+    event: str
+    event_name: str | None = None
+    start_time: str | None = None
+    end_time: str | None = None
+    location: str | None = None
+    event_status: str | None = None
+    attendance: str | None = None
+
+
+class HrMyTraining(BaseModel):
+    employee: str | None = None
+    needs: list[HrTrainingNeed] = Field(default_factory=list)
+    upcoming: list[HrMyTrainingCourse] = Field(default_factory=list)
+    history: list[HrMyTrainingCourse] = Field(default_factory=list)
+
+
+class HrTrainingSummary(BaseModel):
+    """OpenAPI: HrTrainingSummary — Board pack totals: planned against attended, estimated against actual cost."""
+
+    year: str | None = None
+    plans: int = 0
+    planned_people: int = 0
+    attended: int = 0
+    lines: int = 0
+    scheduled: int = 0
+    estimated_cost: float = 0
+    actual_cost: float = 0
+
+
+HrReviewBody.model_rebuild()
+HrBoardPack.model_rebuild()

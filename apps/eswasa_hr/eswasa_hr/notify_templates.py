@@ -91,6 +91,12 @@ TEMPLATES: dict[str, dict[str, Any]] = {
         "subject": "Your {letter_type} letter is ready",
         "body": "Hello,\n\nYour {letter_type} letter is ready. Open My letters in My HR in EswasaOne to download it.",
     },
+    "training_nominated": {  # HR additions plan 05
+        "essential": False,
+        "fields": ("event_name", "start", "venue"),
+        "subject": "You're nominated for {event_name}",
+        "body": "Hello,\n\nYou've been nominated for {event_name}, starting {start} at {venue}. Open My training in My HR in EswasaOne for the details.",
+    },
 }
 
 

@@ -39,6 +39,9 @@ export function TeamHome() {
                 <Link className="btn ghost" to="/team/calendar">
                   Team calendar
                 </Link>
+                <Link className="btn ghost" to="/team/training">
+                  Team training
+                </Link>
               </div>
             ) : null}
           </div>

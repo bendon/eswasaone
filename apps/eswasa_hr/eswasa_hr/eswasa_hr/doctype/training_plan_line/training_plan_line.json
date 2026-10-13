@@ -1,0 +1,107 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "topic",
+  "skill",
+  "reason",
+  "quarter",
+  "people",
+  "provider",
+  "needs",
+  "column_break_line",
+  "estimated_direct",
+  "estimated_indirect",
+  "event"
+ ],
+ "fields": [
+  {
+   "fieldname": "topic",
+   "fieldtype": "Data",
+   "label": "Topic",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "skill",
+   "fieldtype": "Link",
+   "label": "Competence",
+   "options": "Skill",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Select",
+   "label": "Reason",
+   "options": "Need\nCompliance\nAccreditation\nDevelopment",
+   "default": "Need",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "quarter",
+   "fieldtype": "Select",
+   "label": "Quarter",
+   "options": "Q1\nQ2\nQ3\nQ4",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "people",
+   "fieldtype": "Int",
+   "label": "People",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Data",
+   "label": "Provider"
+  },
+  {
+   "fieldname": "needs",
+   "fieldtype": "Small Text",
+   "label": "Needs",
+   "description": "Training Need names, one per line."
+  },
+  {
+   "fieldname": "column_break_line",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "estimated_direct",
+   "fieldtype": "Currency",
+   "label": "Estimated Direct Cost",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "estimated_indirect",
+   "fieldtype": "Currency",
+   "label": "Estimated Indirect Cost",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "event",
+   "fieldtype": "Link",
+   "label": "Training Event",
+   "options": "Training Event",
+   "read_only": 1,
+   "allow_on_submit": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-13 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa HR",
+ "name": "Training Plan Line",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "editable_grid": 1
+}

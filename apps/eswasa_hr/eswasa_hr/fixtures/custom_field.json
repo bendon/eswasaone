@@ -617,5 +617,40 @@
   "insert_after": "custom_hr_email",
   "description": "Years separated by commas, such as 5, 10, 20. Awaiting ESWASA (A8): empty means no milestones are raised.",
   "name": "HR Settings-custom_service_milestones"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Training Event",
+  "fieldname": "custom_plan_line",
+  "label": "Training Plan Line",
+  "fieldtype": "Data",
+  "insert_after": "custom_skill",
+  "read_only": 1,
+  "description": "The approved Training Plan line this event delivers (HR additions plan 05).",
+  "name": "Training Event-custom_plan_line"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Training Event",
+  "fieldname": "custom_direct_cost",
+  "label": "Direct Cost",
+  "fieldtype": "Currency",
+  "insert_after": "custom_plan_line",
+  "non_negative": 1,
+  "allow_on_submit": 1,
+  "description": "Actual direct cost (fees, materials). Recorded only; the training budget is Finance's. Cost lines provisional (A6).",
+  "name": "Training Event-custom_direct_cost"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Training Event",
+  "fieldname": "custom_indirect_cost",
+  "label": "Indirect Cost",
+  "fieldtype": "Currency",
+  "insert_after": "custom_direct_cost",
+  "non_negative": 1,
+  "allow_on_submit": 1,
+  "description": "Actual indirect cost (travel, venue, time away). Recorded only.",
+  "name": "Training Event-custom_indirect_cost"
  }
 ]

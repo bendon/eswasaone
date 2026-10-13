@@ -206,6 +206,13 @@ def _check_plan_08() -> dict[str, Any]:
     return {"plan_08": gone} if gone else {}
 
 
+def _check_plan_05() -> dict[str, Any]:
+    """HR additions plan 05: the ``Training plan`` alert rule (DocTypes and Training Event fields are covered above)."""
+    if _option_missing("HR Alert", "rule", "Training plan"):
+        return {"plan_05": ["HR Alert.rule option Training plan"]}
+    return {}
+
+
 def run() -> dict[str, Any]:
     from eswasa_hr import hooks
 
@@ -216,6 +223,7 @@ def run() -> dict[str, Any]:
     missing.update(_check_plan_03())
     missing.update(_check_plan_04())
     missing.update(_check_plan_08())
+    missing.update(_check_plan_05())
     result = {
         "ok": not missing,
         "missing": missing,

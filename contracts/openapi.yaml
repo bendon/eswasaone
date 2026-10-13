@@ -4468,6 +4468,234 @@ paths:
         "422":
           description: The request has been decided
 
+  # plan 05: training plan (H17), team training (T8), my training (E13); approver provisional (A6)
+  /hr/training/plans:
+    get:
+      tags: [hr]
+      operationId: listHrTrainingPlans
+      summary: Department training plans with estimated and actual cost (HR; a head sees their own)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: year, in: query, required: false, schema: { type: string } }
+        - { name: department, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTrainingPlanList" }
+    post:
+      tags: [hr]
+      operationId: saveHrTrainingPlan
+      summary: Create or update a draft plan; submit sends it to a named HR Manager other than the preparer
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrTrainingPlanBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTrainingPlan" }
+        "403":
+          description: Not allowed
+        "422":
+          description: A rule the input breaks (plain text)
+
+  /hr/training/plans/{name}:
+    get:
+      tags: [hr]
+      operationId: getHrTrainingPlan
+      summary: Plan detail with lines, status and who decides
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTrainingPlan" }
+
+  /hr/training/plans/{name}/lines/{line}/schedule:
+    post:
+      tags: [hr]
+      operationId: scheduleHrTrainingLine
+      summary: Create the HRMS Training Event for an approved line (HR)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+        - { name: line, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrTrainingScheduleBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTrainingPlan" }
+        "403":
+          description: Not allowed
+        "422":
+          description: A rule the input breaks (plain text)
+
+  /hr/training/events/{name}:
+    get:
+      tags: [hr]
+      operationId: getHrTrainingEvent
+      summary: Event with nominees, attendance and cost (cost for HR only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTrainingEvent" }
+
+  /hr/training/events/{name}/nominate:
+    post:
+      tags: [hr]
+      operationId: nominateHrTraining
+      summary: Nominate people (line managers their reports; HR anyone)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrTrainingNominateBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTrainingEvent" }
+        "403":
+          description: Not allowed
+        "422":
+          description: A rule the input breaks (plain text)
+
+  /hr/training/events/{name}/attendance:
+    post:
+      tags: [hr]
+      operationId: recordHrTrainingAttendance
+      summary: Record attendance (HR); needs of people present become Met
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrTrainingAttendanceBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTrainingEvent" }
+        "403":
+          description: Not allowed
+        "422":
+          description: A rule the input breaks (plain text)
+
+  /hr/training/events/{name}/cost:
+    post:
+      tags: [hr]
+      operationId: recordHrTrainingCost
+      summary: Record actual direct and indirect cost (HR; nothing posts to accounts)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrTrainingCostBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTrainingEvent" }
+        "403":
+          description: Not allowed
+        "422":
+          description: A rule the input breaks (plain text)
+
+  /hr/training/needs:
+    get:
+      tags: [hr]
+      operationId: listHrTrainingNeeds
+      summary: Training needs in the viewer's scope
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: department, in: query, required: false, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { type: string } }
+        - { name: source, in: query, required: false, schema: { type: string } }
+        - { name: employee, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTrainingNeedList" }
+    post:
+      tags: [hr]
+      operationId: raiseHrTrainingNeed
+      summary: HR or a line manager raises a need; a person may raise their own
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrTrainingNeedBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTrainingNeedList" }
+        "403":
+          description: Not allowed
+        "422":
+          description: A rule the input breaks (plain text)
+
+  /hr/team/training:
+    get:
+      tags: [hr]
+      operationId: getHrTeamTraining
+      summary: My team's training needs and upcoming events (T8)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrTeamTraining" }
+
+  /hr/me/training:
+    get:
+      tags: [hr]
+      operationId: getMyHrTraining
+      summary: My training needs, nominations and attended courses (E13)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrMyTraining" }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -9013,6 +9241,9 @@ components:
       properties:
         ratings: { type: array, items: { $ref: "#/components/schemas/HrStarRating" } }
         feedback: { type: string }
+        training_needs:  # plan 05: each becomes a Training Need (source Appraisal)
+          type: array
+          items: { type: object, required: [topic], properties: { topic: { type: string }, skill: { anyOf: [{ type: string }, { type: "null" }] } } }
         confirm: { type: boolean }
     HrContractDefaults:
       type: object
@@ -9394,6 +9625,7 @@ components:
               department: { type: string }
               state: { type: string }
               council_required: { type: boolean }
+        training: { anyOf: [{ $ref: "#/components/schemas/HrTrainingSummary" }, { type: "null" }] }  # plan 05
     HrSeparationDefaults:
       type: object
       required: [employee, employee_name, reasons, activities]
@@ -12287,3 +12519,240 @@ components:
         name: { anyOf: [{ type: string }, { type: "null" }] }
         years: { type: integer }
         date: { type: string, format: date }
+    # plan 05: training plan, needs, events
+    HrTrainingNeed:
+      type: object
+      required: [name, employee, topic, source, status]
+      properties:
+        name: { type: string }
+        employee: { type: string }
+        employee_name: { anyOf: [{ type: string }, { type: "null" }] }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        topic: { type: string }
+        skill: { anyOf: [{ type: string }, { type: "null" }] }
+        source: { type: string, enum: [Appraisal, Authorisation expiry, Manager, Self] }
+        source_name: { anyOf: [{ type: string }, { type: "null" }] }
+        raised_by: { anyOf: [{ type: string }, { type: "null" }] }
+        priority: { anyOf: [{ type: string }, { type: "null" }] }
+        status: { type: string, enum: [Open, Planned, Met, Dropped] }
+        plan: { anyOf: [{ type: string }, { type: "null" }] }
+        plan_line: { anyOf: [{ type: string }, { type: "null" }] }
+        event: { anyOf: [{ type: string }, { type: "null" }] }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        creation: { anyOf: [{ type: string }, { type: "null" }] }
+    HrTrainingNeedList:
+      type: object
+      properties:
+        needs: { type: array, items: { $ref: "#/components/schemas/HrTrainingNeed" } }
+        open: { type: integer }
+        sources: { type: array, items: { type: string } }
+        departments: { type: array, items: { type: string } }
+    HrTrainingNeedBody:
+      type: object
+      required: [employee, topic, confirm]
+      properties:
+        employee: { type: string }
+        topic: { type: string }
+        skill: { anyOf: [{ type: string }, { type: "null" }] }
+        priority: { anyOf: [{ type: string, enum: [Low, Medium, High] }, { type: "null" }] }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrTrainingTotals:
+      type: object
+      properties:
+        lines: { type: integer }
+        people: { type: integer }
+        scheduled: { type: integer }
+        estimated_direct: { type: number }
+        estimated_indirect: { type: number }
+        estimated: { type: number }
+        actual_direct: { type: number }
+        actual_indirect: { type: number }
+        actual: { type: number }
+    HrTrainingPlanLine:
+      type: object
+      required: [name, topic]
+      properties:
+        name: { type: string }
+        idx: { anyOf: [{ type: integer }, { type: "null" }] }
+        topic: { type: string }
+        skill: { anyOf: [{ type: string }, { type: "null" }] }
+        reason: { anyOf: [{ type: string }, { type: "null" }] }
+        quarter: { anyOf: [{ type: string }, { type: "null" }] }
+        people: { anyOf: [{ type: integer }, { type: "null" }] }
+        provider: { anyOf: [{ type: string }, { type: "null" }] }
+        needs: { type: array, items: { $ref: "#/components/schemas/HrTrainingNeed" } }
+        estimated_direct: { anyOf: [{ type: number }, { type: "null" }] }
+        estimated_indirect: { anyOf: [{ type: number }, { type: "null" }] }
+        event: { anyOf: [{ type: string }, { type: "null" }] }
+        event_status: { anyOf: [{ type: string }, { type: "null" }] }
+        start_time: { anyOf: [{ type: string }, { type: "null" }] }
+        can_schedule: { type: boolean }
+    HrTrainingPlanRow:
+      type: object
+      required: [name, department, year, status]
+      properties:
+        name: { type: string }
+        department: { type: string }
+        year: { type: string }
+        status: { type: string, enum: [Draft, Waiting, Approved, Sent back] }
+        prepared_by: { anyOf: [{ type: string }, { type: "null" }] }
+        approved_by: { anyOf: [{ type: string }, { type: "null" }] }
+        decided_on: { anyOf: [{ type: string }, { type: "null" }] }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        decision_note: { anyOf: [{ type: string }, { type: "null" }] }
+        modified: { anyOf: [{ type: string }, { type: "null" }] }
+        totals: { $ref: "#/components/schemas/HrTrainingTotals" }
+    HrTrainingPlan:
+      allOf:
+        - $ref: "#/components/schemas/HrTrainingPlanRow"
+        - type: object
+          properties:
+            lines: { type: array, items: { $ref: "#/components/schemas/HrTrainingPlanLine" } }
+            deciders: { type: array, items: { type: string } }
+            can_edit: { type: boolean }
+            can_decide: { type: boolean }
+            approver_note: { anyOf: [{ type: string }, { type: "null" }] }
+    HrTrainingPlanList:
+      type: object
+      properties:
+        plans: { type: array, items: { $ref: "#/components/schemas/HrTrainingPlanRow" } }
+        years: { type: array, items: { type: string } }
+        departments: { type: array, items: { type: string } }
+        can_prepare: { type: boolean }
+        waiting: { type: integer }
+        approver_note: { anyOf: [{ type: string }, { type: "null" }] }
+    HrTrainingPlanBody:
+      type: object
+      required: [department, year, confirm]
+      properties:
+        name: { anyOf: [{ type: string }, { type: "null" }] }
+        department: { type: string }
+        year: { type: string }
+        lines:
+          type: array
+          items:
+            type: object
+            required: [topic, quarter]
+            properties:
+              topic: { type: string }
+              skill: { anyOf: [{ type: string }, { type: "null" }] }
+              reason: { type: string, enum: [Need, Compliance, Accreditation, Development] }
+              quarter: { type: string, enum: [Q1, Q2, Q3, Q4] }
+              people: { anyOf: [{ type: integer }, { type: "null" }] }
+              provider: { anyOf: [{ type: string }, { type: "null" }] }
+              needs: { type: array, items: { type: string } }
+              estimated_direct: { type: number, minimum: 0 }
+              estimated_indirect: { type: number, minimum: 0 }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        submit: { type: boolean, default: false }
+        confirm: { type: boolean }
+    HrTrainingScheduleBody:
+      type: object
+      required: [start, end, confirm]
+      properties:
+        start: { type: string }
+        end: { type: string }
+        venue: { anyOf: [{ type: string }, { type: "null" }] }
+        trainer: { anyOf: [{ type: string }, { type: "null" }] }
+        event_type: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrTrainingNominee:
+      type: object
+      required: [employee]
+      properties:
+        name: { anyOf: [{ type: string }, { type: "null" }] }
+        employee: { type: string }
+        employee_name: { anyOf: [{ type: string }, { type: "null" }] }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        status: { anyOf: [{ type: string }, { type: "null" }] }
+        attendance: { anyOf: [{ type: string }, { type: "null" }] }
+        present: { anyOf: [{ type: boolean }, { type: "null" }] }
+    HrTrainingEvent:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        event_name: { anyOf: [{ type: string }, { type: "null" }] }
+        event_status: { anyOf: [{ type: string }, { type: "null" }] }
+        start_time: { anyOf: [{ type: string }, { type: "null" }] }
+        end_time: { anyOf: [{ type: string }, { type: "null" }] }
+        location: { anyOf: [{ type: string }, { type: "null" }] }
+        trainer_name: { anyOf: [{ type: string }, { type: "null" }] }
+        skill: { anyOf: [{ type: string }, { type: "null" }] }
+        plan: { anyOf: [{ type: string }, { type: "null" }] }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        direct_cost: { anyOf: [{ type: number }, { type: "null" }] }
+        indirect_cost: { anyOf: [{ type: number }, { type: "null" }] }
+        nominees: { type: array, items: { $ref: "#/components/schemas/HrTrainingNominee" } }
+        team: { type: array, items: { type: object, required: [name], properties: { name: { type: string }, employee_name: { anyOf: [{ type: string }, { type: "null" }] } } } }
+        can_nominate: { type: boolean }
+        can_record: { type: boolean }
+        result_url: { anyOf: [{ type: string }, { type: "null" }] }
+    HrTrainingNominateBody:
+      type: object
+      required: [employees, confirm]
+      properties:
+        employees: { type: array, items: { type: string } }
+        confirm: { type: boolean }
+    HrTrainingAttendanceBody:
+      type: object
+      required: [rows, confirm]
+      properties:
+        rows: { type: array, items: { type: object, required: [employee, present], properties: { employee: { type: string }, present: { type: boolean } } } }
+        confirm: { type: boolean }
+    HrTrainingCostBody:
+      type: object
+      required: [confirm]
+      properties:
+        direct: { type: number, minimum: 0 }
+        indirect: { type: number, minimum: 0 }
+        confirm: { type: boolean }
+    HrTeamTraining:
+      type: object
+      properties:
+        team: { type: array, items: { type: object, required: [name], properties: { name: { type: string }, employee_name: { anyOf: [{ type: string }, { type: "null" }] } } } }
+        needs: { type: array, items: { $ref: "#/components/schemas/HrTrainingNeed" } }
+        events:
+          type: array
+          items:
+            type: object
+            required: [name]
+            properties:
+              name: { type: string }
+              event_name: { anyOf: [{ type: string }, { type: "null" }] }
+              start_time: { anyOf: [{ type: string }, { type: "null" }] }
+              end_time: { anyOf: [{ type: string }, { type: "null" }] }
+              location: { anyOf: [{ type: string }, { type: "null" }] }
+              skill: { anyOf: [{ type: string }, { type: "null" }] }
+              nominated: { type: array, items: { type: string } }
+    HrMyTraining:
+      type: object
+      properties:
+        employee: { anyOf: [{ type: string }, { type: "null" }] }
+        needs: { type: array, items: { $ref: "#/components/schemas/HrTrainingNeed" } }
+        upcoming: { type: array, items: { $ref: "#/components/schemas/HrMyTrainingCourse" } }
+        history: { type: array, items: { $ref: "#/components/schemas/HrMyTrainingCourse" } }
+    HrMyTrainingCourse:
+      type: object
+      required: [event]
+      properties:
+        event: { type: string }
+        event_name: { anyOf: [{ type: string }, { type: "null" }] }
+        start_time: { anyOf: [{ type: string }, { type: "null" }] }
+        end_time: { anyOf: [{ type: string }, { type: "null" }] }
+        location: { anyOf: [{ type: string }, { type: "null" }] }
+        event_status: { anyOf: [{ type: string }, { type: "null" }] }
+        attendance: { anyOf: [{ type: string }, { type: "null" }] }
+    HrTrainingSummary:
+      type: object
+      description: Board pack totals only, planned against attended and estimated against actual cost
+      properties:
+        year: { anyOf: [{ type: string }, { type: "null" }] }
+        plans: { type: integer }
+        planned_people: { type: integer }
+        attended: { type: integer }
+        lines: { type: integer }
+        scheduled: { type: integer }
+        estimated_cost: { type: number }
+        actual_cost: { type: number }

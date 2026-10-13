@@ -5071,6 +5071,19 @@ async def get_team_calendar(
     )
 
 
+# HR additions plan 05: a literal path, so it sits before /hr/team/{employee}.
+from app.schemas import HrTeamTraining as _TeamTraining  # noqa: E402
+
+
+@router.get("/hr/team/training", response_model=_TeamTraining, tags=["hr"])
+async def get_hr_team_training(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> _TeamTraining:
+    """T8: my team's needs and upcoming events."""
+    return _TeamTraining.model_validate(await _hr_call(auth, frappe, "eswasa_hr.training_plan.team_training"))
+
+
 @router.get("/hr/team/{employee}", response_model=HrTeamMemberDetail, tags=["hr"])
 async def get_team_member(
     employee: str,
@@ -5401,7 +5414,8 @@ async def submit_team_review(
     """The direct line manager rates the criteria and comments (Employee Performance Feedback)."""
     _require_confirm(body.confirm)
     audit_log(action="hr.appraisal.review", actor=auth.user.username, resource=f"Employee:{employee}", detail={"ratings": len(body.ratings)}, confirmed=True)
-    raw = await _hr_call(auth, frappe, f"{_PERF}.submit_review", json={"employee": employee, "ratings": [r.model_dump() for r in body.ratings], "feedback": body.feedback, "confirm": 1})
+    raw = await _hr_call(auth, frappe, f"{_PERF}.submit_review", json={"employee": employee, "ratings": [r.model_dump() for r in body.ratings], "feedback": body.feedback,
+                                                                       **({"training_needs": [n.model_dump() for n in body.training_needs]} if body.training_needs else {}), "confirm": 1})
     return HrAppraisalDetail.model_validate(raw)
 
 
@@ -6260,6 +6274,168 @@ async def add_my_leave_certificate(
     audit_log(action="hr.leave.certificate", actor=auth.user.username, resource=f"Leave Application:{name}", detail={}, confirmed=True)
     raw = await _hr_write(auth, frappe, f"{_LEAVE}.add_certificate", json={"name": name, "certificate": certificate, "confirm": True})
     return HrLeaveCertificate.model_validate(raw)
+
+
+# --- HR additions: plan 05 ---
+# Training plan, needs, nominations, attendance and cost. Guards live in eswasa_hr.training_plan: HR or the head of
+# department prepares a plan; a named HR Manager other than the preparer approves it in Approvals; HR schedules,
+# records attendance and cost; line managers nominate their reports.
+from app.schemas import (  # noqa: E402  (kept in this block so parallel HR additions merge cleanly)
+    HrMyTraining,
+    HrTrainingAttendanceBody,
+    HrTrainingCostBody,
+    HrTrainingEvent,
+    HrTrainingNeedBody,
+    HrTrainingNeedList,
+    HrTrainingNominateBody,
+    HrTrainingPlan,
+    HrTrainingPlanBody,
+    HrTrainingPlanList,
+    HrTrainingScheduleBody,
+)
+
+_TPLAN = "eswasa_hr.training_plan"
+
+
+@router.get("/hr/training/plans", response_model=HrTrainingPlanList, tags=["hr"])
+async def list_hr_training_plans(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    year: str | None = None,
+    department: str | None = None,
+) -> HrTrainingPlanList:
+    """H17: department training plans with estimated and actual cost (HR; a head sees their own)."""
+    params = {k: v for k, v in {"year": year, "department": department}.items() if v}
+    return HrTrainingPlanList.model_validate(await _hr_call(auth, frappe, f"{_TPLAN}.plans", params=params))
+
+
+@router.post("/hr/training/plans", response_model=HrTrainingPlan, tags=["hr"])
+async def save_hr_training_plan(
+    body: HrTrainingPlanBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTrainingPlan:
+    """Create or update a draft plan; ``submit`` sends it to a named HR Manager other than the preparer."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.training.plan", actor=auth.user.username, resource=f"Training Plan:{body.name or body.department}",
+              detail={"year": body.year, "lines": len(body.lines), "submit": body.submit}, confirmed=True)
+    payload = body.model_dump(exclude={"confirm"})
+    payload["lines"] = [{**ln, "needs": "\n".join(ln["needs"])} for ln in payload["lines"]]
+    raw = await _hr_write(auth, frappe, f"{_TPLAN}.save_plan", json={**payload, "submit": 1 if body.submit else 0, "confirm": 1})
+    return HrTrainingPlan.model_validate(raw)
+
+
+@router.get("/hr/training/plans/{name}", response_model=HrTrainingPlan, tags=["hr"])
+async def get_hr_training_plan(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTrainingPlan:
+    return HrTrainingPlan.model_validate(await _hr_call(auth, frappe, f"{_TPLAN}.plan", params={"name": name}))
+
+
+@router.post("/hr/training/plans/{name}/lines/{line}/schedule", response_model=HrTrainingPlan, tags=["hr"])
+async def schedule_hr_training_line(
+    name: str,
+    line: str,
+    body: HrTrainingScheduleBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTrainingPlan:
+    """HR creates the HRMS Training Event for an approved line."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.training.schedule", actor=auth.user.username, resource=f"Training Plan:{name}", detail={"line": line, "start": body.start}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_TPLAN}.schedule_line", json={"plan": name, "line": line, **body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrTrainingPlan.model_validate(raw)
+
+
+@router.get("/hr/training/events/{name}", response_model=HrTrainingEvent, tags=["hr"])
+async def get_hr_training_event(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTrainingEvent:
+    return HrTrainingEvent.model_validate(await _hr_call(auth, frappe, f"{_TPLAN}.event", params={"name": name}))
+
+
+@router.post("/hr/training/events/{name}/nominate", response_model=HrTrainingEvent, tags=["hr"])
+async def nominate_hr_training(
+    name: str,
+    body: HrTrainingNominateBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTrainingEvent:
+    """Line managers nominate their reports; HR anyone. Nominees are told by email."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.training.nominate", actor=auth.user.username, resource=f"Training Event:{name}", detail={"employees": body.employees}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_TPLAN}.nominate", json={"event": name, "employees": body.employees, "confirm": 1})
+    return HrTrainingEvent.model_validate(raw)
+
+
+@router.post("/hr/training/events/{name}/attendance", response_model=HrTrainingEvent, tags=["hr"])
+async def record_hr_training_attendance(
+    name: str,
+    body: HrTrainingAttendanceBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTrainingEvent:
+    """HR records attendance; needs of people present become Met."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.training.attendance", actor=auth.user.username, resource=f"Training Event:{name}",
+              detail={"present": sum(1 for r in body.rows if r.present), "rows": len(body.rows)}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_TPLAN}.attendance", json={"event": name, "rows": [r.model_dump() for r in body.rows], "confirm": 1})
+    return HrTrainingEvent.model_validate(raw)
+
+
+@router.post("/hr/training/events/{name}/cost", response_model=HrTrainingEvent, tags=["hr"])
+async def record_hr_training_cost(
+    name: str,
+    body: HrTrainingCostBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTrainingEvent:
+    """HR records actual direct and indirect cost (recorded only; nothing posts to accounts)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.training.cost", actor=auth.user.username, resource=f"Training Event:{name}", detail={"direct": body.direct, "indirect": body.indirect}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_TPLAN}.cost", json={"event": name, "direct": body.direct, "indirect": body.indirect, "confirm": 1})
+    return HrTrainingEvent.model_validate(raw)
+
+
+@router.get("/hr/training/needs", response_model=HrTrainingNeedList, tags=["hr"])
+async def list_hr_training_needs(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    department: str | None = None,
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+    source: str | None = None,
+    employee: str | None = None,
+) -> HrTrainingNeedList:
+    """Training needs: HR all; managers their team; heads their department; everyone their own."""
+    params = {"department": department, "status": status_filter, "source": source, "employee": employee}
+    raw = await _hr_call(auth, frappe, f"{_TPLAN}.needs", params={k: v for k, v in params.items() if v})
+    return HrTrainingNeedList.model_validate(raw)
+
+
+@router.post("/hr/training/needs", response_model=HrTrainingNeedList, tags=["hr"])
+async def raise_hr_training_need(
+    body: HrTrainingNeedBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrTrainingNeedList:
+    """HR or a line manager raises a need (a person may raise their own)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.training.need", actor=auth.user.username, resource=f"Employee:{body.employee}", detail={"topic": body.topic}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_TPLAN}.raise_need", json={**body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrTrainingNeedList.model_validate(raw)
+
+
+@router.get("/hr/me/training", response_model=HrMyTraining, tags=["hr"])
+async def get_my_hr_training(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrMyTraining:
+    """E13: my needs, nominations and attended courses."""
+    return HrMyTraining.model_validate(await _hr_call(auth, frappe, f"{_TPLAN}.my_training"))
 
 
 @router.get("/crm/leads", tags=["crm"])

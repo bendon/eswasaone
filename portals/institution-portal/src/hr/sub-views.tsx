@@ -27,3 +27,4 @@ export { EvidencePack } from "./competence/EvidencePack";
 export { RequisitionDetail } from "./recruitment/RequisitionDetail";
 export { DisciplinaryCode } from "./cases/DisciplinaryCode";
 export { ItemsRegister } from "./items/Items";
+export { TrainingPlans, TrainingPlanDetail, NewTrainingPlan, TrainingEventView, TrainingNeeds } from "./training/Training";

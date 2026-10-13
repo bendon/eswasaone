@@ -12,6 +12,7 @@ export function HrPage() {
         { to: "structure", label: "Structure", icon: "i-grid" },
         { to: "time-off", label: "Time off", icon: "i-clock" },
         { to: "competence", label: "Competence", icon: "i-award" },
+        { to: "training", label: "Training", icon: "i-clipboard" },
         { to: "recruitment", label: "Recruitment", icon: "i-briefcase" },
         { to: "onboarding", label: "Joiners", icon: "i-users" },
         { to: "performance", label: "Performance", icon: "i-gauge" },

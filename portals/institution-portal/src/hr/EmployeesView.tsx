@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { AuthError, RecordDrawer, type DrawerSection, Select } from "@eswasaone/shared-ui";
+import { AuthError, Icon, RecordDrawer, type DrawerSection, Select } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
@@ -8,6 +8,7 @@ import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrDepartmentsResponse, HrDesignationsResponse, HrEmployeeOptions, HrEmployeesResponse, HrEmployeeSummary } from "../api/types";
 import { errorText, hrSend } from "./api";
 import { initialsFromName } from "./helpers";
+import { fmtDay } from "../me/parts";
 import { SensitivePanel } from "./sensitive/Sensitive";
 
 /** Directory — live /hr/employees only. */
@@ -149,7 +150,7 @@ export function EmployeesView() {
               </div>
               <div>
                 <dt>Started</dt>
-                <dd>{(selected as { date_of_joining?: string | null }).date_of_joining || "—"}</dd>
+                <dd>{fmtDay((selected as { date_of_joining?: string | null }).date_of_joining, true)}</dd>
               </div>
             </dl>
           ),
@@ -200,6 +201,26 @@ export function EmployeesView() {
         label="Loading directory…"
       >
         <div className="hr">
+          <div className="hr-head">
+            <div>
+              <h2>Directory</h2>
+              <p>
+                {items.length} {items.length === 1 ? "person" : "people"} on record
+                {filtered.length !== items.length ? `, ${filtered.length} shown` : ""}.
+              </p>
+            </div>
+            <div className="hr-head__r">
+              <button type="button" className={showAdd ? "btn ghost" : "btn pri"} onClick={() => setShowAdd((v) => !v)}>
+                {showAdd ? "Cancel" : (
+                  <>
+                    <Icon name="i-plus" />
+                    Add employee
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
           {flash ? (
             <p style={{ fontSize: 12.5, color: "var(--navy)", margin: "0 0 12px", fontWeight: 600 }}>
               {flash}
@@ -232,9 +253,6 @@ export function EmployeesView() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <button type="button" className="btn gold" onClick={() => setShowAdd((v) => !v)}>
-              {showAdd ? "Cancel" : "Add employee"}
-            </button>
           </div>
 
           {showAdd ? (
@@ -362,7 +380,7 @@ export function EmployeesView() {
                         </td>
                         <td>{item.designation || "—"}</td>
                         <td>{item.department || "—"}</td>
-                        <td>{joined || "—"}</td>
+                        <td>{fmtDay(joined, true)}</td>
                         <td>
                           <span className={`hr-st ${stClass(bucket)}`}>
                             <span className="d" />

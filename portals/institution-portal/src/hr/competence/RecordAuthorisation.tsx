@@ -65,7 +65,7 @@ export function RecordAuthorisation() {
 
   if (sent) {
     return (
-      <div className="hr hr-view">
+      <div className="hr hr-view hr-view--form">
         <Crumbs items={[["Competence", "/hr/competence"], ["Sent for approval"]]} />
         <div className="hr-head">
           <div>
@@ -97,7 +97,7 @@ export function RecordAuthorisation() {
   return (
     <RequireStaff reason="Staff sign-in required">
       <ResourceGate loading={people.loading || mx.loading} error={people.error || mx.error} onRetry={() => { people.reload(); mx.reload(); }} hasData={Boolean(people.data && mx.data)} skeleton="panel">
-        <div className="hr hr-view">
+        <div className="hr hr-view hr-view--form">
           <Crumbs items={[["Competence", "/hr/competence"], [renewal ? "Renew an authorisation" : "Record an authorisation"]]} />
           <div className="hr-head">
             <div>

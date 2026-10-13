@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Select } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
@@ -33,12 +34,17 @@ export function ExpensesView() {
           <p>Each claim is decided by the person's named expense approver in Approvals. Finance pays approved claims.</p>
         </div>
         <div className="hr-head__r">
-          <select className="hr-in" aria-label="Filter claims" value={filter} onChange={(e) => setFilter(e.target.value as Filter)}>
-            <option value="Draft">Waiting for approval</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Not approved</option>
-            <option value="all">All</option>
-          </select>
+          <Select
+            value={filter}
+            onChange={(v) => setFilter(v as Filter)}
+            aria-label="Filter claims"
+            options={[
+              { value: "Draft", label: "Waiting for approval" },
+              { value: "Approved", label: "Approved" },
+              { value: "Rejected", label: "Not approved" },
+              { value: "all", label: "All" },
+            ]}
+          />
         </div>
       </div>
       <ResourceGate loading={res.loading} error={res.error} onRetry={res.reload} refreshing={res.refreshing} hasData={Boolean(res.data)}>
@@ -51,7 +57,7 @@ export function ExpensesView() {
                   <th>Person</th>
                   <th>Claim</th>
                   <th>Date</th>
-                  <th>Total</th>
+                  <th className="num">Total</th>
                   <th>Decides</th>
                   <th>Status</th>
                 </tr>
@@ -69,7 +75,7 @@ export function ExpensesView() {
                       </Link>
                     </td>
                     <td>{c.posting_date ? fmtDay(c.posting_date, true) : "—"}</td>
-                    <td className="mono">{money(c.total, c.currency)}</td>
+                    <td className="num">{money(c.total, c.currency)}</td>
                     <td>{c.approver || "Not set"}</td>
                     <td>{claimPill(c)}</td>
                   </tr>

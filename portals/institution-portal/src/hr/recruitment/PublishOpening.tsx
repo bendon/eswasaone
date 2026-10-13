@@ -41,7 +41,7 @@ export function PublishOpening() {
 
   if (done) {
     return (
-      <div className="hr hr-view">
+      <div className="hr hr-view hr-view--form">
         <Crumbs items={[["Recruitment", "/hr/recruitment"], ["Published"]]} />
         <div className="hr-head">
           <div>
@@ -63,7 +63,7 @@ export function PublishOpening() {
   return (
     <RequireStaff reason="Staff sign-in required">
       <ResourceGate loading={reqs.loading} error={reqs.error} onRetry={reqs.reload} hasData={Boolean(reqs.data)} skeleton="panel">
-        <div className="hr hr-view">
+        <div className="hr hr-view hr-view--form">
           <Crumbs items={[["Recruitment", "/hr/recruitment"], ["Publish"]]} />
           {!req ? (
             <Banner kind="bad" title="Requisition not found" />

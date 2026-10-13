@@ -208,7 +208,7 @@ export function ChangeForm({ kind }: { kind: "promotion" | "transfer" }) {
 
   return (
     <RequireStaff reason="Staff sign-in required">
-      <div className="hr hr-view">
+      <div className="hr hr-view hr-view--form">
         <Crumbs items={[["Directory", "/hr/directory"], [name, `/hr/directory/${encodeURIComponent(id)}`], [title]]} />
         <div className="hr-head">
           <div>
@@ -301,7 +301,7 @@ export function LeaverForm() {
     <RequireStaff reason="Staff sign-in required">
       <ResourceGate loading={def.loading} error={def.error} onRetry={def.reload} hasData={Boolean(def.data)} skeleton="panel">
         {def.data ? (
-          <div className="hr hr-view">
+          <div className="hr hr-view hr-view--form">
             <Crumbs items={[["Directory", "/hr/directory"], [name, `/hr/directory/${encodeURIComponent(id)}`], ["Record a leaver"]]} />
             <div className="hr-head">
               <div>
@@ -437,7 +437,7 @@ export function ContractForm() {
     <RequireStaff reason="Staff sign-in required">
       <ResourceGate loading={def.loading} error={def.error} onRetry={def.reload} hasData={Boolean(d)} skeleton="panel">
         {d ? (
-          <div className="hr hr-view">
+          <div className="hr hr-view hr-view--form">
             <Crumbs items={[["Directory", "/hr/directory"], [name, record], ["Contract"]]} />
             <div className="hr-head">
               <div>

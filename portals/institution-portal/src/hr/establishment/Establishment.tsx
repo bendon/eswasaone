@@ -477,7 +477,7 @@ export function RequestChange() {
   if (sent) {
     const who = sent.deciders.map((x) => x.name).join(" or ");
     return (
-      <div className="hr hr-view">
+      <div className="hr hr-view hr-view--form">
         <Crumbs items={[["Structure", `${BASE}?tab=establishment`], ["Request a change"]]} />
         <Banner kind="ok" title="Sent to the Executive Director">
           {sent.summary} in {sent.department}. {who ? `${who} decides in Approvals.` : ""}
@@ -491,7 +491,7 @@ export function RequestChange() {
     <RequireStaff reason="Staff sign-in required">
       <ResourceGate loading={est.loading} error={est.error} onRetry={est.reload} hasData={Boolean(est.data)} skeleton="panel">
         {est.data ? (
-          <div className="hr hr-view">
+          <div className="hr hr-view hr-view--form">
             <Crumbs items={[["Structure", `${BASE}?tab=establishment`], ["Request a change"]]} />
             <div className="hr-head">
               <div>

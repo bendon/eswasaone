@@ -1,4 +1,4 @@
-import { NavLink, useLocation, type To } from "react-router-dom";
+import { NavLink, useLocation, useResolvedPath, type To } from "react-router-dom";
 import { Icon, type IconName } from "../icons/Icon";
 
 export type SubTab = {
@@ -16,6 +16,11 @@ type Props = {
   /** Active value — only used when `manual` tabs are present. */
   active?: string;
   onTab?: (label: string) => void;
+  /**
+   * Also highlight a tab for routes nested under it (`/hr/recruitment/new` → Recruitment).
+   * Off by default: other modules rely on record routes falling back to the index tab.
+   */
+  nested?: boolean;
 };
 
 /**
@@ -33,8 +38,9 @@ type Props = {
  * `/certification/applications/APP-2026-00027` highlight the Pipeline tab
  * (the module index) even though they don't have their own tab entry.
  */
-export function SubTabs({ tabs, active, onTab }: Props) {
+export function SubTabs({ tabs, active, onTab, nested = false }: Props) {
   const loc = useLocation();
+  const root = useResolvedPath(".").pathname.replace(/\/$/, "");
   // Strip trailing slash for comparison
   const currentPath = loc.pathname.replace(/\/$/, "");
 
@@ -56,6 +62,17 @@ export function SubTabs({ tabs, active, onTab }: Props) {
       if (tabSegs.length > bestLen) {
         bestLen = tabSegs.length;
         bestMatch = tabPath;
+      }
+    }
+  }
+  if (nested && bestMatch === null && currentPath.startsWith(root + "/")) {
+    const rest = currentPath.slice(root.length + 1).split("/").filter(Boolean);
+    for (const t of routedTabs) {
+      const tabSegs = String(t.to).replace(/^\//, "").split("/").filter(Boolean);
+      if (!tabSegs.length || tabSegs.length <= bestLen) continue;
+      if (tabSegs.every((seg, i) => rest[i] === seg)) {
+        bestLen = tabSegs.length;
+        bestMatch = String(t.to);
       }
     }
   }

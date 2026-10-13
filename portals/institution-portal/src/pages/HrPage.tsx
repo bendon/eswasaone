@@ -5,6 +5,7 @@ export function HrPage() {
   return (
     <ModulePageShell
       reason="Staff sign-in required for HR"
+      nestedTabs
       tabs={[
         { to: "", label: "Overview", icon: "i-home" },
         { to: "directory", label: "Directory", icon: "i-users" },

@@ -57,7 +57,7 @@ export function RaiseRequisition() {
 
   if (sent) {
     return (
-      <div className="hr hr-view">
+      <div className="hr hr-view hr-view--form">
         <Crumbs items={[["Recruitment", "/hr/recruitment"], ["Requisition sent"]]} />
         <div className="hr-head">
           <div>
@@ -86,7 +86,7 @@ export function RaiseRequisition() {
   return (
     <RequireStaff reason="Staff sign-in required">
       <ResourceGate loading={vac.loading} error={vac.error} onRetry={vac.reload} hasData={Boolean(vac.data)} skeleton="panel">
-        <div className="hr hr-view">
+        <div className="hr hr-view hr-view--form">
           <Crumbs items={[["Recruitment", "/hr/recruitment"], ["Raise a requisition"]]} />
           <div className="hr-head">
             <div>

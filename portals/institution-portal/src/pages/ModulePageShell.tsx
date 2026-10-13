@@ -10,16 +10,19 @@ export function ModulePageShell({
   reason,
   tabs,
   children,
+  nestedTabs = false,
 }: {
   reason: string;
   tabs: SubTab[];
   children?: React.ReactNode;
+  /** Highlight a tab for routes nested under it, e.g. /hr/recruitment/new. */
+  nestedTabs?: boolean;
 }) {
   const ctx = useOutletContext();
   return (
     <RequireStaff reason={reason}>
       {children}
-      <SubTabs tabs={tabs} />
+      <SubTabs tabs={tabs} nested={nestedTabs} />
       <Outlet context={ctx} />
     </RequireStaff>
   );

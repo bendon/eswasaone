@@ -116,7 +116,7 @@ export function StartOnboarding() {
 
   if (started) {
     return (
-      <div className="hr hr-view">
+      <div className="hr hr-view hr-view--form">
         <Crumbs items={[["Joiners", "/hr/onboarding"], [started.employee_name]]} />
         <div className="hr-head">
           <div>
@@ -135,7 +135,7 @@ export function StartOnboarding() {
     <RequireStaff reason="Staff sign-in required">
       <ResourceGate loading={def.loading || people.loading} error={def.error || people.error} onRetry={() => { def.reload(); people.reload(); }} hasData={Boolean(def.data)} skeleton="panel">
         {def.data ? (
-          <div className="hr hr-view">
+          <div className="hr hr-view hr-view--form">
             <Crumbs items={[["Joiners", "/hr/onboarding"], ["Start onboarding"]]} />
             <div className="hr-head">
               <div>

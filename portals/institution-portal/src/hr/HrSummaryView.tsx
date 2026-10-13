@@ -135,7 +135,7 @@ function Side({ live }: { live: HrLiveOverview }) {
           </div>
         </div>
         <div className="hr-box__b">
-          <dl className="hr-kv">
+          <dl className="hr-kv stat">
             <div>
               <dt>Joined</dt>
               <dd>{live.movements.joiners}</dd>
@@ -159,7 +159,7 @@ function Side({ live }: { live: HrLiveOverview }) {
         </div>
         <div className="hr-box__b">
           {live.record_quality.length ? (
-            <dl className="hr-kv">
+            <dl className="hr-kv stat">
               {live.record_quality.map((g) => (
                 <div key={g.field}>
                   <dt>{g.label}</dt>

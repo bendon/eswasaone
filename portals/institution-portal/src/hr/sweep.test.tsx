@@ -76,8 +76,8 @@ describe("Time off (H4) is read-only", () => {
     expect(screen.queryByRole("button", { name: /Approve/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Reject/ })).toBeNull();
     expect(screen.getAllByRole("link", { name: "Approvals" })[0]).toHaveAttribute("href", "/approvals");
-    expect(await screen.findByRole("table", { name: "Leave calendar" })).toBeInTheDocument();
-    expect(screen.getAllByLabelText("Annual Leave (requested)").length).toBeGreaterThan(0);
+    expect(await screen.findByLabelText("Leave calendar")).toBeInTheDocument();
+    expect((await screen.findAllByText("Thandi Mamba · Annual Leave (requested)")).length).toBeGreaterThan(0);
     expect(screen.getByText(/Awaiting ESWASA \(H14\)/)).toBeInTheDocument();
     expect(calls.some((c) => c.method === "POST")).toBe(false);
   });

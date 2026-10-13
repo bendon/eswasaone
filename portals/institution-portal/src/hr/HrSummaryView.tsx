@@ -7,9 +7,10 @@ import { RequireStaff } from "../components/RequireStaff";
 import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrAttentionItem, HrLiveOverview, HrOrganisationOverview } from "../api/types";
 import { fmtDay, StatusPill } from "../me/parts";
+import { StaffingOverview } from "./StaffingOverview";
 
 /**
- * Overview (H0) — people cockpit. Counts from GET /hr/organisation/overview; needs attention, establishment,
+ * Overview (H0) — people cockpit. Counts from GET /hr/organisation/overview; department staffing, needs attention,
  * away today, movements and record quality from GET /hr/overview/live (eswasa_hr.overview). No invented
  * numbers: when the live overview can't be reached those panels say so. Payroll is out of scope here.
  * Setup lives in System Administration → HR setup.
@@ -60,43 +61,17 @@ function NeedsAttention({ live }: { live: HrLiveOverview }) {
   );
 }
 
-function Establishment({ live }: { live: HrLiveOverview }) {
-  const est = live.establishment;
+function NoEstablishment() {
   return (
-    <div className="hr-box">
+    <div className="hr-box" style={{ marginBottom: 16 }}>
       <div className="hr-box__h">
         <div>
-          <h3>Establishment by department</h3>
-          <p>{est.has_plans && est.totals ? `${est.totals.filled} of ${est.totals.approved} approved posts filled` : "Filled against approved posts"}</p>
+          <h3>Department staffing</h3>
+          <p>No approved establishment yet. It comes from ESWASA's submitted staffing plans.</p>
         </div>
         <Link to="/hr/structure?tab=establishment" className="hr-lnk">
           Open Structure
         </Link>
-      </div>
-      <div className="hr-box__b">
-        {est.has_plans ? (
-          <div className="hr-est">
-            {est.departments.map((d) => {
-              const pct = d.approved ? Math.min(100, Math.round((d.filled / d.approved) * 100)) : 0;
-              return (
-                <div className="hr-est__row" key={d.department}>
-                  <span>{d.department}</span>
-                  <span className="hr-est__track" role="img" aria-label={`${d.filled} of ${d.approved} posts filled`}>
-                    <i style={{ width: `${pct}%` }} />
-                  </span>
-                  <span className="hr-est__n">
-                    {d.filled} <small>/ {d.approved}</small>
-                  </span>
-                  <span className={`hr-est__v${d.vacant ? " has" : ""}`}>{d.vacant ? `${d.vacant} vacant` : "None vacant"}</span>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="hr-note" style={{ margin: 0 }}>
-            No approved establishment yet. It comes from ESWASA's submitted staffing plans.
-          </p>
-        )}
       </div>
     </div>
   );
@@ -193,10 +168,12 @@ export function HrSummaryView() {
 
   const data = overview.data;
   const counts = data?.counts;
-  const employees = counts?.employees ?? 0;
-  const departments = counts?.departments ?? 0;
+  // The live overview counts Active employees server-side after an HR-role check; the organisation overview lists
+  // them as the signed-in user and drops to 0 on any DocPerm gap, so it only decides when the live one is missing.
+  const employees = live?.headcount ?? counts?.employees ?? 0;
+  const departments = live?.departments ?? counts?.departments ?? 0;
   const vacancies = live?.establishment.totals?.vacant ?? counts?.vacant_positions ?? 0;
-  const filled = counts?.filled_positions ?? employees;
+  const filled = live?.establishment.totals?.filled ?? (live ? live.headcount : counts?.filled_positions ?? employees);
   const approved = live?.establishment.totals?.approved ?? filled + vacancies;
   const estPct = approved > 0 ? Math.round((filled / approved) * 100) : 0;
   const ending = live ? (live.ending_soon.contracts ?? 0) + (live.ending_soon.probations ?? 0) : null;
@@ -222,7 +199,9 @@ export function HrSummaryView() {
                     ? `${employees} active employee${employees === 1 ? "" : "s"}${
                         departments ? ` in ${departments} department${departments === 1 ? "" : "s"}` : ""
                       }.`
-                    : "HR is not set up yet — no employee records are linked."}
+                    : liveRes.loading
+                      ? "Counting active employees…"
+                      : "HR is not set up yet — no employee records are linked."}
                 </p>
               </div>
               <div className="hr-head__r">
@@ -233,7 +212,7 @@ export function HrSummaryView() {
               </div>
             </div>
 
-            {employees === 0 ? (
+            {employees === 0 && !liveRes.loading ? (
               <div className="hr-box" style={{ marginBottom: 16 }}>
                 <div className="hr-box__h">
                   <div>
@@ -286,16 +265,15 @@ export function HrSummaryView() {
               </div>
             )}
 
+            {live && employees > 0 ? live.establishment.has_plans ? <StaffingOverview live={live} /> : <NoEstablishment /> : null}
+
             <div className="hr-grid c2a">
               <div className="hr-stack">
                 {live ? (
-                  <>
-                    <NeedsAttention live={live} />
-                    <Establishment live={live} />
-                  </>
+                  <NeedsAttention live={live} />
                 ) : (
                   <NotConnectedPanel
-                    what="Needs attention · establishment"
+                    what="Needs attention · department staffing"
                     detail={
                       liveRes.loading
                         ? "Loading the live overview…"

@@ -1,6 +1,6 @@
 /** H0 live Overview, H14 HR setup, H15 Board HR pack — live numbers only, nothing invented when offline. */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 
 vi.mock("../layout/InstitutionLayout", () => ({
@@ -20,7 +20,7 @@ const ORG = { counts: { employees: 86, departments: 10, vacant_positions: 0, fil
 const LIVE = {
   as_of: "2026-10-12", headcount: 86, departments: 10,
   establishment: { has_plans: true, totals: { approved: 96, frozen: 2, filled: 86, in_recruitment: 4, vacant: 4 },
-    departments: [{ department: "Certification", approved: 12, filled: 10, vacant: 1, frozen: 1 }] },
+    departments: [{ department: "Certification", approved: 12, filled: 10, vacant: 1, frozen: 1 }, { department: "Legal", approved: 1, filled: 0, vacant: 1, frozen: 0 }] },
   attention: [
     { kind: "R-H2", count: 2, title: "2 contracts end within 60 days", detail: "Acknowledge in Approvals once handled.", due: "2026-10-01", href: "/hr/directory" },
     { kind: "leave", count: 1, title: "1 leave request waiting for a decision", detail: null, due: null, href: "/hr/time-off" },
@@ -45,13 +45,13 @@ const BOARD = {
   establishment_changes: [{ summary: "Add 2 Lead Auditor posts", department: "Certification", state: "Waiting for Council", council_required: true }],
 };
 
-function stub(liveUp = true) {
+function stub(liveUp = true, org: unknown = ORG) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
-      if (url.includes("/hr/organisation/overview")) return json(ORG);
+      if (url.includes("/hr/organisation/overview")) return json(org);
       if (url.includes("/hr/overview/live")) return liveUp ? json(LIVE) : json({ detail: "Frappe unavailable" }, 503);
       if (url.includes("/hr/setup/status")) return json(SETUP);
       if (url.includes("/hr/board-pack")) return json(BOARD);
@@ -76,9 +76,29 @@ describe("HR Overview", () => {
     expect(screen.getAllByRole("link", { name: "Open" })[0]).toHaveAttribute("href", "/hr/directory");
     expect(screen.getByText("8.4%")).toBeInTheDocument();
     expect(screen.getByText("Thandi Nxumalo")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "10 of 12 posts filled" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "86 filled and 4 vacant of 90 posts" })).toBeInTheDocument();
     expect(screen.getByText("No line manager")).toBeInTheDocument();
     expect(screen.queryByText(/payroll/i)).not.toBeInTheDocument();
+  });
+
+  it("lists department staffing with a status per department, filterable", async () => {
+    stub();
+    mount(<HrSummaryView />);
+    const table = await screen.findByRole("table", { name: "Department details" });
+    const cert = within(table).getByText("Certification").closest("tr")!;
+    expect(within(cert).getByText("Understaffed")).toBeInTheDocument();
+    expect(within(cert).getByText("83%")).toBeInTheDocument();
+    expect(within(within(table).getByText("Legal").closest("tr")!).getByText("Critical")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Status" }), { target: { value: "critical" } });
+    expect(within(table).queryByText("Certification")).toBeNull();
+    expect(screen.getByText("Showing 1 of 1 department")).toBeInTheDocument();
+  });
+
+  it("takes the headcount from the live overview when the organisation list comes back empty", async () => {
+    stub(true, { counts: { employees: 0, departments: 0, vacant_positions: 0, filled_positions: 0 } });
+    mount(<HrSummaryView />);
+    expect(await screen.findByText("86 active employees in 10 departments.")).toBeInTheDocument();
+    expect(screen.queryByText(/HR is not set up yet/)).not.toBeInTheDocument();
   });
 
   it("keeps the panels closed when the live overview can't be reached", async () => {

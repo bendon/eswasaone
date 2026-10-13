@@ -205,7 +205,7 @@ export function LeaveView() {
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <LeaveCalendar enabled={Boolean(user)} refreshKey={sessionKey} />
+            <LeaveCalendar enabled={Boolean(user)} refreshKey={sessionKey} holidays={holidaysRes.data?.items} />
           </div>
 
           <div className="hr-box" style={{ marginBottom: 16 }}>

@@ -6,8 +6,6 @@ import { companyOf, schemeLabel } from "../audits/api";
 import type { FieldAuditRow } from "../audits/types";
 import {
   EMPTY_ME_GLANCE,
-  MOCK_NEXT_AUDIT,
-  MOCK_SCHEDULE,
   type MeGlance,
   type NextAudit,
   type ScheduleItem,
@@ -59,14 +57,14 @@ function balancesToGlance(b: LeaveBalances | null): MeGlance {
  */
 export function useHomeData() {
   const { user } = useAuth();
-  const [next, setNext] = useState<NextAudit>(() => {
+  const [next, setNext] = useState<NextAudit | null>(() => {
     const snap = readSnapshot<{ items: FieldAuditRow[] }>(AUDITS_PATH);
-    return (snap && pickNext(snap.data.items ?? [])) || MOCK_NEXT_AUDIT;
+    return (snap && pickNext(snap.data.items ?? [])) || null;
   });
   const [schedule, setSchedule] = useState<ScheduleItem[]>(() => {
     const snap = readSnapshot<{ items: FieldAuditRow[] }>(AUDITS_PATH);
     const rows = snap?.data.items ?? [];
-    return rows.length ? toSchedule(rows) : MOCK_SCHEDULE;
+    return rows.length ? toSchedule(rows) : [];
   });
   const [me, setMe] = useState<MeGlance>(() => {
     const snap = readSnapshot<LeaveBalances>(`${user?.username ?? "guest"}:${BALANCES_PATH}`);

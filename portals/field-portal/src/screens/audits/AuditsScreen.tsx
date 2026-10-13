@@ -75,20 +75,7 @@ export function AuditsScreen() {
         // Keep last-known-good — no blank reload.
         setError(null);
       } else {
-        try {
-          const { MOCK_FIELD_AUDITS } = await import(
-            "../../mocks/auditHandlers"
-          );
-          const scoped = filterForCurrentUser(
-            MOCK_FIELD_AUDITS,
-            user?.username,
-            user?.full_name,
-          );
-          setItems(scoped);
-          setError(null);
-        } catch {
-          setError(e instanceof Error ? e.message : "Failed to load audits");
-        }
+        setError(e instanceof Error ? e.message : "Failed to load audits. Check your connection and try again.");
       }
     } finally {
       setLoading(false);

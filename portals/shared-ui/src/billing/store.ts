@@ -7,6 +7,7 @@
  *       payment webhook → Payment Entry in ERPNext. Payments in demo mode never touch a real gateway.
  */
 import { createLocalStore, isoIn, nowIso } from "../store/localStore";
+import { demoDataEnabled } from "../demo";
 
 export type InvoiceSource = "certification" | "metrology" | "crm" | "standards" | "training";
 export type InvoiceStatus = "unpaid" | "part_paid" | "paid" | "overdue" | "cancelled";
@@ -44,6 +45,7 @@ function inv(p: Omit<Invoice, "status" | "payments" | "vat_rate"> & Partial<Pick
 }
 
 function seed(): BillingState {
+  if (!demoDataEnabled()) return { v: 1, seq: 0, invoices: {} };
   const rows: Invoice[] = [
     inv({ id: "INV-26-4101", source: "certification", ref: "CERT-APP-26-0019", title: "ISO 22000 surveillance audit 1 fee", customer: "Swazi Fresh Produce Ltd", customer_email: DEMO_EMAIL, lines: [{ label: "Surveillance audit (2 auditor-days)", qty: 2, unit_price: 6500 }], issued_at: isoIn(-12), due_at: isoIn(18) }),
     inv({ id: "INV-26-4087", source: "metrology", ref: "CJ-26-0231", title: "Calibration — 3 thermometers", customer: "Swazi Fresh Produce Ltd", customer_email: DEMO_EMAIL, lines: [{ label: "Thermometer calibration (3 points)", qty: 3, unit_price: 650 }], issued_at: isoIn(-40), due_at: isoIn(-10), payments: [{ id: "PAY-1", at: isoIn(-20), amount: 2242.5, method: "momo", reference: "MOMO-88213" }] }),

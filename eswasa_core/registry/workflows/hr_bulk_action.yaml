@@ -1,0 +1,72 @@
+# HR Bulk Action — office closure leave or yearly leave allocation for many people (additions plan 06, H18).
+
+doctype: HR Bulk Action
+module: hr
+workflow_name: HR Bulk Action
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: null
+guards: [expected_state, idempotency_key]
+notes: >
+  No Frappe Workflow: eswasa_hr.bulk_actions.decide is the approval handler (ToDo "Approve bulk
+  {kind}: {n} people"). Four-eyes: an HR Manager who neither prepared the action nor is one of the
+  people in it. Approve moves it to Applying and queues bulk_actions.apply_job on the long queue,
+  which ends Applied or Partly applied; retry redoes Failed rows only. Send back and Not approved need
+  a note. No bulk termination. Closure dates and annual-leave treatment are awaiting ESWASA (A7).
+
+# PROVISIONAL (additions A7; confirm with ESWASA): decided within 2 working days by a named HR Manager.
+sla: {days: 2, calendar: working, escalate_to: null, provisional: true}
+
+display:
+  customer: {}
+  staff:
+    Draft: Draft
+    Waiting: Waiting for approval
+    Applying: Applying
+    Applied: Applied
+    Partly applied: Partly applied
+    Not approved: Not approved
+    Sent back: Sent back
+
+states:
+  - {name: Draft, owner_role: HR User, allow_edit: HR User}
+  - {name: Waiting, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Applying, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Applied, owner_role: HR Manager, allow_edit: HR Manager, style: Success}
+  - {name: Partly applied, owner_role: HR Manager, allow_edit: HR Manager, style: Warning}
+  - {name: Not approved, owner_role: HR Manager, allow_edit: HR Manager, style: Danger}
+  - {name: Sent back, owner_role: HR User, allow_edit: HR User, style: Danger}
+
+transitions:
+  - action: Submit
+    from: Draft
+    to: Waiting
+    actor: HR User
+  - action: Submit
+    from: Sent back
+    to: Waiting
+    actor: HR User
+  - action: Approve
+    from: Waiting
+    to: Applying
+    actor: HR Manager
+    approvals_family: approve
+  - action: Send back
+    from: Waiting
+    to: Sent back
+    actor: HR Manager
+    reason: required
+    approvals_family: approve
+  - action: Reject
+    from: Waiting
+    to: Not approved
+    actor: HR Manager
+    reason: required
+    approvals_family: approve
+  - action: Retry
+    from: Partly applied
+    to: Applying
+    actor: HR Manager

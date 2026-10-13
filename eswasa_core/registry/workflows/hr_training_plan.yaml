@@ -1,0 +1,55 @@
+# Training Plan — a department's yearly training plan (additions plan 05, H17 Training).
+
+doctype: Training Plan
+module: hr
+workflow_name: Training Plan
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: approve
+board_rollup: hr.summary
+guards: [expected_state, idempotency_key]
+notes: >
+  No Frappe Workflow: eswasa_hr.training_plan.decide is the approval handler (ToDo title
+  training_plan.plan_title). Sent to the HR Managers named by lifecycle._route except the preparer;
+  sending is refused when there is no other HR Manager. Send back needs a note and raises a
+  "Training plan" HR Alert to the preparer. Only approved plans can schedule events.
+
+# PROVISIONAL (additions A6; confirm with ESWASA): approved within 5 working days by a named HR Manager.
+sla: {days: 5, calendar: working, escalate_to: null, provisional: true}
+
+display:
+  customer: {}
+  staff:
+    Draft: Draft
+    Waiting: Waiting for approval
+    Approved: Approved
+    Sent back: Sent back
+
+states:
+  - {name: Draft, owner_role: HR User, allow_edit: HR User}
+  - {name: Waiting, owner_role: HR Manager, allow_edit: HR Manager}
+  - {name: Approved, owner_role: HR User, allow_edit: HR Manager, style: Success}
+  - {name: Sent back, owner_role: HR User, allow_edit: HR User, style: Danger}
+
+transitions:
+  - action: Submit
+    from: Draft
+    to: Waiting
+    actor: HR User
+  - action: Submit
+    from: Sent back
+    to: Waiting
+    actor: HR User
+  - action: Approve
+    from: Waiting
+    to: Approved
+    actor: HR Manager
+    approvals_family: approve
+  - action: Send back
+    from: Waiting
+    to: Sent back
+    actor: HR Manager
+    reason: required
+    approvals_family: approve

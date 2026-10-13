@@ -154,6 +154,10 @@ Each journey can be clicked through end to end in the mockup. **Bold** marks the
 | J10 | Case | **Employee** E9 or **HR** H10 → H10a stages → outcome → appeal goes to someone other than the original decider |
 | J11 | Establishment change | **HR / Head** H3b → A0 ED → Council committee if above threshold → H3 updated |
 | J12 | Sensitive data | **HR Manager** H1b → Show details → H1c reason → fields shown → Access log row added |
+| J13 | Warning issued → letter → expiry | **HR** H10a outcome: offence from the H10b code + sanction → `warning_expires_on` set from the HR Settings months → **HR Manager / case owner** "Generate warning letter" (H10a) → HR Letter filed on the case → H1b Warnings tab shows it active → daily job marks it Expired → "Warning expired" alert to the case owner. Validity months awaiting ESWASA (A1) |
+| J14 | Issue item → leaver clearance | **HR** H1b Items → Issue → **Employee** E11 / Approvals "Acknowledge receipt of …" → **HR** H2a Start separation adds "Return issued items (n)" → H7b blocks that task while items are out → **HR / line manager** returns each item → last day with items out raises "Items not returned" (H0 attention, H19 `?status=out`) |
+| J15 | Training need → plan → event → attendance | **Manager** T5 "Add training need" (or T8, an expiring authorisation, or the person) → **HR** H17 New plan → A0 another HR Manager approves (sent back needs a note) → H17 Schedule creates the HRMS Training Event → Nominate (T8 for reports) → **Employee** E13 sees the course → **HR** attendance: needs of people present become Met; direct and indirect cost recorded |
+| J16 | Office closure bulk leave | **HR** H18 `/hr/bulk/new?kind=closure` → dates, leave type, who → preview (problem rows unticked) → submit → A0 "Approve bulk office closure leave: n people" by an HR Manager who neither prepared it nor is in it → long-queue apply → H18 detail Applied / Partly applied → Retry failed rows. Closure dates awaiting ESWASA (A7) |
 
 ---
 

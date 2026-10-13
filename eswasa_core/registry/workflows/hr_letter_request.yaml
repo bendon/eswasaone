@@ -1,0 +1,45 @@
+# HR Letter — staff ask for an employment confirmation letter (additions plan 03, E12 My letters).
+
+doctype: HR Letter
+module: hr
+workflow_name: HR Letter Request
+submit_gate: null
+emit: false
+phase: declare
+allow_self_approval_default: 0
+approvals_family: do
+board_rollup: null
+guards: [expected_state, idempotency_key]
+notes: >
+  No Frappe Workflow: eswasa_hr.letters.decide is the Approvals handler for the "Prepare …" do card
+  (title letters.prepare_title). One ToDo per named HR person except the requester (never a role pool);
+  nobody prepares a letter about themselves. Done generates the PDF, files it as an Employee Document
+  (type Letter) and emails the person. Letters HR issues directly (probation, contract, promotion,
+  transfer, warning) skip this flow. Wording per type is awaiting ESWASA (A3); no pay on any letter (A4).
+
+# PROVISIONAL (additions A3; confirm with ESWASA): prepared within 3 working days by a named HR person.
+sla: {days: 3, calendar: working, escalate_to: null, provisional: true}
+
+display:
+  customer: {}
+  staff:
+    Requested: Being prepared
+    Issued: Ready
+    Cancelled: Cancelled
+
+states:
+  - {name: Requested, owner_role: HR User, allow_edit: HR User}
+  - {name: Issued, owner_role: HR User, allow_edit: HR Manager, style: Success}
+  - {name: Cancelled, owner_role: HR Manager, allow_edit: HR Manager, style: Danger}
+
+transitions:
+  - action: Done
+    from: Requested
+    to: Issued
+    actor: HR User
+    approvals_family: do
+  - action: Cancel
+    from: Requested
+    to: Cancelled
+    actor: HR Manager
+    reason: required

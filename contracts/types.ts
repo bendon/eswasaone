@@ -410,6 +410,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the authenticated user's security preferences */
+        get: operations["getUserPreferences"];
+        /** Update the authenticated user's security preferences (e.g. toggle OTP) */
+        put: operations["updateUserPreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/adapters/momo/callback": {
         parameters: {
             query?: never;
@@ -2232,7 +2250,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A leaver's offboarding checklist */
+        /** A leaver's offboarding checklist and the items still out */
         get: operations["getOffboarding"];
         put?: never;
         post?: never;
@@ -2686,6 +2704,58 @@ export interface paths {
         };
         /** Latest Payroll Entry status; the run itself stays in Desk (payroll excluded from the HR plans) */
         get: operations["getHrPayrollStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/disciplinary/offences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ESWASA's disciplinary code (empty until ESWASA supplies it, A1) with levels, sanctions and warning validity */
+        get: operations["listHrOffences"];
+        put?: never;
+        /** Add an offence to the disciplinary code (HR Manager) */
+        post: operations["createHrOffence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/disciplinary/offences/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit or deactivate an offence (HR Manager); offences are never deleted */
+        patch: operations["updateHrOffence"];
+        trace?: never;
+    };
+    "/hr/employees/{employee_id}/warnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The person's disciplinary warnings (HR Manager, or the case owner for their cases); never the allegation */
+        get: operations["listHrEmployeeWarnings"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3153,6 +3223,573 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hr/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The issued item register (HR only). status=out means issued or acknowledged */
+        get: operations["listHrItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/items/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Item types HR can issue; empty with awaiting A2 until ESWASA supplies them */
+        get: operations["listHrItemTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/items/{name}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take an item back (HR or line manager), or mark it lost or written off (HR Manager, with a note) */
+        post: operations["returnHrItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/employees/{employee_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The person's items (HR, line manager or the person) */
+        get: operations["listHrEmployeeItems"];
+        put?: never;
+        /** Issue an item (HR); the holder gets an Acknowledge receipt card in Approvals */
+        post: operations["issueHrItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/me/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What I hold and what I still have to acknowledge (E11) */
+        get: operations["listMyHrItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/me/items/{name}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge receipt of an item (the holder only) */
+        post: operations["acknowledgeMyHrItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/letters/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The letter library (HR) with ready once ESWASA's wording is in (A3) */
+        get: operations["listHrLetterTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/employees/{employee_id}/letters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The person's letters and the approved records a letter can be made from (HR) */
+        get: operations["listHrEmployeeLetters"];
+        put?: never;
+        /** Make a letter from its approved source; it is filed on the person. Warning letters - HR Manager or case owner */
+        post: operations["generateHrLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/letters/{name}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Prepare a letter a person asked for (HR, never the requester) */
+        post: operations["fulfilHrLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/letters/{name}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a letter (HR Manager, with the reason); the file is kept */
+        post: operations["cancelHrLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/letters/{name}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The letter PDF, inline and no-store. HR, the case readers for a warning letter, the person for their own; audited */
+        get: operations["getHrLetterFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/me/letters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** E12 - my letters and my requests */
+        get: operations["listMyHrLetters"];
+        put?: never;
+        /** Ask HR for an employment confirmation letter (purpose, addressee) */
+        post: operations["requestMyHrLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/me/sensitive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My family and medical details (level 3 only; the view is logged) */
+        get: operations["viewMySensitiveDetails"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/me/leave/{name}/certificate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send the medical certificate for my open leave request (HR checks it as a document) */
+        post: operations["addMyLeaveCertificate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/training/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Department training plans with estimated and actual cost (HR; a head sees their own) */
+        get: operations["listHrTrainingPlans"];
+        put?: never;
+        /** Create or update a draft plan; submit sends it to a named HR Manager other than the preparer */
+        post: operations["saveHrTrainingPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/training/plans/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plan detail with lines, status and who decides */
+        get: operations["getHrTrainingPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/training/plans/{name}/lines/{line}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create the HRMS Training Event for an approved line (HR) */
+        post: operations["scheduleHrTrainingLine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/training/events/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Event with nominees, attendance and cost (cost for HR only) */
+        get: operations["getHrTrainingEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/training/events/{name}/nominate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Nominate people (line managers their reports; HR anyone) */
+        post: operations["nominateHrTraining"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/training/events/{name}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record attendance (HR); needs of people present become Met */
+        post: operations["recordHrTrainingAttendance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/training/events/{name}/cost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record actual direct and indirect cost (HR; nothing posts to accounts) */
+        post: operations["recordHrTrainingCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/training/needs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Training needs in the viewer's scope */
+        get: operations["listHrTrainingNeeds"];
+        put?: never;
+        /** HR or a line manager raises a need; a person may raise their own */
+        post: operations["raiseHrTrainingNeed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/team/training": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My team's training needs and upcoming events (T8) */
+        get: operations["getHrTeamTraining"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/me/training": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My training needs, nominations and attended courses (E13) */
+        get: operations["getMyHrTraining"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/bulk/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dry run of a bulk action; nothing is written, so no confirm (HR) */
+        post: operations["previewHrBulkAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/bulk/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remind everyone in the selection who owes something, at most once a day per person; dry_run only counts */
+        post: operations["sendHrBulkReminders"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/bulk/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Leave types, departments and employment types for the New bulk action stepper */
+        get: operations["getHrBulkOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bulk actions with status and who decides (HR) */
+        get: operations["listHrBulkActions"];
+        put?: never;
+        /** Save a bulk action with its rows (minus people unticked); submit sends it to a named HR Manager in Approvals */
+        post: operations["createHrBulkAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/bulk/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bulk action detail with per-person rows, results and who decides */
+        get: operations["getHrBulkAction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/bulk/{name}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-run the rows that failed; rows already done are never repeated */
+        post: operations["retryHrBulkAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reports the caller may run; team=true lists only a line manager's team-scoped ones */
+        get: operations["listHrReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/reports/{report_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A report's rows (up to 5,000) for the screen; every other query parameter is a filter */
+        get: operations["runHrReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/reports/{report_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** CSV or XLSX attachment; confirm required, a reason when the report names people; logged before it is built */
+        post: operations["exportHrReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3379,6 +4016,11 @@ export interface components {
             full_name: string;
             email?: string;
             roles: string[];
+            /**
+             * @description Whether OTP (two-factor) is required at login for this user.
+             * @default true
+             */
+            otp_enabled: boolean;
         };
         AllowedAction: {
             action: string;
@@ -4457,6 +5099,8 @@ export interface components {
             reason?: string | null;
             /** Confirm */
             confirm: boolean;
+            /** @description An uploaded medical certificate's link (POST /api/media) */
+            certificate?: string | null;
         };
         /** CreateMarketingCampaignBody */
         CreateMarketingCampaignBody: {
@@ -5199,6 +5843,9 @@ export interface components {
             approver?: components["schemas"]["HrPersonRef"] | null;
             conflicts: components["schemas"]["HrWorkConflict"][];
             warnings: string[];
+            /** @default false */
+            certificate_required: boolean;
+            certificate_after_days?: number | null;
         };
         HrDeclarationInterest: {
             organisation: string;
@@ -5779,6 +6426,21 @@ export interface components {
             decided_by_name?: string | null;
             appeal_owner_name?: string | null;
             talk_first: boolean;
+            offence?: string | null;
+            offence_title?: string | null;
+            sanction?: string | null;
+            outcome_on?: string | null;
+            warning_expires_on?: string | null;
+            warning_status?: ("Active" | "Expired" | "Withdrawn") | null;
+            appeal_result?: ("Upheld" | "Overturned") | null;
+            warning_letter?: string | null;
+            sanctions?: string[];
+            appeal_results?: string[];
+            offences?: components["schemas"]["HrOffence"][];
+            /** @description Months each warning stays active, from HR Settings; null while awaiting ESWASA (A1) */
+            warning_months?: {
+                [key: string]: number | null;
+            };
             notes: {
                 text: string;
                 by?: string | null;
@@ -5796,6 +6458,7 @@ export interface components {
             next_step_due?: string | null;
             subject?: string | null;
             grievance_type?: string | null;
+            offence?: string | null;
             confirm: boolean;
         };
         HrCaseActBody: {
@@ -5805,6 +6468,9 @@ export interface components {
             next_step_due?: string | null;
             outcome?: string | null;
             appeal_owner?: string | null;
+            offence?: string | null;
+            sanction?: string | null;
+            appeal_result?: ("Upheld" | "Overturned") | null;
             confirm: boolean;
         };
         HrCaseNoteBody: {
@@ -5978,6 +6644,10 @@ export interface components {
         HrReviewBody: {
             ratings: components["schemas"]["HrStarRating"][];
             feedback: string;
+            training_needs?: {
+                topic: string;
+                skill?: string | null;
+            }[];
             confirm: boolean;
         };
         HrContractDefaults: {
@@ -6093,7 +6763,7 @@ export interface components {
         };
         HrSensitiveBody: {
             /** @enum {integer} */
-            level: 1 | 2;
+            level: 1 | 2 | 3;
             reason: string;
             confirm: boolean;
         };
@@ -6101,13 +6771,14 @@ export interface components {
             employee: string;
             employee_name: string;
             /** @enum {integer} */
-            level: 1 | 2;
+            level: 1 | 2 | 3;
             level_label: string;
             fields: {
                 field: string;
                 label: string;
                 value?: string | null;
             }[];
+            tables?: components["schemas"]["HrSensitiveTable"][];
             /** @description HR Access Log row written for this view */
             log: string;
         };
@@ -6240,6 +6911,9 @@ export interface components {
             /** @description R-H7: when the nightly integrity check last ran */
             record_checked_on?: string | null;
             cycles: components["schemas"]["HrCycleStatus"][];
+            milestones?: components["schemas"]["HrServiceMilestone"][];
+            /** @description Empty while ESWASA hasn't set them (A8) */
+            milestone_years?: number[];
         };
         HrSetupStatus: {
             steps: {
@@ -6281,6 +6955,7 @@ export interface components {
                 state: string;
                 council_required?: boolean;
             }[];
+            training?: components["schemas"]["HrTrainingSummary"] | null;
         };
         HrSeparationDefaults: {
             employee: string;
@@ -6535,6 +7210,10 @@ export interface components {
              * @default false
              */
             escalated: boolean;
+            /** @default false */
+            certificate_required: boolean;
+            /** @default false */
+            has_certificate: boolean;
         };
         /** HrLeaveRequests */
         HrLeaveRequests: {
@@ -6987,6 +7666,11 @@ export interface components {
              * @default null
              */
             employee_name: string | null;
+            /**
+             * @default field
+             * @enum {string}
+             */
+            kind: "field" | "dependant_add" | "dependant_update" | "dependant_remove";
             /** Field */
             field: string;
             /**
@@ -7083,9 +7767,9 @@ export interface components {
         /** HrProfileChangeBody */
         HrProfileChangeBody: {
             /** Field */
-            field: string;
+            field?: string;
             /** Requested Value */
-            requested_value: string;
+            requested_value?: string;
             /** Reason */
             reason: string;
             /**
@@ -7098,6 +7782,17 @@ export interface components {
              * @default false
              */
             confirm: boolean;
+            kind?: ("field" | "dependant_add" | "dependant_update" | "dependant_remove") | null;
+            /** @description The dependant (full_name, relationship, date_of_birth, id_number, on_medical_aid, beneficiary_share, phone) */
+            row?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description The row being changed or removed */
+            dependant?: string | null;
+            /** @description Other dependants' rebalanced beneficiary shares, by row */
+            shares?: {
+                [key: string]: number;
+            } | null;
         };
         /** HrExpenseClaims */
         HrExpenseClaims: {
@@ -7568,6 +8263,19 @@ export interface components {
              */
             two_factor: boolean;
         };
+        /** UserPreferences */
+        UserPreferences: {
+            /**
+             * @description Whether OTP (two-factor) is required at login for this user.
+             * @default true
+             */
+            otp_enabled: boolean;
+        };
+        /** UserPreferencesUpdate */
+        UserPreferencesUpdate: {
+            /** @description Toggle OTP (two-factor) on/off. Null = no change. */
+            otp_enabled?: boolean | null;
+        };
         /** OtpRequest */
         OtpRequest: {
             /** Email */
@@ -7977,6 +8685,614 @@ export interface components {
             expense_type: string;
             description?: string | null;
             status: string;
+        };
+        HrOffence: {
+            code: string;
+            title?: string | null;
+            category?: string | null;
+            level?: ("Minor" | "Serious" | "Gross") | null;
+            suggested_sanction?: string | null;
+            description?: string | null;
+            active: boolean;
+        };
+        HrOffenceList: {
+            items: components["schemas"]["HrOffence"][];
+            can_edit: boolean;
+            levels: string[];
+            sanctions: string[];
+            warning_months: {
+                [key: string]: number | null;
+            };
+        };
+        HrOffenceBody: {
+            code: string;
+            title: string;
+            /** @enum {string} */
+            level: "Minor" | "Serious" | "Gross";
+            category?: string | null;
+            suggested_sanction?: string | null;
+            description?: string | null;
+            confirm: boolean;
+        };
+        HrOffencePatch: {
+            title?: string | null;
+            level?: string | null;
+            category?: string | null;
+            suggested_sanction?: string | null;
+            description?: string | null;
+            active?: boolean | null;
+            confirm: boolean;
+        };
+        HrWarning: {
+            case: string;
+            sanction?: string | null;
+            offence?: string | null;
+            offence_title?: string | null;
+            issued_on?: string | null;
+            expires_on?: string | null;
+            status?: ("Active" | "Expired" | "Withdrawn") | null;
+        };
+        HrWarnings: {
+            employee: string;
+            items: components["schemas"]["HrWarning"][];
+            active: number;
+            active_until?: string | null;
+        };
+        HrIssuedItem: {
+            name: string;
+            employee: string;
+            item_type: string;
+            /** @enum {string} */
+            status: "Issued" | "Acknowledged" | "Returned" | "Lost" | "Written off";
+            overdue: boolean;
+            employee_name?: string | null;
+            department?: string | null;
+            description?: string | null;
+            tag?: string | null;
+            asset?: string | null;
+            issued_on?: string | null;
+            issued_by?: string | null;
+            condition_out?: string | null;
+            acknowledged_on?: string | null;
+            return_due?: string | null;
+            returned_on?: string | null;
+            received_by?: string | null;
+            condition_in?: string | null;
+            note?: string | null;
+        };
+        HrIssuedItemList: {
+            items: components["schemas"]["HrIssuedItem"][];
+            types: string[];
+            out: number;
+            overdue: number;
+        };
+        HrIssuedItemTypes: {
+            types: string[];
+            awaiting?: string | null;
+        };
+        HrEmployeeItems: {
+            employee: string;
+            employee_name?: string | null;
+            items: components["schemas"]["HrIssuedItem"][];
+            types: string[];
+            can_issue: boolean;
+            can_return: boolean;
+            can_write_off: boolean;
+        };
+        HrMyItems: {
+            employee?: string | null;
+            items: components["schemas"]["HrIssuedItem"][];
+            waiting: number;
+        };
+        HrIssueItemBody: {
+            item_type: string;
+            description?: string | null;
+            tag?: string | null;
+            condition_out?: string | null;
+            return_due?: string | null;
+            asset?: string | null;
+            confirm: boolean;
+        };
+        HrReturnItemBody: {
+            /**
+             * @default Returned
+             * @enum {string}
+             */
+            outcome: "Returned" | "Lost" | "Written off";
+            condition_in?: string | null;
+            note?: string | null;
+            confirm: boolean;
+        };
+        HrOffboardingActivity: components["schemas"]["HrOnboardingActivity"] & {
+            blocked?: string | null;
+        };
+        HrOffboardingDetail: components["schemas"]["HrOnboarding"] & {
+            activities?: components["schemas"]["HrOffboardingActivity"][];
+            items_out: components["schemas"]["HrIssuedItem"][];
+        };
+        HrLetter: {
+            name: string;
+            employee: string;
+            employee_name?: string | null;
+            letter_type: string;
+            source_doctype?: string | null;
+            source_name?: string | null;
+            purpose?: string | null;
+            addressed_to?: string | null;
+            requested_by?: string | null;
+            /** @enum {string} */
+            status: "Requested" | "Issued" | "Cancelled";
+            issued_by?: string | null;
+            issued_on?: string | null;
+            requested_on?: string | null;
+            note?: string | null;
+            has_file: boolean;
+        };
+        HrLetterType: {
+            letter_type: string;
+            ready: boolean;
+            reason?: string | null;
+            source_doctype?: string | null;
+            requested?: boolean;
+            managers_only?: boolean;
+            generated_here?: boolean;
+        };
+        HrLetterTypes: {
+            types: components["schemas"]["HrLetterType"][];
+            awaiting?: string | null;
+        };
+        HrLetterEligible: {
+            letter_type: string;
+            source_doctype?: string | null;
+            source_name: string;
+            label: string;
+            date?: string | null;
+            letter?: string | null;
+        };
+        HrLetterList: {
+            employee: string;
+            employee_name?: string | null;
+            letters: components["schemas"]["HrLetter"][];
+            eligible: components["schemas"]["HrLetterEligible"][];
+            types: components["schemas"]["HrLetterType"][];
+            can_cancel: boolean;
+        };
+        HrMyLetters: {
+            employee?: string | null;
+            letters: components["schemas"]["HrLetter"][];
+            can_request: boolean;
+            ready: boolean;
+            reason?: string | null;
+        };
+        HrGenerateLetterBody: {
+            letter_type: string;
+            source_name?: string | null;
+            addressed_to?: string | null;
+            confirm: boolean;
+        };
+        HrFulfilLetterBody: {
+            addressed_to?: string | null;
+            confirm: boolean;
+        };
+        HrCancelLetterBody: {
+            note: string;
+            confirm: boolean;
+        };
+        HrRequestLetterBody: {
+            purpose: string;
+            addressed_to?: string | null;
+            confirm: boolean;
+        };
+        HrSensitiveTable: {
+            label: string;
+            columns: string[];
+            rows: {
+                [key: string]: unknown;
+            }[];
+        };
+        HrLeaveCertificateBody: {
+            /** @description An uploaded file's link (POST /api/media) */
+            certificate: string;
+            confirm: boolean;
+        };
+        HrLeaveCertificate: {
+            /** @default true */
+            ok: boolean;
+            name: string;
+            /** @default true */
+            has_certificate: boolean;
+            message?: string | null;
+        };
+        HrServiceMilestone: {
+            employee: string;
+            name?: string | null;
+            years: number;
+            /** Format: date */
+            date: string;
+        };
+        HrTrainingNeed: {
+            name: string;
+            employee: string;
+            employee_name?: string | null;
+            department?: string | null;
+            topic: string;
+            skill?: string | null;
+            /** @enum {string} */
+            source: "Appraisal" | "Authorisation expiry" | "Manager" | "Self";
+            source_name?: string | null;
+            raised_by?: string | null;
+            priority?: string | null;
+            /** @enum {string} */
+            status: "Open" | "Planned" | "Met" | "Dropped";
+            plan?: string | null;
+            plan_line?: string | null;
+            event?: string | null;
+            note?: string | null;
+            creation?: string | null;
+        };
+        HrTrainingNeedList: {
+            needs?: components["schemas"]["HrTrainingNeed"][];
+            open?: number;
+            sources?: string[];
+            departments?: string[];
+        };
+        HrTrainingNeedBody: {
+            employee: string;
+            topic: string;
+            skill?: string | null;
+            priority?: ("Low" | "Medium" | "High") | null;
+            note?: string | null;
+            confirm: boolean;
+        };
+        HrTrainingTotals: {
+            lines?: number;
+            people?: number;
+            scheduled?: number;
+            estimated_direct?: number;
+            estimated_indirect?: number;
+            estimated?: number;
+            actual_direct?: number;
+            actual_indirect?: number;
+            actual?: number;
+        };
+        HrTrainingPlanLine: {
+            name: string;
+            idx?: number | null;
+            topic: string;
+            skill?: string | null;
+            reason?: string | null;
+            quarter?: string | null;
+            people?: number | null;
+            provider?: string | null;
+            needs?: components["schemas"]["HrTrainingNeed"][];
+            estimated_direct?: number | null;
+            estimated_indirect?: number | null;
+            event?: string | null;
+            event_status?: string | null;
+            start_time?: string | null;
+            can_schedule?: boolean;
+        };
+        HrTrainingPlanRow: {
+            name: string;
+            department: string;
+            year: string;
+            /** @enum {string} */
+            status: "Draft" | "Waiting" | "Approved" | "Sent back";
+            prepared_by?: string | null;
+            approved_by?: string | null;
+            decided_on?: string | null;
+            note?: string | null;
+            decision_note?: string | null;
+            modified?: string | null;
+            totals?: components["schemas"]["HrTrainingTotals"];
+        };
+        HrTrainingPlan: components["schemas"]["HrTrainingPlanRow"] & {
+            lines?: components["schemas"]["HrTrainingPlanLine"][];
+            deciders?: string[];
+            can_edit?: boolean;
+            can_decide?: boolean;
+            approver_note?: string | null;
+        };
+        HrTrainingPlanList: {
+            plans?: components["schemas"]["HrTrainingPlanRow"][];
+            years?: string[];
+            departments?: string[];
+            can_prepare?: boolean;
+            waiting?: number;
+            approver_note?: string | null;
+        };
+        HrTrainingPlanBody: {
+            name?: string | null;
+            department: string;
+            year: string;
+            lines?: {
+                topic: string;
+                skill?: string | null;
+                /** @enum {string} */
+                reason?: "Need" | "Compliance" | "Accreditation" | "Development";
+                /** @enum {string} */
+                quarter: "Q1" | "Q2" | "Q3" | "Q4";
+                people?: number | null;
+                provider?: string | null;
+                needs?: string[];
+                estimated_direct?: number;
+                estimated_indirect?: number;
+            }[];
+            note?: string | null;
+            /** @default false */
+            submit: boolean;
+            confirm: boolean;
+        };
+        HrTrainingScheduleBody: {
+            start: string;
+            end: string;
+            venue?: string | null;
+            trainer?: string | null;
+            event_type?: string | null;
+            confirm: boolean;
+        };
+        HrTrainingNominee: {
+            name?: string | null;
+            employee: string;
+            employee_name?: string | null;
+            department?: string | null;
+            status?: string | null;
+            attendance?: string | null;
+            present?: boolean | null;
+        };
+        HrTrainingEvent: {
+            name: string;
+            event_name?: string | null;
+            event_status?: string | null;
+            start_time?: string | null;
+            end_time?: string | null;
+            location?: string | null;
+            trainer_name?: string | null;
+            skill?: string | null;
+            plan?: string | null;
+            department?: string | null;
+            direct_cost?: number | null;
+            indirect_cost?: number | null;
+            nominees?: components["schemas"]["HrTrainingNominee"][];
+            team?: {
+                name: string;
+                employee_name?: string | null;
+            }[];
+            can_nominate?: boolean;
+            can_record?: boolean;
+            result_url?: string | null;
+        };
+        HrTrainingNominateBody: {
+            employees: string[];
+            confirm: boolean;
+        };
+        HrTrainingAttendanceBody: {
+            rows: {
+                employee: string;
+                present: boolean;
+            }[];
+            confirm: boolean;
+        };
+        HrTrainingCostBody: {
+            direct?: number;
+            indirect?: number;
+            confirm: boolean;
+        };
+        HrTeamTraining: {
+            team?: {
+                name: string;
+                employee_name?: string | null;
+            }[];
+            needs?: components["schemas"]["HrTrainingNeed"][];
+            events?: {
+                name: string;
+                event_name?: string | null;
+                start_time?: string | null;
+                end_time?: string | null;
+                location?: string | null;
+                skill?: string | null;
+                nominated?: string[];
+            }[];
+        };
+        HrMyTraining: {
+            employee?: string | null;
+            needs?: components["schemas"]["HrTrainingNeed"][];
+            upcoming?: components["schemas"]["HrMyTrainingCourse"][];
+            history?: components["schemas"]["HrMyTrainingCourse"][];
+        };
+        HrMyTrainingCourse: {
+            event: string;
+            event_name?: string | null;
+            start_time?: string | null;
+            end_time?: string | null;
+            location?: string | null;
+            event_status?: string | null;
+            attendance?: string | null;
+        };
+        /** @description Board pack totals only, planned against attended and estimated against actual cost */
+        HrTrainingSummary: {
+            year?: string | null;
+            plans?: number;
+            planned_people?: number;
+            attended?: number;
+            lines?: number;
+            scheduled?: number;
+            estimated_cost?: number;
+            actual_cost?: number;
+        };
+        HrBulkSelection: {
+            departments?: string[];
+            employment_types?: string[];
+            employees?: string[];
+        };
+        /** @description Closure leave_type, from_date, to_date, reason; allocation leave_type, from_date, to_date, days or use_policy, carry_forward. Nothing pre-filled (A7, H14) */
+        HrBulkParameters: {
+            leave_type?: string | null;
+            from_date?: string | null;
+            to_date?: string | null;
+            reason?: string | null;
+            days?: number | null;
+            use_policy?: boolean;
+            carry_forward?: boolean;
+        };
+        HrBulkRow: {
+            name?: string | null;
+            employee: string;
+            employee_name?: string | null;
+            planned?: string | null;
+            days?: number | null;
+            balance_after?: number | null;
+            problem?: string | null;
+            result?: ("Done" | "Skipped" | "Failed") | null;
+            ref?: string | null;
+            error?: string | null;
+        };
+        HrBulkPreview: {
+            kind: string;
+            parameters?: {
+                [key: string]: unknown;
+            };
+            selection?: components["schemas"]["HrBulkSelection"];
+            selection_text?: string | null;
+            rows?: components["schemas"]["HrBulkRow"][];
+            count?: number;
+            problems?: number;
+            note?: string | null;
+        };
+        HrBulkPreviewBody: {
+            /** @enum {string} */
+            kind: "Office closure leave" | "Leave allocation";
+            parameters: components["schemas"]["HrBulkParameters"];
+            selection?: components["schemas"]["HrBulkSelection"];
+        };
+        HrBulkBody: {
+            /** @enum {string} */
+            kind: "Office closure leave" | "Leave allocation";
+            parameters: components["schemas"]["HrBulkParameters"];
+            selection?: components["schemas"]["HrBulkSelection"];
+            name?: string | null;
+            exclude?: string[];
+            note?: string | null;
+            submit?: boolean;
+            confirm: boolean;
+        };
+        HrBulkAction: {
+            name: string;
+            kind: string;
+            /** @enum {string} */
+            status: "Draft" | "Waiting" | "Applying" | "Applied" | "Partly applied" | "Not approved" | "Sent back";
+            parameters?: {
+                [key: string]: unknown;
+            };
+            selection?: components["schemas"]["HrBulkSelection"] | null;
+            selection_text?: string | null;
+            prepared_by?: string | null;
+            approved_by?: string | null;
+            decided_on?: string | null;
+            note?: string | null;
+            summary?: string | null;
+            creation?: string | null;
+            modified?: string | null;
+            people?: number;
+            problems?: number;
+            done?: number;
+            skipped?: number;
+            failed?: number;
+            deciders?: string[];
+            rows?: components["schemas"]["HrBulkRow"][];
+            can_edit?: boolean;
+            can_decide?: boolean;
+            note_text?: string | null;
+            approver_note?: string | null;
+        };
+        HrBulkActionList: {
+            actions?: components["schemas"]["HrBulkAction"][];
+            kinds?: string[];
+            reminder_kinds?: string[];
+            waiting?: number;
+            approver_note?: string | null;
+        };
+        HrBulkOptions: {
+            kinds?: string[];
+            reminder_kinds?: string[];
+            leave_types?: string[];
+            departments?: string[];
+            employment_types?: string[];
+            closure_note?: string | null;
+            allocation_note?: string | null;
+        };
+        HrBulkRetryBody: {
+            confirm: boolean;
+        };
+        HrBulkReminderBody: {
+            /** @enum {string} */
+            kind: "Missing required documents" | "Unsigned declaration" | "Open appraisal step" | "Unacknowledged items";
+            selection?: components["schemas"]["HrBulkSelection"];
+            dry_run?: boolean;
+            confirm?: boolean;
+        };
+        HrBulkReminderResult: {
+            kind: string;
+            count?: number;
+            sent?: number;
+            skipped?: number;
+            note?: string | null;
+        };
+        HrReportColumn: {
+            key: string;
+            label: string;
+            /** @enum {string} */
+            type?: "text" | "date" | "number" | "percent";
+        };
+        HrReportFilter: {
+            key: string;
+            label: string;
+            /** @enum {string} */
+            type: "department" | "date" | "number" | "select";
+            default?: unknown;
+            options?: string[] | null;
+        };
+        HrReportMeta: {
+            id: string;
+            title: string;
+            description?: string | null;
+            /** @enum {string} */
+            group: "People" | "Time off" | "Competence and training" | "Movements" | "Cases";
+            team_scoped?: boolean;
+            /** @description The report names people */
+            names?: boolean;
+            /** @enum {string} */
+            scope?: "all" | "team";
+            columns?: components["schemas"]["HrReportColumn"][];
+            filters?: components["schemas"]["HrReportFilter"][];
+        };
+        HrReportCatalogue: {
+            items?: components["schemas"]["HrReportMeta"][];
+            groups?: string[];
+        };
+        HrReportResult: components["schemas"]["HrReportMeta"] & {
+            applied?: {
+                [key: string]: unknown;
+            };
+            rows?: {
+                [key: string]: unknown;
+            }[];
+            total?: number;
+            truncated?: boolean;
+            summary?: {
+                label: string;
+                value?: unknown;
+            }[];
+            note?: string | null;
+        };
+        HrReportExportBody: {
+            /** @enum {string} */
+            format?: "csv" | "xlsx";
+            filters?: {
+                [key: string]: unknown;
+            };
+            reason?: string | null;
+            confirm?: boolean;
         };
     };
     responses: never;
@@ -8623,6 +9939,64 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SessionUser"];
                 };
+            };
+        };
+    };
+    getUserPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User preferences */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPreferences"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateUserPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPreferencesUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated preferences */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPreferences"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -12026,7 +13400,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HrOnboarding"];
+                    "application/json": components["schemas"]["HrOffboardingDetail"];
                 };
             };
         };
@@ -13280,6 +14654,154 @@ export interface operations {
             };
         };
     };
+    listHrOffences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrOffenceList"];
+                };
+            };
+            /** @description Not HR */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createHrOffence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrOffenceBody"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrOffenceList"];
+                };
+            };
+            /** @description confirm is not true */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an HR Manager */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rule failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateHrOffence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrOffencePatch"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrOffenceList"];
+                };
+            };
+            /** @description confirm is not true */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an HR Manager */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rule failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listHrEmployeeWarnings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrWarnings"];
+                };
+            };
+            /** @description Not the HR Manager or the case owner */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listHrDesignations: {
         parameters: {
             query?: {
@@ -14218,6 +15740,1224 @@ export interface operations {
                         items: components["schemas"]["GovernanceDeclaration"][];
                     };
                 };
+            };
+        };
+    };
+    listHrItems: {
+        parameters: {
+            query?: {
+                status?: string;
+                item_type?: string;
+                department?: string;
+                overdue?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrIssuedItemList"];
+                };
+            };
+        };
+    };
+    listHrItemTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrIssuedItemTypes"];
+                };
+            };
+        };
+    };
+    returnHrItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrReturnItemBody"];
+            };
+        };
+        responses: {
+            /** @description Returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrEmployeeItems"];
+                };
+            };
+            /** @description Rule failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listHrEmployeeItems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrEmployeeItems"];
+                };
+            };
+        };
+    };
+    issueHrItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrIssueItemBody"];
+            };
+        };
+        responses: {
+            /** @description Issued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrEmployeeItems"];
+                };
+            };
+            /** @description Rule failed (no item types yet, inactive person, unknown type) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listMyHrItems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrMyItems"];
+                };
+            };
+        };
+    };
+    acknowledgeMyHrItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrConfirmBody"];
+            };
+        };
+        responses: {
+            /** @description Acknowledged */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrMyItems"];
+                };
+            };
+            /** @description Already acknowledged or returned */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listHrLetterTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrLetterTypes"];
+                };
+            };
+        };
+    };
+    listHrEmployeeLetters: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrLetterList"];
+                };
+            };
+        };
+    };
+    generateHrLetter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employee_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrGenerateLetterBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrLetterList"];
+                };
+            };
+            /** @description confirm=true missing */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed (plain text) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule refused it (plain text, e.g. "Awaiting ESWASA (A3) …") */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fulfilHrLetter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrFulfilLetterBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrLetterList"];
+                };
+            };
+            /** @description confirm=true missing */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed (plain text) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule refused it (plain text, e.g. "Awaiting ESWASA (A3) …") */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    cancelHrLetter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrCancelLetterBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrLetterList"];
+                };
+            };
+            /** @description confirm=true missing */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed (plain text) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule refused it (plain text, e.g. "Awaiting ESWASA (A3) …") */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getHrLetterFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            /** @description Not allowed (plain text) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The letter couldn't be read */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listMyHrLetters: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrMyLetters"];
+                };
+            };
+        };
+    };
+    requestMyHrLetter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrRequestLetterBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrMyLetters"];
+                };
+            };
+            /** @description confirm=true missing */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule refused it (plain text, e.g. "Awaiting ESWASA (A3) …") */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    viewMySensitiveDetails: {
+        parameters: {
+            query?: {
+                level?: 3;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrSensitive"];
+                };
+            };
+            /** @description Not a level the person may open on their own record */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    addMyLeaveCertificate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrLeaveCertificateBody"];
+            };
+        };
+        responses: {
+            /** @description Sent */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrLeaveCertificate"];
+                };
+            };
+            /** @description Not your leave request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request has been decided */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listHrTrainingPlans: {
+        parameters: {
+            query?: {
+                year?: string;
+                department?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrTrainingPlanList"];
+                };
+            };
+        };
+    };
+    saveHrTrainingPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrTrainingPlanBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrTrainingPlan"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule the input breaks (plain text) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getHrTrainingPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrTrainingPlan"];
+                };
+            };
+        };
+    };
+    scheduleHrTrainingLine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+                line: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrTrainingScheduleBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrTrainingPlan"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule the input breaks (plain text) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getHrTrainingEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrTrainingEvent"];
+                };
+            };
+        };
+    };
+    nominateHrTraining: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrTrainingNominateBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrTrainingEvent"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule the input breaks (plain text) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    recordHrTrainingAttendance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrTrainingAttendanceBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrTrainingEvent"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule the input breaks (plain text) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    recordHrTrainingCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrTrainingCostBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrTrainingEvent"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule the input breaks (plain text) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listHrTrainingNeeds: {
+        parameters: {
+            query?: {
+                department?: string;
+                status?: string;
+                source?: string;
+                employee?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrTrainingNeedList"];
+                };
+            };
+        };
+    };
+    raiseHrTrainingNeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrTrainingNeedBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrTrainingNeedList"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule the input breaks (plain text) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getHrTeamTraining: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrTeamTraining"];
+                };
+            };
+        };
+    };
+    getMyHrTraining: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrMyTraining"];
+                };
+            };
+        };
+    };
+    previewHrBulkAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrBulkPreviewBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrBulkPreview"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule the input breaks (plain text) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    sendHrBulkReminders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrBulkReminderBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrBulkReminderResult"];
+                };
+            };
+            /** @description confirm=true required (unless dry_run) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getHrBulkOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrBulkOptions"];
+                };
+            };
+        };
+    };
+    listHrBulkActions: {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrBulkActionList"];
+                };
+            };
+        };
+    };
+    createHrBulkAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrBulkBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrBulkAction"];
+                };
+            };
+            /** @description confirm=true required */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule the input breaks (plain text) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getHrBulkAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrBulkAction"];
+                };
+            };
+        };
+    };
+    retryHrBulkAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrBulkRetryBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrBulkAction"];
+                };
+            };
+        };
+    };
+    listHrReports: {
+        parameters: {
+            query?: {
+                team?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrReportCatalogue"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    runHrReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrReportResult"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such report */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    exportHrReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HrReportExportBody"];
+            };
+        };
+        responses: {
+            /** @description The file (Content-Disposition attachment, Cache-Control no-store) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            /** @description confirm=true required */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A rule the input breaks (plain text), such as a missing reason */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

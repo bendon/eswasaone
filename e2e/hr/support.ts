@@ -182,6 +182,17 @@ export const HR_PAGES = [
   "/hr/performance",
   "/hr/cases",
   "/hr/access",
+  // HR additions 01–07
+  "/hr/cases/code",
+  "/hr/items",
+  "/hr/training",
+  "/hr/training/needs",
+  "/hr/bulk",
+  "/hr/reports",
   "/me",
+  "/me/items",
+  "/me/letters",
+  "/me/training",
   "/team",
+  "/team/training",
 ];

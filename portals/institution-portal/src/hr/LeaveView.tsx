@@ -70,6 +70,8 @@ export function LeaveView() {
   const items: LeaveRow[] = data?.items ?? [];
 
   const pending = items.filter((i) => bucketFor(i) === "pending");
+  const overdue = pending.filter((i) => i.overdue).length;
+  const approved = items.filter((i) => bucketFor(i) === "approved").length;
   const filtered = useMemo(() => {
     if (statusFilter === "all") return items;
     return items.filter((i) => bucketFor(i) === statusFilter);
@@ -189,6 +191,16 @@ export function LeaveView() {
               <span className={`d ${pending.length ? "warn" : ""}`}>
                 {pending.length ? "Named approvers decide in Approvals" : "Queue clear"}
               </span>
+            </div>
+            <div className="kpi">
+              <span className="l">Past the decision date</span>
+              <span className="v">{overdue}</span>
+              <span className="d">{overdue ? "Escalated to HR" : "None overdue"}</span>
+            </div>
+            <div className="kpi">
+              <span className="l">Approved</span>
+              <span className="v">{approved}</span>
+              <span className="d">Requests on record</span>
             </div>
           </div>
 

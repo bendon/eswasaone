@@ -142,7 +142,7 @@ export function CaseNew() {
 
   if (made)
     return (
-      <div className="hr hr-view">
+      <div className="hr hr-view hr-view--form">
         <Crumbs items={[["Cases", "/hr/cases"], [made.id]]} />
         <div className="hr-head">
           <div>
@@ -160,7 +160,7 @@ export function CaseNew() {
         {reg.data && !reg.data.can_open ? (
           <EmptyState title="Only an HR Manager can open a case" detail="Ask the HR Manager. Staff can raise a concern in confidence from My HR." />
         ) : (
-          <div className="hr hr-view">
+          <div className="hr hr-view hr-view--form">
             <Crumbs items={[["Cases", "/hr/cases"], ["Open a case"]]} />
             <div className="hr-head">
               <div>

@@ -135,7 +135,7 @@ export function CycleNew() {
 
   if (made)
     return (
-      <div className="hr hr-view">
+      <div className="hr hr-view hr-view--form">
         <Crumbs items={[["Performance", "/hr/performance"], [made.cycle_name]]} />
         <div className="hr-head">
           <div>
@@ -163,7 +163,7 @@ export function CycleNew() {
     <RequireStaff reason="Staff sign-in required">
       <ResourceGate loading={def.loading} error={def.error} onRetry={def.reload} hasData={Boolean(d)} skeleton="panel">
         {d ? (
-          <div className="hr hr-view">
+          <div className="hr hr-view hr-view--form">
             <Crumbs items={[["Performance", "/hr/performance"], ["Start a cycle"]]} />
             <div className="hr-head">
               <div>

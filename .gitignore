@@ -41,3 +41,4 @@ core/.venv
 
 # Plan 09: ESWASA master data stays out of git until signed off (the schema and example are committed).
 eswasa_core/fixtures/hr/eswasa_master_data.json
+dump.rdb

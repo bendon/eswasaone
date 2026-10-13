@@ -9,7 +9,8 @@ import type { HrSettings } from "../api/types";
  */
 export function useHrSettings(): HrSettings | null {
   const { user, sessionKey } = useInstitution();
-  return useApiResource<HrSettings>("/hr/settings", { enabled: Boolean(user), refreshKey: sessionKey }).data;
+  // Quiet: a missing settings route (backend not deployed yet) must not pop up "Not found" on every HR screen.
+  return useApiResource<HrSettings>("/hr/settings", { enabled: Boolean(user), refreshKey: sessionKey, quiet: true }).data;
 }
 
 /** "SZL 1,234.50" in the company currency; the plain number when no currency is known. */

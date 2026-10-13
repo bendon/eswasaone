@@ -8,7 +8,7 @@ const LIFE: { to: string; label: string; icon: "i-users" | "i-briefcase" | "i-ga
   { to: "/hr/recruitment", label: "Hire", icon: "i-briefcase" },
   { to: "/hr/directory", label: "Onboard & manage", icon: "i-users" },
   { to: "/hr/performance", label: "Develop", icon: "i-gauge" },
-  { to: "/hr/payroll", label: "Pay", icon: "i-dollar" },
+  // { to: "/hr/payroll", label: "Pay", icon: "i-dollar" },  // off: no payroll in EswasaOne
 ];
 
 function lifeActive(pathname: string, to: string): boolean {

@@ -419,7 +419,7 @@ def setup_status_impl() -> dict[str, Any]:
             "expense-claim-type",
             desk=True,
         ),
-        _payroll_step(),
+        # _payroll_step(),  # off: ESWASA doesn't run payroll in EswasaOne; restore when it does
     ]
     return {"steps": steps, **progress(steps)}
 

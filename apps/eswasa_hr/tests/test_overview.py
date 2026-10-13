@@ -68,7 +68,7 @@ class SetupTests(unittest.TestCase):
         self.assertTrue(all(s["awaiting"] is None for s in out["steps"]))
         self.assertEqual(by["import"]["href"], "/system-admin?tab=hr-setup#hr-import")
         self.assertFalse(by["import"]["desk"])
-        self.assertEqual((by["payroll"]["href"], by["payroll"]["desk"]), ("salary-structure", True))
+        self.assertNotIn("payroll", by)  # payroll is off
         self.assertEqual(out["total"], len(out["steps"]))
         self.assertEqual(out["done"], 0)
 

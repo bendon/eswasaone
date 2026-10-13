@@ -137,7 +137,7 @@ export function TeamCalendar() {
   const { user, sessionKey } = useInstitution();
   // Working days come from the company Holiday List's weekly offs (GET /hr/settings working_week, ISO 1 = Monday);
   // when settings can't be read every day is shown rather than assuming a week.
-  const rulesRes = useApiResource<HrSettings>("/hr/settings", { enabled: Boolean(user), refreshKey: sessionKey });
+  const rulesRes = useApiResource<HrSettings>("/hr/settings", { enabled: Boolean(user), refreshKey: sessionKey, quiet: true });
   const week = rulesRes.data?.working_week;
   const weekKnown = !rulesRes.loading;
   const [start, setStart] = useState(() => mondayOf(new Date()));

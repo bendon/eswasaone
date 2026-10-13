@@ -1067,6 +1067,17 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "letters",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.MyLetters }))
+                        }
+                        skeleton="list"
+                      />
+                    ),
+                  },
+                  {
                     path: "interviews",
                     element: (
                       <L

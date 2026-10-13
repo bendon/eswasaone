@@ -183,10 +183,11 @@
   },
   {
    "fieldname": "warning_letter",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Warning Letter",
    "read_only": 1,
-   "description": "The HR Letter that carries the warning. Data until the HR Letter DocType lands (HR letters turns it into a Link)."
+   "description": "The HR Letter that carries the warning (set when the warning letter is made).",
+   "options": "HR Letter"
   }
  ],
  "links": [],

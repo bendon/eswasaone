@@ -85,6 +85,11 @@ TEMPLATES: dict[str, dict[str, Any]] = {
         "fields": ("step_text", "cycle_name", "due"),
         "subject": "{step_text} is due: {cycle_name}",
         "body": "Hello,\n\n{step_text} for {cycle_name} is open and due by {due}. Complete it in EswasaOne.",
+    },    "letter_issued": {  # HR additions plan 03; never sent for a warning letter
+        "essential": False,
+        "fields": ("letter_type",),
+        "subject": "Your {letter_type} letter is ready",
+        "body": "Hello,\n\nYour {letter_type} letter is ready. Open My letters in My HR in EswasaOne to download it.",
     },
 }
 

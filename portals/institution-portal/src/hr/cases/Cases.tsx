@@ -9,6 +9,7 @@ import { errorText, hrSend } from "../api";
 import type { HrCase, HrCaseKind, HrCaseRegister, HrEmployeesResponse, HrOffence, HrOffenceList } from "../../api/types";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill } from "../../me/parts";
 import { useHrSettings } from "../useHrSettings";
+import { WarningLetterLink } from "../letters/Letters";
 
 /**
  * Cases (journey J10; screens H10, H10a). Grievances (HRMS Employee Grievance) and disciplinary cases. Only HR
@@ -436,6 +437,11 @@ export function CaseDetail() {
                             <div className="sub">
                               <StatusPill cls={warningCls(c.warning_status)} label={`Warning ${c.warning_status.toLowerCase()}`} />{" "}
                               {c.warning_expires_on ? `until ${fmtDay(c.warning_expires_on, true)}` : c.warning_status === "Active" ? "Expiry not set: awaiting ESWASA (A1)" : ""}
+                            </div>
+                          ) : null}
+                          {c.warning_status && c.warning_status !== "Withdrawn" && c.people[0] ? (
+                            <div className="sub">
+                              <WarningLetterLink employee={c.people[0].employee} caseId={id} letter={c.warning_letter} onMade={res.reload} />
                             </div>
                           ) : null}
                         </dd>

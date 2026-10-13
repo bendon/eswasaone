@@ -8,6 +8,7 @@ import type { HrSettings, HrTeam, HrTeamCalendar, HrTeamMemberDetail } from "../
 import { AuthPill } from "../hr/competence/shared";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill, Track } from "../me/parts";
 import { useHrSettings } from "../hr/useHrSettings";
+import { LetterLink } from "../hr/letters/Letters";
 
 /**
  * My team (screens T1–T4): a line manager's direct and indirect reports. Live /hr/team only; job fields,
@@ -280,7 +281,14 @@ export function TeamMember() {
                   </div>
                   <div>
                     <dt>Probation</dt>
-                    <dd>{m.on_probation ? `Review by ${fmtDay(m.scheduled_confirmation_date, true)}` : "Not on probation"}</dd>
+                    <dd>
+                      {m.on_probation ? `Review by ${fmtDay(m.scheduled_confirmation_date, true)}` : "Not on probation"}
+                      {!m.on_probation ? (
+                        <div className="sub">
+                          <LetterLink employee={m.employee} sourceName={m.employee} letterType="Probation confirmation" />
+                        </div>
+                      ) : null}
+                    </dd>
                   </div>
                   <div>
                     <dt>Contract</dt>

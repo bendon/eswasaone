@@ -425,6 +425,7 @@ def setup_status_impl() -> dict[str, Any]:
         ),
         _code_step(),
         _items_step(),
+        _letters_step(),
         # _payroll_step(),  # off: ESWASA doesn't run payroll in EswasaOne; restore when it does
     ]
     return {"steps": steps, **progress(steps)}
@@ -447,6 +448,13 @@ def _code_step() -> dict[str, Any]:
 def _items_step() -> dict[str, Any]:
     """HR additions plan 02: the issued item types (awaiting ESWASA, A2)."""
     from eswasa_hr.issued_items import setup_step
+
+    return setup_step()
+
+
+def _letters_step() -> dict[str, Any]:
+    """HR additions plan 03: wording for each letter type (awaiting ESWASA, A3)."""
+    from eswasa_hr.letters import setup_step
 
     return setup_step()
 

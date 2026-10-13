@@ -1555,6 +1555,7 @@ class HrCaseDetail(BaseModel):
     warning_expires_on: str | None = None
     warning_status: str | None = None  # Active | Expired | Withdrawn
     appeal_result: str | None = None  # Upheld | Overturned
+    warning_letter: str | None = None  # HR additions plan 03: the HR Letter carrying the warning
     sanctions: list[str] = Field(default_factory=list)
     appeal_results: list[str] = Field(default_factory=list)
     offences: list["HrOffence"] = Field(default_factory=list)
@@ -3171,6 +3172,104 @@ class HrOffboardingDetail(HrOnboarding):
 
     activities: list[HrOffboardingActivity] = Field(default_factory=list)
     items_out: list[HrIssuedItem] = Field(default_factory=list)
+
+
+# --- HR additions: plan 03 ---
+# HR letters library (record Letters tab, E12 My letters). Never pay (A4); wording awaits ESWASA (A3).
+
+
+class HrLetter(BaseModel):
+    """OpenAPI: HrLetter — one letter, issued, requested or cancelled."""
+
+    name: str
+    employee: str
+    employee_name: str | None = None
+    letter_type: str
+    source_doctype: str | None = None
+    source_name: str | None = None
+    purpose: str | None = None
+    addressed_to: str | None = None
+    requested_by: str | None = None
+    status: str  # Requested | Issued | Cancelled
+    issued_by: str | None = None
+    issued_on: str | None = None
+    requested_on: str | None = None
+    note: str | None = None
+    has_file: bool = False
+
+
+class HrLetterType(BaseModel):
+    """OpenAPI: HrLetterType — a type in the library; ``ready`` once ESWASA's wording is in."""
+
+    letter_type: str
+    ready: bool
+    reason: str | None = None  # "Awaiting ESWASA (A3): …"
+    source_doctype: str | None = None
+    requested: bool = False  # staff ask for it (employment confirmation)
+    managers_only: bool = False  # warning letters: HR Manager or case owner
+    generated_here: bool = True  # false for the certificate of service (printed from the record)
+
+
+class HrLetterTypes(BaseModel):
+    """OpenAPI: HrLetterTypes."""
+
+    types: list[HrLetterType] = Field(default_factory=list)
+    awaiting: str | None = None
+
+
+class HrLetterEligible(BaseModel):
+    """OpenAPI: HrLetterEligible — an approved or done record a letter can be made from."""
+
+    letter_type: str
+    source_doctype: str | None = None
+    source_name: str
+    label: str
+    date: str | None = None
+    letter: str | None = None  # the letter already made from it
+
+
+class HrLetterList(BaseModel):
+    """OpenAPI: HrLetterList — the record Letters tab (HR)."""
+
+    employee: str
+    employee_name: str | None = None
+    letters: list[HrLetter] = Field(default_factory=list)
+    eligible: list[HrLetterEligible] = Field(default_factory=list)
+    types: list[HrLetterType] = Field(default_factory=list)
+    can_cancel: bool = False
+
+
+class HrMyLetters(BaseModel):
+    """OpenAPI: HrMyLetters — E12: my letters and requests."""
+
+    employee: str | None = None
+    letters: list[HrLetter] = Field(default_factory=list)
+    can_request: bool = False
+    ready: bool = False
+    reason: str | None = None
+
+
+class HrGenerateLetterBody(BaseModel):
+    letter_type: str
+    source_name: str | None = None
+    addressed_to: str | None = Field(default=None, max_length=200)
+    confirm: bool = False
+
+
+class HrFulfilLetterBody(BaseModel):
+    addressed_to: str | None = Field(default=None, max_length=200)
+    confirm: bool = False
+
+
+class HrCancelLetterBody(BaseModel):
+    note: str = Field(default="", max_length=500)  # eswasa_hr asks for the reason in plain words
+    confirm: bool = False
+
+
+class HrRequestLetterBody(BaseModel):
+    purpose: str = Field(default="", max_length=140)
+    addressed_to: str | None = Field(default=None, max_length=200)
+    confirm: bool = False
 
 
 # --- HR additions: plan 04 / plan 08 ---

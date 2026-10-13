@@ -93,6 +93,13 @@ from app.schemas import (
     HrIssuedItemList,
     HrIssuedItemTypes,
     HrIssueItemBody,
+    HrCancelLetterBody,
+    HrFulfilLetterBody,
+    HrGenerateLetterBody,
+    HrLetterList,
+    HrLetterTypes,
+    HrMyLetters,
+    HrRequestLetterBody,
     HrMyItems,
     HrOffboardingDetail,
     HrReturnItemBody,
@@ -3911,6 +3918,8 @@ async def download_employee_document(
     key = str(raw.get("file") or "")
     if not key:
         raise HTTPException(status_code=404, detail="No file on this document")
+    if key.startswith("hr-letter:"):  # HR additions plan 03: a letter filed on the person
+        return await get_hr_letter_file(key.removeprefix("hr-letter:"), auth, frappe)
     if key.startswith(("http://", "https://", "/files/", "/private/")):
         return Response(status_code=307, headers={"Location": key})
     try:
@@ -6108,6 +6117,117 @@ async def acknowledge_my_hr_item(
     audit_log(action="hr.item.acknowledge", actor=auth.user.username, resource=f"HR Issued Item:{name}", detail={}, confirmed=True)
     raw = await _hr_write(auth, frappe, f"{_ITEMS}.acknowledge", json={"name": name, "confirm": 1})
     return HrMyItems.model_validate(raw)
+
+
+# --- HR additions: plan 03 ---
+# HR letters library. Guards live in eswasa_hr.letters: HR makes letters from approved records (warning letters:
+# HR Manager or the case owner); staff ask for an employment confirmation letter; only an HR Manager cancels.
+_LETTERS = "eswasa_hr.letters"
+
+
+@router.get("/hr/letters/types", response_model=HrLetterTypes, tags=["hr"])
+async def list_hr_letter_types(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrLetterTypes:
+    """The letter library (HR): each type, and ``ready`` once ESWASA's wording is in (A3)."""
+    return HrLetterTypes.model_validate(await _hr_call(auth, frappe, f"{_LETTERS}.letter_types"))
+
+
+@router.get("/hr/employees/{employee_id}/letters", response_model=HrLetterList, tags=["hr"])
+async def list_hr_employee_letters(
+    employee_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrLetterList:
+    """Record Letters tab (HR): the person's letters and the approved records a letter can be made from."""
+    return HrLetterList.model_validate(await _hr_call(auth, frappe, f"{_LETTERS}.employee_letters", params={"employee": employee_id}))
+
+
+@router.post("/hr/employees/{employee_id}/letters", response_model=HrLetterList, tags=["hr"])
+async def generate_hr_letter(
+    employee_id: str,
+    body: HrGenerateLetterBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrLetterList:
+    """Make a letter from its approved source in one action; it is filed on the person."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.letter.generate", actor=auth.user.username, resource=f"Employee:{employee_id}",
+              detail={"letter_type": body.letter_type, "source": body.source_name}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_LETTERS}.generate", json={"employee": employee_id, **body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrLetterList.model_validate(raw)
+
+
+@router.post("/hr/letters/{name}/generate", response_model=HrLetterList, tags=["hr"])
+async def fulfil_hr_letter(
+    name: str,
+    body: HrFulfilLetterBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrLetterList:
+    """Prepare a letter a person asked for (HR, not the requester)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.letter.fulfil", actor=auth.user.username, resource=f"HR Letter:{name}", detail={}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_LETTERS}.fulfil", json={"name": name, "addressed_to": body.addressed_to, "confirm": 1})
+    return HrLetterList.model_validate(raw)
+
+
+@router.post("/hr/letters/{name}/cancel", response_model=HrLetterList, tags=["hr"])
+async def cancel_hr_letter(
+    name: str,
+    body: HrCancelLetterBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrLetterList:
+    """Cancel a letter (HR Manager, with the reason). The file is kept."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.letter.cancel", actor=auth.user.username, resource=f"HR Letter:{name}", detail={}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_LETTERS}.cancel", json={"name": name, "note": body.note, "confirm": 1})
+    return HrLetterList.model_validate(raw)
+
+
+@router.get("/hr/letters/{name}/file", tags=["hr"])
+async def get_hr_letter_file(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> Response:
+    """The letter PDF, inline. HR, the case readers for a warning, the person for their own; audited."""
+    raw = await _hr_call(auth, frappe, f"{_LETTERS}.letter_file", params={"name": name}) or {}
+    try:
+        pdf = base64.b64decode(str(raw.get("content") or ""), validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(status_code=502, detail="The letter couldn't be read.") from exc
+    if not pdf:
+        raise HTTPException(status_code=502, detail="The letter couldn't be read.")
+    audit_log(action="hr.letter.viewed", actor=auth.user.username, resource=f"HR Letter:{name}",
+              detail={"employee": raw.get("employee"), "bytes": len(pdf)}, confirmed=True)
+    filename = str(raw.get("file_name") or f"Letter {name}.pdf")
+    return Response(content=pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'inline; filename="{quote(filename)}"', "Cache-Control": "private, no-store"})
+
+
+@router.get("/hr/me/letters", response_model=HrMyLetters, tags=["hr"])
+async def list_my_hr_letters(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrMyLetters:
+    """E12: my letters and my requests for an employment confirmation letter."""
+    return HrMyLetters.model_validate(await _hr_call(auth, frappe, f"{_LETTERS}.my_letters"))
+
+
+@router.post("/hr/me/letters", response_model=HrMyLetters, tags=["hr"])
+async def request_my_hr_letter(
+    body: HrRequestLetterBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrMyLetters:
+    """Ask HR for an employment confirmation letter (for a bank or an embassy)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.letter.request", actor=auth.user.username, resource="HR Letter", detail={"purpose": body.purpose}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_LETTERS}.request", json={"purpose": body.purpose, "addressed_to": body.addressed_to, "confirm": 1})
+    return HrMyLetters.model_validate(raw)
 
 
 # --- HR additions: plan 04 / plan 08 ---

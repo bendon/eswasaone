@@ -169,6 +169,7 @@ export type HrCase = {
   warning_expires_on?: string | null;
   warning_status?: HrWarningStatus | null;
   appeal_result?: string | null;
+  warning_letter?: string | null; // HR additions plan 03: the HR Letter carrying the warning
   sanctions?: string[];
   appeal_results?: string[];
   offences?: HrOffence[];
@@ -564,3 +565,42 @@ export type HrOffboardingDetail = Omit<HrOnboarding, "activities"> & { activitie
 export type HrSensitiveTable = { label: string; columns: string[]; rows: Array<Record<string, unknown>> };
 export type HrServiceMilestone = { employee: string; name?: string | null; years: number; date: string };
 export type HrLeaveCertificate = { ok?: boolean; name: string; has_certificate?: boolean; message?: string | null };
+
+/* HR additions plan 03: HR letters (hand-written until contracts/types.ts is regenerated). */
+export type HrLetterStatus = "Requested" | "Issued" | "Cancelled";
+export type HrLetter = {
+  name: string;
+  employee: string;
+  employee_name?: string | null;
+  letter_type: string;
+  source_doctype?: string | null;
+  source_name?: string | null;
+  purpose?: string | null;
+  addressed_to?: string | null;
+  requested_by?: string | null;
+  status: HrLetterStatus;
+  issued_by?: string | null;
+  issued_on?: string | null;
+  requested_on?: string | null;
+  note?: string | null;
+  has_file: boolean;
+};
+export type HrLetterType = {
+  letter_type: string;
+  ready: boolean;
+  reason?: string | null;
+  source_doctype?: string | null;
+  requested?: boolean;
+  managers_only?: boolean;
+  generated_here?: boolean;
+};
+export type HrLetterEligible = { letter_type: string; source_doctype?: string | null; source_name: string; label: string; date?: string | null; letter?: string | null };
+export type HrLetterList = {
+  employee: string;
+  employee_name?: string | null;
+  letters: HrLetter[];
+  eligible: HrLetterEligible[];
+  types: HrLetterType[];
+  can_cancel: boolean;
+};
+export type HrMyLetters = { employee?: string | null; letters: HrLetter[]; can_request: boolean; ready: boolean; reason?: string | null };

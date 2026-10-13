@@ -9,7 +9,10 @@ required_apps = ["frappe", "erpnext", "hrms"]
 
 fixtures = [
     {"dt": "Role", "filters": [["name", "in", ["Eswasa Executive Director", "Eswasa Quality Manager"]]]},
-    {"dt": "Print Format", "filters": [["name", "in", ["ESWASA Offer Letter", "Certificate of Service"]]]},
+    {"dt": "Print Format", "filters": [["name", "in", ["ESWASA Offer Letter", "Certificate of Service",
+                                                      # HR additions plan 03: letters on HR Letter
+                                                      "ESWASA Probation Confirmation", "ESWASA Contract Letter", "ESWASA Promotion Letter",
+                                                      "ESWASA Transfer Letter", "ESWASA Warning Letter", "ESWASA Employment Confirmation"]]]},
     {
         "dt": "Custom Field",
         "filters": [
@@ -135,6 +138,8 @@ permission_query_conditions = {
     "Exit Interview": "eswasa_hr.lifecycle.exit_interview_query",
     # HR additions plan 02: HR sees every issued item; others their own and their reports'.
     "HR Issued Item": "eswasa_hr.issued_items.query",
+    # HR additions plan 03: warning letters follow the case rule; staff see their own issued letters.
+    "HR Letter": "eswasa_hr.letters.query",
 }
 has_permission = {
     "Employee Grievance": "eswasa_hr.cases.has_permission",
@@ -147,12 +152,13 @@ has_permission = {
     "Profile Change Request": "eswasa_hr.profile_changes.has_permission",
     "Exit Interview": "eswasa_hr.lifecycle.exit_interview_has_permission",
     "HR Issued Item": "eswasa_hr.issued_items.has_permission",
+    "HR Letter": "eswasa_hr.letters.has_permission",
 }
 
 after_migrate = ["eswasa_hr.setup.after_migrate"]
 
 # Plan 08: the ESWASA Offer Letter print format reads its data through this; plan 06 the Certificate of Service.
-jinja = {"methods": ["eswasa_hr.hiring.offer_letter_context", "eswasa_hr.certificate.certificate_context_for"]}
+jinja = {"methods": ["eswasa_hr.hiring.offer_letter_context", "eswasa_hr.certificate.certificate_context_for", "eswasa_hr.letters.letter_context_for"]}
 
 scheduler_events = {
     "daily": [
@@ -224,4 +230,6 @@ eswasa_approval_handlers = {
     "Exit Interview": "eswasa_hr.lifecycle.decide_exit_interview",
     # HR additions plan 02: the holder acknowledges receipt of an issued item (a do card).
     "HR Issued Item": "eswasa_hr.issued_items.decide",
+    # HR additions plan 03: "Prepare employment confirmation letter …" do card; Done prepares it.
+    "HR Letter": "eswasa_hr.letters.decide",
 }

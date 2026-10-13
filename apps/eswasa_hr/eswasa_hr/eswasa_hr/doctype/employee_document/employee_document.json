@@ -27,7 +27,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Document Type",
-   "options": "ID\nContract\nQualification\nImpartiality declaration\nWork permit\nProfessional registration\nOther\nMedical certificate",
+   "options": "ID\nContract\nQualification\nImpartiality declaration\nWork permit\nProfessional registration\nOther\nMedical certificate\nLetter",
    "reqd": 1
   },
   {

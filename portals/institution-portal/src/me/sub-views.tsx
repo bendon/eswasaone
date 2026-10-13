@@ -12,3 +12,4 @@ export { MyProfile } from "./MyProfile";
 export { MyExpenses } from "./MyExpenses";
 export { SecuritySettings } from "./SecuritySettings";
 export { MyItems } from "./MyItems";
+export { MyLetters } from "./MyLetters";

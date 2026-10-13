@@ -4275,6 +4275,158 @@ paths:
         "422":
           description: Already acknowledged or returned
 
+  # plan 03: HR letters library (record Letters tab, E12 My letters); never pay (A4)
+  /hr/letters/types:
+    get:
+      tags: [hr]
+      operationId: listHrLetterTypes
+      summary: The letter library (HR) with ready once ESWASA's wording is in (A3)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLetterTypes" }
+  /hr/employees/{employee_id}/letters:
+    get:
+      tags: [hr]
+      operationId: listHrEmployeeLetters
+      summary: The person's letters and the approved records a letter can be made from (HR)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLetterList" }
+    post:
+      tags: [hr]
+      operationId: generateHrLetter
+      summary: Make a letter from its approved source; it is filed on the person. Warning letters - HR Manager or case owner
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrGenerateLetterBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLetterList" }
+        "400":
+          description: confirm=true missing
+        "403":
+          description: Not allowed (plain text)
+        "422":
+          description: A rule refused it (plain text, e.g. "Awaiting ESWASA (A3) …")
+  /hr/letters/{name}/generate:
+    post:
+      tags: [hr]
+      operationId: fulfilHrLetter
+      summary: Prepare a letter a person asked for (HR, never the requester)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrFulfilLetterBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLetterList" }
+        "400":
+          description: confirm=true missing
+        "403":
+          description: Not allowed (plain text)
+        "422":
+          description: A rule refused it (plain text, e.g. "Awaiting ESWASA (A3) …")
+  /hr/letters/{name}/cancel:
+    post:
+      tags: [hr]
+      operationId: cancelHrLetter
+      summary: Cancel a letter (HR Manager, with the reason); the file is kept
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrCancelLetterBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrLetterList" }
+        "400":
+          description: confirm=true missing
+        "403":
+          description: Not allowed (plain text)
+        "422":
+          description: A rule refused it (plain text, e.g. "Awaiting ESWASA (A3) …")
+  /hr/letters/{name}/file:
+    get:
+      tags: [hr]
+      operationId: getHrLetterFile
+      summary: The letter PDF, inline and no-store. HR, the case readers for a warning letter, the person for their own; audited
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "403":
+          description: Not allowed (plain text)
+        "502":
+          description: The letter couldn't be read
+  /hr/me/letters:
+    get:
+      tags: [hr]
+      operationId: listMyHrLetters
+      summary: E12 - my letters and my requests
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrMyLetters" }
+    post:
+      tags: [hr]
+      operationId: requestMyHrLetter
+      summary: Ask HR for an employment confirmation letter (purpose, addressee)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrRequestLetterBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrMyLetters" }
+        "400":
+          description: confirm=true missing
+        "422":
+          description: A rule refused it (plain text, e.g. "Awaiting ESWASA (A3) …")
+
   # plan 04 / plan 08: my family and medical details; a sick-leave certificate sent later
   /hr/me/sensitive:
     get:
@@ -8581,6 +8733,7 @@ components:
         warning_expires_on: { anyOf: [{ type: string }, { type: "null" }] }
         warning_status: { anyOf: [{ type: string, enum: [Active, Expired, Withdrawn] }, { type: "null" }] }
         appeal_result: { anyOf: [{ type: string, enum: [Upheld, Overturned] }, { type: "null" }] }
+        warning_letter: { anyOf: [{ type: string }, { type: "null" }] }  # plan 03
         sanctions: { type: array, items: { type: string } }
         appeal_results: { type: array, items: { type: string } }
         offences: { type: array, items: { $ref: "#/components/schemas/HrOffence" } }
@@ -12009,6 +12162,99 @@ components:
           properties:
             activities: { type: array, items: { $ref: "#/components/schemas/HrOffboardingActivity" } }
             items_out: { type: array, items: { $ref: "#/components/schemas/HrIssuedItem" } }
+    # plan 03: HR letters library
+    HrLetter:
+      type: object
+      required: [name, employee, letter_type, status, has_file]
+      properties:
+        name: { type: string }
+        employee: { type: string }
+        employee_name: { anyOf: [{ type: string }, { type: "null" }] }
+        letter_type: { type: string }
+        source_doctype: { anyOf: [{ type: string }, { type: "null" }] }
+        source_name: { anyOf: [{ type: string }, { type: "null" }] }
+        purpose: { anyOf: [{ type: string }, { type: "null" }] }
+        addressed_to: { anyOf: [{ type: string }, { type: "null" }] }
+        requested_by: { anyOf: [{ type: string }, { type: "null" }] }
+        status: { type: string, enum: [Requested, Issued, Cancelled] }
+        issued_by: { anyOf: [{ type: string }, { type: "null" }] }
+        issued_on: { anyOf: [{ type: string }, { type: "null" }] }
+        requested_on: { anyOf: [{ type: string }, { type: "null" }] }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        has_file: { type: boolean }
+    HrLetterType:
+      type: object
+      required: [letter_type, ready]
+      properties:
+        letter_type: { type: string }
+        ready: { type: boolean }
+        reason: { anyOf: [{ type: string }, { type: "null" }] }
+        source_doctype: { anyOf: [{ type: string }, { type: "null" }] }
+        requested: { type: boolean }
+        managers_only: { type: boolean }
+        generated_here: { type: boolean }
+    HrLetterTypes:
+      type: object
+      required: [types]
+      properties:
+        types: { type: array, items: { $ref: "#/components/schemas/HrLetterType" } }
+        awaiting: { anyOf: [{ type: string }, { type: "null" }] }
+    HrLetterEligible:
+      type: object
+      required: [letter_type, source_name, label]
+      properties:
+        letter_type: { type: string }
+        source_doctype: { anyOf: [{ type: string }, { type: "null" }] }
+        source_name: { type: string }
+        label: { type: string }
+        date: { anyOf: [{ type: string }, { type: "null" }] }
+        letter: { anyOf: [{ type: string }, { type: "null" }] }
+    HrLetterList:
+      type: object
+      required: [employee, letters, eligible, types, can_cancel]
+      properties:
+        employee: { type: string }
+        employee_name: { anyOf: [{ type: string }, { type: "null" }] }
+        letters: { type: array, items: { $ref: "#/components/schemas/HrLetter" } }
+        eligible: { type: array, items: { $ref: "#/components/schemas/HrLetterEligible" } }
+        types: { type: array, items: { $ref: "#/components/schemas/HrLetterType" } }
+        can_cancel: { type: boolean }
+    HrMyLetters:
+      type: object
+      required: [letters, can_request, ready]
+      properties:
+        employee: { anyOf: [{ type: string }, { type: "null" }] }
+        letters: { type: array, items: { $ref: "#/components/schemas/HrLetter" } }
+        can_request: { type: boolean }
+        ready: { type: boolean }
+        reason: { anyOf: [{ type: string }, { type: "null" }] }
+    HrGenerateLetterBody:
+      type: object
+      required: [letter_type, confirm]
+      properties:
+        letter_type: { type: string }
+        source_name: { anyOf: [{ type: string }, { type: "null" }] }
+        addressed_to: { anyOf: [{ type: string, maxLength: 200 }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrFulfilLetterBody:
+      type: object
+      required: [confirm]
+      properties:
+        addressed_to: { anyOf: [{ type: string, maxLength: 200 }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrCancelLetterBody:
+      type: object
+      required: [note, confirm]
+      properties:
+        note: { type: string, maxLength: 500 }
+        confirm: { type: boolean }
+    HrRequestLetterBody:
+      type: object
+      required: [purpose, confirm]
+      properties:
+        purpose: { type: string, maxLength: 140 }
+        addressed_to: { anyOf: [{ type: string, maxLength: 200 }, { type: "null" }] }
+        confirm: { type: boolean }
     # plan 04 / plan 08: family and medical tables, sick-leave certificate, service milestones
     HrSensitiveTable:
       type: object

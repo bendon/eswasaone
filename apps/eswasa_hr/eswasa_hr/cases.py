@@ -281,6 +281,7 @@ def _fields(doc: Any) -> dict[str, Any]:
             "warning_expires_on": None,
             "warning_status": None,
             "appeal_result": None,
+            "warning_letter": None,
         }
     return {
         "kind": "disciplinary",
@@ -301,6 +302,7 @@ def _fields(doc: Any) -> dict[str, Any]:
         "warning_expires_on": doc.get("warning_expires_on"),
         "warning_status": doc.get("warning_status"),
         "appeal_result": doc.get("appeal_result"),
+        "warning_letter": doc.get("warning_letter"),  # HR additions plan 03
     }
 
 
@@ -431,6 +433,7 @@ def _disciplinary_view(f: dict[str, Any]) -> dict[str, Any]:
         "warning_expires_on": str(f["warning_expires_on"]) if f["warning_expires_on"] else None,
         "warning_status": f["warning_status"],
         "appeal_result": f["appeal_result"],
+        "warning_letter": f.get("warning_letter"),
         "sanctions": list(SANCTIONS),
         "appeal_results": list(APPEAL_RESULTS),
         "offences": _offences(active_only=True),

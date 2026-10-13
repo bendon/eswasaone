@@ -177,6 +177,13 @@ def _option_missing(doctype: str, field: str, option: str) -> bool:
     return bool(f) and option not in (f.options or "").split("\n")
 
 
+def _check_plan_03() -> dict[str, Any]:
+    """HR additions plan 03: the ``Letter`` document type (the DocType and print formats are covered above)."""
+    if _option_missing("Employee Document", "document_type", "Letter"):
+        return {"plan_03": ["Employee Document.document_type option Letter"]}
+    return {}
+
+
 def _check_plan_04() -> dict[str, Any]:
     """HR additions plan 04: the access-log level and HR Manager's level-3 Employee permission (fields are covered above)."""
     import frappe
@@ -206,6 +213,7 @@ def run() -> dict[str, Any]:
     missing = compare(want, site_state(want))
     missing.update(_check_plan_01())
     missing.update(_check_plan_02())
+    missing.update(_check_plan_03())
     missing.update(_check_plan_04())
     missing.update(_check_plan_08())
     result = {

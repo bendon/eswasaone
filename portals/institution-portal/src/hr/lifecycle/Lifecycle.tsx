@@ -10,6 +10,7 @@ import { Banner, Crumbs, fmtDay, NextStep, StatusPill, Track } from "../../me/pa
 import { Checklist } from "../onboarding/Onboarding";
 import { ItemsOutBox } from "../items/Items";
 import { AccessLogSection, SensitivePanel } from "../sensitive/Sensitive";
+import { LetterLink, LetterLinks } from "../letters/Letters";
 
 /**
  * Lifecycle (journeys J8, J9; screens H2a, H7b). HR prepares a promotion, transfer or separation; another
@@ -19,6 +20,9 @@ import { AccessLogSection, SensitivePanel } from "../sensitive/Sensitive";
  */
 
 const KIND_LABEL = { promotion: "Promotion", transfer: "Transfer", separation: "Leaving", contract: "Contract" } as const;
+
+// HR additions plan 03: an approved promotion, transfer or contract change can have its letter made here.
+const LETTER_KINDS = new Set(["promotion", "transfer", "contract"]);
 
 export function EmployeeChanges() {
   const { id = "" } = useParams();
@@ -87,6 +91,11 @@ export function EmployeeChanges() {
                         </td>
                         <td>
                           <StatusPill cls={i.state === "Done" ? "ok" : i.state.startsWith("Waiting") ? "leave" : i.state === "Sent back" ? "bad" : "info"} label={i.state} />
+                          {i.state === "Done" && LETTER_KINDS.has(i.kind) ? (
+                            <div>
+                              <LetterLink employee={id} sourceName={i.id} />
+                            </div>
+                          ) : null}
                           {i.kind === "separation" && !i.state.startsWith("Waiting") ? (
                             <div>
                               <Link className="hr-lnk" to={`/hr/offboarding/${encodeURIComponent(i.id)}`}>
@@ -449,6 +458,7 @@ export function ContractForm() {
                 </p>
               </div>
             </div>
+            <LetterLinks employee={id} types={["Contract renewal", "Permanent appointment"]} title="Contract letters" />
             {d.pending ? (
               <Banner kind="info" title="Already waiting for approval">
                 A contract change for {name} is with another HR Manager in Approvals. It shows on the record until it's decided.

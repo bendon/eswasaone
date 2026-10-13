@@ -11,13 +11,14 @@ import { DocumentsPanel } from "./Documents";
 import { CompetenceSection, HistorySection, JobSection, LeaveSection, OpenItems } from "./RecordParts";
 import { warningFlag, WarningsSection } from "./Warnings";
 import { ItemsPanel } from "../items/Items";
+import { LettersPanel } from "../letters/Letters";
 
 /**
  * H1b Employee record: everything about one person, scoped by the server (HR sees all, a line manager job fields
  * only, never pay). Live GET /hr/employees/{id}. HR can correct name, work email and status (PATCH; moves go
  * through promotion/transfer), verify documents and print the certificate of service.
  */
-type Tab = "summary" | "job" | "leave" | "competence" | "documents" | "history" | "warnings" | "items" | "access";
+type Tab = "summary" | "job" | "leave" | "competence" | "documents" | "history" | "warnings" | "items" | "letters" | "access";
 
 export function EmployeeRecord() {
   const { id = "" } = useParams();
@@ -42,6 +43,7 @@ export function EmployeeRecord() {
     ["history", "History"],
     ...(hrManager ? ([["warnings", "Warnings"]] as Array<[Tab, string]>) : []),
     ...(hr || r?.viewer === "manager" ? ([["items", "Items"]] as Array<[Tab, string]>) : []),
+    ...(hr ? ([["letters", "Letters"]] as Array<[Tab, string]>) : []),
     ...(hr ? ([["access", "Access log"]] as Array<[Tab, string]>) : []),
   ];
 
@@ -120,6 +122,7 @@ export function EmployeeRecord() {
           {tab === "history" ? <HistorySection r={r} /> : null}
           {tab === "warnings" && hrManager ? <WarningsSection w={warnings.data} /> : null}
           {tab === "items" && (hr || r.viewer === "manager") ? <ItemsPanel employee={r.id} /> : null}
+          {tab === "letters" && hr ? <LettersPanel employee={r.id} /> : null}
           {tab === "access" && hr ? <AccessLogSection employee={r.id} refreshKey={logKey} /> : null}
         </div>
       ) : null}

@@ -230,7 +230,8 @@ function Linked({ me }: { me: HrMe }) {
 
       <p className="hr-note">
         <Link to="profile">My profile and documents</Link>: check your record, upload documents, ask for a correction.{" "}
-        <Link to="expenses">Expense claims</Link>: claim back money spent for work.
+        <Link to="expenses">Expense claims</Link>: claim back money spent for work.{" "}
+        <Link to="letters">My letters</Link>: ask for an employment confirmation letter and download letters HR has issued you.
       </p>
       <p className="hr-note">
         Something wrong at work? <Link to="concern">Raise a concern in confidence</Link>. Only one HR Manager sees it.

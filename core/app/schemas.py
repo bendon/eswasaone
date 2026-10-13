@@ -3556,3 +3556,138 @@ class HrTrainingSummary(BaseModel):
 
 HrReviewBody.model_rebuild()
 HrBoardPack.model_rebuild()
+
+
+# --- HR additions: plan 06 ---
+# Bulk actions (H18): office closure leave and yearly allocation, decided in Approvals; bulk reminders.
+
+
+class HrBulkSelection(BaseModel):
+    """Departments and employment types (Active staff), or explicitly picked people."""
+
+    departments: list[str] = Field(default_factory=list)
+    employment_types: list[str] = Field(default_factory=list)
+    employees: list[str] = Field(default_factory=list)
+
+
+class HrBulkParameters(BaseModel):
+    """Office closure leave: leave_type, from_date, to_date, reason. Leave allocation: leave_type, from_date,
+    to_date, days or use_policy, carry_forward. Nothing is pre-filled (A7, H14)."""
+
+    leave_type: str | None = None
+    from_date: str | None = None
+    to_date: str | None = None
+    reason: str | None = None
+    days: float | None = None
+    use_policy: bool = False
+    carry_forward: bool = False
+
+
+class HrBulkRow(BaseModel):
+    """OpenAPI: HrBulkRow."""
+
+    name: str | None = None
+    employee: str
+    employee_name: str | None = None
+    planned: str | None = None
+    days: float | None = None
+    balance_after: float | None = None
+    problem: str | None = None
+    result: str | None = None  # Done | Skipped | Failed
+    ref: str | None = None
+    error: str | None = None
+
+
+class HrBulkPreview(BaseModel):
+    """OpenAPI: HrBulkPreview — the dry run; nothing is written."""
+
+    kind: str
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    selection: HrBulkSelection = Field(default_factory=HrBulkSelection)
+    selection_text: str | None = None
+    rows: list[HrBulkRow] = Field(default_factory=list)
+    count: int = 0
+    problems: int = 0
+    note: str | None = None
+
+
+class HrBulkPreviewBody(BaseModel):
+    kind: Literal["Office closure leave", "Leave allocation"]
+    parameters: HrBulkParameters
+    selection: HrBulkSelection = Field(default_factory=HrBulkSelection)
+
+
+class HrBulkBody(HrBulkPreviewBody):
+    name: str | None = None  # an existing Draft or Sent back action
+    exclude: list[str] = Field(default_factory=list)  # people unticked in the preview
+    note: str | None = None
+    submit: bool = False
+    confirm: bool
+
+
+class HrBulkAction(BaseModel):
+    """OpenAPI: HrBulkAction."""
+
+    name: str
+    kind: str
+    status: str  # Draft | Waiting | Applying | Applied | Partly applied | Not approved | Sent back
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    selection: HrBulkSelection | None = None
+    selection_text: str | None = None
+    prepared_by: str | None = None
+    approved_by: str | None = None
+    decided_on: str | None = None
+    note: str | None = None
+    summary: str | None = None
+    creation: str | None = None
+    modified: str | None = None
+    people: int = 0
+    problems: int = 0
+    done: int = 0
+    skipped: int = 0
+    failed: int = 0
+    deciders: list[str] = Field(default_factory=list)
+    rows: list[HrBulkRow] = Field(default_factory=list)
+    can_edit: bool = False
+    can_decide: bool = False
+    note_text: str | None = None
+    approver_note: str | None = None
+
+
+class HrBulkActionList(BaseModel):
+    actions: list[HrBulkAction] = Field(default_factory=list)
+    kinds: list[str] = Field(default_factory=list)
+    reminder_kinds: list[str] = Field(default_factory=list)
+    waiting: int = 0
+    approver_note: str | None = None
+
+
+class HrBulkOptions(BaseModel):
+    kinds: list[str] = Field(default_factory=list)
+    reminder_kinds: list[str] = Field(default_factory=list)
+    leave_types: list[str] = Field(default_factory=list)
+    departments: list[str] = Field(default_factory=list)
+    employment_types: list[str] = Field(default_factory=list)
+    closure_note: str | None = None
+    allocation_note: str | None = None
+
+
+class HrBulkRetryBody(BaseModel):
+    confirm: bool
+
+
+class HrBulkReminderBody(BaseModel):
+    kind: Literal["Missing required documents", "Unsigned declaration", "Open appraisal step", "Unacknowledged items"]
+    selection: HrBulkSelection = Field(default_factory=HrBulkSelection)
+    dry_run: bool = False  # the preview count; nothing is sent
+    confirm: bool = False
+
+
+class HrBulkReminderResult(BaseModel):
+    """OpenAPI: HrBulkReminderResult — at most one reminder a day per kind and person."""
+
+    kind: str
+    count: int = 0
+    sent: int = 0
+    skipped: int = 0
+    note: str | None = None

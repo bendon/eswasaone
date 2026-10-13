@@ -1,0 +1,99 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "planned",
+  "days",
+  "balance_after",
+  "column_break_row",
+  "problem",
+  "result",
+  "ref",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "planned",
+   "fieldtype": "Small Text",
+   "label": "Planned",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "days",
+   "fieldtype": "Float",
+   "label": "Days",
+   "read_only": 1
+  },
+  {
+   "fieldname": "balance_after",
+   "fieldtype": "Float",
+   "label": "Balance After",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_row",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "problem",
+   "fieldtype": "Small Text",
+   "label": "Problem",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Result",
+   "options": "\nDone\nSkipped\nFailed",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ref",
+   "fieldtype": "Data",
+   "label": "Created Document",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-13 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Eswasa HR",
+ "name": "HR Bulk Action Row",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "editable_grid": 1
+}

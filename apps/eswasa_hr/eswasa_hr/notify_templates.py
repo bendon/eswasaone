@@ -97,6 +97,18 @@ TEMPLATES: dict[str, dict[str, Any]] = {
         "subject": "You're nominated for {event_name}",
         "body": "Hello,\n\nYou've been nominated for {event_name}, starting {start} at {venue}. Open My training in My HR in EswasaOne for the details.",
     },
+    "bulk_action_done": {  # HR additions plan 06: to the preparer once decided or applied
+        "essential": False,
+        "fields": ("kind", "status", "summary"),
+        "subject": "Bulk {kind}: {status}",
+        "body": "Hello,\n\nYour bulk {kind} is now {status}. {summary}\n\nOpen Bulk actions in HR in EswasaOne for the per-person results.",
+    },
+    "bulk_reminder": {  # HR additions plan 06: bulk reminders from HR, at most once a day
+        "essential": False,
+        "fields": ("what", "detail", "where"),
+        "subject": "Reminder from HR: {what}",
+        "body": "Hello,\n\nHR reminds you about your {what}: {detail}. Open {where} in My HR in EswasaOne to sort it out.",
+    },
 }
 
 

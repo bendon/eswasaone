@@ -665,6 +665,8 @@ def cover_prompt(doc: Any, method: str | None = None) -> None:
 
     if doc.status != "Approved" or not frappe.db.exists("DocType", "HR Alert"):
         return
+    if "(bulk " in str(getattr(doc, "description", None) or ""):  # additions plan 06: an office closure has nobody to cover
+        return
     applicant = _applicant_user(doc)
     if not applicant:
         return

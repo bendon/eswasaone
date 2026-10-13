@@ -243,4 +243,6 @@ eswasa_approval_handlers = {
     "HR Letter": "eswasa_hr.letters.decide",
     # HR additions plan 05: "Approve training plan …"; a named HR Manager other than the preparer (provisional, A6).
     "Training Plan": "eswasa_hr.training_plan.decide",
+    # HR additions plan 06: "Approve bulk …"; a named HR Manager other than the preparer and the people included.
+    "HR Bulk Action": "eswasa_hr.bulk_actions.decide",
 }

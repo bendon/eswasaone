@@ -28,3 +28,4 @@ export { RequisitionDetail } from "./recruitment/RequisitionDetail";
 export { DisciplinaryCode } from "./cases/DisciplinaryCode";
 export { ItemsRegister } from "./items/Items";
 export { TrainingPlans, TrainingPlanDetail, NewTrainingPlan, TrainingEventView, TrainingNeeds } from "./training/Training";
+export { BulkActions, NewBulkAction, BulkActionDetail } from "./bulk/Bulk";

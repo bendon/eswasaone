@@ -185,6 +185,11 @@ export function LeaveView() {
               <h2>Time off</h2>
               <p>Who is away, what is waiting, and what leave the organisation owes.</p>
             </div>
+            <div className="hr-head__r">
+              <Link to="/hr/bulk/new?kind=closure" className="btn ghost">
+                Office closure
+              </Link>
+            </div>
           </div>
 
           <div className="kpis" role="group" aria-label="Time off KPIs">

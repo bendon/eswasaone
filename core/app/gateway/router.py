@@ -6438,6 +6438,115 @@ async def get_my_hr_training(
     return HrMyTraining.model_validate(await _hr_call(auth, frappe, f"{_TPLAN}.my_training"))
 
 
+# --- HR additions: plan 06 ---
+# Bulk actions (H18): office closure leave and yearly allocations, applied to a group through one action that a
+# named HR Manager (not the preparer, not someone included) approves in Approvals; bulk reminders need no approval.
+# Guards live in eswasa_hr.bulk_actions. Never reads pay.
+from app.schemas import (  # noqa: E402  (kept in this block so parallel HR additions merge cleanly)
+    HrBulkAction,
+    HrBulkActionList,
+    HrBulkBody,
+    HrBulkOptions,
+    HrBulkPreview,
+    HrBulkPreviewBody,
+    HrBulkReminderBody,
+    HrBulkReminderResult,
+    HrBulkRetryBody,
+)
+
+_BULK = "eswasa_hr.bulk_actions"
+
+
+def _bulk_parameters(body: HrBulkPreviewBody) -> dict[str, Any]:
+    return body.parameters.model_dump(exclude_none=True)
+
+
+@router.post("/hr/bulk/preview", response_model=HrBulkPreview, tags=["hr"])
+async def preview_hr_bulk_action(
+    body: HrBulkPreviewBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrBulkPreview:
+    """Dry run: who the action would touch and why someone would be skipped. Writes nothing, so no confirm."""
+    raw = await _hr_write(auth, frappe, f"{_BULK}.preview",
+                          json={"kind": body.kind, "parameters": _bulk_parameters(body), "selection": body.selection.model_dump()})
+    return HrBulkPreview.model_validate(raw)
+
+
+@router.post("/hr/bulk/reminders", response_model=HrBulkReminderResult, tags=["hr"])
+async def send_hr_bulk_reminders(
+    body: HrBulkReminderBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrBulkReminderResult:
+    """Remind everyone in the selection who owes something; ``dry_run`` only counts. At most once a day per person."""
+    payload: dict[str, Any] = {"kind": body.kind, "selection": body.selection.model_dump()}
+    if body.dry_run:
+        return HrBulkReminderResult.model_validate(await _hr_write(auth, frappe, f"{_BULK}.remind", json={**payload, "dry_run": 1}))
+    _require_confirm(body.confirm)
+    audit_log(action="hr.bulk.remind", actor=auth.user.username, resource="HR Bulk Reminder", detail=payload, confirmed=True)
+    return HrBulkReminderResult.model_validate(await _hr_write(auth, frappe, f"{_BULK}.remind", json={**payload, "confirm": 1}))
+
+
+@router.get("/hr/bulk/options", response_model=HrBulkOptions, tags=["hr"])
+async def get_hr_bulk_options(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrBulkOptions:
+    """Leave types, departments and employment types for the New bulk action stepper."""
+    return HrBulkOptions.model_validate(await _hr_call(auth, frappe, f"{_BULK}.options"))
+
+
+@router.get("/hr/bulk", response_model=HrBulkActionList, tags=["hr"])
+async def list_hr_bulk_actions(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+) -> HrBulkActionList:
+    """H18: bulk actions with their status and who decides (HR only)."""
+    params = {"status": status_filter} if status_filter else None
+    return HrBulkActionList.model_validate(await _hr_call(auth, frappe, f"{_BULK}.actions", params=params))
+
+
+@router.post("/hr/bulk", response_model=HrBulkAction, tags=["hr"])
+async def create_hr_bulk_action(
+    body: HrBulkBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrBulkAction:
+    """Save the action with its rows (minus the people unticked); ``submit`` sends it to Approvals."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.bulk.create", actor=auth.user.username, resource=f"HR Bulk Action:{body.name or body.kind}",
+              detail={"kind": body.kind, "selection": body.selection.model_dump(), "excluded": len(body.exclude), "submit": body.submit},
+              confirmed=True)
+    payload = {"kind": body.kind, "parameters": _bulk_parameters(body), "selection": body.selection.model_dump(), "exclude": body.exclude,
+               "note": body.note, "name": body.name, "submit": 1 if body.submit else 0, "confirm": 1}
+    return HrBulkAction.model_validate(await _hr_write(auth, frappe, f"{_BULK}.create", json={k: v for k, v in payload.items() if v is not None}))
+
+
+@router.get("/hr/bulk/{name}", response_model=HrBulkAction, tags=["hr"])
+async def get_hr_bulk_action(
+    name: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrBulkAction:
+    """Detail: per-person rows and results, and who decides."""
+    return HrBulkAction.model_validate(await _hr_call(auth, frappe, f"{_BULK}.detail", params={"name": name}))
+
+
+@router.post("/hr/bulk/{name}/retry", response_model=HrBulkAction, tags=["hr"])
+async def retry_hr_bulk_action(
+    name: str,
+    body: HrBulkRetryBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrBulkAction:
+    """Re-run the rows that failed; rows already done are never repeated."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.bulk.retry", actor=auth.user.username, resource=f"HR Bulk Action:{name}", detail={}, confirmed=True)
+    return HrBulkAction.model_validate(await _hr_write(auth, frappe, f"{_BULK}.retry", json={"name": name, "confirm": 1}))
+
+
 @router.get("/crm/leads", tags=["crm"])
 async def list_crm_leads(
     auth: Annotated[AuthContext, Depends(require_auth)],

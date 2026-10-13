@@ -4696,6 +4696,134 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/HrMyTraining" }
 
+  # plan 06: bulk actions (H18), decided in Approvals; bulk reminders (no approval)
+  /hr/bulk/preview:
+    post:
+      tags: [hr]
+      operationId: previewHrBulkAction
+      summary: Dry run of a bulk action; nothing is written, so no confirm (HR)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrBulkPreviewBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrBulkPreview" }
+        "403":
+          description: Not allowed
+        "422":
+          description: A rule the input breaks (plain text)
+
+  /hr/bulk/reminders:
+    post:
+      tags: [hr]
+      operationId: sendHrBulkReminders
+      summary: Remind everyone in the selection who owes something, at most once a day per person; dry_run only counts
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrBulkReminderBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrBulkReminderResult" }
+        "400":
+          description: confirm=true required (unless dry_run)
+
+  /hr/bulk/options:
+    get:
+      tags: [hr]
+      operationId: getHrBulkOptions
+      summary: Leave types, departments and employment types for the New bulk action stepper
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrBulkOptions" }
+
+  /hr/bulk:
+    get:
+      tags: [hr]
+      operationId: listHrBulkActions
+      summary: Bulk actions with status and who decides (HR)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrBulkActionList" }
+    post:
+      tags: [hr]
+      operationId: createHrBulkAction
+      summary: Save a bulk action with its rows (minus people unticked); submit sends it to a named HR Manager in Approvals
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrBulkBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrBulkAction" }
+        "400":
+          description: confirm=true required
+        "403":
+          description: Not allowed
+        "422":
+          description: A rule the input breaks (plain text)
+
+  /hr/bulk/{name}:
+    get:
+      tags: [hr]
+      operationId: getHrBulkAction
+      summary: Bulk action detail with per-person rows, results and who decides
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrBulkAction" }
+
+  /hr/bulk/{name}/retry:
+    post:
+      tags: [hr]
+      operationId: retryHrBulkAction
+      summary: Re-run the rows that failed; rows already done are never repeated
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrBulkRetryBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrBulkAction" }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -12756,3 +12884,134 @@ components:
         scheduled: { type: integer }
         estimated_cost: { type: number }
         actual_cost: { type: number }
+    # plan 06: bulk actions
+    HrBulkSelection:
+      type: object
+      properties:
+        departments: { type: array, items: { type: string } }
+        employment_types: { type: array, items: { type: string } }
+        employees: { type: array, items: { type: string } }
+    HrBulkParameters:
+      type: object
+      description: Closure leave_type, from_date, to_date, reason; allocation leave_type, from_date, to_date, days or use_policy, carry_forward. Nothing pre-filled (A7, H14)
+      properties:
+        leave_type: { anyOf: [{ type: string }, { type: "null" }] }
+        from_date: { anyOf: [{ type: string }, { type: "null" }] }
+        to_date: { anyOf: [{ type: string }, { type: "null" }] }
+        reason: { anyOf: [{ type: string }, { type: "null" }] }
+        days: { anyOf: [{ type: number }, { type: "null" }] }
+        use_policy: { type: boolean }
+        carry_forward: { type: boolean }
+    HrBulkRow:
+      type: object
+      required: [employee]
+      properties:
+        name: { anyOf: [{ type: string }, { type: "null" }] }
+        employee: { type: string }
+        employee_name: { anyOf: [{ type: string }, { type: "null" }] }
+        planned: { anyOf: [{ type: string }, { type: "null" }] }
+        days: { anyOf: [{ type: number }, { type: "null" }] }
+        balance_after: { anyOf: [{ type: number }, { type: "null" }] }
+        problem: { anyOf: [{ type: string }, { type: "null" }] }
+        result: { anyOf: [{ type: string, enum: [Done, Skipped, Failed] }, { type: "null" }] }
+        ref: { anyOf: [{ type: string }, { type: "null" }] }
+        error: { anyOf: [{ type: string }, { type: "null" }] }
+    HrBulkPreview:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string }
+        parameters: { type: object, additionalProperties: true }
+        selection: { $ref: "#/components/schemas/HrBulkSelection" }
+        selection_text: { anyOf: [{ type: string }, { type: "null" }] }
+        rows: { type: array, items: { $ref: "#/components/schemas/HrBulkRow" } }
+        count: { type: integer }
+        problems: { type: integer }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+    HrBulkPreviewBody:
+      type: object
+      required: [kind, parameters]
+      properties:
+        kind: { type: string, enum: [Office closure leave, Leave allocation] }
+        parameters: { $ref: "#/components/schemas/HrBulkParameters" }
+        selection: { $ref: "#/components/schemas/HrBulkSelection" }
+    HrBulkBody:
+      type: object
+      required: [kind, parameters, confirm]
+      properties:
+        kind: { type: string, enum: [Office closure leave, Leave allocation] }
+        parameters: { $ref: "#/components/schemas/HrBulkParameters" }
+        selection: { $ref: "#/components/schemas/HrBulkSelection" }
+        name: { anyOf: [{ type: string }, { type: "null" }] }
+        exclude: { type: array, items: { type: string } }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        submit: { type: boolean }
+        confirm: { type: boolean }
+    HrBulkAction:
+      type: object
+      required: [name, kind, status]
+      properties:
+        name: { type: string }
+        kind: { type: string }
+        status: { type: string, enum: [Draft, Waiting, Applying, Applied, Partly applied, Not approved, Sent back] }
+        parameters: { type: object, additionalProperties: true }
+        selection: { anyOf: [{ $ref: "#/components/schemas/HrBulkSelection" }, { type: "null" }] }
+        selection_text: { anyOf: [{ type: string }, { type: "null" }] }
+        prepared_by: { anyOf: [{ type: string }, { type: "null" }] }
+        approved_by: { anyOf: [{ type: string }, { type: "null" }] }
+        decided_on: { anyOf: [{ type: string }, { type: "null" }] }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        summary: { anyOf: [{ type: string }, { type: "null" }] }
+        creation: { anyOf: [{ type: string }, { type: "null" }] }
+        modified: { anyOf: [{ type: string }, { type: "null" }] }
+        people: { type: integer }
+        problems: { type: integer }
+        done: { type: integer }
+        skipped: { type: integer }
+        failed: { type: integer }
+        deciders: { type: array, items: { type: string } }
+        rows: { type: array, items: { $ref: "#/components/schemas/HrBulkRow" } }
+        can_edit: { type: boolean }
+        can_decide: { type: boolean }
+        note_text: { anyOf: [{ type: string }, { type: "null" }] }
+        approver_note: { anyOf: [{ type: string }, { type: "null" }] }
+    HrBulkActionList:
+      type: object
+      properties:
+        actions: { type: array, items: { $ref: "#/components/schemas/HrBulkAction" } }
+        kinds: { type: array, items: { type: string } }
+        reminder_kinds: { type: array, items: { type: string } }
+        waiting: { type: integer }
+        approver_note: { anyOf: [{ type: string }, { type: "null" }] }
+    HrBulkOptions:
+      type: object
+      properties:
+        kinds: { type: array, items: { type: string } }
+        reminder_kinds: { type: array, items: { type: string } }
+        leave_types: { type: array, items: { type: string } }
+        departments: { type: array, items: { type: string } }
+        employment_types: { type: array, items: { type: string } }
+        closure_note: { anyOf: [{ type: string }, { type: "null" }] }
+        allocation_note: { anyOf: [{ type: string }, { type: "null" }] }
+    HrBulkRetryBody:
+      type: object
+      required: [confirm]
+      properties:
+        confirm: { type: boolean }
+    HrBulkReminderBody:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [Missing required documents, Unsigned declaration, Open appraisal step, Unacknowledged items] }
+        selection: { $ref: "#/components/schemas/HrBulkSelection" }
+        dry_run: { type: boolean }
+        confirm: { type: boolean }
+    HrBulkReminderResult:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string }
+        count: { type: integer }
+        sent: { type: integer }
+        skipped: { type: integer }
+        note: { anyOf: [{ type: string }, { type: "null" }] }

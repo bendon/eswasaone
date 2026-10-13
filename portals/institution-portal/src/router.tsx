@@ -787,6 +787,19 @@ export const router = createBrowserRouter(
                       />
                     ),
                   },
+                  // HR additions plan 06: H18 Bulk actions (literal paths before :id)
+                  {
+                    path: "bulk",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.BulkActions }))} skeleton="list" />,
+                  },
+                  {
+                    path: "bulk/new",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.NewBulkAction }))} skeleton="panel" />,
+                  },
+                  {
+                    path: "bulk/:id",
+                    element: <L factory={() => import("./hr/sub-views").then((m) => ({ default: m.BulkActionDetail }))} skeleton="panel" />,
+                  },
                   // HR additions plan 05: H17 Training (literal paths before :id)
                   {
                     path: "training",

@@ -213,6 +213,14 @@ def _check_plan_05() -> dict[str, Any]:
     return {}
 
 
+def _check_plan_06() -> dict[str, Any]:
+    """HR additions plan 06: bulk actions write HRMS leave documents (its own DocTypes are covered above)."""
+    import frappe
+
+    gone = [dt for dt in ("Leave Application", "Leave Allocation", "Leave Policy Assignment") if not frappe.db.exists("DocType", dt)]
+    return {"plan_06": [f"DocType {dt} (HRMS)" for dt in gone]} if gone else {}
+
+
 def run() -> dict[str, Any]:
     from eswasa_hr import hooks
 
@@ -224,6 +232,7 @@ def run() -> dict[str, Any]:
     missing.update(_check_plan_04())
     missing.update(_check_plan_08())
     missing.update(_check_plan_05())
+    missing.update(_check_plan_06())
     result = {
         "ok": not missing,
         "missing": missing,

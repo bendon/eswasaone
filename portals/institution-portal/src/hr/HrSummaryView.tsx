@@ -225,6 +225,9 @@ export function HrSummaryView() {
                 </p>
               </div>
               <div className="hr-head__r">
+                <Link to="/hr/bulk" className="btn ghost">
+                  Bulk actions
+                </Link>
                 <Link to="/hr/directory" className="btn pri">
                   <Icon name="i-plus" />
                   Add employee

@@ -127,8 +127,8 @@ export function LeavePane({ enabled, refreshKey, onAuthRequired }: Props) {
       {meRes.fromCache ? <p className="field-muted">Offline: showing what was last loaded.</p> : null}
       {balances.length ? (
         <div className="me-bals" aria-label="Leave balances">
-          {balances.slice(0, 3).map((b, i) => (
-            <div key={b.leave_type} className={`me-bal me-bal--${TONES[i]}`}>
+          {balances.map((b, i) => (
+            <div key={b.leave_type} className={`me-bal me-bal--${TONES[i % TONES.length]}`}>
               <div className="me-bal__n">{b.balance}</div>
               <div className="me-bal__l">{b.leave_type}</div>
             </div>
@@ -136,7 +136,7 @@ export function LeavePane({ enabled, refreshKey, onAuthRequired }: Props) {
         </div>
       ) : (
         <div className="field-card">
-          <p className="field-muted">No leave allocated to you yet. ESWASA HR sets leave types and entitlements first.</p>
+          <p className="field-muted">No leave allocated to you for this period.</p>
         </div>
       )}
 

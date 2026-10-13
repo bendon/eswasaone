@@ -38,10 +38,12 @@ function stClass(bucket: StatusFilter): string {
   return "leave";
 }
 
+const PAGE = 200; // directory rows loaded at once
+
 export function EmployeesView() {
   const { openAuth, user, sessionKey } = useInstitution();
   const { data, loading, refreshing, error, authRequired, reload } = useApiResource<HrEmployeesResponse>(
-    "/hr/employees?limit=200",
+    `/hr/employees?limit=${PAGE}`,
     { enabled: Boolean(user), refreshKey: sessionKey },
   );
 
@@ -99,7 +101,7 @@ export function EmployeesView() {
         gender,
         date_of_birth: dob,
         date_of_joining: joined,
-        email: email.trim() || undefined,
+        email: email.trim(),
         department: department || undefined,
         designation: designation || undefined,
         invite,
@@ -205,7 +207,7 @@ export function EmployeesView() {
             <div>
               <h2>Directory</h2>
               <p>
-                {items.length} {items.length === 1 ? "person" : "people"} on record
+                {items.length >= PAGE ? `The first ${PAGE} people on record` : `${items.length} ${items.length === 1 ? "person" : "people"} on record`}
                 {filtered.length !== items.length ? `, ${filtered.length} shown` : ""}.
               </p>
             </div>
@@ -260,21 +262,21 @@ export function EmployeesView() {
               <div className="hr-box__h">
                 <div>
                   <h3>Add employee</h3>
-                  <p>Name, gender, date of birth and date of joining are required by HRMS. Nothing is filled in for you.</p>
+                  <p>Fields marked <span className="hr-req">*</span> are required. Nothing is filled in for you.</p>
                 </div>
               </div>
               <form className="hr-box__b hr-form" onSubmit={(e) => void onAdd(e)}>
                 <h4 className="hr-sub wide">Person</h4>
                 <label className="hr-f">
-                  Full name
+                  <span>Full name <span className="hr-req" aria-hidden="true">*</span></span>
                   <input className="hr-in" required value={fullName} placeholder="As on their ID" onChange={(e) => setFullName(e.target.value)} />
                 </label>
                 <label className="hr-f">
-                  <span>Work email <small>Optional</small></span>
-                  <input className="hr-in" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <span>Work email <span className="hr-req" aria-hidden="true">*</span></span>
+                  <input className="hr-in" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </label>
                 <label className="hr-f">
-                  Gender
+                  <span>Gender <span className="hr-req" aria-hidden="true">*</span></span>
                   <select className="hr-in" required value={gender} onChange={(e) => setGender(e.target.value)}>
                     <option value="">{opts.loading ? "Loading…" : opts.data?.genders.length ? "Choose…" : "None set up in HRMS"}</option>
                     {(opts.data?.genders ?? []).map((g) => (
@@ -285,13 +287,13 @@ export function EmployeesView() {
                   </select>
                 </label>
                 <label className="hr-f">
-                  Date of birth
+                  <span>Date of birth <span className="hr-req" aria-hidden="true">*</span></span>
                   <input className="hr-in" type="date" required value={dob} onChange={(e) => setDob(e.target.value)} />
                 </label>
 
                 <h4 className="hr-sub wide">Job</h4>
                 <label className="hr-f">
-                  Date of joining
+                  <span>Date of joining <span className="hr-req" aria-hidden="true">*</span></span>
                   <input className="hr-in" type="date" required value={joined} onChange={(e) => setJoined(e.target.value)} />
                 </label>
                 <label className="hr-f">

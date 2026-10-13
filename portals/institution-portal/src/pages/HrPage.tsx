@@ -16,7 +16,7 @@ export function HrPage() {
         { to: "onboarding", label: "Joiners", icon: "i-users" },
         { to: "performance", label: "Performance", icon: "i-gauge" },
         { to: "expenses", label: "Expenses", icon: "i-file" },
-        { to: "payroll", label: "Payroll", icon: "i-dollar" },
+        // { to: "payroll", label: "Payroll", icon: "i-dollar" },  // off: no payroll in EswasaOne
         { to: "cases", label: "Cases", icon: "i-case" },
       ]}
     />

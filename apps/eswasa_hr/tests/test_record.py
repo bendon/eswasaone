@@ -73,12 +73,12 @@ class CertificateTests(unittest.TestCase):
     def test_never_pay_or_reason(self):
         e = {"name": "E1", "employee_name": "Thandi Mamba", "employee_number": "S-1", "date_of_joining": "2020-03-02", "relieving_date": "2026-10-31",
              "status": "Left", "ctc": 90000, "bank_ac_no": "123", "reason_for_leaving": "Dismissal", "custom_reason": "Dismissal"}
-        c = cert.certificate_context(e, [], None, "Signatory: awaiting ESWASA (H3)", True)
+        c = cert.certificate_context(e, [], None, "Executive Director", False)
         for field in cert.NEVER:
             self.assertNotIn(field, c)
         self.assertNotIn("Dismissal", str(c))
         self.assertNotIn("90000", str(c))
-        self.assertEqual(c["wording_awaiting"], cert.WORDING_AWAITING)
+        self.assertIsNone(c["wording_awaiting"])
         self.assertFalse(c["still_employed"])
         self.assertFalse(set(cert.FIELDS) & set(cert.NEVER))
 

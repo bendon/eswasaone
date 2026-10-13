@@ -99,8 +99,9 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(leave.balance_totals(rows), {"owed": 17.0, "above_carry_over": 12.0})
         self.assertEqual(leave.balance_totals([]), {"owed": None, "above_carry_over": None})
 
-    def test_policy_view_awaits_eswasa_when_nothing_is_configured(self):
-        self.assertEqual(leave.policy_view([], [], [])["awaiting"], "H14")
+    def test_policy_view_is_empty_when_nothing_is_configured(self):
+        v0 = leave.policy_view([], [], [])
+        self.assertEqual((v0["configured"], v0["leave_types"], v0["awaiting"]), (False, [], None))
         v = leave.policy_view([{"name": "Annual", "allow_encashment": 1}], [{"parent": "P1", "leave_type": "Annual", "annual_allocation": 21}],
                               [{"name": "2026", "from_date": "2026-01-01", "to_date": "2026-12-31"}])
         self.assertTrue(v["configured"])
@@ -480,7 +481,7 @@ class GlueTests(unittest.TestCase):
         self._as(user="thandi@x", employee="HR-EMP-0044")
         self._hrms({"leave_allocation": {}})
         b = leave.balances_impl()
-        self.assertEqual((b["items"], b["owed"], b["above_carry_over"], b["awaiting"]), ([], None, None, "H14"))
+        self.assertEqual((b["items"], b["owed"], b["above_carry_over"], b["awaiting"]), ([], None, None, None))
         with self.assertRaises(f.PermissionError):
             leave.balances_impl("HR-EMP-0010")
 

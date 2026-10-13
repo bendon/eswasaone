@@ -52,7 +52,7 @@ async def test_team_calendar_member(client: AsyncClient, monkeypatch: pytest.Mon
             return {"manager": "EMP-31", "members": [MEMBER], "summary": {"people": 1, "probation_reviews_due": 1}}
         if m.endswith(".calendar"):
             return {"from_date": "2026-11-02", "to_date": "2026-11-13", "people": [{"employee": "EMP-79", "employee_name": "Bongani Dlamini"}],
-                    "entries": [{"employee": "EMP-79", "kind": "field", "label": "Surveillance audit", "from_date": "2026-11-04", "to_date": "2026-11-04"}]}
+                    "entries": [{"employee": "EMP-79", "kind": "field", "label": "Surveillance audit", "from_date": "2026-11-04", "to_date": "2026-11-04", "approved": True}]}
         return {**MEMBER, "line_manager": "Sipho Magagula", "balances": [{"leave_type": "Annual Leave", "allocated": 21, "used": 2, "balance": 19}], "authorisations": []}
 
     calls = _frappe(monkeypatch, h)

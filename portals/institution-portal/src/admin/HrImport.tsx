@@ -16,7 +16,7 @@ type MasterResult = components["schemas"]["HrMasterDataResult"];
 const PASSES: Array<[number, string, string]> = [
   [1, "Pass 1: records", "One row per person: name, staff number, post, department, dates."],
   [2, "Pass 2: line managers, approvers, logins", "By staff number, after pass 1 has run."],
-  [3, "Pass 3: opening leave balances", "Needs an active leave period (H14)."],
+  [3, "Pass 3: opening leave balances", "Needs an active leave period."],
 ];
 
 function ErrorsTable({ errors }: { errors: Result["errors"] }) {
@@ -128,7 +128,7 @@ export function ImportEmployees() {
       <div className="hr-box__h">
         <div>
           <h3>Import employees</h3>
-          <p>Two passes, checked before anything is saved. Run pass 1, then pass 2; pass 3 loads opening leave balances.</p>
+          <p>Checked before anything is saved. Run pass 1, then pass 2; pass 3 loads opening leave balances.</p>
         </div>
       </div>
       <div className="hr-box__b hr-view" style={{ gap: 12 }} key={k}>

@@ -15,6 +15,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from eswasa_hr import settings
+
 DOCTYPE = "Contract Change"
 KINDS = ("Renew", "Make permanent")
 WAITING, DONE, SENT_BACK = "Waiting for approval", "Done", "Sent back"
@@ -157,7 +159,7 @@ def prepare_impl(employee: str, kind: str, new_end: str | None, new_type: str | 
         }
     )
     d.insert(ignore_permissions=True)
-    _route(d, change_title(kind, e["employee_name"], new_end), add_days(_today(), 3))
+    _route(d, change_title(kind, e["employee_name"], new_end), add_days(_today(), settings.get("decision_sla_days")))
     return changes_impl(employee)
 
 

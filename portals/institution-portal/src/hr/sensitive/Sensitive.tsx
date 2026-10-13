@@ -163,7 +163,7 @@ export function AccessLogSection({ employee, refreshKey }: { employee: string; r
     <section className="hr-sec" aria-label="Access log">
       <h3 className="hr-sub">Access log</h3>
       {res.error ? (
-        <p className="hr-note">Only HR Managers and the person can see who opened protected details.</p>
+        <p className="hr-note">{res.error}</p>
       ) : res.data ? (
         res.data.items.length ? (
           <LogTable items={res.data.items} />

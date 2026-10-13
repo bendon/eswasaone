@@ -18,6 +18,7 @@ vi.mock("../layout/InstitutionLayout", () => ({
 import { MyProfile } from "./MyProfile";
 import { MyLeave } from "./MyLeave";
 import { MyExpenses } from "./MyExpenses";
+import { settingsResponse } from "../test/hrSettings";
 
 type Call = { url: string; method: string; body: unknown };
 let calls: Call[] = [];
@@ -34,6 +35,8 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       const body = init?.body instanceof FormData ? Object.fromEntries(init.body.entries()) : init?.body ? JSON.parse(String(init.body)) : undefined;
       calls.push({ url, method, body });
@@ -97,11 +100,11 @@ describe("My profile (E5)", () => {
     expect(post.body).toMatchObject({ document_type: "Qualification", confirm: "true" });
   });
 
-  it("says Awaiting ESWASA when no required documents are set", async () => {
+  it("says no required documents are set, without waiting on anyone", async () => {
     routes = [["/hr/me/record", RECORD], ["GET /hr/me/documents", { ...DOCS, required_set: false, missing: [], items: [] }]];
     mount(<MyProfile />);
     fireEvent.click(await screen.findByRole("tab", { name: "Documents" }));
-    expect(await screen.findByText(/awaiting ESWASA \(H14\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/No employment type lists required documents yet/)).toBeInTheDocument();
   });
 
   it("sends a correction to HR and shows the refusal for a name change without evidence", async () => {
@@ -167,9 +170,9 @@ describe("Expense claims", () => {
   });
 
   it("is closed until Finance sets expense types", async () => {
-    routes = [["/hr/me/expense-claims/options", { types: [], receipt_required_above: null, awaiting: "ESWASA Finance" }], ["GET /hr/me/expense-claims", { items: [] }]];
+    routes = [["/hr/me/expense-claims/options", { types: [], receipt_required_above: null, awaiting: null }], ["GET /hr/me/expense-claims", { items: [] }]];
     mount(<MyExpenses />);
-    expect(await screen.findByText("Awaiting ESWASA Finance")).toBeInTheDocument();
+    expect(await screen.findByText("No expense types yet")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /New claim/ })).toBeNull();
   });
 

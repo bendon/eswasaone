@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from eswasa_hr import settings
+
 import frappe
 from frappe.utils import getdate, today
 
@@ -47,7 +49,7 @@ def rh1_probation_reviews() -> int:
 
 
 def rh2_contract_end_alerts() -> int:
-    """R-H2: alert HR Managers + line manager once a contract is within 60 days of contract_end_date."""
+    """R-H2: alert HR Managers + line manager once a contract enters the HR Settings notice window before contract_end_date."""
     from eswasa_hr.alerts import contract_end_alerts
 
     return contract_end_alerts()
@@ -85,7 +87,7 @@ def recompute_authorisation_statuses() -> int:
             continue
         if end < today_d:
             new = "Expired"
-        elif (end - today_d).days <= 60:
+        elif (end - today_d).days <= max(settings.get("expiry_alert_days")):
             new = "Expiring"
         else:
             new = "Current"

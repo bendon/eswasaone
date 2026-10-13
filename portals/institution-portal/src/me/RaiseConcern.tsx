@@ -91,8 +91,8 @@ export function RaiseConcern() {
                 </label>
               ) : (
                 <div className="wide">
-                  <Banner kind="info" title="Categories awaiting HR setup">
-                    You can't send a concern here until HR sets up the categories. Speak to the HR Manager or the Executive Director in the meantime.
+                  <Banner kind="info" title="No concern categories yet">
+                    You can't send a concern here until HR adds the categories. Speak to the HR Manager or the Executive Director in the meantime.
                   </Banner>
                 </div>
               )}

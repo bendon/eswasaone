@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from eswasa_hr import settings
+
 import frappe
 from frappe.model.document import Document
 from frappe.utils import add_months, date_diff, getdate, today
@@ -35,7 +37,7 @@ class StaffAuthorisation(Document):
         today_d = getdate(today())
         if end < today_d:
             self.status = "Expired"
-        elif date_diff(end, today_d) <= 60:
+        elif date_diff(end, today_d) <= max(settings.get("expiry_alert_days")):
             self.status = "Expiring"
         else:
             self.status = "Current"

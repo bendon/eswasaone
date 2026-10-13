@@ -13,6 +13,7 @@ vi.mock("../../layout/InstitutionLayout", () => ({
 }));
 
 import { AccessLogSection, MyAccessLog, SensitivePanel } from "./Sensitive";
+import { settingsResponse } from "../../test/hrSettings";
 
 const VIEW = { employee: "EMP-9", employee_name: "Thandi Nxumalo", level: 2, level_label: "Pay and bank",
   fields: [{ field: "bank_name", label: "Bank", value: "Standard Bank" }, { field: "bank_ac_no", label: "Account number", value: null }], log: "LOG-1" };
@@ -26,6 +27,8 @@ function stub(opts: { denyLog?: boolean; emptyLog?: boolean } = {}) {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
@@ -79,7 +82,7 @@ describe("Access log", () => {
   it("says so when the viewer may not see it", async () => {
     stub({ denyLog: true });
     mount(<AccessLogSection employee="EMP-9" />);
-    expect(await screen.findByText(/Only HR Managers and the person/)).toBeInTheDocument();
+    expect(await screen.findByText(/permission/)).toBeInTheDocument();
   });
 
   it("shows the person who looked at their record", async () => {

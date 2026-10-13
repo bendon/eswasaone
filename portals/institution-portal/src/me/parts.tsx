@@ -108,7 +108,8 @@ export function leaveStatus(status: string): { label: string; cls: string } {
   if (s === "approved") return { label: "Approved", cls: "ok" };
   if (s === "rejected") return { label: "Not approved", cls: "bad" };
   if (s === "cancelled") return { label: "Cancelled", cls: "mute" };
-  return { label: "Waiting for a decision", cls: "leave" };
+  if (s === "open" || !s) return { label: "Waiting for a decision", cls: "leave" };
+  return { label: status, cls: "mute" };
 }
 
 export function StatusPill({ cls, label }: { cls: string; label: string }) {

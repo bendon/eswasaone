@@ -89,7 +89,7 @@ export function LeaveSection({ r }: { r: HrEmployeeRecord }) {
           </table>
         ) : (
           <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
-            {l.awaiting ? `Awaiting ESWASA (${l.awaiting}): leave types and entitlements aren't set yet.` : "No leave allocated for this period."}
+            No leave allocated for this period.
           </p>
         )}
       </div>

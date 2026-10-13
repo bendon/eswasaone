@@ -7,6 +7,7 @@ import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrAuthorisationRow, HrCompetenceMatrix } from "../api/types";
 import { fmtDay, NextStep } from "../me/parts";
 import { AuthPill, coverLabel } from "./competence/shared";
+import { useHrSettings } from "./useHrSettings";
 
 /**
  * H5 Competence — who is authorised to do what (journey J4). Live GET /hr/competence/matrix and
@@ -18,7 +19,10 @@ export function CompetenceView() {
   const mx = useApiResource<HrCompetenceMatrix>("/hr/competence/matrix", { enabled: Boolean(user), refreshKey: sessionKey });
   const ex = useApiResource<{ items: HrAuthorisationRow[] }>("/hr/competence/expiring", { enabled: Boolean(user), refreshKey: sessionKey });
   const d = mx.data;
-  const thin = (d?.skills ?? []).filter((s) => s.holders <= 1);
+  const rules = useHrSettings();
+  const thinAt = rules?.thin_cover ?? null;
+  const expiryWindow = rules ? Math.max(...rules.expiry_alert_days) : null;
+  const thin = thinAt == null ? [] : (d?.skills ?? []).filter((s) => s.holders <= thinAt);
 
   return (
     <RequireStaff reason="Staff sign-in required">
@@ -60,9 +64,9 @@ export function CompetenceView() {
                   <Icon name="i-warn" />
                   <div>
                     <b>
-                      {thin.length} competence{thin.length === 1 ? " depends" : "s depend"} on one person or nobody
+                      {thin.length} competence{thin.length === 1 ? " has" : "s have"} {thinAt === 1 ? "one holder or none" : `${thinAt} holders or fewer`}
                     </b>
-                    <p>{thin.map((s) => s.name).join(", ")}. Heads of department are alerted (R-H4).</p>
+                    <p>{thin.map((s) => s.name).join(", ")}. Heads of department get an alert for each.</p>
                   </div>
                 </div>
               ) : null}
@@ -108,7 +112,7 @@ export function CompetenceView() {
                     <tr>
                       <td>Cover</td>
                       {d.skills.map((s) => {
-                        const c = coverLabel(s.holders, s.expiring);
+                        const c = coverLabel(s.holders, s.expiring, thinAt);
                         return (
                           <td key={s.name} className="c">
                             <span className={`hr-st ${c.cls}`}>{c.label}</span>
@@ -126,7 +130,7 @@ export function CompetenceView() {
         <div className="hr-box">
           <div className="hr-box__h">
             <div>
-              <h3>Expiring in 60 days</h3>
+              <h3>{expiryWindow ? `Expiring in ${expiryWindow} days` : "Expiring soon"}</h3>
               <p>Renew before the date or the person drops out of assignment</p>
             </div>
           </div>
@@ -148,7 +152,7 @@ export function CompetenceView() {
                 ))}
               </div>
             ) : (
-              <p className="hr-note">{ex.loading ? "Loading…" : "Nothing ends in the next 60 days."}</p>
+              <p className="hr-note">{ex.loading ? "Loading…" : expiryWindow ? `Nothing ends in the next ${expiryWindow} days.` : "Nothing ends soon."}</p>
             )}
           </div>
         </div>

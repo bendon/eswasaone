@@ -17,7 +17,6 @@ from app.schemas import (
     FeedItem,
     FinanceDashboard,
     FinanceMonths,
-    HrSummary,
     InstitutionHome,
     Kpi,
     MetrologyJobSummary,
@@ -462,24 +461,6 @@ def mock_finance_kpis() -> FinanceDashboard:
             ),
         ],
     )
-
-
-def mock_hr_summary() -> HrSummary:
-    # Soft-empty live path preferred; mock only for offline home tiles if needed.
-    return HrSummary(
-        headcount=86,
-        appraisal_completion_pct=64.0,
-        open_leave=11,
-        new_hires_q=4,
-        on_leave_today=3,
-        leave_pending=11,
-        open_positions=2,
-        out_today=[],
-        activity=[],
-    )
-
-
-mock_hr_overview = mock_hr_summary
 
 
 def mock_board_pack() -> BoardPackSummary:

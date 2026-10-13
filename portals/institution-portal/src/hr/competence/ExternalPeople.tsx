@@ -5,22 +5,22 @@ import { useInstitution } from "../../layout/InstitutionLayout";
 import type { components } from "@contracts";
 import { Banner, Crumbs, StatusPill } from "../../me/parts";
 import { errorText, hrSend } from "../api";
+import { useHrSettings } from "../useHrSettings";
 
 type HrExternalPeople = components["schemas"]["HrExternalPeople"];
 
-const ROLES = ["Contract auditor", "Technical expert", "TC expert"];
-
 /**
  * H5d External personnel: contract auditors and experts, with the same competence and declaration checks as staff, no
- * payroll. Behind ESWASA's decision (Confirmation Pack H10): while the register is off the screen says so and adds nothing.
+ * payroll. HR Settings turns the register on or off; while it's off the screen says so and adds nothing.
  * Live GET/POST /hr/external-people.
  */
 export function ExternalPeople() {
   const { user, sessionKey } = useInstitution();
   const res = useApiResource<HrExternalPeople>("/hr/external-people", { enabled: Boolean(user), refreshKey: sessionKey });
+  const ROLES = useHrSettings()?.lists.external_roles ?? [];
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [role, setRole] = useState(ROLES[0]);
+  const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
   const [org, setOrg] = useState("");
   const [notes, setNotes] = useState("");
@@ -33,6 +33,7 @@ export function ExternalPeople() {
     setErr(null);
     setOk(null);
     if (!name.trim()) return setErr("Give the person's full name.");
+    if (!role) return setErr("Choose their role.");
     setBusy(true);
     try {
       await hrSend("/hr/external-people", { full_name: name.trim(), role, email: email.trim() || undefined, organisation: org.trim() || undefined, notes: notes.trim() || undefined });
@@ -68,8 +69,8 @@ export function ExternalPeople() {
       </div>
       <ResourceGate loading={res.loading} error={res.error} onRetry={res.reload} refreshing={res.refreshing} hasData={Boolean(d)}>
         {d && !d.enabled ? (
-          <Banner kind="warn" title="Proposed, waiting for ESWASA's decision (H10)">
-            Are external people used, and do they need the same records as staff? Until ESWASA decides, the register is off and nobody can be added.
+          <Banner kind="info" title="The external personnel register is off">
+            Turn on "External personnel enabled" in HR Settings to record contract auditors and experts.
           </Banner>
         ) : null}
         {ok ? (
@@ -92,6 +93,7 @@ export function ExternalPeople() {
               <label className="hr-f">
                 <span>Role</span>
                 <select className="hr-in" value={role} onChange={(e) => setRole(e.target.value)} disabled={busy}>
+                  <option value="">Choose…</option>
                   {ROLES.map((r) => (
                     <option key={r}>{r}</option>
                   ))}

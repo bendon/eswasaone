@@ -6,7 +6,7 @@ import base64
 import binascii
 import logging
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from typing import Annotated, Any, Literal
 from urllib.parse import quote
 
@@ -124,6 +124,7 @@ from app.schemas import (
     HrAccessLog,
     HrBoardPack,
     HrLiveOverview,
+    HrSettings,
     HrSetupStatus,
     HrEstablishment,
     HrSensitive,
@@ -1755,79 +1756,6 @@ _EMPLOYEE_GRADE_DOCTYPE = "Employee Grade"
 # Prefer brief §1 custom_head; keep legacy candidates for older sites.
 _DEPT_HEAD_FIELD_CANDIDATES = ("custom_head", "department_head", "custom_department_head")
 
-# ERPNext install fixtures — never list as live ESWASA departments (brief §14.1).
-_ERPNEXT_DEPT_STEMS = frozenset(
-    {
-        "Accounts",
-        "Marketing",
-        "Sales",
-        "Purchase",
-        "Operations",
-        "Production",
-        "Dispatch",
-        "Customer Service",
-        "Human Resources",
-        "Management",
-        "Quality Management",
-        "Research & Development",
-        "Legal",
-        "All Departments",
-    }
-)
-
-
-def _dept_stem(row: dict[str, Any]) -> str:
-    name = str(row.get("department_name") or row.get("name") or "")
-    return name.split(" - ")[0].strip()
-
-
-def _is_live_department(row: dict[str, Any]) -> bool:
-    """Leaf, enabled, and not an ERPNext install fixture / tree root."""
-    if row.get("is_group") in (1, True, "1"):
-        return False
-    if row.get("disabled") in (1, True, "1"):
-        return False
-    return _dept_stem(row) not in _ERPNEXT_DEPT_STEMS
-
-
-def _empty_org_overview() -> HrOrganisationOverview:
-    setup = HrSetupProgress(
-        has_profile=False,
-        has_departments=False,
-        has_designations=False,
-        has_locations=False,
-        has_grades=False,
-        has_cost_centres=False,
-        has_employees=False,
-        completion_pct=0.0,
-        steps_completed=0,
-        steps_total=7,
-    )
-    return HrOrganisationOverview(
-        organisation=None,
-        setup=setup,
-        counts=HrOrganisationCounts(
-            departments=0,
-            designations=0,
-            filled_positions=0,
-            vacant_positions=0,
-            locations=0,
-            cost_centres=0,
-            employees=0,
-        ),
-        departments=[],
-        designations_preview=[],
-        designations_total=0,
-        locations=[],
-        cost_centres=[],
-        payroll=HrPayrollReadiness(
-            ready=False,
-            label="Not ready",
-            reason="Missing grades, cost centres, or employees",
-        ),
-    )
-
-
 def _as_hr_organisation(row: dict[str, Any]) -> HrOrganisation:
     name = str(row.get("name") or row.get("id") or "")
     legal = str(
@@ -1867,7 +1795,8 @@ def _as_hr_department(
     row: dict[str, Any],
     *,
     filled: int = 0,
-    designation_count: int = 0,
+    designation_count: int | None = None,
+    approved: int | None = None,
     head: HrEmployeeRef | None = None,
     cost_centre: HrCostCentreRef | None = None,
 ) -> HrDepartment:
@@ -1906,7 +1835,7 @@ def _as_hr_department(
         status=status,
         designation_count=designation_count,
         filled_count=filled,
-        total_positions=filled,
+        total_positions=approved,
     )
 
 
@@ -1952,7 +1881,7 @@ def _as_hr_grade_band(row: dict[str, Any]) -> HrGradeBand:
         level=row.get("level"),
         min_salary=_as_optional_float(row.get("min_salary") or row.get("default_base_pay")),
         max_salary=_as_optional_float(row.get("max_salary")),
-        currency=row.get("currency") or "SZL",
+        currency=row.get("currency") or None,
     )
 
 
@@ -2040,16 +1969,17 @@ def _compute_setup(
 
 def _payroll_readiness(
     *,
-    has_grades: bool,
+    has_structures: bool,
     has_cost_centres: bool,
     employees: int,
 ) -> HrPayrollReadiness:
-    ready = has_grades and has_cost_centres and employees > 0
+    """Ready when HRMS has what a payroll run needs: a submitted salary structure, a cost centre and employees."""
+    ready = has_structures and has_cost_centres and employees > 0
     if ready:
         return HrPayrollReadiness(ready=True, label="Ready", reason=None)
     missing: list[str] = []
-    if not has_grades:
-        missing.append("grade bands")
+    if not has_structures:
+        missing.append("salary structures")
     if not has_cost_centres:
         missing.append("cost centres")
     if employees <= 0:
@@ -2076,14 +2006,14 @@ async def _load_company(session: FrappeClient) -> dict[str, Any] | None:
         ],
         limit=1,
         order_by="creation asc",
-        soft=True,
+        optional=True,
     )
     if not rows:
         return None
     name = str(rows[0].get("name") or "")
     if not name:
         return rows[0]
-    doc = await _frappe_get_doc(session, "Company", name, soft=True)
+    doc = await _frappe_get_doc(session, "Company", name, optional=True)
     return doc or rows[0]
 
 
@@ -2107,16 +2037,15 @@ async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOvervi
         filters=[["is_group", "=", 0], ["disabled", "=", 0]],
         limit=200,
         order_by="department_name asc",
-        soft=True,
+        optional=True,
     )
-    dept_rows = [r for r in dept_rows if _is_live_department(r)]
     desig_rows = await _frappe_get_list(
         session,
         "Designation",
         fields=["name", "designation_name", "description"],
         limit=200,
         order_by="designation_name asc",
-        soft=True,
+        optional=True,
     )
     loc_rows = await _frappe_get_list(
         session,
@@ -2124,7 +2053,7 @@ async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOvervi
         fields=["name", "branch", "company"],
         limit=100,
         order_by="name asc",
-        soft=True,
+        optional=True,
     )
     cc_rows = await _frappe_get_list(
         session,
@@ -2133,7 +2062,7 @@ async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOvervi
         filters=[["is_group", "=", 0]],
         limit=200,
         order_by="name asc",
-        soft=True,
+        optional=True,
     )
     grade_rows = await _frappe_get_list(
         session,
@@ -2141,16 +2070,25 @@ async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOvervi
         fields=["name", "description"],
         limit=100,
         order_by="name asc",
-        soft=True,
+        optional=True,
     )
     employees = await _frappe_get_list(
         session,
         "Employee",
         fields=["name", "department", "designation", "branch", "status", "grade", "payroll_cost_center"],
         filters=[["status", "=", "Active"]],
-        limit=500,
-        soft=True,
+        limit=0,
+        optional=True,
     )
+    structures = await _frappe_get_list(session, "Salary Structure", fields=["name"], filters=[["docstatus", "=", 1]], limit=1, optional=True)
+    # Vacancies are approved posts (submitted Staffing Plans) less filled, as eswasa_hr.establishment works them out.
+    try:
+        est = await session.method("eswasa_hr.establishment.establishment")
+    except FrappeError as exc:
+        if not _doctype_missing(str(exc), "Staffing Plan"):
+            raise
+        est = None
+    est_totals = (est or {}).get("totals") or {} if isinstance(est, dict) else {}
 
     filled_by_dept: dict[str, int] = {}
     filled_by_desig: dict[str, int] = {}
@@ -2203,10 +2141,7 @@ async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOvervi
     has_grades = len(grade_rows) > 0
     has_cc = len(cost_centres) > 0
     filled_positions = emp_count
-    vacant = 0
-    for d in designations:
-        if d.total is not None and d.total > d.filled:
-            vacant += d.total - d.filled
+    vacant = int(est_totals.get("vacant") or 0)
 
     setup = _compute_setup(
         has_profile=organisation is not None,
@@ -2235,7 +2170,7 @@ async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOvervi
         locations=locations,
         cost_centres=cost_centres,
         payroll=_payroll_readiness(
-            has_grades=has_grades,
+            has_structures=bool(structures),
             has_cost_centres=has_cc,
             employees=emp_count,
         ),
@@ -2251,16 +2186,14 @@ async def get_hr_organisation_overview(
     auth: Annotated[AuthContext, Depends(require_auth)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> HrOrganisationOverview:
-    """Structure-first HR home — soft-empty when Frappe/DocTypes unavailable."""
+    """Structure-first HR home. 503 when Frappe is unavailable; a Frappe error passes through (never fake zeros)."""
     if auth.mock or not await frappe.health():
-        return _empty_org_overview()
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
     try:
         return await _aggregate_org_overview(auth.frappe(frappe))
-    except FrappeError:
-        # Soft-empty: missing Company / DocTypes / odd Desk errors must not blank HR home.
-        return _empty_org_overview()
-    except ValidationError:
-        return _empty_org_overview()
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
 
 
 @router.get("/hr/organisation", response_model=HrOrganisation, tags=["hr"])
@@ -2269,7 +2202,7 @@ async def get_hr_organisation(
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> HrOrganisation:
     if auth.mock or not await frappe.health():
-        raise HTTPException(status_code=404, detail="No Company configured")
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
     try:
         company = await _load_company(auth.frappe(frappe))
         if not company:
@@ -2343,7 +2276,7 @@ async def create_hr_organisation(
     except HTTPException:
         raise
     name = str(created.get("name") or legal)
-    refreshed = await _frappe_get_doc(session, "Company", name, soft=True) or created
+    refreshed = await _frappe_get_doc(session, "Company", name, optional=True) or created
     return _as_hr_organisation(refreshed)
 
 
@@ -2404,7 +2337,7 @@ async def list_hr_departments(
     limit: int = 100,
 ) -> dict[str, list[HrDepartment]]:
     if auth.mock or not await frappe.health():
-        return {"items": []}
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
     try:
         session = auth.frappe(frappe)
         rows = await _frappe_get_list(
@@ -2423,25 +2356,41 @@ async def list_hr_departments(
             filters=[["is_group", "=", 0], ["disabled", "=", 0]],
             limit=limit,
             order_by="department_name asc",
-            soft=True,
+            optional=True,
         )
-        rows = [r for r in rows if _is_live_department(r)]
         employees = await _frappe_get_list(
             session,
             "Employee",
-            fields=["name", "department"],
+            fields=["name", "department", "designation"],
             filters=[["status", "=", "Active"]],
-            limit=500,
-            soft=True,
+            limit=0,
+            optional=True,
         )
         filled: dict[str, int] = {}
+        posts: dict[str, set[str]] = {}
         for emp in employees:
             d = emp.get("department")
             if d:
                 filled[str(d)] = filled.get(str(d), 0) + 1
+                if emp.get("designation"):
+                    posts.setdefault(str(d), set()).add(str(emp["designation"]))
+        # Approved posts per department from submitted Staffing Plans (eswasa_hr.establishment); none until a plan exists.
+        approved: dict[str, int] = {}
+        try:
+            est = await session.method("eswasa_hr.establishment.establishment")
+            for r in (est or {}).get("departments") or [] if isinstance(est, dict) else []:
+                approved[str(r.get("department"))] = int(r.get("approved") or 0)
+        except FrappeError as exc:
+            if not _doctype_missing(str(exc), "Staffing Plan"):
+                raise
         return {
             "items": [
-                _as_hr_department(r, filled=filled.get(str(r.get("name") or ""), 0))
+                _as_hr_department(
+                    r,
+                    filled=filled.get(str(r.get("name") or ""), 0),
+                    designation_count=len(posts.get(str(r.get("name") or ""), ())),
+                    approved=approved.get(str(r.get("name") or "")),
+                )
                 for r in rows
             ]
         }
@@ -2551,7 +2500,7 @@ async def assign_hr_department_head(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="The head of department couldn't be saved: this site is missing the head field. Ask the administrator to run bench migrate.",
         )
-    emp = await _frappe_get_doc(session, "Employee", body.employee_id, soft=True)
+    emp = await _frappe_get_doc(session, "Employee", body.employee_id, optional=True)
     head = None
     if emp:
         ename = str(emp.get("employee_name") or emp.get("name") or body.employee_id)
@@ -2609,7 +2558,7 @@ async def list_hr_designations(
     limit: int = 100,
 ) -> dict[str, list[HrDesignation]]:
     if auth.mock or not await frappe.health():
-        return {"items": []}
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
     try:
         session = auth.frappe(frappe)
         rows = await _frappe_get_list(
@@ -2618,7 +2567,7 @@ async def list_hr_designations(
             fields=["name", "designation_name", "description"],
             limit=limit,
             order_by="designation_name asc",
-            soft=True,
+            optional=True,
         )
         employees = await _frappe_get_list(
             session,
@@ -2626,7 +2575,7 @@ async def list_hr_designations(
             fields=["name", "designation", "department"],
             filters=[["status", "=", "Active"]],
             limit=500,
-            soft=True,
+            optional=True,
         )
         filled: dict[str, int] = {}
         dept_hint: dict[str, str] = {}
@@ -2742,7 +2691,7 @@ async def list_hr_grade_bands(
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> dict[str, list[HrGradeBand]]:
     if auth.mock or not await frappe.health():
-        return {"items": []}
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
     try:
         rows = await _frappe_get_list(
             auth.frappe(frappe),
@@ -2750,7 +2699,7 @@ async def list_hr_grade_bands(
             fields=["name", "description"],
             limit=100,
             order_by="name asc",
-            soft=True,
+            optional=True,
         )
         return {"items": [_as_hr_grade_band(r) for r in rows]}
     except FrappeError as exc:
@@ -2837,7 +2786,7 @@ async def list_hr_locations(
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> dict[str, list[HrLocation]]:
     if auth.mock or not await frappe.health():
-        return {"items": []}
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
     try:
         session = auth.frappe(frappe)
         rows = await _frappe_get_list(
@@ -2846,7 +2795,7 @@ async def list_hr_locations(
             fields=["name", "branch", "company"],
             limit=100,
             order_by="name asc",
-            soft=True,
+            optional=True,
         )
         employees = await _frappe_get_list(
             session,
@@ -2854,7 +2803,7 @@ async def list_hr_locations(
             fields=["name", "branch"],
             filters=[["status", "=", "Active"]],
             limit=500,
-            soft=True,
+            optional=True,
         )
         counts: dict[str, int] = {}
         for emp in employees:
@@ -2941,7 +2890,7 @@ async def list_hr_cost_centres(
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> dict[str, list[HrCostCentre]]:
     if auth.mock or not await frappe.health():
-        return {"items": []}
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
     try:
         session = auth.frappe(frappe)
         rows = await _frappe_get_list(
@@ -2958,7 +2907,7 @@ async def list_hr_cost_centres(
             filters=[["is_group", "=", 0]],
             limit=200,
             order_by="name asc",
-            soft=True,
+            optional=True,
         )
         employees = await _frappe_get_list(
             session,
@@ -2966,7 +2915,7 @@ async def list_hr_cost_centres(
             fields=["name", "payroll_cost_center"],
             filters=[["status", "=", "Active"]],
             limit=500,
-            soft=True,
+            optional=True,
         )
         counts: dict[str, int] = {}
         for emp in employees:
@@ -3103,11 +3052,13 @@ async def _frappe_get_list(
     limit: int = 20,
     order_by: str | None = None,
     soft: bool = False,
+    optional: bool = False,
 ) -> list[dict[str, Any]]:
     """Permission-bound list via frappe.client.get_list (acts-as-user).
 
-    When ``soft=True``, a Desk permission denial returns ``[]`` instead of 403 —
-    used for org-wide portal modules where not every staff role has full DocPerms.
+    ``optional=True``: ``[]`` only when the DocType itself isn't installed; a permission or field error still
+    raises, so a screen never shows an empty list or a zero that isn't true (HR routes use this).
+    ``soft=True`` (older modules): any Desk denial or error returns ``[]``.
     """
     payload: dict[str, Any] = {
         "doctype": doctype,
@@ -3122,6 +3073,8 @@ async def _frappe_get_list(
         raw = await session.method("frappe.client.get_list", json=payload)
     except FrappeError as exc:
         text = str(exc)
+        if optional and _doctype_missing(text, doctype):
+            return []
         if soft and (
             "PermissionError" in text
             or "Insufficient Permission" in text
@@ -3151,13 +3104,21 @@ async def _frappe_insert(session: FrappeClient, doc: dict[str, Any]) -> dict[str
     return {"name": str(raw)}
 
 
+def _doctype_missing(text: str, doctype: str) -> bool:
+    """Frappe's error when a DocType (or a document of it) doesn't exist on this site."""
+    low = text.lower()
+    return "doesnotexisterror" in low and (f"doctype {doctype.lower()} not found" in low or f"{doctype.lower()} not found" in low)
+
+
 async def _frappe_get_doc(
     session: FrappeClient,
     doctype: str,
     name: str,
     *,
     soft: bool = False,
+    optional: bool = False,
 ) -> dict[str, Any] | None:
+    """``optional=True``: None only when the document (or its DocType) doesn't exist; permission errors raise."""
     try:
         raw = await session.method(
             "frappe.client.get",
@@ -3165,6 +3126,8 @@ async def _frappe_get_doc(
         )
     except FrappeError as exc:
         text = str(exc)
+        if optional and "DoesNotExistError" in text:
+            return None
         if soft and (
             "PermissionError" in text
             or "Insufficient Permission" in text
@@ -3248,6 +3211,7 @@ def _as_hr_leave(row: dict[str, Any]) -> HrLeaveSummary:
         from_date=row.get("from_date"),
         to_date=row.get("to_date"),
         status=str(row.get("status") or ""),
+        days=_as_optional_float(row.get("total_leave_days")),
     )
 
 
@@ -3506,7 +3470,7 @@ async def list_hr_employees(
             filters=filters or None,
             limit=limit,
             order_by="employee_name asc",
-            soft=True,
+            optional=True,
         )
         return {"items": [_as_hr_employee(r) for r in rows]}
     except FrappeError as exc:
@@ -3640,7 +3604,7 @@ async def get_hr_orgchart(
             filters=[["status", "=", "Active"]],
             limit=limit,
             order_by="employee_name asc",
-            soft=True,
+            optional=True,
         )
         items: list[HrOrgChartNode] = []
         for r in rows:
@@ -4018,19 +3982,21 @@ async def _my_employee(session: FrappeClient, username: str) -> dict[str, Any] |
         fields=_EMPLOYEE_SELF_FIELDS,
         filters={"user_id": username},
         limit=1,
-        soft=True,
+        optional=True,
     )
     return rows[0] if rows else None
 
 
 async def _leave_details(session: FrappeClient, employee: str, on_date: str) -> dict[str, Any]:
-    """HRMS get_leave_details: allocations per leave type plus the leave approver."""
+    """HRMS get_leave_details: allocations per leave type plus the leave approver. An HRMS error raises (no balance
+    is shown as "nothing allocated" when it couldn't be read)."""
     try:
         raw = await session.method(
             f"{_LEAVE_APP}.get_leave_details", json={"employee": employee, "date": on_date}
         )
-    except FrappeError:
-        return {}
+    except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
     return raw if isinstance(raw, dict) else {}
 
 
@@ -4058,16 +4024,6 @@ async def _person_ref(session: FrappeClient, user: str | None) -> HrPersonRef | 
     )
     name = rows[0].get("full_name") if rows else None
     return HrPersonRef(user=user, name=name or user)
-
-
-def _weekdays_between(start: date, end: date) -> int:
-    days = 0
-    d = start
-    while d <= end:
-        if d.weekday() < 5:
-            days += 1
-        d += timedelta(days=1)
-    return days
 
 
 @router.get("/hr/me", response_model=HrMe, tags=["hr"])
@@ -4101,11 +4057,11 @@ async def get_hr_me(
         rows = await _frappe_get_list(
             session,
             "Leave Application",
-            fields=["name", "employee", "employee_name", "leave_type", "from_date", "to_date", "status"],
+            fields=["name", "employee", "employee_name", "leave_type", "from_date", "to_date", "status", "total_leave_days"],
             filters={"employee": emp["name"]},
             limit=20,
             order_by="from_date desc",
-            soft=True,
+            optional=True,
         )
         return HrMe(
             linked=True,
@@ -4155,8 +4111,11 @@ async def preview_hr_leave(
                 },
             )
             days = float(raw_days)
-        except (FrappeError, TypeError, ValueError):
-            days = float(_weekdays_between(start, end))
+        except FrappeError as exc:
+            _raise_from_frappe(exc)
+            raise  # pragma: no cover
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=502, detail="HRMS didn't return a number of leave days") from exc
 
         details = await _leave_details(session, emp["name"], start.isoformat())
         alloc = (details.get("leave_allocation") or {}).get(body.leave_type)
@@ -5601,12 +5560,21 @@ async def get_hr_live_overview(
     return HrLiveOverview.model_validate(await _hr_call(auth, frappe, f"{_OVERVIEW}.overview"))
 
 
+@router.get("/hr/settings", response_model=HrSettings, tags=["hr"])
+async def get_hr_settings(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrSettings:
+    """HR rules and limits (HR Settings, with eswasa_hr's fallbacks), currency, working week and choice lists."""
+    return HrSettings.model_validate(await _hr_call(auth, frappe, "eswasa_hr.settings.settings"))
+
+
 @router.get("/hr/setup/status", response_model=HrSetupStatus, tags=["hr"])
 async def get_hr_setup_status(
     auth: Annotated[AuthContext, Depends(require_auth)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
 ) -> HrSetupStatus:
-    """H14: each HR setup step from live counts; ESWASA inputs show as awaiting, payroll as excluded."""
+    """H14: each HR setup step from live counts, with a link to where it is set up."""
     return HrSetupStatus.model_validate(await _hr_call(auth, frappe, f"{_OVERVIEW}.setup_status"))
 
 
@@ -5858,14 +5826,14 @@ async def list_hr_holidays(
             "Holiday List",
             fields=["name"],
             limit=20,
-            soft=True,
+            optional=True,
         )
         items: list[HrHoliday] = []
         for hl in lists:
             name = str(hl.get("name") or "")
             if not name:
                 continue
-            doc = await _frappe_get_doc(session, "Holiday List", name, soft=True)
+            doc = await _frappe_get_doc(session, "Holiday List", name, optional=True)
             if not doc:
                 continue
             for row in doc.get("holidays") or []:
@@ -5899,7 +5867,7 @@ def _as_hr_payslip(row: dict[str, Any]) -> HrPayslip:
     return HrPayslip(
         id=str(row.get("name") or ""),
         employee=str(row.get("employee_name") or row.get("employee") or ""),
-        status=str(row.get("status") or ("Paid" if row.get("docstatus") == 1 else "Draft")),
+        status=str(row.get("status") or {0: "Draft", 1: "Submitted", 2: "Cancelled"}.get(int(row.get("docstatus") or 0), "Draft")),
         period=str(period) if period else None,
         net_pay=net_f,
     )
@@ -5929,7 +5897,7 @@ async def list_hr_slips(
             ],
             limit=limit,
             order_by="posting_date desc",
-            soft=True,
+            optional=True,
         )
         return {"items": [_as_hr_payslip(r) for r in rows]}
     except FrappeError as exc:
@@ -5952,7 +5920,7 @@ async def get_hr_payroll_status(
             fields=["name", "status", "posting_date", "end_date", "docstatus"],
             limit=1,
             order_by="modified desc",
-            soft=True,
+            optional=True,
         )
         if not rows:
             return HrPayrollStatus(

@@ -13,10 +13,10 @@ class PureTests(unittest.TestCase):
     def test_expense_options_list_types_and_threshold(self):
         self.assertEqual(ex.options_view(["Travel", "Meals"], 200.0), {"types": ["Meals", "Travel"], "receipt_required_above": 200.0, "awaiting": None})
 
-    def test_no_expense_types_is_awaiting_finance(self):
+    def test_no_expense_types_is_an_empty_list_not_a_wait(self):
         out = ex.options_view([], None)
         self.assertEqual(out["types"], [])
-        self.assertEqual(out["awaiting"], "ESWASA Finance")
+        self.assertIsNone(out["awaiting"])
         self.assertIsNone(out["receipt_required_above"])
 
     def test_correction_fields_are_the_allowed_ones_and_names_need_evidence(self):
@@ -39,7 +39,7 @@ class GlueTests(unittest.TestCase):
     def test_expense_options_without_the_doctype(self):
         f = _fakefrappe.install({})
         f.db.get_single_value = lambda dt, field: None
-        self.assertEqual(ex.options_impl()["awaiting"], "ESWASA Finance")
+        self.assertEqual(ex.options_impl()["types"], [])
 
     def test_genders_come_from_hrms(self):
         _fakefrappe.install({"Gender": [{"name": "Female"}, {"name": "Male"}, {"name": "Prefer not to say"}]}, doctypes=("Gender",))

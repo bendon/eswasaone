@@ -6,7 +6,7 @@ HRMS objects, used natively: ``Appraisal Cycle`` → one ``Appraisal`` per perso
 in the cycle, each linked to the strategic plan through ``Goal.custom_strategic_goal``.
 
 - HR starts a cycle for chosen departments with one template; every appraisee gets a self-assessment ToDo.
-- The employee rates the template criteria (1–5 stars) and writes reflections; saving all ratings is "self done"
+- The employee rates the template criteria (1 to rating_max stars) and writes reflections; saving all ratings is "self done"
   and hands a review ToDo to the direct line manager.
 - The direct line manager sets objectives, rates the same criteria and submits feedback ("manager done").
 - HR sees completion by department (objectives set, self done, manager done) and can remind anyone with an open
@@ -20,12 +20,14 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Iterable
 
+from eswasa_hr import settings
+
 from eswasa_hr.workdays import working_days_before
 
 CYCLE = "Appraisal Cycle"
 APPRAISAL = "Appraisal"
 FEEDBACK = "Employee Performance Feedback"
-REMINDER_DAYS = (10, 3)  # R-H6, working days before end_date
+# R-H6 reminder days (working days before end_date): HR Settings ``appraisal_reminder_days``.
 
 
 # ---------------------------------------------------------------- pure rules
@@ -47,7 +49,7 @@ def reminder_due(day: date, end: Any, holidays: Iterable[date] = ()) -> int | No
     if not e:
         return None
     hol = list(holidays)
-    return next((n for n in REMINDER_DAYS if working_days_before(e, n, hol) == day), None)
+    return next((n for n in settings.get("appraisal_reminder_days") if working_days_before(e, n, hol) == day), None)
 
 
 def completion(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -69,12 +71,13 @@ def step_of(self_done: bool, manager_done: bool) -> str:
 
 
 def rating_errors(criteria: list[str], stars: dict[str, Any]) -> list[str]:
-    """Every criterion rated 1 to 5."""
+    """Every criterion rated 1 to HR Settings' rating_max."""
     missing = [c for c in criteria if c not in stars or stars[c] in (None, "")]
     if missing:
         return [f"Rate every item: {', '.join(missing)}."]
-    bad = [c for c in criteria if not str(stars[c]).isdigit() or not 1 <= int(stars[c]) <= 5]
-    return [f"Ratings are 1 to 5: {', '.join(bad)}."] if bad else []
+    top = settings.get("rating_max")
+    bad = [c for c in criteria if not str(stars[c]).isdigit() or not 1 <= int(stars[c]) <= top]
+    return [f"Ratings are 1 to {top}: {', '.join(bad)}."] if bad else []
 
 
 def cycle_errors(name: str, start: Any, end: Any, template: str | None) -> list[str]:
@@ -259,7 +262,8 @@ def defaults_impl() -> dict[str, Any]:
     return {
         "templates": templates,
         "departments": [{"name": k, "people": v} for k, v in sorted(counts.items()) if k],
-        "reminder_days": list(REMINDER_DAYS),
+        "reminder_days": list(settings.get("appraisal_reminder_days")),
+        "rating_max": settings.get("rating_max"),
     }
 
 

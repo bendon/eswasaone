@@ -5,6 +5,8 @@ import { readSnapshot, writeSnapshot } from "../../lib/localSnapshot";
 type Options = {
   enabled?: boolean;
   refreshKey?: string | number | null;
+  /** Background lookups: a failure stays in ``error`` instead of popping up the global error dialog. */
+  quiet?: boolean;
 };
 
 /**
@@ -37,7 +39,7 @@ export function useMeResource<T>(path: string, options: Options = {}) {
     else setLoading(true);
     setError(null);
     setAuthRequired(false);
-    void apiFetch<T>(path)
+    void apiFetch<T>(path, { quiet: options.quiet })
       .then((res) => {
         setData(res);
         writeSnapshot(key, res);
@@ -64,7 +66,7 @@ export function useMeResource<T>(path: string, options: Options = {}) {
           }
         }
       });
-  }, [path, key, enabled]);
+  }, [path, key, enabled, options.quiet]);
 
   useEffect(() => {
     reload();

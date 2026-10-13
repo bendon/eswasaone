@@ -2069,6 +2069,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hr/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * HR rules and limits the screens show (HR Settings, with the app's fallbacks), currency, working week and choice lists
+         * @description Any signed-in user. No personal data.
+         */
+        get: operations["getHrSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hr/setup/status": {
         parameters: {
             query?: never;
@@ -2076,7 +2096,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** H14: each HR setup step from live counts; ESWASA inputs awaiting, payroll excluded */
+        /** H14: each HR setup step from live counts, with a link to where it is set up */
         get: operations["getHrSetupStatus"];
         put?: never;
         post?: never;
@@ -5098,11 +5118,8 @@ export interface components {
             min_salary?: number | null;
             /** Max Salary */
             max_salary?: number | null;
-            /**
-             * Currency
-             * @default SZL
-             */
-            currency: string | null;
+            /** Currency */
+            currency?: string | null;
         };
         /** HrGradeBandCreate */
         HrGradeBandCreate: {
@@ -5118,11 +5135,8 @@ export interface components {
             min_salary?: number | null;
             /** Max Salary */
             max_salary?: number | null;
-            /**
-             * Currency
-             * @default SZL
-             */
-            currency: string;
+            /** Currency */
+            currency?: string | null;
         };
         /** HrGradeBandPatch */
         HrGradeBandPatch: {
@@ -5446,6 +5460,8 @@ export interface components {
             posted_on?: string | null;
             closes_on?: string | null;
             salary?: components["schemas"]["CareerSalary"] | null;
+            /** @description HR contact for applicants (HR Settings) */
+            contact_email?: string | null;
         };
         CareerApplicationReceipt: {
             reference: string;
@@ -6132,6 +6148,52 @@ export interface components {
             self_done: number;
             manager_done: number;
         };
+        HrSettings: {
+            /** @description Working days an approver has to decide a leave request */
+            leave_sla_days: number;
+            expense_sla_days: number;
+            /** @description Requisitions */
+            decision_sla_days: number;
+            /** @description Head of department / Executive Director decisions */
+            head_sla_days: number;
+            interview_feedback_days: number;
+            offer_reply_days: number;
+            contract_notice_days: number;
+            probation_notice_days: number;
+            /** @description Authorisation expiry alert days */
+            expiry_alert_days: number[];
+            thin_cover: number;
+            declaration_handoff_days: number;
+            movement_days: number;
+            turnover_days: number;
+            cycle_warn_days: number;
+            appraisal_reminder_days: number[];
+            calendar_max_days: number;
+            rating_max: number;
+            hr_email: string;
+            /** @description Default company currency */
+            currency?: string | null;
+            /** @description ISO weekdays worked (1 = Monday) */
+            working_week: number[];
+            lists: {
+                evidence_types?: string[];
+                external_roles?: string[];
+                document_types?: string[];
+                evidence_sections?: string[];
+                separation_reasons?: string[];
+                contract_changes?: string[];
+                establishment_changes?: string[];
+                council_changes?: string[];
+                invite_roles?: string[];
+                invite_default_roles?: string[];
+                case_stages?: {
+                    [key: string]: string[];
+                };
+                case_closed?: {
+                    [key: string]: string[];
+                };
+            };
+        };
         HrLiveOverview: {
             /** Format: date */
             as_of: string;
@@ -6158,6 +6220,13 @@ export interface components {
             movements: {
                 joiners?: number;
                 leavers?: number;
+            };
+            /** @description The day windows behind movements, turnover and ending soon (HR Settings) */
+            windows?: {
+                movement_days?: number;
+                turnover_days?: number;
+                contract_notice_days?: number;
+                probation_notice_days?: number;
             };
             turnover: components["schemas"]["HrTurnover"];
             ending_soon: {
@@ -7073,6 +7142,11 @@ export interface components {
             to_date?: string | null;
             /** Status */
             status: string;
+            /**
+             * Days
+             * @description HRMS total_leave_days (holidays and half days counted)
+             */
+            days?: number | null;
         };
         /** HrLocation */
         HrLocation: {
@@ -11545,6 +11619,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HrLiveOverview"];
                 };
+            };
+        };
+    };
+    getHrSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrSettings"];
+                };
+            };
+            /** @description Frappe unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -34,13 +34,9 @@ function fmtDate(s?: string | null): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function dayCount(item: LeaveRow): number {
-  if (typeof item.days === "number") return item.days;
-  if (!item.from_date || !item.to_date) return 1;
-  const a = Date.parse(item.from_date);
-  const b = Date.parse(item.to_date);
-  if (Number.isNaN(a) || Number.isNaN(b)) return 1;
-  return Math.max(1, Math.round((b - a) / 86_400_000) + 1);
+/** HRMS's working-day count for the request (holidays and half days included); "—" when it didn't send one. */
+function dayCount(item: LeaveRow): string {
+  return typeof item.days === "number" ? String(item.days) : "—";
 }
 
 export function LeaveView() {
@@ -71,6 +67,7 @@ export function LeaveView() {
 
   const pending = items.filter((i) => bucketFor(i) === "pending");
   const overdue = pending.filter((i) => i.overdue).length;
+  const escalated = pending.filter((i) => i.overdue && i.escalated).length;
   const approved = items.filter((i) => bucketFor(i) === "approved").length;
   const filtered = useMemo(() => {
     if (statusFilter === "all") return items;
@@ -84,7 +81,7 @@ export function LeaveView() {
     return live.map((b) => {
       const alloc = Number(b.allocated) || 0;
       const bal = Number(b.balance) || 0;
-      const used = Number(b.used) || Math.max(0, alloc - bal);
+      const used = Number(b.used) || 0;
       const pct = alloc > 0 ? Math.round((used / alloc) * 100) : 0;
       return {
         label: b.leave_type,
@@ -143,7 +140,7 @@ export function LeaveView() {
               </div>
               <div className="kv">
                 <b>Decides</b>
-                <span>{selected.approver_name || selected.approver || "No approver set. HR is alerted."}</span>
+                <span>{selected.approver_name || selected.approver || "No approver set"}</span>
               </div>
               {selected.sla_date ? (
                 <div className="kv">
@@ -195,7 +192,7 @@ export function LeaveView() {
             <div className="kpi">
               <span className="l">Past the decision date</span>
               <span className="v">{overdue}</span>
-              <span className="d">{overdue ? "Escalated to HR" : "None overdue"}</span>
+              <span className="d">{overdue ? (escalated ? `${escalated} with the HR Managers` : "Waiting on the approver") : "None overdue"}</span>
             </div>
             <div className="kpi">
               <span className="l">Approved</span>
@@ -205,7 +202,7 @@ export function LeaveView() {
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <LeaveCalendar enabled={Boolean(user)} refreshKey={sessionKey} />
+            <LeaveCalendar enabled={Boolean(user)} refreshKey={sessionKey} holidays={holidaysRes.data?.items} />
           </div>
 
           <div className="hr-box" style={{ marginBottom: 16 }}>
@@ -313,9 +310,7 @@ export function LeaveView() {
               <div className="hr-box__b">
                 {balanceRows.length === 0 ? (
                   <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
-                    {balancesRes.data?.awaiting
-                      ? `Awaiting ESWASA (${balancesRes.data.awaiting}): leave types and entitlements aren't set yet.`
-                      : balancesRes.error
+                    {balancesRes.error
                         ? "Balances couldn't be loaded."
                         : "No leave allocated to you for this period."}
                   </p>

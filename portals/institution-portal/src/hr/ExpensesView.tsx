@@ -7,6 +7,7 @@ import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrExpenseClaim, HrExpenseClaims } from "../api/types";
 import { Crumbs, fmtDay } from "../me/parts";
 import { claimPill } from "../me/MyExpenses";
+import { money } from "./useHrSettings";
 
 /**
  * Expense claims for HR and Finance (reimbursement only, not payroll). Read-only: the named expense approver decides
@@ -14,8 +15,6 @@ import { claimPill } from "../me/MyExpenses";
  * them) and /hr/expense-claims/{id}.
  */
 
-const money = (n: number | null | undefined, currency?: string | null) =>
-  n == null ? "—" : `${currency || "SZL"} ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 type Filter = "all" | "Draft" | "Approved" | "Rejected";
 
@@ -48,7 +47,7 @@ export function ExpensesView() {
         </div>
       </div>
       <ResourceGate loading={res.loading} error={res.error} onRetry={res.reload} refreshing={res.refreshing} hasData={Boolean(res.data)}>
-        {overdue ? <p className="hr-note">{overdue} past the 3 working days for a decision (provisional). The approver and Finance have been alerted.</p> : null}
+        {overdue ? <p className="hr-note">{overdue} past the decision date. The approver and Finance get an alert for each.</p> : null}
         {items.length ? (
           <div className="hr-box hr-scroll">
             <table className="hr-table" aria-label="Expense claims">

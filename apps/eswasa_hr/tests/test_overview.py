@@ -60,17 +60,24 @@ class SetupTests(unittest.TestCase):
     def tearDown(self):
         sys.modules.pop("frappe", None)
 
-    def test_empty_site_waits_on_eswasa_and_excludes_payroll(self):
+    def test_empty_site_is_all_to_do_with_links_and_no_waiting(self):
         _empty_site(["HR Manager"])
         out = ov.setup_status_impl()
         by = {s["id"]: s for s in out["steps"]}
-        self.assertEqual(by["departments"]["state"], ov.AWAITING)
-        self.assertEqual(by["import"]["awaiting"], "§0.5 #3")
+        self.assertEqual({s["state"] for s in out["steps"]}, {ov.TODO})
+        self.assertTrue(all(s["awaiting"] is None for s in out["steps"]))
         self.assertEqual(by["import"]["href"], "/system-admin?tab=hr-setup#hr-import")
         self.assertFalse(by["import"]["desk"])
-        self.assertEqual((by["payroll"]["state"], by["payroll"]["awaiting"]), (ov.EXCLUDED, "H15, H16"))
-        self.assertEqual(out["total"], len(out["steps"]) - 1)
+        self.assertNotIn("payroll", by)  # payroll is off
+        self.assertEqual(out["total"], len(out["steps"]))
         self.assertEqual(out["done"], 0)
+
+    def test_record_gap_detail_names_the_gaps_and_when_checked(self):
+        q = [{"field": "reports_to", "label": "No line manager", "count": 3}, {"field": "user_id", "label": "No login linked", "count": 5},
+             {"field": "executive_director", "label": "No Executive Director set", "count": 1}]
+        self.assertEqual(ov.gaps_detail(q, None), "No login linked (5) · No line manager (3). Checked just now.")
+        self.assertEqual(ov.gaps_detail(q, "2026-10-12 02:00:05"), "No login linked (5) · No line manager (3). Checked 2026-10-12 02:00.")
+        self.assertIsNone(ov.gaps_detail(q[2:], None))
 
     def test_only_hr_managers_and_admins(self):
         f = _empty_site(["HR User"])

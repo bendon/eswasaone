@@ -14,9 +14,10 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from eswasa_hr import settings
+
 DOCTYPE = "Impartiality Declaration"
-# ESWASA's financial year is assumed to start on 1 April (2026/27 = Apr 2026 to Mar 2027).
-# Provisional until the Confirmation Pack answer H8 is signed.
+# Declaration years follow the Eswatini public financial year, 1 April to 31 March (2026/27 = Apr 2026 to Mar 2027).
 YEAR_START_MONTH = 4
 LOOK_BACK_YEARS = 2
 HR_ROLES = ("HR Manager", "HR User", "System Manager")
@@ -28,14 +29,7 @@ RELATIONSHIPS = (
     "Board or committee member",
     "Other",
 )
-# Sample wording until ESWASA confirms it (Confirmation Pack H9). The API says so with wording_confirmed.
-CONFIDENTIALITY_TEXT = (
-    "I will keep confidential all information about clients, applicants and certification, testing "
-    "and calibration work that I obtain through my work for ESWASA, except where the law requires "
-    "me to disclose it or the client has agreed in writing. This continues after my work for "
-    "ESWASA ends."
-)
-WORDING_CONFIRMED = False
+# The impartiality and confidentiality wording is HR's Terms and Conditions record (eswasa_hr.seed_records.DECLARATION).
 
 
 # ---------------------------------------------------------------- pure rules
@@ -91,12 +85,12 @@ def signing_error(interests: list[dict[str, Any]], nothing_else: bool, accepted:
     return None
 
 
-HANDOFF_DAYS = 10  # R-H5 (brief §12.1, provisional): then the line manager is told
+# R-H5 hand-off window (then the line manager is told): HR Settings ``declaration_handoff_days``.
 LATE_RULE = "Late declaration"
 
 
 def handoff_due(todo_date: Any, day: date) -> bool:
-    """R-H5: the employee's ToDo was due ``HANDOFF_DAYS`` after it opened; past that date, hand it on."""
+    """R-H5: the employee's ToDo was due the hand-off window after it opened; past that date, hand it on."""
     if todo_date in (None, ""):
         return False
     d = todo_date if isinstance(todo_date, date) else date.fromisoformat(str(todo_date)[:10])
@@ -104,7 +98,7 @@ def handoff_due(todo_date: Any, day: date) -> bool:
 
 
 def late_title(employee_name: str, year: int) -> str:
-    return f"{employee_name} hasn't signed their {year_label(year)} impartiality declaration after {HANDOFF_DAYS} days. Remind them"
+    return f"{employee_name} hasn't signed their {year_label(year)} impartiality declaration after {settings.get('declaration_handoff_days')} days. Remind them"
 
 
 def _day(v: Any) -> date | None:
@@ -218,9 +212,18 @@ def _as_dict(doc: Any, year: int) -> dict[str, Any]:
         else [],
         "look_back_from": look_back_from(_today()).isoformat(),
         "relationships": list(RELATIONSHIPS),
-        "confidentiality_text": CONFIDENTIALITY_TEXT,
-        "wording_confirmed": WORDING_CONFIRMED,
+        "confidentiality_text": _wording(),
+        "wording_confirmed": _wording() is not None,
     }
+
+
+def _wording() -> str | None:
+    from eswasa_hr.seed_records import DECLARATION, wording
+
+    try:
+        return wording(DECLARATION)
+    except Exception:  # noqa: BLE001  (no Terms and Conditions DocType in a bare site)
+        return None
 
 
 def _load(employee: str, year: int) -> Any:
@@ -356,7 +359,7 @@ def remind_impl(year: int | None = None) -> dict[str, Any]:
                 "reference_name": name,
                 "status": "Open",
                 "priority": "Medium",
-                "date": add_days(_today(), 10),  # R-H5: 10 days, then the line manager (brief §12.1)
+                "date": add_days(_today(), settings.get("declaration_handoff_days")),  # R-H5, then the line manager
             }
         ).insert(ignore_permissions=True)
         created += 1

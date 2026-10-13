@@ -6,7 +6,8 @@ import { RequireStaff } from "../../components/RequireStaff";
 import { useInstitution } from "../../layout/InstitutionLayout";
 import type { HrAuthorisationDetail } from "../../api/types";
 import { Banner, Crumbs, fmtDay, NextStep, Track } from "../../me/parts";
-import { AuthPill, EVIDENCE_TYPES } from "./shared";
+import { AuthPill, useEvidenceTypes } from "./shared";
+import { useHrSettings } from "../useHrSettings";
 import { TrainingEvidence } from "./Training";
 import { errorText, fileUrl, hrUpload } from "../api";
 
@@ -17,6 +18,7 @@ import { errorText, fileUrl, hrUpload } from "../api";
 export function AuthorisationDetail() {
   const { id = "" } = useParams();
   const { user, sessionKey } = useInstitution();
+  const alertDays = useHrSettings()?.expiry_alert_days ?? [];
   const res = useApiResource<HrAuthorisationDetail>(`/hr/competence/authorisations/${encodeURIComponent(id)}`, {
     enabled: Boolean(user),
     refreshKey: sessionKey,
@@ -56,8 +58,8 @@ export function AuthorisationDetail() {
             ) : null}
             {d.status === "Expiring" ? (
               <Banner kind="warn" title={`Ends ${fmtDay(d.valid_to, true)}`}>
-                After that date the audit planner won't offer {d.employee_name ?? "this person"} for this work. Alerts went
-                out at 60 days and go again at 30 and 7.
+                After that date the audit planner won't offer {d.employee_name ?? "this person"} for this work.
+                {alertDays.length ? ` Alerts go out ${alertDays.join(", ")} days before.` : ""}
               </Banner>
             ) : null}
 
@@ -151,6 +153,7 @@ const ACCEPT = "application/pdf,image/jpeg,image/png";
 
 /** Attach a file while the authorisation waits for approval; a decided one keeps the evidence its head saw. */
 function AddEvidence({ id, onAdded }: { id: string; onAdded: () => void }) {
+  const evidenceTypes = useEvidenceTypes();
   const [type, setType] = useState("");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
@@ -165,7 +168,6 @@ function AddEvidence({ id, onAdded }: { id: string; onAdded: () => void }) {
     setOk(null);
     if (!type) return setErr("Choose the kind of evidence.");
     if (!file) return setErr("Choose the file.");
-    if (file.size > 5 * 1024 * 1024) return setErr(`${file.name} is larger than 5 MB.`);
     setBusy(true);
     try {
       await hrUpload(`/hr/competence/authorisations/${encodeURIComponent(id)}/evidence`, { evidence_type: type, file, reference: reference.trim() || null, notes: notes.trim() || null });
@@ -188,7 +190,7 @@ function AddEvidence({ id, onAdded }: { id: string; onAdded: () => void }) {
       <div className="hr-box__h">
         <div>
           <h3>Add evidence</h3>
-          <p>Only while it waits for approval. PDF, JPEG or PNG, up to 5 MB, kept private.</p>
+          <p>Only while it waits for approval. PDF, JPEG or PNG, kept private.</p>
         </div>
       </div>
       <div className="hr-box__b hr-view" style={{ gap: 10 }}>
@@ -196,7 +198,7 @@ function AddEvidence({ id, onAdded }: { id: string; onAdded: () => void }) {
           <span>Kind</span>
           <select className="hr-in" value={type} onChange={(e) => setType(e.target.value)} disabled={busy}>
             <option value="">Choose…</option>
-            {EVIDENCE_TYPES.map((t) => (
+            {evidenceTypes.map((t) => (
               <option key={t} value={t}>
                 {t}
               </option>

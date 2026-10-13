@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { apiFetch } from "@eswasaone/shared-ui";
+import { apiFetch, Icon } from "@eswasaone/shared-ui";
 import { useApiResource } from "../../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../../components/PageStates";
 import { RequireStaff } from "../../components/RequireStaff";
@@ -16,7 +16,16 @@ import type {
   HrEstPost,
   HrGradeBandsResponse,
 } from "../../api/types";
-import { Banner, Crumbs, fmtDay, NextStep, StatusPill, Track } from "../../me/parts";
+import {
+  Banner,
+  Crumbs,
+  fmtDay,
+  NextStep,
+  StatusPill,
+  Track,
+} from "../../me/parts";
+import { useHrSettings } from "../useHrSettings";
+import { STAFF_STATUS, statusOf, type StaffStatus } from "../StaffingOverview";
 
 /**
  * Establishment (journey J11; screens H3, H3a, H3b). Approved posts come from submitted Staffing Plans.
@@ -29,19 +38,46 @@ const BASE = "/hr/structure";
 const deptPath = (d: string) => `${BASE}/departments/${encodeURIComponent(d)}`;
 const changePath = (id: string) => `${BASE}/changes/${encodeURIComponent(id)}`;
 
-const CHANGE_CHOICES: Array<{ value: HrEstChangeKind; title: string; detail: string }> = [
-  { value: "Add", title: "Add posts", detail: "More approved posts. Goes to the Council after the Executive Director." },
-  { value: "Remove", title: "Remove posts", detail: "Only empty posts that aren't being recruited." },
-  { value: "Freeze", title: "Freeze posts", detail: "Keep vacant posts approved but stop recruiting to them." },
-  { value: "Unfreeze", title: "Unfreeze posts", detail: "Frozen posts can be recruited to again." },
-  { value: "Regrade", title: "Regrade the post", detail: "Move the designation to another grade. Goes to the Council." },
+const CHANGE_CHOICES: Array<{
+  value: HrEstChangeKind;
+  title: string;
+  detail: string;
+}> = [
+  { value: "Add", title: "Add posts", detail: "More approved posts." },
+  {
+    value: "Remove",
+    title: "Remove posts",
+    detail: "Only empty posts that aren't being recruited.",
+  },
+  {
+    value: "Freeze",
+    title: "Freeze posts",
+    detail: "Keep vacant posts approved but stop recruiting to them.",
+  },
+  {
+    value: "Unfreeze",
+    title: "Unfreeze posts",
+    detail: "Frozen posts can be recruited to again.",
+  },
+  {
+    value: "Regrade",
+    title: "Regrade the post",
+    detail: "Move the designation to another grade.",
+  },
 ];
 
-export function changeState(state: HrEstChange["state"]): { label: string; cls: string } {
+export function changeState(state: HrEstChange["state"]): {
+  label: string;
+  cls: string;
+} {
   if (state === "Approved") return { label: "Approved", cls: "ok" };
   if (state === "Sent back") return { label: "Sent back", cls: "leave" };
   if (state === "Not approved") return { label: "Not approved", cls: "bad" };
-  return { label: state === "Waiting for Council" ? "With the Council" : "With the Executive Director", cls: "info" };
+  if (state === "Waiting for Council")
+    return { label: "With the Council", cls: "info" };
+  if (state === "Waiting for Executive Director")
+    return { label: "With the Executive Director", cls: "info" };
+  return { label: state, cls: "info" };
 }
 
 function ChangeRows({ items }: { items: HrEstChange[] }) {
@@ -80,30 +116,157 @@ function ChangeRows({ items }: { items: HrEstChange[] }) {
   );
 }
 
-function Bar({ label, to, approved, filled, vacant, frozen }: { label: string; to?: string; approved: number; filled: number; vacant: number; frozen: number }) {
-  const pct = approved ? Math.min(100, Math.round((filled / approved) * 100)) : filled ? 100 : 0;
+type EstRow = HrEstablishment["departments"][number];
+type DeptSort = "vacant" | "rate" | "name" | "approved";
+const DEPT_SORTS: Record<DeptSort, string> = {
+  vacant: "Vacant (high to low)",
+  rate: "Fill rate (low to high)",
+  name: "Department (A to Z)",
+  approved: "Approved (high to low)",
+};
+const fillRate = (d: Pick<EstRow, "approved" | "filled">) =>
+  d.approved ? Math.round((d.filled / d.approved) * 100) : 0;
+
+/** Filled against approved posts per department — same table, filters and status pills as the HR overview. */
+function DepartmentTable({ rows: all }: { rows: EstRow[] }) {
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState<StaffStatus | "">("");
+  const [sort, setSort] = useState<DeptSort>("vacant");
+  const rows = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const by: Record<DeptSort, (a: EstRow, b: EstRow) => number> = {
+      vacant: (a, b) => b.vacant - a.vacant || fillRate(a) - fillRate(b),
+      rate: (a, b) => fillRate(a) - fillRate(b) || b.vacant - a.vacant,
+      name: (a, b) => a.department.localeCompare(b.department),
+      approved: (a, b) => b.approved - a.approved,
+    };
+    return all
+      .filter(
+        (d) =>
+          (!needle || d.department.toLowerCase().includes(needle)) &&
+          (!status || statusOf(d) === status),
+      )
+      .sort(
+        (a, b) => by[sort](a, b) || a.department.localeCompare(b.department),
+      );
+  }, [all, q, status, sort]);
+
   return (
-    <div className="hr-est__row">
-      <span>{to ? <Link to={to}>{label}</Link> : label}</span>
-      <span className="hr-est__track" role="img" aria-label={`${filled} of ${approved} posts filled`}>
-        <i style={{ width: `${pct}%` }} />
-      </span>
-      <span className="hr-est__n">
-        {filled} <small>/ {approved}</small>
-      </span>
-      <span className={`hr-est__v${vacant ? " has" : ""}`}>
-        {vacant ? `${vacant} vacant` : "None vacant"}
-        {frozen ? `, ${frozen} frozen` : ""}
-      </span>
+    <div className="hr-box">
+      <div className="hr-box__h">
+        <div>
+          <h3>By department</h3>
+          <p>Filled against approved posts</p>
+        </div>
+        <div className="hr-staff__filters">
+          <label className="hr-staff__search">
+            <Icon name="i-search" />
+            <input
+              type="search"
+              placeholder="Search department…"
+              aria-label="Search department"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </label>
+          <select
+            className="hr-in"
+            aria-label="Status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as StaffStatus | "")}
+          >
+            <option value="">All statuses</option>
+            {(Object.keys(STAFF_STATUS) as StaffStatus[]).map((s) => (
+              <option key={s} value={s}>
+                {STAFF_STATUS[s].label}
+              </option>
+            ))}
+          </select>
+          <label className="hr-staff__sort">
+            <span>Sort by</span>
+            <select
+              className="hr-in"
+              aria-label="Sort by"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as DeptSort)}
+            >
+              {(Object.keys(DEPT_SORTS) as DeptSort[]).map((s) => (
+                <option key={s} value={s}>
+                  {DEPT_SORTS[s]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+      {rows.length ? (
+        <div className="hr-scroll">
+          <table
+            className="hr-table hr-staff__table"
+            aria-label="Departments by establishment"
+          >
+            <thead>
+              <tr>
+                <th>Department</th>
+                <th className="n">Filled</th>
+                <th className="n">Approved</th>
+                <th className="n">Recruiting</th>
+                <th className="n">Frozen</th>
+                <th className="n">Vacant</th>
+                <th>Fill rate</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((d) => {
+                const st = STAFF_STATUS[statusOf(d)];
+                return (
+                  <tr key={d.department}>
+                    <td>
+                      <Link className="hr-lnk" to={deptPath(d.department)}>
+                        <b>{d.department}</b>
+                      </Link>
+                    </td>
+                    <td className="n">{d.filled}</td>
+                    <td className="n">{d.approved}</td>
+                    <td className="n">{d.in_recruitment}</td>
+                    <td className="n">{d.frozen}</td>
+                    <td className={`n${d.vacant ? " vac" : ""}`}>{d.vacant}</td>
+                    <td>{d.approved ? `${fillRate(d)}%` : "—"}</td>
+                    <td>
+                      <StatusPill cls={st.cls} label={st.label} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="hr-box__b">
+          <p className="hr-note" style={{ margin: 0 }}>
+            No departments match.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
 
-type OrgNode = { id: string; employee_name: string; department?: string | null; designation?: string | null; reports_to?: string | null };
+type OrgNode = {
+  id: string;
+  employee_name: string;
+  department?: string | null;
+  designation?: string | null;
+  reports_to?: string | null;
+};
 
 function OrgChart() {
   const { user, sessionKey } = useInstitution();
-  const res = useApiResource<{ nodes: OrgNode[] }>("/hr/orgchart", { enabled: Boolean(user), refreshKey: sessionKey });
+  const res = useApiResource<{ nodes: OrgNode[] }>("/hr/orgchart", {
+    enabled: Boolean(user),
+    refreshKey: sessionKey,
+  });
   const nodes = res.data?.nodes ?? [];
   const ids = new Set(nodes.map((n) => n.id));
   const kids = new Map<string, OrgNode[]>();
@@ -119,7 +282,9 @@ function OrgChart() {
         {list.map((n) => (
           <li key={n.id}>
             <b>{n.employee_name}</b>
-            <span>{[n.designation, n.department].filter(Boolean).join(", ")}</span>
+            <span>
+              {[n.designation, n.department].filter(Boolean).join(", ")}
+            </span>
             {branch(n.id, depth + 1)}
           </li>
         ))}
@@ -127,13 +292,22 @@ function OrgChart() {
     );
   };
   return (
-    <ResourceGate loading={res.loading} error={res.error} onRetry={res.reload} hasData={Boolean(res.data)} skeleton="list">
+    <ResourceGate
+      loading={res.loading}
+      error={res.error}
+      onRetry={res.reload}
+      hasData={Boolean(res.data)}
+      skeleton="list"
+    >
       {nodes.length ? (
         <div className="hr-box">
           <div className="hr-box__b">{branch("", 0)}</div>
         </div>
       ) : (
-        <EmptyState title="No one to show yet" detail="The org chart is drawn from each active employee's line manager (Reports to)." />
+        <EmptyState
+          title="No one to show yet"
+          detail="The org chart is drawn from each active employee's line manager (Reports to)."
+        />
       )}
     </ResourceGate>
   );
@@ -142,7 +316,10 @@ function OrgChart() {
 /** H3 — the Establishment tab inside Structure. */
 export function EstablishmentPanel() {
   const { user, sessionKey } = useInstitution();
-  const res = useApiResource<HrEstablishment>("/hr/establishment", { enabled: Boolean(user), refreshKey: sessionKey });
+  const res = useApiResource<HrEstablishment>("/hr/establishment", {
+    enabled: Boolean(user),
+    refreshKey: sessionKey,
+  });
   const [view, setView] = useState<"posts" | "chart">("posts");
   const d = res.data;
   return (
@@ -150,14 +327,25 @@ export function EstablishmentPanel() {
       <div className="hr-head">
         <div>
           <h2>Establishment</h2>
-          <p>Approved posts from the submitted staffing plans, and who fills them.</p>
+          <p>
+            Approved posts from the submitted staffing plans, and who fills
+            them.
+          </p>
         </div>
         <div className="hr-head__r">
           <nav className="hr-struct-tabs" aria-label="Establishment view">
-            <button type="button" className={view === "posts" ? "on" : undefined} onClick={() => setView("posts")}>
+            <button
+              type="button"
+              className={view === "posts" ? "on" : undefined}
+              onClick={() => setView("posts")}
+            >
               Posts
             </button>
-            <button type="button" className={view === "chart" ? "on" : undefined} onClick={() => setView("chart")}>
+            <button
+              type="button"
+              className={view === "chart" ? "on" : undefined}
+              onClick={() => setView("chart")}
+            >
               Org chart
             </button>
           </nav>
@@ -171,12 +359,20 @@ export function EstablishmentPanel() {
       {view === "chart" ? (
         <OrgChart />
       ) : (
-        <ResourceGate loading={res.loading} error={res.error} onRetry={res.reload} refreshing={res.refreshing} hasData={Boolean(d)} skeleton="list">
+        <ResourceGate
+          loading={res.loading}
+          error={res.error}
+          onRetry={res.reload}
+          refreshing={res.refreshing}
+          hasData={Boolean(d)}
+          skeleton="list"
+        >
           {d ? (
             <>
               {!d.has_plans ? (
                 <Banner kind="info" title="No approved establishment yet">
-                  Approved posts come from submitted staffing plans. Until ESWASA's approved establishment is entered, departments show
+                  Approved posts come from submitted staffing plans. Until
+                  ESWASA's approved establishment is entered, departments show
                   their people but no posts.
                 </Banner>
               ) : null}
@@ -197,21 +393,12 @@ export function EstablishmentPanel() {
                 ))}
               </div>
               {d.departments.length ? (
-                <div className="hr-box">
-                  <div className="hr-box__h">
-                    <div>
-                      <h3>By department</h3>
-                      <p>Filled against approved posts</p>
-                    </div>
-                  </div>
-                  <div className="hr-box__b hr-est">
-                    {d.departments.map((r) => (
-                      <Bar key={r.department} label={r.department} to={deptPath(r.department)} approved={r.approved} filled={r.filled} vacant={r.vacant} frozen={r.frozen} />
-                    ))}
-                  </div>
-                </div>
+                <DepartmentTable rows={d.departments} />
               ) : (
-                <EmptyState title="No departments yet" detail="Add departments in the Departments tab first." />
+                <EmptyState
+                  title="No departments yet"
+                  detail="Add departments in the Departments tab first."
+                />
               )}
               {d.pending.length ? (
                 <>
@@ -227,7 +414,17 @@ export function EstablishmentPanel() {
   );
 }
 
-function SetHead({ department, people, current, onDone }: { department: string; people: HrEstDepartment["people"]; current?: string | null; onDone: () => void }) {
+function SetHead({
+  department,
+  people,
+  current,
+  onDone,
+}: {
+  department: string;
+  people: HrEstDepartment["people"];
+  current?: string | null;
+  onDone: () => void;
+}) {
   const [pick, setPick] = useState(current ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -235,7 +432,11 @@ function SetHead({ department, people, current, onDone }: { department: string; 
     setBusy(true);
     setErr(null);
     try {
-      await apiFetch(`/hr/departments/${encodeURIComponent(department)}/head`, { method: "POST", body: JSON.stringify({ employee_id: pick, confirm: true }), quiet: true });
+      await apiFetch(`/hr/departments/${encodeURIComponent(department)}/head`, {
+        method: "POST",
+        body: JSON.stringify({ employee_id: pick, confirm: true }),
+        quiet: true,
+      });
       onDone();
     } catch (e) {
       setErr(errorText(e, "Not saved."));
@@ -248,7 +449,10 @@ function SetHead({ department, people, current, onDone }: { department: string; 
     setErr(null);
     try {
       // confirm is a query parameter on this DELETE (no body).
-      await apiFetch(`/hr/departments/${encodeURIComponent(department)}/head?confirm=true`, { method: "DELETE", quiet: true });
+      await apiFetch(
+        `/hr/departments/${encodeURIComponent(department)}/head?confirm=true`,
+        { method: "DELETE", quiet: true },
+      );
       setPick("");
       onDone();
     } catch (e) {
@@ -261,7 +465,11 @@ function SetHead({ department, people, current, onDone }: { department: string; 
     <div className="hr-inline">
       <label className="hr-f">
         <span>Head of department</span>
-        <select className="hr-in" value={pick} onChange={(e) => setPick(e.target.value)}>
+        <select
+          className="hr-in"
+          value={pick}
+          onChange={(e) => setPick(e.target.value)}
+        >
           <option value="">Choose…</option>
           {people.map((p) => (
             <option key={p.id} value={p.id}>
@@ -270,11 +478,21 @@ function SetHead({ department, people, current, onDone }: { department: string; 
           ))}
         </select>
       </label>
-      <button type="button" className="btn ghost" disabled={!pick || pick === current || busy} onClick={() => void save()}>
+      <button
+        type="button"
+        className="btn ghost"
+        disabled={!pick || pick === current || busy}
+        onClick={() => void save()}
+      >
         {busy ? "Saving…" : "Set as head"}
       </button>
       {current ? (
-        <button type="button" className="btn ghost" disabled={busy} onClick={() => void remove()}>
+        <button
+          type="button"
+          className="btn ghost"
+          disabled={busy}
+          onClick={() => void remove()}
+        >
           Remove head
         </button>
       ) : null}
@@ -287,24 +505,43 @@ function SetHead({ department, people, current, onDone }: { department: string; 
 export function DepartmentDetail() {
   const { id = "" } = useParams();
   const { user, sessionKey } = useInstitution();
-  const res = useApiResource<HrEstDepartment>(`/hr/establishment/departments/${encodeURIComponent(id)}`, { enabled: Boolean(user), refreshKey: sessionKey });
+  const res = useApiResource<HrEstDepartment>(
+    `/hr/establishment/departments/${encodeURIComponent(id)}`,
+    { enabled: Boolean(user), refreshKey: sessionKey },
+  );
   const d = res.data;
   return (
     <RequireStaff reason="Staff sign-in required">
-      <ResourceGate loading={res.loading} error={res.error} onRetry={res.reload} refreshing={res.refreshing} hasData={Boolean(d)} skeleton="panel">
+      <ResourceGate
+        loading={res.loading}
+        error={res.error}
+        onRetry={res.reload}
+        refreshing={res.refreshing}
+        hasData={Boolean(d)}
+        skeleton="panel"
+      >
         {d ? (
           <div className="hr hr-view">
-            <Crumbs items={[["Structure", `${BASE}?tab=establishment`], [d.department]]} />
+            <Crumbs
+              items={[
+                ["Structure", `${BASE}?tab=establishment`],
+                [d.department],
+              ]}
+            />
             <div className="hr-head">
               <div>
                 <h2>{d.department}</h2>
                 <p>
-                  {d.head ? `Head: ${d.head.name}.` : "No head set yet."} {d.parent ? `Part of ${d.parent}.` : ""}
+                  {d.head ? `Head: ${d.head.name}.` : "No head set yet."}{" "}
+                  {d.parent ? `Part of ${d.parent}.` : ""}
                 </p>
               </div>
               {d.can_request ? (
                 <div className="hr-head__r">
-                  <Link className="btn pri" to={`${BASE}/changes/new?department=${encodeURIComponent(d.department)}`}>
+                  <Link
+                    className="btn pri"
+                    to={`${BASE}/changes/new?department=${encodeURIComponent(d.department)}`}
+                  >
                     Request a change
                   </Link>
                 </div>
@@ -312,23 +549,46 @@ export function DepartmentDetail() {
             </div>
             {!d.head ? (
               <Banner kind="warn" title="No head of department">
-                Staff authorisations and requisitions for this department go to its head, so they can't be routed until one is set.
+                Staff authorisations and requisitions for this department go to
+                its head, so they can't be routed until one is set.
               </Banner>
             ) : null}
             {d.can_set_head ? (
               <div className="hr-box">
                 <div className="hr-box__b">
-                  <SetHead department={d.department} people={d.people} current={d.head?.id} onDone={res.reload} />
+                  <SetHead
+                    department={d.department}
+                    people={d.people}
+                    current={d.head?.id}
+                    onDone={res.reload}
+                  />
                 </div>
               </div>
             ) : null}
             {d.cover_warnings.length ? (
               <Banner kind="warn" title="Thin competence cover">
-                {d.cover_warnings.map((w) => `${w.skill} (${w.holders === 0 ? "no one" : "one person"})`).join(", ")} — fewer than two people are authorised.
+                {d.cover_warnings
+                  .map(
+                    (w) =>
+                      `${w.skill} (${w.holders === 0 ? "no one" : "one person"})`,
+                  )
+                  .join(", ")}{" "}
+                — fewer than two people are authorised.
               </Banner>
             ) : null}
             <h3 className="hr-sub">Posts</h3>
-            {d.posts.length ? <PostsTable posts={d.posts} department={d.department} canRequest={d.can_request} /> : <EmptyState title="No approved posts" detail="This department has no submitted staffing plan yet." />}
+            {d.posts.length ? (
+              <PostsTable
+                posts={d.posts}
+                department={d.department}
+                canRequest={d.can_request}
+              />
+            ) : (
+              <EmptyState
+                title="No approved posts"
+                detail="This department has no submitted staffing plan yet."
+              />
+            )}
             <h3 className="hr-sub">People ({d.people.length})</h3>
             {d.people.length ? (
               <div className="hr-box hr-scroll">
@@ -343,7 +603,10 @@ export function DepartmentDetail() {
                     {d.people.map((p) => (
                       <tr key={p.id}>
                         <td>
-                          <Link className="hr-lnk" to={`/hr/directory/${encodeURIComponent(p.id)}`}>
+                          <Link
+                            className="hr-lnk"
+                            to={`/hr/directory/${encodeURIComponent(p.id)}`}
+                          >
                             {p.name ?? p.id}
                           </Link>
                         </td>
@@ -363,8 +626,16 @@ export function DepartmentDetail() {
               </>
             ) : null}
             <NextStep
-              title={d.head ? "Keep the establishment current" : "Set the head of department"}
-              body={d.head ? "Ask for a change when posts need to be added, removed, frozen or regraded." : "Choose the head above so approvals can reach them."}
+              title={
+                d.head
+                  ? "Keep the establishment current"
+                  : "Set the head of department"
+              }
+              body={
+                d.head
+                  ? "Ask for a change when posts need to be added, removed, frozen or regraded."
+                  : "Choose the head above so approvals can reach them."
+              }
               to={`${BASE}?tab=establishment`}
               label="Back to the establishment"
             />
@@ -375,7 +646,15 @@ export function DepartmentDetail() {
   );
 }
 
-function PostsTable({ posts, department, canRequest }: { posts: HrEstPost[]; department: string; canRequest: boolean }) {
+function PostsTable({
+  posts,
+  department,
+  canRequest,
+}: {
+  posts: HrEstPost[];
+  department: string;
+  canRequest: boolean;
+}) {
   return (
     <div className="hr-box hr-scroll">
       <table className="hr-table">
@@ -403,7 +682,10 @@ function PostsTable({ posts, department, canRequest }: { posts: HrEstPost[]; dep
               <td className="num">{p.vacant}</td>
               {canRequest ? (
                 <td>
-                  <Link className="hr-lnk" to={`${BASE}/changes/new?department=${encodeURIComponent(department)}&designation=${encodeURIComponent(p.designation)}`}>
+                  <Link
+                    className="hr-lnk"
+                    to={`${BASE}/changes/new?department=${encodeURIComponent(department)}&designation=${encodeURIComponent(p.designation)}`}
+                  >
                     Change
                   </Link>
                 </td>
@@ -420,11 +702,22 @@ function PostsTable({ posts, department, canRequest }: { posts: HrEstPost[]; dep
 export function RequestChange() {
   const [params] = useSearchParams();
   const { user, sessionKey } = useInstitution();
-  const est = useApiResource<HrEstablishment>("/hr/establishment", { enabled: Boolean(user), refreshKey: sessionKey });
-  const desigs = useApiResource<HrDesignationsResponse>("/hr/designations?limit=200", { enabled: Boolean(user), refreshKey: sessionKey });
-  const grades = useApiResource<HrGradeBandsResponse>("/hr/grade-bands", { enabled: Boolean(user), refreshKey: sessionKey });
+  const est = useApiResource<HrEstablishment>("/hr/establishment", {
+    enabled: Boolean(user),
+    refreshKey: sessionKey,
+  });
+  const desigs = useApiResource<HrDesignationsResponse>(
+    "/hr/designations?limit=200",
+    { enabled: Boolean(user), refreshKey: sessionKey },
+  );
+  const grades = useApiResource<HrGradeBandsResponse>("/hr/grade-bands", {
+    enabled: Boolean(user),
+    refreshKey: sessionKey,
+  });
   const [department, setDepartment] = useState(params.get("department") ?? "");
-  const [designation, setDesignation] = useState(params.get("designation") ?? "");
+  const [designation, setDesignation] = useState(
+    params.get("designation") ?? "",
+  );
   const [change, setChange] = useState<HrEstChangeKind>("Add");
   const [count, setCount] = useState("1");
   const [grade, setGrade] = useState("");
@@ -446,26 +739,33 @@ export function RequestChange() {
   }, [change, designation, row, post]);
 
   const needCount = change !== "Regrade";
-  const ready = Boolean(department && designation && reason.trim()) && (needCount ? Number(count) >= 1 : Boolean(grade));
-  const council = change === "Add" || change === "Regrade";
+  const ready =
+    Boolean(department && designation && reason.trim()) &&
+    (needCount ? Number(count) >= 1 : Boolean(grade));
+  // Which kinds of change the Council decides after the Executive Director (eswasa_hr.establishment.COUNCIL_CHANGES).
+  const councilKinds = useHrSettings()?.lists.council_changes ?? [];
+  const council = councilKinds.includes(change);
 
   async function send() {
     setBusy(true);
     setErr(null);
     try {
-      const out = await apiFetch<HrEstChangeDetail>("/hr/establishment/changes", {
-        method: "POST",
-        body: JSON.stringify({
-          department,
-          designation,
-          change,
-          count: needCount ? Number(count) : null,
-          new_grade: change === "Regrade" ? grade : null,
-          reason: reason.trim(),
-          cost_note: cost.trim() || null,
-          confirm: true,
-        }),
-      });
+      const out = await apiFetch<HrEstChangeDetail>(
+        "/hr/establishment/changes",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            department,
+            designation,
+            change,
+            count: needCount ? Number(count) : null,
+            new_grade: change === "Regrade" ? grade : null,
+            reason: reason.trim(),
+            cost_note: cost.trim() || null,
+            confirm: true,
+          }),
+        },
+      );
       setSent(out);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Not sent. Try again.");
@@ -478,32 +778,61 @@ export function RequestChange() {
     const who = sent.deciders.map((x) => x.name).join(" or ");
     return (
       <div className="hr hr-view hr-view--form">
-        <Crumbs items={[["Structure", `${BASE}?tab=establishment`], ["Request a change"]]} />
+        <Crumbs
+          items={[
+            ["Structure", `${BASE}?tab=establishment`],
+            ["Request a change"],
+          ]}
+        />
         <Banner kind="ok" title="Sent to the Executive Director">
-          {sent.summary} in {sent.department}. {who ? `${who} decides in Approvals.` : ""}
+          {sent.summary} in {sent.department}.{" "}
+          {who ? `${who} decides in Approvals.` : ""}
         </Banner>
-        <NextStep title="Follow the request" body="It shows where it is and who decides next." to={changePath(sent.id)} label="Open the request" />
+        <NextStep
+          title="Follow the request"
+          body="It shows where it is and who decides next."
+          to={changePath(sent.id)}
+          label="Open the request"
+        />
       </div>
     );
   }
 
   return (
     <RequireStaff reason="Staff sign-in required">
-      <ResourceGate loading={est.loading} error={est.error} onRetry={est.reload} hasData={Boolean(est.data)} skeleton="panel">
+      <ResourceGate
+        loading={est.loading}
+        error={est.error}
+        onRetry={est.reload}
+        hasData={Boolean(est.data)}
+        skeleton="panel"
+      >
         {est.data ? (
           <div className="hr hr-view hr-view--form">
-            <Crumbs items={[["Structure", `${BASE}?tab=establishment`], ["Request a change"]]} />
+            <Crumbs
+              items={[
+                ["Structure", `${BASE}?tab=establishment`],
+                ["Request a change"],
+              ]}
+            />
             <div className="hr-head">
               <div>
                 <h2>Request an establishment change</h2>
-                <p>The Executive Director decides. Adding posts or regrading also goes to the Council HR & Remuneration Committee.</p>
+                <p>
+                  The Executive Director decides. Adding posts or regrading also
+                  goes to the Council HR & Remuneration Committee.
+                </p>
               </div>
             </div>
             <div className="hr-box">
               <div className="hr-box__b hr-form">
                 <label className="hr-f">
                   <span>Department</span>
-                  <select className="hr-in" value={department} onChange={(e) => setDepartment(e.target.value)}>
+                  <select
+                    className="hr-in"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                  >
                     <option value="">Choose…</option>
                     {est.data.departments.map((r) => (
                       <option key={r.department}>{r.department}</option>
@@ -512,7 +841,11 @@ export function RequestChange() {
                 </label>
                 <label className="hr-f">
                   <span>Designation</span>
-                  <select className="hr-in" value={designation} onChange={(e) => setDesignation(e.target.value)}>
+                  <select
+                    className="hr-in"
+                    value={designation}
+                    onChange={(e) => setDesignation(e.target.value)}
+                  >
                     <option value="">Choose…</option>
                     {titles.map((t) => (
                       <option key={t}>{t}</option>
@@ -520,20 +853,42 @@ export function RequestChange() {
                   </select>
                   {post ? (
                     <small>
-                      Now: {post.approved} approved, {post.filled} filled, {post.in_recruitment} in recruitment, {post.frozen} frozen, {post.vacant} vacant
+                      Now: {post.approved} approved, {post.filled} filled,{" "}
+                      {post.in_recruitment} in recruitment, {post.frozen}{" "}
+                      frozen, {post.vacant} vacant
                       {post.grade ? `; grade ${post.grade}` : ""}.
                     </small>
                   ) : designation ? (
-                    <small>No approved posts for this designation here yet, so only adding posts is possible.</small>
+                    <small>
+                      No approved posts for this designation here yet, so only
+                      adding posts is possible.
+                    </small>
                   ) : null}
                 </label>
-                <div className="hr-radios wide" role="radiogroup" aria-label="What should change">
+                <div
+                  className="hr-radios wide"
+                  role="radiogroup"
+                  aria-label="What should change"
+                >
                   {CHANGE_CHOICES.map((c) => (
                     <label className="hr-radio" key={c.value}>
-                      <input type="radio" name="est_change" checked={change === c.value} disabled={c.value !== "Add" && Boolean(designation) && !post} onChange={() => setChange(c.value)} />
+                      <input
+                        type="radio"
+                        name="est_change"
+                        checked={change === c.value}
+                        disabled={
+                          c.value !== "Add" && Boolean(designation) && !post
+                        }
+                        onChange={() => setChange(c.value)}
+                      />
                       <span>
                         <b>{c.title}</b>
-                        <small>{c.detail}</small>
+                        <small>
+                          {c.detail}
+                          {councilKinds.includes(c.value)
+                            ? " Goes to the Council after the Executive Director."
+                            : ""}
+                        </small>
                       </span>
                     </label>
                   ))}
@@ -541,12 +896,22 @@ export function RequestChange() {
                 {needCount ? (
                   <label className="hr-f">
                     <span>Number of posts</span>
-                    <input className="hr-in" type="number" min={1} value={count} onChange={(e) => setCount(e.target.value)} />
+                    <input
+                      className="hr-in"
+                      type="number"
+                      min={1}
+                      value={count}
+                      onChange={(e) => setCount(e.target.value)}
+                    />
                   </label>
                 ) : (
                   <label className="hr-f">
                     <span>New grade</span>
-                    <select className="hr-in" value={grade} onChange={(e) => setGrade(e.target.value)}>
+                    <select
+                      className="hr-in"
+                      value={grade}
+                      onChange={(e) => setGrade(e.target.value)}
+                    >
                       <option value="">Choose…</option>
                       {(grades.data?.items ?? [])
                         .filter((g) => g.id !== post?.grade)
@@ -560,15 +925,33 @@ export function RequestChange() {
                 )}
                 <label className="hr-f wide">
                   <span>Reason</span>
-                  <textarea className="hr-in" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
+                  <textarea
+                    className="hr-in"
+                    rows={3}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
                 </label>
                 <label className="hr-f wide">
                   <span>Cost (optional)</span>
-                  <textarea className="hr-in" rows={2} value={cost} placeholder="Yearly cost and budget line, if known" onChange={(e) => setCost(e.target.value)} />
+                  <textarea
+                    className="hr-in"
+                    rows={2}
+                    value={cost}
+                    placeholder="Yearly cost and budget line, if known"
+                    onChange={(e) => setCost(e.target.value)}
+                  />
                 </label>
               </div>
             </div>
-            <Banner kind="info" title={council ? "Executive Director, then Council" : "Executive Director"}>
+            <Banner
+              kind="info"
+              title={
+                council
+                  ? "Executive Director, then Council"
+                  : "Executive Director"
+              }
+            >
               {council
                 ? "After the Executive Director approves, the Board Secretary records the Council committee's decision. The establishment changes only then."
                 : "The establishment changes as soon as the Executive Director approves."}
@@ -579,10 +962,22 @@ export function RequestChange() {
               </Banner>
             ) : null}
             <div className="hr-actions">
-              <Link className="btn ghost" to={department ? deptPath(department) : `${BASE}?tab=establishment`}>
+              <Link
+                className="btn ghost"
+                to={
+                  department
+                    ? deptPath(department)
+                    : `${BASE}?tab=establishment`
+                }
+              >
                 Cancel
               </Link>
-              <button type="button" className="btn pri" disabled={!ready || busy} onClick={() => void send()}>
+              <button
+                type="button"
+                className="btn pri"
+                disabled={!ready || busy}
+                onClick={() => void send()}
+              >
                 {busy ? "Sending…" : "Send for decision"}
               </button>
             </div>
@@ -597,16 +992,34 @@ export function RequestChange() {
 export function ChangeDetail() {
   const { id = "" } = useParams();
   const { user, sessionKey } = useInstitution();
-  const res = useApiResource<HrEstChangeDetail>(`/hr/establishment/changes/${encodeURIComponent(id)}`, { enabled: Boolean(user), refreshKey: sessionKey });
+  const res = useApiResource<HrEstChangeDetail>(
+    `/hr/establishment/changes/${encodeURIComponent(id)}`,
+    { enabled: Boolean(user), refreshKey: sessionKey },
+  );
   const d = res.data;
   const st = d ? changeState(d.state) : null;
-  const open = d?.state === "Waiting for Executive Director" || d?.state === "Waiting for Council";
+  const open =
+    d?.state === "Waiting for Executive Director" ||
+    d?.state === "Waiting for Council";
   return (
     <RequireStaff reason="Staff sign-in required">
-      <ResourceGate loading={res.loading} error={res.error} onRetry={res.reload} refreshing={res.refreshing} hasData={Boolean(d)} skeleton="panel">
+      <ResourceGate
+        loading={res.loading}
+        error={res.error}
+        onRetry={res.reload}
+        refreshing={res.refreshing}
+        hasData={Boolean(d)}
+        skeleton="panel"
+      >
         {d && st ? (
           <div className="hr hr-view">
-            <Crumbs items={[["Structure", `${BASE}?tab=establishment`], [d.department, deptPath(d.department)], [d.summary]]} />
+            <Crumbs
+              items={[
+                ["Structure", `${BASE}?tab=establishment`],
+                [d.department, deptPath(d.department)],
+                [d.summary],
+              ]}
+            />
             <div className="hr-head">
               <div>
                 <h2>{d.summary}</h2>
@@ -620,23 +1033,44 @@ export function ChangeDetail() {
             </div>
             <div className="hr-box">
               <div className="hr-box__b">
-                <Track steps={d.track.map((s) => ({ title: s.title, state: s.state ?? undefined }))} />
+                <Track
+                  steps={d.track.map((s) => ({
+                    title: s.title,
+                    state: s.state ?? undefined,
+                  }))}
+                />
               </div>
             </div>
             {open ? (
-              <Banner kind="info" title={d.state === "Waiting for Council" ? "With the Council HR & Remuneration Committee" : "With the Executive Director"}>
-                {d.deciders.length ? `Decided in Approvals by ${d.deciders.map((x) => x.name).join(" or ")}.` : "No one holds the deciding role yet."}
+              <Banner
+                kind="info"
+                title={
+                  d.state === "Waiting for Council"
+                    ? "With the Council HR & Remuneration Committee"
+                    : "With the Executive Director"
+                }
+              >
+                {d.deciders.length
+                  ? `Decided in Approvals by ${d.deciders.map((x) => x.name).join(" or ")}.`
+                  : "No one holds the deciding role yet."}
               </Banner>
             ) : null}
             {d.state === "Sent back" || d.state === "Not approved" ? (
-              <Banner kind={d.state === "Not approved" ? "bad" : "warn"} title={st.label}>
+              <Banner
+                kind={d.state === "Not approved" ? "bad" : "warn"}
+                title={st.label}
+              >
                 {d.decision_note ?? "No note given."}
               </Banner>
             ) : null}
             {d.state === "Approved" ? (
               <Banner kind="ok" title="Establishment updated">
-                {d.change === "Regrade" ? `The designation is now on grade ${d.new_grade}.` : "The staffing plan was amended."}
-                {d.council_reference ? ` Council minute ${d.council_reference}.` : ""}
+                {d.change === "Regrade"
+                  ? `The designation is now on grade ${d.new_grade}.`
+                  : "The staffing plan was amended."}
+                {d.council_reference
+                  ? ` Council minute ${d.council_reference}.`
+                  : ""}
               </Banner>
             ) : null}
             <div className="hr-box">
@@ -667,9 +1101,19 @@ export function ChangeDetail() {
               </div>
             </div>
             <NextStep
-              title={d.state === "Sent back" ? "Ask again with the changes requested" : "Back to the department"}
-              to={d.state === "Sent back" ? `${BASE}/changes/new?department=${encodeURIComponent(d.department)}&designation=${encodeURIComponent(d.designation)}` : deptPath(d.department)}
-              label={d.state === "Sent back" ? "Ask again" : "Open the department"}
+              title={
+                d.state === "Sent back"
+                  ? "Ask again with the changes requested"
+                  : "Back to the department"
+              }
+              to={
+                d.state === "Sent back"
+                  ? `${BASE}/changes/new?department=${encodeURIComponent(d.department)}&designation=${encodeURIComponent(d.designation)}`
+                  : deptPath(d.department)
+              }
+              label={
+                d.state === "Sent back" ? "Ask again" : "Open the department"
+              }
             />
           </div>
         ) : null}

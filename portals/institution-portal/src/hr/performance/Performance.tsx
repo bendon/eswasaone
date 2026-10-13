@@ -213,8 +213,8 @@ export function CycleNew() {
                     </div>
                   ) : (
                     <div className="wide">
-                      <Banner kind="info" title="Awaiting ESWASA: appraisal templates">
-                        One template per post family, with what people are rated on (brief §8). Set them up in HR setup before starting a cycle.
+                      <Banner kind="info" title="No appraisal templates yet">
+                        Add an appraisal template with what people are rated on (Appraisal Template in Desk) before starting a cycle.
                       </Banner>
                     </div>
                   )

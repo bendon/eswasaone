@@ -5,7 +5,8 @@ import { useApiResource } from "../../hooks/useApiResource";
 import { ResourceGate } from "../../components/PageStates";
 import { RequireStaff } from "../../components/RequireStaff";
 import { useInstitution } from "../../layout/InstitutionLayout";
-import type { HrApplicantDetail, HrEmployeesResponse, HrStage } from "../../api/types";
+import type { HrApplicantDetail, HrEmployeeOptions, HrEmployeesResponse, HrStage } from "../../api/types";
+import { useHrSettings } from "../useHrSettings";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill } from "../../me/parts";
 
 const STAGES: HrStage[] = ["Applied", "Shortlist", "Interview", "Offer", "Hired"];
@@ -18,6 +19,7 @@ const STAGES: HrStage[] = ["Applied", "Shortlist", "Interview", "Offer", "Hired"
 export function ApplicantView() {
   const { id = "" } = useParams();
   const { user, sessionKey } = useInstitution();
+  const ratingMax = useHrSettings()?.rating_max ?? null;
   const res = useApiResource<HrApplicantDetail>(`/hr/recruitment/applicants/${encodeURIComponent(id)}`, {
     enabled: Boolean(user),
     refreshKey: sessionKey,
@@ -208,7 +210,7 @@ export function ApplicantView() {
                             <div>
                               <b>
                                 {f.interviewer}: {f.result ?? "—"}
-                                {f.rating ? `, ${f.rating} of 5` : ""}
+                                {f.rating ? `, ${f.rating}${ratingMax ? ` of ${ratingMax}` : ""}` : ""}
                               </b>
                               {f.feedback ? <span className="s">{f.feedback}</span> : null}
                             </div>
@@ -422,6 +424,7 @@ function Answer({ busy, onAnswer }: { busy: boolean; onAnswer: (a: "Accepted" | 
 function CreateEmployee({ busy, onCreate }: { busy: boolean; onCreate: (b: Record<string, unknown>) => void }) {
   const { user, sessionKey } = useInstitution();
   const people = useApiResource<HrEmployeesResponse>("/hr/employees?limit=500", { enabled: Boolean(user), refreshKey: sessionKey });
+  const opts = useApiResource<HrEmployeeOptions>("/hr/employee-options", { enabled: Boolean(user), refreshKey: sessionKey });
   const [start, setStart] = useState("");
   const [gender, setGender] = useState("");
   const [dob, setDob] = useState("");
@@ -450,9 +453,9 @@ function CreateEmployee({ busy, onCreate }: { busy: boolean; onCreate: (b: Recor
           <span>Gender</span>
           <select className="hr-in" value={gender} onChange={(e) => setGender(e.target.value)}>
             <option value="">Choose…</option>
-            <option>Female</option>
-            <option>Male</option>
-            <option>Prefer not to say</option>
+            {(opts.data?.genders ?? []).map((g) => (
+              <option key={g}>{g}</option>
+            ))}
           </select>
         </label>
         <label className="hr-f">

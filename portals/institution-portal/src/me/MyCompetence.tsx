@@ -6,6 +6,7 @@ import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrAuthorisationRow } from "../api/types";
 import { AuthPill } from "../hr/competence/shared";
 import { Banner, Crumbs, fmtDay, NextStep } from "./parts";
+import { useHrSettings } from "../hr/useHrSettings";
 
 /**
  * E8 My authorisations (journey J4, employee side): what work I can be assigned, what is ending, and
@@ -13,6 +14,7 @@ import { Banner, Crumbs, fmtDay, NextStep } from "./parts";
  */
 export function MyCompetence() {
   const { user, sessionKey } = useInstitution();
+  const alertDays = useHrSettings()?.expiry_alert_days ?? [];
   const res = useApiResource<{ items: HrAuthorisationRow[] }>("/hr/me/competence", { enabled: Boolean(user), refreshKey: sessionKey });
   const items = res.data?.items ?? [];
   const due = items.filter((r) => r.status === "Expiring" || r.status === "Expired");
@@ -64,7 +66,12 @@ export function MyCompetence() {
         ))}
 
         {due.length ? null : (
-          <NextStep title="Nothing to renew" body="You'll get an alert 60, 30 and 7 days before any of these ends." to=".." label="Back to My HR" />
+          <NextStep
+            title="Nothing to renew"
+            body={alertDays.length ? `You'll get an alert ${alertDays.join(", ")} days before any of these ends.` : "You'll get an alert before any of these ends."}
+            to=".."
+            label="Back to My HR"
+          />
         )}
       </div>
     </ResourceGate>

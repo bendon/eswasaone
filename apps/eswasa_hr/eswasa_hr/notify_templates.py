@@ -48,7 +48,7 @@ TEMPLATES: dict[str, dict[str, Any]] = {
     "authorisation_expiring": {
         "essential": False,
         "fields": ("employee_name", "competence", "valid_to"),
-        "subject": "Authorisation expires in 7 days: {employee_name}, {competence}",
+        "subject": "Authorisation expires {valid_to}: {employee_name}, {competence}",
         "body": "Hello,\n\nThe staff authorisation of {employee_name} for {competence} expires on {valid_to}. "
         "Until it is renewed they can't be assigned this work. See Competence in EswasaOne.",
     },

@@ -21,27 +21,23 @@ SEPARATION = "Employee Separation"  # offboarding uses the same checklist machin
 HR_ROLES = ("HR Manager", "HR User", "System Manager")
 DECLARATION_ACTIVITY = "Sign the impartiality and confidentiality declaration"
 
-# (owner kind, activity). Owners: hr = whoever starts it, manager = the line manager, joiner = the new
-# employee, pick = HR chooses (ICT, Finance). A checklist, not policy; HR can change every row.
-DEFAULT_ACTIVITIES: list[tuple[str, str, str]] = [
-    ("hr", "Contract signed and filed", "HR"),
-    ("hr", "Required documents on file: ID, qualifications, police clearance", "HR"),
-    ("pick", "Email address and EswasaOne login", "ICT"),
-    ("pick", "Laptop and access card", "ICT"),
-    ("pick", "Bank details captured for payroll", "Finance"),
-    ("manager", "Welcome meeting and first-week plan", "Line manager"),
-    ("manager", "Choose a buddy for the first month", "Line manager"),
-    ("joiner", DECLARATION_ACTIVITY, "New joiner"),
-    ("joiner", "Complete the induction course", "New joiner"),
-]
+TEMPLATE = "Employee Onboarding Template"  # HR's checklist; activities carry custom_owner and custom_team
 
 
 # ---------------------------------------------------------------- pure rules
 
 
-def default_checklist(hr_user: str | None, manager_user: str | None, joiner_user: str | None) -> list[dict[str, Any]]:
+def default_checklist(hr_user: str | None, manager_user: str | None, joiner_user: str | None, template: list[tuple[str, str, str]]) -> list[dict[str, Any]]:
+    """The template's activities with their owners filled in. Owners: hr = whoever starts it, manager = the line
+    manager, joiner = the new employee, pick = HR chooses (ICT, Finance)."""
     owners = {"hr": hr_user, "manager": manager_user, "joiner": joiner_user, "pick": None}
-    return [{"activity_name": name, "group": group, "user": owners[kind]} for kind, name, group in DEFAULT_ACTIVITIES]
+    return [{"activity_name": name, "group": group, "user": owners.get(kind)} for kind, name, group in template]
+
+
+def _template(employee: dict[str, Any]) -> list[tuple[str, str, str]]:
+    from eswasa_hr.seed_records import template_rows
+
+    return template_rows(TEMPLATE, employee)
 
 
 def checklist_errors(rows: list[dict[str, Any]]) -> list[str]:
@@ -103,11 +99,11 @@ def defaults_impl(employee: str) -> dict[str, Any]:
     import frappe
 
     _require_hr()
-    e = frappe.db.get_value("Employee", employee, ["name", "employee_name", "user_id", "reports_to", "job_offer", "date_of_joining"], as_dict=True)
+    e = frappe.db.get_value("Employee", employee, ["name", "employee_name", "user_id", "reports_to", "job_offer", "date_of_joining", "department", "designation", "grade"], as_dict=True)
     if not e:
         frappe.throw("Employee not found.", frappe.DoesNotExistError)
     manager_user = frappe.db.get_value("Employee", e.reports_to, "user_id") if e.reports_to else None
-    rows = default_checklist(frappe.session.user, manager_user, e.user_id)
+    rows = default_checklist(frappe.session.user, manager_user, e.user_id, _template(e))
     return {
         "employee": e.name,
         "employee_name": e.employee_name,
@@ -166,7 +162,7 @@ def start_impl(employee: str, activities: list[dict[str, Any]], boarding_begins_
         rows = [{"activity_name": str(a.get("activity_name") or "").strip(), "user": a.get("user"), "description": a.get("description")} for a in activities]
     else:
         manager_user = frappe.db.get_value("Employee", e.reports_to, "user_id") if e.get("reports_to") else None
-        rows = filled_checklist(default_checklist(frappe.session.user, manager_user, e.get("user_id")), frappe.session.user)
+        rows = filled_checklist(default_checklist(frappe.session.user, manager_user, e.get("user_id"), _template(e)), frappe.session.user)
         rows = [{"activity_name": r["activity_name"], "user": r["user"], "description": None} for r in rows]
     errs = checklist_errors(rows)
     if errs:

@@ -6,6 +6,8 @@ type Options = {
   enabled?: boolean;
   /** Change to re-fetch after login / navigation. */
   refreshKey?: string | number | null;
+  /** Background lookups: a failure stays in ``error`` instead of popping up the global error dialog. */
+  quiet?: boolean;
 };
 
 /**
@@ -16,6 +18,7 @@ type Options = {
 export function useApiResource<T>(path: string, options: Options = {}) {
   const enabled = options.enabled ?? true;
   const refreshKey = options.refreshKey ?? "";
+  const quiet = options.quiet ?? false;
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(enabled);
@@ -35,7 +38,7 @@ export function useApiResource<T>(path: string, options: Options = {}) {
     else setLoading(true);
     setError(null);
     setAuthRequired(false);
-    void sessionFetch<T>(path)
+    void sessionFetch<T>(path, { quiet })
       .then((res) => {
         setData(res);
         setLoading(false);
@@ -53,7 +56,7 @@ export function useApiResource<T>(path: string, options: Options = {}) {
           if (!soft) setData(null);
         }
       });
-  }, [path, enabled]);
+  }, [path, enabled, quiet]);
 
   useEffect(() => {
     reload();

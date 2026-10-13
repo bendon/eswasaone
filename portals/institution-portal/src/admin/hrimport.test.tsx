@@ -12,6 +12,7 @@ vi.mock("../layout/InstitutionLayout", () => ({
 }));
 
 import { ImportEmployees, MasterDataLoad } from "./HrImport";
+import { settingsResponse } from "../test/hrSettings";
 
 type Call = { url: string; method: string; body: Record<string, unknown> | undefined };
 let calls: Call[] = [];
@@ -25,6 +26,8 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body instanceof FormData ? (Object.fromEntries(init.body.entries()) as Record<string, unknown>) : undefined });
       const hit = routes

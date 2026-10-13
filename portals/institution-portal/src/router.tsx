@@ -844,19 +844,8 @@ export const router = createBrowserRouter(
                       />
                     ),
                   },
-                  {
-                    path: "payroll",
-                    element: (
-                      <L
-                        factory={() =>
-                          import("./hr/sub-views").then((m) => ({
-                            default: m.PayrollView,
-                          }))
-                        }
-                        skeleton="panel"
-                      />
-                    ),
-                  },
+                  // Payroll is off: ESWASA doesn't run payroll in EswasaOne. Restore the PayrollView route when it does.
+                  { path: "payroll", element: <Navigate to=".." replace /> },
                   {
                     path: "cases",
                     element: (

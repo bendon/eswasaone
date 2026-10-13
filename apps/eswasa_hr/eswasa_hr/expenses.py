@@ -20,11 +20,12 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Iterable
 
+from eswasa_hr import settings
+
 from eswasa_hr.workdays import add_working_days
 
 DOCTYPE = "Expense Claim"
 # Brief §12.1 proposal (3 working days, then Finance). Provisional: confirm with ESWASA.
-SLA_WORKING_DAYS = 3
 RULE_APPROVER = "Expense approver"  # HR Alert rules
 RULE_OVERDUE = "Expense overdue"
 THRESHOLD_FIELD = "custom_receipt_required_above"
@@ -254,8 +255,8 @@ def threshold() -> float | None:
 
 
 def options_view(types: list[str], above: float | None) -> dict[str, Any]:
-    """The claim form's choices. No types means Finance hasn't set them up (awaiting ESWASA Finance)."""
-    return {"types": sorted(t for t in types if t), "receipt_required_above": above, "awaiting": None if types else "ESWASA Finance"}
+    """The claim form's choices. No types means none are set up yet (Expense Claim Type in Desk)."""
+    return {"types": sorted(t for t in types if t), "receipt_required_above": above, "awaiting": None}
 
 
 def options_impl() -> dict[str, Any]:
@@ -288,7 +289,7 @@ def sync_todo(doc: Any, method: str | None = None) -> None:
                 "status": "Open",
                 "priority": "Medium",
                 "assigned_by": applicant or frappe.session.user,
-                "date": add_working_days(_today(), SLA_WORKING_DAYS, _holidays(doc.employee)).isoformat(),
+                "date": add_working_days(_today(), settings.get("expense_sla_days"), _holidays(doc.employee)).isoformat(),
             }
         ).insert(ignore_permissions=True)
     _approver_alert(doc, applicant)

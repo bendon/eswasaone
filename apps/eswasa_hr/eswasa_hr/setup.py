@@ -45,9 +45,12 @@ def disable_erpnext_department_fixtures(company: str | None = None) -> int:
     return n
 
 
+HR_SETTINGS_FLAG = "eswasa_hr_settings_applied_v1"
+
+
 def apply_hr_settings() -> None:
-    """Brief §1.6 — native HR Settings flags."""
-    if not frappe.db.exists("DocType", "HR Settings"):
+    """Brief §1.6: native HR Settings flags, set once per site so HR's later changes in HR Settings stay."""
+    if not frappe.db.exists("DocType", "HR Settings") or frappe.db.get_default(HR_SETTINGS_FLAG):
         return
     doc = frappe.get_single("HR Settings")
     updates = {
@@ -66,6 +69,7 @@ def apply_hr_settings() -> None:
             dirty = True
     if dirty:
         doc.save(ignore_permissions=True)
+    frappe.db.set_default(HR_SETTINGS_FLAG, "1")
 
 
 CASE_DOCTYPES = ("Employee Grievance", "Disciplinary Case")
@@ -103,7 +107,10 @@ def load_master_data(path: str, dry_run: bool = False) -> dict:
 
 
 def after_migrate() -> None:
+    from eswasa_hr.seed_records import seed_once
+
     apply_hr_settings()
+    seed_once()
     keep_cases_out_of_search()
     apply_field_levels()
     # Only disable fixtures when no Active employees yet (safe on greenfield).

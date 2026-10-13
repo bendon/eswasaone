@@ -13,6 +13,7 @@ vi.mock("../../layout/InstitutionLayout", () => ({
 }));
 
 import { ChangeDetail, DepartmentDetail, EstablishmentPanel, RequestChange } from "./Establishment";
+import { settingsResponse } from "../../test/hrSettings";
 
 const COUNTS = { approved: 6, frozen: 1, filled: 3, in_recruitment: 1, vacant: 1 };
 const CHANGE = { id: "EC-1", department: "Certification", designation: "Auditor", change: "Add", count: 1, new_grade: null,
@@ -33,6 +34,8 @@ function stub(est: unknown = EST) {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const json = (b: unknown) => new Response(JSON.stringify(b), { status: 200, headers: { "Content-Type": "application/json" } });
@@ -69,7 +72,9 @@ describe("Establishment", () => {
   it("shows filled against approved posts and the changes waiting", async () => {
     stub();
     mount("/hr/structure");
-    expect(await screen.findByRole("img", { name: "3 of 6 posts filled" })).toBeInTheDocument();
+    const row = (await screen.findByRole("link", { name: "Certification" })).closest("tr")!;
+    expect(row).toHaveTextContent("50%");
+    expect(row).toHaveTextContent("Understaffed");
     expect(screen.getByRole("link", { name: "Certification" })).toHaveAttribute("href", "/hr/structure/departments/Certification");
     expect(screen.getByRole("link", { name: "Add 1 Auditor post" })).toHaveAttribute("href", "/hr/structure/changes/EC-1");
     expect(screen.getByText("With the Council")).toBeInTheDocument();

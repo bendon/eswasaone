@@ -20,6 +20,8 @@ import re
 from datetime import date
 from typing import Any
 
+from eswasa_hr import settings
+
 REQ = "Job Requisition"
 OPENING = "Job Opening"
 APPLICANT = "Job Applicant"
@@ -230,7 +232,7 @@ def _route_requisition(doc: Any) -> None:
                 "status": "Open",
                 "priority": "Medium",
                 "assigned_by": requester or frappe.session.user,
-                "date": add_days(_today(), 3),  # brief §12.1: 3 days
+                "date": add_days(_today(), settings.get("decision_sla_days")),  # brief §12.1: 3 days
             }
         ).insert(ignore_permissions=True)
 
@@ -460,7 +462,8 @@ def public_openings_impl() -> list[dict[str, Any]]:
         limit=50,
     )  # get_all ignores permissions: guests may read published openings only, filtered here
     today = _today()
-    return [public_opening(r) for r in rows if opening_is_live(r.get("status", "Open"), 1, r.get("closes_on"), today)]
+    contact = settings.get("hr_email")  # HR Settings: where applicants write to HR
+    return [{**public_opening(r), "contact_email": contact} for r in rows if opening_is_live(r.get("status", "Open"), 1, r.get("closes_on"), today)]
 
 
 def public_opening_impl(opening: str) -> dict[str, Any]:

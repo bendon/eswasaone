@@ -14,6 +14,7 @@ vi.mock("../../layout/InstitutionLayout", () => ({
 
 import { OnboardingDetail, StartOnboarding } from "./Onboarding";
 import { FirstDays } from "../../me/FirstDays";
+import { settingsResponse } from "../../test/hrSettings";
 
 const DECL = "Sign the impartiality and confidentiality declaration";
 const ONB = {
@@ -34,6 +35,8 @@ function stub(postReply: unknown = ONB) {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });

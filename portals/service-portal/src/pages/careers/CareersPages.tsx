@@ -20,6 +20,8 @@ export type CareerOpening = {
   posted_on?: string | null;
   closes_on?: string | null;
   salary?: { lower?: number | null; upper?: number | null; currency?: string | null; per?: string | null } | null;
+  /** HR's contact for applicants (HR Settings), sent with every vacancy. */
+  contact_email?: string | null;
 };
 type Receipt = { reference: string; job_title?: string | null; closes_on?: string | null };
 
@@ -39,7 +41,10 @@ export function plainParagraphs(html: string): string[] {
     .filter(Boolean);
 }
 
-const HR_EMAIL = "hr@eswasa.co.sz";
+/** 404 means the vacancy is closed or unpublished; anything else is a failure to load, not a closed vacancy. */
+function isNotFound(e: unknown): boolean {
+  return typeof e === "object" && e !== null && (e as { status?: number }).status === 404;
+}
 
 export function CareersListPage() {
   const [items, setItems] = useState<CareerOpening[] | null>(null);
@@ -62,13 +67,13 @@ export function CareersListPage() {
       {failed ? (
         <div className="verify-result">
           <b>Vacancies couldn't load</b>
-          <p>Try again in a moment, or email {HR_EMAIL}.</p>
+          <p>Try again in a moment.</p>
         </div>
       ) : null}
       {items && !items.length ? (
         <div className="verify-result">
           <b>There are no vacancies right now</b>
-          <p>New vacancies are posted here and on the ESWASA website.</p>
+          <p>New vacancies are posted here.</p>
         </div>
       ) : null}
       {items?.length ? (
@@ -95,12 +100,13 @@ export function CareerDetailPage() {
   const { id = "" } = useParams();
   const [job, setJob] = useState<CareerOpening | null>(null);
   const [missing, setMissing] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
 
   useEffect(() => {
     apiFetch<CareerOpening>(`/careers/openings/${encodeURIComponent(id)}`)
       .then(setJob)
-      .catch(() => setMissing(true));
+      .catch((e) => (isNotFound(e) ? setMissing(true) : setFailed(true)));
   }, [id]);
 
   const crumbs = [{ label: "Home", to: "/" }, { label: "Careers", to: "/careers" }, { label: job?.job_title ?? "Vacancy" }];
@@ -116,7 +122,7 @@ export function CareerDetailPage() {
             We've received your application for {receipt.job_title ?? job?.job_title}. Only shortlisted candidates are
             contacted{receipt.closes_on ? `, usually after the closing date (${fmt(receipt.closes_on)})` : ""}.
           </p>
-          <p>Keep your reference if you contact HR about it: {HR_EMAIL}.</p>
+          <p>Keep your reference if you contact HR about it{job?.contact_email ? `: ${job.contact_email}` : ""}.</p>
         </div>
         <p className="page-note">
           <Link to="/careers">See other vacancies</Link>
@@ -128,6 +134,12 @@ export function CareerDetailPage() {
   return (
     <div className="page">
       <Breadcrumbs items={crumbs} />
+      {failed ? (
+        <div className="verify-result">
+          <b>This vacancy couldn't load</b>
+          <p>Try again in a moment.</p>
+        </div>
+      ) : null}
       {missing ? (
         <>
           <h1 className="page-h">This vacancy is closed</h1>
@@ -145,7 +157,9 @@ export function CareerDetailPage() {
           </p>
           {job.salary && (job.salary.lower || job.salary.upper) ? (
             <p className="page-note">
-              Pay: {job.salary.currency ?? "E"} {job.salary.lower ?? "…"} to {job.salary.upper ?? "…"} a {(job.salary.per ?? "Month").toLowerCase()}
+              Pay: {job.salary.currency ? `${job.salary.currency} ` : ""}
+              {job.salary.lower ?? "…"} to {job.salary.upper ?? "…"}
+              {job.salary.per ? ` a ${job.salary.per.toLowerCase()}` : ""}
             </p>
           ) : null}
           <section aria-labelledby="about-job">
@@ -157,7 +171,7 @@ export function CareerDetailPage() {
           <ApplyForm job={job} onDone={setReceipt} />
         </>
       ) : null}
-      {!job && !missing ? <p className="page-note">Loading…</p> : null}
+      {!job && !missing && !failed ? <p className="page-note">Loading…</p> : null}
     </div>
   );
 }
@@ -172,8 +186,7 @@ function ApplyForm({ job, onDone }: { job: CareerOpening; onDone: (r: Receipt) =
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const cvError = cv && cv.size > 5 * 1024 * 1024 ? "Your CV must be 5 MB or smaller." : null;
-  const ready = name.trim().length >= 3 && /\S+@\S+\.\S+/.test(email) && cv && !cvError && consent;
+  const ready = name.trim().length >= 3 && /\S+@\S+\.\S+/.test(email) && cv && consent;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -229,7 +242,6 @@ function ApplyForm({ job, onDone }: { job: CareerOpening; onDone: (r: Receipt) =
             onChange={(e) => setCv(e.target.files?.[0] ?? null)}
           />
         </label>
-        {cvError ? <p role="alert">{cvError}</p> : null}
         <label>
           Why you want this job (optional)
           <textarea rows={5} value={cover} maxLength={4000} onChange={(e) => setCover(e.target.value)} />
@@ -250,7 +262,10 @@ function ApplyForm({ job, onDone }: { job: CareerOpening; onDone: (r: Receipt) =
         <button type="submit" className="btn-primary" disabled={!ready || busy}>
           {busy ? "Sending…" : "Send application"}
         </button>
-        <p className="page-note">Only shortlisted candidates are contacted. Prefer email? Send your CV to {HR_EMAIL} quoting the job title.</p>
+        <p className="page-note">
+          Only shortlisted candidates are contacted.
+          {job.contact_email ? ` Prefer email? Send your CV to ${job.contact_email} quoting the job title.` : ""}
+        </p>
       </form>
     </section>
   );

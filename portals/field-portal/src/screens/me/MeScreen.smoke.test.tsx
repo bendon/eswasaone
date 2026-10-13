@@ -17,7 +17,7 @@ const ME = {
     { leave_type: "Annual Leave", allocated: 21, used: 10, balance: 11 },
     { leave_type: "Sick Leave", allocated: 12, used: 3, balance: 9 },
   ],
-  leave: [{ id: "LV-1", employee: "Thandi Mamba", leave_type: "Annual Leave", from_date: "2099-10-02", to_date: "2099-10-04", status: "Open" }],
+  leave: [{ id: "LV-1", employee: "Thandi Mamba", leave_type: "Annual Leave", from_date: "2099-10-02", to_date: "2099-10-04", status: "Open", days: 3 }],
 };
 
 const routes: Record<string, unknown> = {};
@@ -100,11 +100,11 @@ describe("Me ESS screen", () => {
     expect(screen.queryByText(/EXP-DEMO/)).toBeNull();
   });
 
-  it("waits for ESWASA Finance when there are no expense types", async () => {
-    routes["/hr/me/expense-claims/options"] = { types: [], receipt_required_above: null, awaiting: "ESWASA Finance" };
+  it("says claims open once Finance adds expense types", async () => {
+    routes["/hr/me/expense-claims/options"] = { types: [], receipt_required_above: null, awaiting: null };
     routes["/hr/me/expense-claims"] = { items: [] };
     renderAt("/me?tab=claims");
-    expect(await screen.findByText(/once ESWASA Finance sets up the expense types/)).toBeInTheDocument();
+    expect(await screen.findByText(/once Finance adds the expense types you can claim/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /New claim/ })).toBeNull();
   });
 

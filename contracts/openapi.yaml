@@ -2441,11 +2441,26 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/HrLiveOverview" }
 
+  /hr/settings:
+    get:
+      tags: [hr]
+      operationId: getHrSettings
+      summary: "HR rules and limits the screens show (HR Settings, with the app's fallbacks), currency, working week and choice lists"
+      description: Any signed-in user. No personal data.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrSettings" }
+        "503": { description: Frappe unavailable }
+
   /hr/setup/status:
     get:
       tags: [hr]
       operationId: getHrSetupStatus
-      summary: "H14: each HR setup step from live counts; ESWASA inputs awaiting, payroll excluded"
+      summary: "H14: each HR setup step from live counts, with a link to where it is set up"
       security: [{ bearerAuth: [] }]
       responses:
         "200":
@@ -7467,7 +7482,6 @@ components:
           - type: string
           - type: 'null'
           title: Currency
-          default: SZL
       type: object
       required:
       - id
@@ -7502,9 +7516,10 @@ components:
           - type: 'null'
           title: Max Salary
         currency:
-          type: string
+          anyOf:
+          - type: string
+          - type: 'null'
           title: Currency
-          default: SZL
       type: object
       required:
       - code
@@ -7943,6 +7958,7 @@ components:
         posted_on: { anyOf: [{ type: string }, { type: "null" }] }
         closes_on: { anyOf: [{ type: string }, { type: "null" }] }
         salary: { anyOf: [{ $ref: "#/components/schemas/CareerSalary" }, { type: "null" }] }
+        contact_email: { anyOf: [{ type: string }, { type: "null" }], description: HR contact for applicants (HR Settings) }
     CareerApplicationReceipt:
       type: object
       required: [reference]
@@ -8794,6 +8810,49 @@ components:
         people: { type: integer }
         self_done: { type: integer }
         manager_done: { type: integer }
+    HrSettings:
+      type: object
+      required: [leave_sla_days, expense_sla_days, decision_sla_days, head_sla_days, interview_feedback_days, offer_reply_days,
+        contract_notice_days, probation_notice_days, expiry_alert_days, thin_cover, declaration_handoff_days, movement_days,
+        turnover_days, cycle_warn_days, appraisal_reminder_days, calendar_max_days, rating_max, hr_email,
+        working_week, lists]
+      properties:
+        leave_sla_days: { type: integer, description: Working days an approver has to decide a leave request }
+        expense_sla_days: { type: integer }
+        decision_sla_days: { type: integer, description: Requisitions, contract and lifecycle changes, access and profile requests }
+        head_sla_days: { type: integer, description: Head of department / Executive Director decisions }
+        interview_feedback_days: { type: integer }
+        offer_reply_days: { type: integer }
+        contract_notice_days: { type: integer }
+        probation_notice_days: { type: integer }
+        expiry_alert_days: { type: array, items: { type: integer }, description: Authorisation expiry alert days, largest first }
+        thin_cover: { type: integer }
+        declaration_handoff_days: { type: integer }
+        movement_days: { type: integer }
+        turnover_days: { type: integer }
+        cycle_warn_days: { type: integer }
+        appraisal_reminder_days: { type: array, items: { type: integer } }
+        calendar_max_days: { type: integer }
+        rating_max: { type: integer }
+        hr_email: { type: string }
+        currency: { anyOf: [{ type: string }, { type: "null" }], description: Default company currency }
+        working_week: { type: array, items: { type: integer }, description: "ISO weekdays worked (1 = Monday)" }
+        lists:
+          type: object
+          properties:
+            evidence_types: { type: array, items: { type: string } }
+            external_roles: { type: array, items: { type: string } }
+            document_types: { type: array, items: { type: string } }
+            evidence_sections: { type: array, items: { type: string } }
+            separation_reasons: { type: array, items: { type: string } }
+            contract_changes: { type: array, items: { type: string } }
+            establishment_changes: { type: array, items: { type: string } }
+            council_changes: { type: array, items: { type: string } }
+            invite_roles: { type: array, items: { type: string } }
+            invite_default_roles: { type: array, items: { type: string } }
+            case_stages: { type: object, additionalProperties: { type: array, items: { type: string } } }
+            case_closed: { type: object, additionalProperties: { type: array, items: { type: string } } }
+
     HrLiveOverview:
       type: object
       required: [as_of, headcount, departments, establishment, attention, away_today, movements, turnover, ending_soon, record_quality, cycles]
@@ -8832,6 +8891,14 @@ components:
           properties:
             joiners: { type: integer }
             leavers: { type: integer }
+        windows:
+          type: object
+          description: The day windows behind movements, turnover and ending soon (HR Settings)
+          properties:
+            movement_days: { type: integer }
+            turnover_days: { type: integer }
+            contract_notice_days: { type: integer }
+            probation_notice_days: { type: integer }
         turnover: { $ref: "#/components/schemas/HrTurnover" }
         ending_soon: { type: object, additionalProperties: { type: integer } }
         record_quality:
@@ -9990,6 +10057,12 @@ components:
         status:
           type: string
           title: Status
+        days:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Days
+          description: HRMS total_leave_days (holidays and half days counted)
       type: object
       required:
       - id

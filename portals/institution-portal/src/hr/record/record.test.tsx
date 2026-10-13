@@ -14,6 +14,7 @@ vi.mock("../../layout/InstitutionLayout", () => ({
 
 import { EmployeeRecord } from "./EmployeeRecord";
 import { ExpenseDetail, ExpensesView } from "../ExpensesView";
+import { settingsResponse } from "../../test/hrSettings";
 
 type Call = { url: string; method: string; body: unknown };
 let calls: Call[] = [];
@@ -27,6 +28,8 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body && !(init.body instanceof FormData) ? JSON.parse(String(init.body)) : undefined });
       const hit = routes
@@ -62,7 +65,7 @@ describe("Employee record (H1b)", () => {
     fireEvent.click(screen.getByRole("tab", { name: "History" }));
     expect(screen.getByText("Designation: Auditor → Lead Auditor")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "Leave" }));
-    expect(screen.getByText(/Awaiting ESWASA \(H14\)/)).toBeInTheDocument();
+    expect(screen.getByText(/No leave allocated for this period/)).toBeInTheDocument();
   });
 
   it("a line manager sees job fields only: no HR actions, no access log", async () => {
@@ -118,7 +121,7 @@ describe("HR expense claims", () => {
     routes = [["/hr/expense-claims?status=Draft", { items: [CLAIM] }]];
     at("/hr/expenses", "/hr/expenses", <ExpensesView />);
     expect(await screen.findByRole("link", { name: "Site visit" })).toHaveAttribute("href", "/hr/expenses/HR-EXP-1");
-    expect(screen.getByText(/1 past the 3 working days/)).toBeInTheDocument();
+    expect(screen.getByText(/1 past the decision date/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Approve|Reject/ })).toBeNull();
   });
 

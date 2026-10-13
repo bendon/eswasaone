@@ -15,6 +15,7 @@ vi.mock("../../layout/InstitutionLayout", () => ({
 import { PipelineView } from "./PipelineView";
 import { ApplicantView } from "./ApplicantView";
 import { MyInterviews } from "../../me/MyInterviews";
+import { settingsResponse } from "../../test/hrSettings";
 
 const BASE = { id: "HR-APP-0001", applicant_name: "Ayanda Mthethwa", email: "ayanda@example.com", status: "Open", has_cv: true,
   applied_on: "2026-10-14", source: "Website Listing", opening: { name: "HR-OPN-0001", job_title: "Certification Officer" }, interviews: [], offer: null, stage: "Applied" };
@@ -28,6 +29,8 @@ function stub(applicant: unknown, postReply: (url: string) => unknown = () => ap
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
@@ -37,6 +40,7 @@ function stub(applicant: unknown, postReply: (url: string) => unknown = () => ap
           { id: "HR-APP-0002", applicant_name: "Nosipho Xaba", status: "Shortlisted", stage: "Interview", interview_status: "Pending" },
           { id: "HR-APP-0003", applicant_name: "Thulani Simelane", status: "Rejected", stage: "Not taken forward" }] });
       if (url.includes("/interview-types")) return json({ items: ["Panel"] });
+      if (url.includes("/hr/employee-options")) return json({ genders: ["Female", "Male"] });
       if (url.includes("/hr/employees")) return json({ items: [{ id: "HR-EMP-0031", employee_name: "Sipho Magagula", user_id: "sipho@x", designation: "Certification Manager" }] });
       if (url.includes("/hr/me/interviews")) return json({ items: [{ id: "HR-INT-1", applicant_name: "Ayanda Mthethwa", designation: "Certification Officer", scheduled_on: "2026-11-03", from_time: "10:00", interview_type: "Panel", skills: ["Auditing", "Report writing"] }] });
       if (url.includes("/hr/recruitment/applicants/")) return json(applicant);

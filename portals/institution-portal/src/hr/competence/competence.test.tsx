@@ -19,6 +19,7 @@ import { CompetenceView } from "../CompetenceView";
 import { RecordAuthorisation } from "./RecordAuthorisation";
 import { AuthorisationDetail } from "./AuthorisationDetail";
 import { MyCompetence } from "../../me/MyCompetence";
+import { settingsResponse } from "../../test/hrSettings";
 
 const MATRIX = {
   skills: [
@@ -40,6 +41,8 @@ function stub(over: Record<string, { status?: number; body: unknown }> = {}) {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
@@ -84,7 +87,7 @@ describe("Competence matrix (H5)", () => {
     stub();
     mount("/hr/competence");
     expect(await screen.findByText("Thandi Mamba")).toBeInTheDocument();
-    expect(screen.getByText("1 competence depends on one person or nobody")).toBeInTheDocument();
+    expect(screen.getByText("1 competence has one holder or none")).toBeInTheDocument();
     expect(screen.getByText("1 person only")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Thandi Mamba, FSMS lead auditor: Expiring" })).toHaveAttribute("href", "/hr/competence/authorisations/SA-0001");
     const renew = await screen.findByRole("link", { name: "Renew" });

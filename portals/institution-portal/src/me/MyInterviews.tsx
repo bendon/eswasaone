@@ -5,6 +5,7 @@ import { EmptyState, ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrMyInterview } from "../api/types";
 import { Banner, Crumbs, fmtDay, NextStep } from "./parts";
+import { useHrSettings } from "../hr/useHrSettings";
 
 /**
  * Interviews to score (journey J2, panel side). Any staff member on an interview panel records their
@@ -41,6 +42,7 @@ export function MyInterviews() {
 }
 
 function FeedbackForm({ interview, onDone }: { interview: HrMyInterview; onDone: () => void }) {
+  const scale = Array.from({ length: useHrSettings()?.rating_max ?? 0 }, (_, i) => i + 1);
   const [stars, setStars] = useState<Record<string, number>>({});
   const [result, setResult] = useState("");
   const [notes, setNotes] = useState("");
@@ -85,7 +87,7 @@ function FeedbackForm({ interview, onDone }: { interview: HrMyInterview; onDone:
             <fieldset key={s} style={{ border: 0, padding: 0, margin: 0 }}>
               <legend className="hr-f">{s}</legend>
               <div className="hr-actions" role="radiogroup" aria-label={s} style={{ justifyContent: "flex-start" }}>
-                {[1, 2, 3, 4, 5].map((n) => (
+                {scale.map((n) => (
                   <label key={n} className="hr-radio" style={{ padding: "6px 12px" }}>
                     <input type="radio" name={`${interview.id}-${s}`} checked={stars[s] === n} onChange={() => setStars((cur) => ({ ...cur, [s]: n }))} />
                     <span>

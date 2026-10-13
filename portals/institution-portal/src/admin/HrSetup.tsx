@@ -4,21 +4,20 @@ import { ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrSetupStatus, HrSetupStepState } from "../api/types";
 import { deskUrl } from "../hr/desk";
-import { Banner, StatusPill } from "../me/parts";
+import { StatusPill } from "../me/parts";
 import { ImportEmployees, MasterDataLoad } from "./HrImport";
 
 /**
  * HR setup (H14, System Administration). Each step is worked out from live counts by eswasa_hr.overview:
- * done, partly done, to do, waiting for an ESWASA input (Confirmation Pack / brief §0.5), or excluded
- * (payroll, until ESWASA answers H15). Each step links to the screen that does the work; nothing here
- * invents ESWASA's departments, posts or policies.
+ * done, partly done or to do. Each step links to the screen that does the work; nothing here invents ESWASA's
+ * departments, posts or policies.
  */
 
 const STATE: Record<HrSetupStepState, { cls: string; label: string }> = {
   done: { cls: "ok", label: "Done" },
   partial: { cls: "leave", label: "Partly done" },
   todo: { cls: "info", label: "To do" },
-  awaiting: { cls: "mute", label: "Awaiting ESWASA" },
+  awaiting: { cls: "info", label: "To do" },
   excluded: { cls: "mute", label: "Excluded" },
 };
 
@@ -79,7 +78,6 @@ export function HrSetup() {
                       </b>
                       <span className="s">
                         {s.detail}
-                        {s.awaiting ? ` ESWASA input: ${s.awaiting}.` : ""}
                       </span>
                     </div>
                     <StepLink href={s.href} desk={s.desk} />
@@ -90,12 +88,6 @@ export function HrSetup() {
           </div>
           <ImportEmployees />
           {(user?.roles ?? []).some((r) => r === "System Manager" || r === "Administrator") ? <MasterDataLoad /> : null}
-          {d.steps.some((s) => s.id === "payroll" && s.state === "excluded") ? (
-            <Banner kind="info" title="Payroll is out of scope for now">
-              Whether payroll runs in EswasaOne or stays in the current system waits on ESWASA (Confirmation Pack H15); statutory tables come from
-              Finance (H16).
-            </Banner>
-          ) : null}
         </div>
       ) : null}
     </ResourceGate>

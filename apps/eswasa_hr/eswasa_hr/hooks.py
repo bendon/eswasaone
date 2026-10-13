@@ -63,6 +63,9 @@ fixtures = [
                     "HR Settings-custom_calendar_max_days",
                     "HR Settings-custom_rating_max",
                     "HR Settings-custom_hr_email",
+                    "HR Settings-custom_verbal_warning_months",
+                    "HR Settings-custom_written_warning_months",
+                    "HR Settings-custom_final_warning_months",
                 ],
             ]
         ],

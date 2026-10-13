@@ -75,7 +75,8 @@ async def test_register_case_and_steps(client: AsyncClient, monkeypatch: pytest.
     assert (await client.get("/api/hr/cases/payroll/X")).status_code == 404
     await client.post("/api/hr/cases/disciplinary/HRC-2026-00005/act", json={"to_stage": "Appeal", "note": "Appeal lodged", "appeal_owner": "ed@x", "confirm": True})
     assert calls[-1] == ("eswasa_hr.cases.act", {"kind": "disciplinary", "name": "HRC-2026-00005", "to_stage": "Appeal", "note": "Appeal lodged",
-                                                 "next_step": None, "next_step_due": None, "outcome": None, "appeal_owner": "ed@x", "confirm": 1})
+                                                 "next_step": None, "next_step_due": None, "outcome": None, "appeal_owner": "ed@x",
+                                                 "offence": None, "sanction": None, "appeal_result": None, "confirm": 1})
     assert (await client.get("/api/hr/cases/board")).json()["kinds"][0] == {"kind": "grievance", "open": 1, "closed_this_year": 2, "avg_days_to_close": 12.5}
 
 

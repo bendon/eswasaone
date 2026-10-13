@@ -6,7 +6,7 @@ import { EmptyState, ResourceGate } from "../../components/PageStates";
 import { RequireStaff } from "../../components/RequireStaff";
 import { useInstitution } from "../../layout/InstitutionLayout";
 import { errorText, hrSend } from "../api";
-import type { HrCase, HrCaseKind, HrCaseRegister, HrEmployeesResponse } from "../../api/types";
+import type { HrCase, HrCaseKind, HrCaseRegister, HrEmployeesResponse, HrOffence, HrOffenceList } from "../../api/types";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill } from "../../me/parts";
 import { useHrSettings } from "../useHrSettings";
 
@@ -22,6 +22,29 @@ const caseUrl = (kind: string, id: string) => `/hr/cases/${kind}/${encodeURIComp
 function stageCls(stage: string, closed: boolean) {
   if (closed) return stage === "Invalid" ? "mute" : "ok";
   return stage === "Appeal" || stage === "Hearing scheduled" ? "info" : "leave";
+}
+
+/** "Late coming (Minor)": how an offence reads in a picker. */
+export const offenceLabel = (o: HrOffence) => `${o.title ?? o.code}${o.level ? ` (${o.level})` : ""}`;
+
+function addMonths(iso: string, months: number): string {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  const total = m - 1 + months;
+  const year = y + Math.floor(total / 12);
+  const month = (total % 12) + 1;
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
+}
+
+/** What the outcome form says about expiry: the date it would lapse, or that ESWASA hasn't set validity (A1). */
+export function expiryNote(sanction: string, months: Record<string, number | null> | undefined, today: string): string | null {
+  if (!months || !(sanction in months)) return null;
+  const n = months[sanction];
+  return n ? `Active for ${n} months, until ${fmtDay(addMonths(today, n), true)}.` : "Expiry not set: awaiting ESWASA (A1).";
+}
+
+function warningCls(status?: string | null) {
+  return status === "Active" ? "bad" : status === "Withdrawn" ? "mute" : "info";
 }
 
 const LOCK = "Restricted to the HR Manager and the case owner. Not in search, exports or Ask Esi. The Board sees counts only.";
@@ -42,13 +65,18 @@ export function CasesView() {
                 <h2>Cases</h2>
                 <p>Grievances and disciplinary matters. {open.length} open.</p>
               </div>
-              {d.can_open ? (
-                <div className="hr-head__r">
+              <div className="hr-head__r">
+                {(user?.roles ?? []).some((r) => r === "HR Manager" || r === "HR User" || r === "System Manager") ? (
+                  <Link className="btn ghost" to="/hr/cases/code">
+                    Disciplinary code
+                  </Link>
+                ) : null}
+                {d.can_open ? (
                   <Link className="btn pri" to="/hr/cases/new">
                     Open a case
                   </Link>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </div>
             <Banner kind="lock" title="Restricted">
               {LOCK} The list shows no names; they're inside each case.
@@ -110,7 +138,9 @@ export function CaseNew() {
   const { user, sessionKey } = useInstitution();
   const reg = useApiResource<HrCaseRegister>("/hr/cases", { enabled: Boolean(user), refreshKey: sessionKey });
   const people = useApiResource<HrEmployeesResponse>("/hr/employees?limit=500", { enabled: Boolean(user), refreshKey: sessionKey });
+  const code = useApiResource<HrOffenceList>("/hr/disciplinary/offences", { enabled: Boolean(user), refreshKey: sessionKey });
   const [kind, setKind] = useState<HrCaseKind>("disciplinary");
+  const [offence, setOffence] = useState("");
   const [employee, setEmployee] = useState("");
   const [owner, setOwner] = useState("");
   const [description, setDescription] = useState("");
@@ -131,7 +161,16 @@ export function CaseNew() {
       setMade(
         await apiFetch<HrCase>("/hr/cases", {
           method: "POST",
-          body: JSON.stringify({ kind, employee, owner, description: description.trim(), next_step: nextStep.trim() || null, next_step_due: due || null, confirm: true }),
+          body: JSON.stringify({
+            kind,
+            employee,
+            owner,
+            description: description.trim(),
+            next_step: nextStep.trim() || null,
+            next_step_due: due || null,
+            ...(kind === "disciplinary" && offence ? { offence } : {}),
+            confirm: true,
+          }),
         }),
       );
     } catch (e) {
@@ -206,6 +245,22 @@ export function CaseNew() {
                   </select>
                   <small>An HR Manager. Can't be one of the people involved</small>
                 </label>
+                {kind === "disciplinary" ? (
+                  <label className="hr-f">
+                    <span>Offence (optional)</span>
+                    <select className="hr-in" value={offence} onChange={(e) => setOffence(e.target.value)}>
+                      <option value="">{(code.data?.items ?? []).some((o) => o.active) ? "Not decided yet" : "No disciplinary code yet (A1)"}</option>
+                      {(code.data?.items ?? [])
+                        .filter((o) => o.active)
+                        .map((o) => (
+                          <option key={o.code} value={o.code}>
+                            {offenceLabel(o)}
+                          </option>
+                        ))}
+                    </select>
+                    <small>From ESWASA's disciplinary code. It's confirmed when the outcome is issued</small>
+                  </label>
+                ) : null}
                 <label className="hr-f wide">
                   <span>What happened</span>
                   <textarea className="hr-in" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Facts, dates, who saw it" />
@@ -254,6 +309,9 @@ export function CaseDetail() {
   const [due, setDue] = useState("");
   const [outcome, setOutcome] = useState("");
   const [appealOwner, setAppealOwner] = useState("");
+  const [offence, setOffence] = useState("");
+  const [sanction, setSanction] = useState("");
+  const [appealResult, setAppealResult] = useState("");
   const [text, setText] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -261,6 +319,7 @@ export function CaseDetail() {
     if (res.data) setC(res.data);
   }, [res.data]);
   useEffect(() => setTo(c?.next[0] ?? ""), [c?.stage, c?.next]);
+  useEffect(() => setOffence(c?.offence ?? ""), [c?.offence]);
 
   async function post(path: string, body: Record<string, unknown>, reset: () => void) {
     setBusy(true);
@@ -277,7 +336,23 @@ export function CaseDetail() {
 
   const closing = closedStages.includes(to);
   const needsOutcome = to === "Outcome issued" || (closing && to !== "Closed" && to !== "Cancelled");
-  const ready = to && note.trim() && (!needsOutcome || outcome.trim()) && (to !== "Appeal" || appealOwner);
+  // Plan 01: a disciplinary outcome names the offence (once ESWASA's code has any) and the sanction.
+  const sanctioning = c?.kind === "disciplinary" && to === "Outcome issued";
+  const offences = c?.offences ?? [];
+  const closingAppeal = c?.kind === "disciplinary" && c?.stage === "Appeal" && to === "Closed";
+  const ready =
+    to &&
+    note.trim() &&
+    (!needsOutcome || outcome.trim()) &&
+    (to !== "Appeal" || appealOwner) &&
+    (!sanctioning || (sanction && (offence || !offences.length))) &&
+    (!closingAppeal || appealResult);
+  const pickOffence = (code: string) => {
+    setOffence(code);
+    const hint = offences.find((o) => o.code === code)?.suggested_sanction;
+    if (hint) setSanction(hint);
+  };
+  const today = new Date().toISOString().slice(0, 10);
   const appealOwners = (c?.owners ?? []).filter((o) => o.user !== c?.decided_by);
 
   return (
@@ -344,6 +419,32 @@ export function CaseDetail() {
                           {c.outcome}
                           {c.decided_by_name ? <div className="sub">By {c.decided_by_name}</div> : null}
                         </dd>
+                      </div>
+                    ) : null}
+                    {c.offence ? (
+                      <div>
+                        <dt>Offence</dt>
+                        <dd>{c.offence_title ?? c.offence}</dd>
+                      </div>
+                    ) : null}
+                    {c.sanction ? (
+                      <div>
+                        <dt>Sanction</dt>
+                        <dd>
+                          {c.sanction}
+                          {c.warning_status ? (
+                            <div className="sub">
+                              <StatusPill cls={warningCls(c.warning_status)} label={`Warning ${c.warning_status.toLowerCase()}`} />{" "}
+                              {c.warning_expires_on ? `until ${fmtDay(c.warning_expires_on, true)}` : c.warning_status === "Active" ? "Expiry not set: awaiting ESWASA (A1)" : ""}
+                            </div>
+                          ) : null}
+                        </dd>
+                      </div>
+                    ) : null}
+                    {c.appeal_result ? (
+                      <div>
+                        <dt>Appeal</dt>
+                        <dd>{c.appeal_result}</dd>
                       </div>
                     ) : null}
                     {c.appeal_owner_name ? (
@@ -419,6 +520,50 @@ export function CaseDetail() {
                     <span>What happened at this step</span>
                     <textarea className="hr-in" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
                   </label>
+                  {sanctioning ? (
+                    <>
+                      <label className="hr-f">
+                        <span>Offence</span>
+                        {offences.length ? (
+                          <select className="hr-in" value={offence} onChange={(e) => pickOffence(e.target.value)}>
+                            <option value="">Choose…</option>
+                            {offences.map((o) => (
+                              <option key={o.code} value={o.code}>
+                                {offenceLabel(o)}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="hr-note">No disciplinary code yet. ESWASA to supply its offences (A1).</span>
+                        )}
+                      </label>
+                      <label className="hr-f">
+                        <span>Sanction</span>
+                        <select className="hr-in" value={sanction} onChange={(e) => setSanction(e.target.value)}>
+                          <option value="">Choose…</option>
+                          {(c.sanctions ?? []).map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                        <small>{(sanction && expiryNote(sanction, c.warning_months, today)) || "Suggested by the offence; you can change it"}</small>
+                      </label>
+                    </>
+                  ) : null}
+                  {closingAppeal ? (
+                    <div className="hr-radios wide" role="radiogroup" aria-label="Appeal result">
+                      {(c.appeal_results ?? []).map((r) => (
+                        <label className="hr-radio" key={r}>
+                          <input type="radio" name="appeal_result" checked={appealResult === r} onChange={() => setAppealResult(r)} />
+                          <span>
+                            <b>{r}</b>
+                            <small>{r === "Overturned" ? "The outcome is set aside; any warning is withdrawn" : "The outcome stands"}</small>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : null}
                   {needsOutcome ? (
                     <label className="hr-f wide">
                       <span>Outcome</span>
@@ -468,9 +613,20 @@ export function CaseDetail() {
                   onClick={() =>
                     void post(
                       "act",
-                      { to_stage: to, note: note.trim(), next_step: closing ? null : nextStep.trim() || null, next_step_due: closing ? null : due || null, outcome: outcome.trim() || null, appeal_owner: to === "Appeal" ? appealOwner : null },
+                      {
+                        to_stage: to,
+                        note: note.trim(),
+                        next_step: closing ? null : nextStep.trim() || null,
+                        next_step_due: closing ? null : due || null,
+                        outcome: outcome.trim() || null,
+                        appeal_owner: to === "Appeal" ? appealOwner : null,
+                        ...(sanctioning ? { offence: offence || null, sanction } : {}),
+                        ...(closingAppeal ? { appeal_result: appealResult } : {}),
+                      },
                       () => {
                         setNote("");
+                        setSanction("");
+                        setAppealResult("");
                         setNextStep("");
                         setDue("");
                         setOutcome("");

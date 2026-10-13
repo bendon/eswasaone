@@ -19,8 +19,16 @@
   "allegation",
   "outcome",
   "decided_by",
+  "offence",
+  "sanction",
+  "outcome_on",
   "appeal_owner",
-  "closed_on"
+  "closed_on",
+  "section_warning",
+  "warning_expires_on",
+  "warning_status",
+  "appeal_result",
+  "warning_letter"
  ],
  "fields": [
   {
@@ -112,6 +120,26 @@
    "read_only": 1
   },
   {
+   "fieldname": "offence",
+   "fieldtype": "Link",
+   "label": "Offence",
+   "options": "Disciplinary Offence",
+   "description": "From ESWASA's disciplinary code (A1). Required at the outcome once the code has offences."
+  },
+  {
+   "fieldname": "sanction",
+   "fieldtype": "Select",
+   "label": "Sanction",
+   "options": "\nNo action\nVerbal warning\nWritten warning\nFinal written warning\nSuspension\nDismissal",
+   "read_only": 1
+  },
+  {
+   "fieldname": "outcome_on",
+   "fieldtype": "Date",
+   "label": "Outcome Issued On",
+   "read_only": 1
+  },
+  {
    "fieldname": "appeal_owner",
    "fieldtype": "Link",
    "label": "Appeal Heard By",
@@ -123,10 +151,46 @@
    "fieldtype": "Date",
    "label": "Closed On",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_warning",
+   "fieldtype": "Section Break",
+   "label": "Warning",
+   "depends_on": "eval:doc.warning_status"
+  },
+  {
+   "fieldname": "warning_expires_on",
+   "fieldtype": "Date",
+   "label": "Warning Expires On",
+   "read_only": 1,
+   "description": "Empty while HR Settings has no validity for this sanction (provisional, A1)."
+  },
+  {
+   "fieldname": "warning_status",
+   "fieldtype": "Select",
+   "label": "Warning Status",
+   "options": "\nActive\nExpired\nWithdrawn",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "appeal_result",
+   "fieldtype": "Select",
+   "label": "Appeal Result",
+   "options": "\nUpheld\nOverturned",
+   "read_only": 1,
+   "description": "An overturned outcome withdraws the warning."
+  },
+  {
+   "fieldname": "warning_letter",
+   "fieldtype": "Data",
+   "label": "Warning Letter",
+   "read_only": 1,
+   "description": "The HR Letter that carries the warning. Data until the HR Letter DocType lands (HR letters turns it into a Link)."
   }
  ],
  "links": [],
- "modified": "2026-10-12 00:00:00.000000",
+ "modified": "2026-10-13 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Eswasa HR",
  "name": "Disciplinary Case",

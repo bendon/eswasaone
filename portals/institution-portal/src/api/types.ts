@@ -161,7 +161,47 @@ export type HrCase = {
   talk_first: boolean;
   notes: Array<{ text: string; by?: string | null; on?: string | null }>;
   owners: HrCaseOwner[];
+  // HR additions plan 01 (disciplinary only)
+  offence?: string | null;
+  offence_title?: string | null;
+  sanction?: string | null;
+  outcome_on?: string | null;
+  warning_expires_on?: string | null;
+  warning_status?: HrWarningStatus | null;
+  appeal_result?: string | null;
+  sanctions?: string[];
+  appeal_results?: string[];
+  offences?: HrOffence[];
+  /** Months each warning stays active; null while awaiting ESWASA (A1). */
+  warning_months?: Record<string, number | null>;
 };
+export type HrWarningStatus = "Active" | "Expired" | "Withdrawn";
+export type HrOffence = {
+  code: string;
+  title?: string | null;
+  category?: string | null;
+  level?: string | null;
+  suggested_sanction?: string | null;
+  description?: string | null;
+  active: boolean;
+};
+export type HrOffenceList = {
+  items: HrOffence[];
+  can_edit: boolean;
+  levels: string[];
+  sanctions: string[];
+  warning_months: Record<string, number | null>;
+};
+export type HrWarning = {
+  case: string;
+  sanction?: string | null;
+  offence?: string | null;
+  offence_title?: string | null;
+  issued_on?: string | null;
+  expires_on?: string | null;
+  status?: HrWarningStatus | null;
+};
+export type HrWarnings = { employee: string; items: HrWarning[]; active: number; active_until?: string | null };
 export type HrMyConcerns = components["schemas"]["HrMyConcerns"];
 export type HrContractDefaults = components["schemas"]["HrContractDefaults"];
 export type HrEstCounts = components["schemas"]["HrEstCounts"];

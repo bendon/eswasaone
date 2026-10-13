@@ -25,3 +25,4 @@ export { ExpensesView, ExpenseDetail } from "./ExpensesView";
 export { ExternalPeople } from "./competence/ExternalPeople";
 export { EvidencePack } from "./competence/EvidencePack";
 export { RequisitionDetail } from "./recruitment/RequisitionDetail";
+export { DisciplinaryCode } from "./cases/DisciplinaryCode";

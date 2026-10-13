@@ -33,6 +33,21 @@ STAGES = {
 }
 CLOSED = {"grievance": {"Resolved", "Invalid", "Cancelled"}, "disciplinary": {"Closed"}}
 MANAGER_ROLES = {"HR Manager", "System Manager"}
+HR_ROLES = {"HR Manager", "HR User", "System Manager"}
+# Plan 01: ESWASA's disciplinary code (A1). The catalogue ships empty; the lists below are the mechanism.
+OFFENCE = "Disciplinary Offence"
+LEVELS = ["Minor", "Serious", "Gross"]
+SANCTIONS = ["No action", "Verbal warning", "Written warning", "Final written warning", "Suspension", "Dismissal"]
+ACTIVE, EXPIRED, WITHDRAWN = "Active", "Expired", "Withdrawn"
+UPHELD, OVERTURNED = "Upheld", "Overturned"
+APPEAL_RESULTS = [UPHELD, OVERTURNED]
+# How long each warning stays on file: HR Settings, empty until ESWASA answers (provisional, A1).
+WARNING_MONTHS = {
+    "Verbal warning": "custom_verbal_warning_months",
+    "Written warning": "custom_written_warning_months",
+    "Final written warning": "custom_final_warning_months",
+}
+WARNING_RULE = "Warning expired"
 
 
 # ---------------------------------------------------------------- pure rules
@@ -57,14 +72,19 @@ def next_stages(kind: str, stage: str) -> list[str]:
     return out
 
 
-def move_errors(kind: str, stage: str, target: str, note: str | None, outcome: str | None, appeal_owner: str | None, decided_by: str | None) -> list[str]:
+def move_errors(kind: str, stage: str, target: str, note: str | None, outcome: str | None, appeal_owner: str | None, decided_by: str | None,
+                offence: str | None = None, sanction: str | None = None, has_code: bool = False, appeal_result: str | None = None) -> list[str]:
     errs = []
     if target not in next_stages(kind, stage):
         return [f"A case at {stage} can't move to {target}."]
     if not (note or "").strip():
         errs.append("Add a note on what happened at this step.")
-    if target in ("Outcome issued", "Resolved", "Invalid") and not (outcome or "").strip():
+    if kind == "disciplinary" and target == "Outcome issued":
+        errs += outcome_errors(kind, offence, sanction, outcome, has_code)
+    elif target in ("Outcome issued", "Resolved", "Invalid") and not (outcome or "").strip():
         errs.append("Record the outcome.")
+    if kind == "disciplinary" and stage == "Appeal" and target == "Closed" and appeal_result not in APPEAL_RESULTS:
+        errs.append("Say whether the appeal upheld or overturned the outcome.")
     if target == "Appeal":
         if not appeal_owner:
             errs.append("Choose who hears the appeal.")
@@ -106,6 +126,96 @@ def board_counts(rows: Iterable[dict[str, Any]], day: date) -> list[dict[str, An
         days = c.pop("_days")
         c["avg_days_to_close"] = round(sum(days) / len(days), 1) if days else None
     return list(out.values())
+
+
+def outcome_errors(kind: str, offence: str | None, sanction: str | None, outcome: str | None, has_code: bool = False) -> list[str]:
+    """A disciplinary outcome names the offence (once ESWASA's code has offences), the sanction and what was decided.
+    "No action" still needs the outcome text."""
+    if kind != "disciplinary":
+        return []
+    errs = []
+    if has_code and not offence:
+        errs.append("Choose the offence from the disciplinary code.")
+    if sanction not in SANCTIONS:
+        errs.append("Choose the sanction.")
+    if not (outcome or "").strip():
+        errs.append("Record the outcome.")
+    return errs
+
+
+def is_warning(sanction: str | None) -> bool:
+    return sanction in WARNING_MONTHS
+
+
+def outcome_comment(sanction: str | None, expires: Any) -> str:
+    if not is_warning(sanction):
+        return f"Sanction: {sanction}."
+    d = _d(expires)
+    return f"Sanction: {sanction}, active until {d.isoformat()}." if d else f"Sanction: {sanction}. Expiry not set: awaiting ESWASA (A1)."
+
+
+def _add_months(d: date, months: int) -> date:
+    from calendar import monthrange
+
+    y, m = divmod(d.month - 1 + months, 12)
+    y, m = d.year + y, m + 1
+    return date(y, m, min(d.day, monthrange(y, m)[1]))
+
+
+def warning_expiry(sanction: str | None, issued_on: Any, months_by_sanction: dict[str, Any]) -> date | None:
+    """When a warning stops counting. None when it isn't a warning, or HR Settings has no validity for it yet (A1)."""
+    issued = _d(issued_on)
+    if not issued or not is_warning(sanction):
+        return None
+    try:
+        months = int(months_by_sanction.get(sanction) or 0)
+    except (TypeError, ValueError):
+        months = 0
+    return _add_months(issued, months) if months > 0 else None
+
+
+def active_warnings(rows: Iterable[dict[str, Any]], today: date) -> list[dict[str, Any]]:
+    """Warnings that still count: status Active and no expiry yet, or an expiry on or after today."""
+    out = []
+    for r in rows:
+        exp = _d(r.get("warning_expires_on"))
+        if r.get("warning_status") == ACTIVE and is_warning(r.get("sanction")) and (exp is None or exp >= today):
+            out.append(r)
+    return out
+
+
+def lapsed_warnings(rows: Iterable[dict[str, Any]], today: date) -> list[dict[str, Any]]:
+    """Active warnings whose expiry has passed: the daily job marks them Expired."""
+    return [r for r in rows if r.get("warning_status") == ACTIVE and _d(r.get("warning_expires_on")) and _d(r.get("warning_expires_on")) < today]
+
+
+def appeal_warning_status(status: str | None, result: str | None) -> str | None:
+    """An overturned outcome withdraws its warning; an upheld one leaves it as it was."""
+    return WITHDRAWN if status and result == OVERTURNED else status
+
+
+def offence_errors(code: str | None, title: str | None, level: str | None, suggested_sanction: str | None, taken: Iterable[str] = ()) -> list[str]:
+    errs = []
+    if not (code or "").strip():
+        errs.append("Give the offence a code.")
+    elif code.strip() in set(taken):
+        errs.append(f"Code {code.strip()} is already in the disciplinary code.")
+    if not (title or "").strip():
+        errs.append("Name the offence.")
+    if level not in LEVELS:
+        errs.append("Choose the level: " + ", ".join(LEVELS) + ".")
+    if suggested_sanction and suggested_sanction not in SANCTIONS:
+        errs.append("Choose a sanction from the list.")
+    return errs
+
+
+def code_state(active_offences: int, months: dict[str, Any]) -> tuple[bool, str]:
+    """HR setup "Disciplinary code": done once there's an active offence and every warning has a validity."""
+    unset = [s for s in WARNING_MONTHS if not months.get(s)]
+    done = bool(active_offences) and not unset
+    parts = [f"{active_offences} active offences" if active_offences else "No offences yet"]
+    parts.append("warning validity set." if not unset else "validity not set for " + ", ".join(s.lower() for s in unset) + ".")
+    return done, "; ".join(parts) if done else "; ".join(parts) + " Awaiting ESWASA (A1)."
 
 
 # ---------------------------------------------------------------- Frappe glue
@@ -165,6 +275,12 @@ def _fields(doc: Any) -> dict[str, Any]:
             "decided_by": doc.get("resolved_by"),
             "appeal_owner": None,
             "closed_on": doc.get("resolution_date"),
+            "offence": None,
+            "sanction": None,
+            "outcome_on": None,
+            "warning_expires_on": None,
+            "warning_status": None,
+            "appeal_result": None,
         }
     return {
         "kind": "disciplinary",
@@ -179,6 +295,12 @@ def _fields(doc: Any) -> dict[str, Any]:
         "decided_by": doc.get("decided_by"),
         "appeal_owner": doc.get("appeal_owner"),
         "closed_on": doc.get("closed_on"),
+        "offence": doc.get("offence"),
+        "sanction": doc.get("sanction"),
+        "outcome_on": doc.get("outcome_on"),
+        "warning_expires_on": doc.get("warning_expires_on"),
+        "warning_status": doc.get("warning_status"),
+        "appeal_result": doc.get("appeal_result"),
     }
 
 
@@ -292,10 +414,73 @@ def detail_impl(kind: str, name: str) -> dict[str, Any]:
         "talk_first": bool(doc.get("custom_talk_first")) if kind == "grievance" else False,
         "notes": notes,
         "owners": owners_impl() if _is_manager() else [],
+        **(_disciplinary_view(f) if kind == "disciplinary" else {}),
     }
 
 
-def open_impl(kind: str, employee: str, owner: str, description: str, next_step: str | None, next_step_due: str | None, subject: str | None = None, grievance_type: str | None = None) -> dict[str, Any]:
+def _disciplinary_view(f: dict[str, Any]) -> dict[str, Any]:
+    """Plan 01: offence, sanction and warning on the case, plus what the outcome form offers."""
+    import frappe
+
+    title = frappe.db.get_value(OFFENCE, f["offence"], "title") if f["offence"] and _has(OFFENCE) else None
+    return {
+        "offence": f["offence"],
+        "offence_title": title,
+        "sanction": f["sanction"],
+        "outcome_on": str(f["outcome_on"]) if f["outcome_on"] else None,
+        "warning_expires_on": str(f["warning_expires_on"]) if f["warning_expires_on"] else None,
+        "warning_status": f["warning_status"],
+        "appeal_result": f["appeal_result"],
+        "sanctions": list(SANCTIONS),
+        "appeal_results": list(APPEAL_RESULTS),
+        "offences": _offences(active_only=True),
+        "warning_months": warning_months(),
+    }
+
+
+def _has(doctype: str) -> bool:
+    import frappe
+
+    return bool(frappe.db.exists("DocType", doctype))
+
+
+def warning_months() -> dict[str, int | None]:
+    """HR Settings validity per warning sanction; None while unset (provisional, A1)."""
+    from eswasa_hr.settings import _raw
+
+    out: dict[str, int | None] = {}
+    for sanction, field in WARNING_MONTHS.items():
+        try:
+            out[sanction] = int(_raw(field) or 0) or None
+        except (TypeError, ValueError):
+            out[sanction] = None
+    return out
+
+
+def _offence_row(r: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "code": r["name"],
+        "title": r.get("title"),
+        "category": r.get("category"),
+        "level": r.get("level"),
+        "suggested_sanction": r.get("suggested_sanction") or None,
+        "description": r.get("description"),
+        "active": bool(r.get("active")),
+    }
+
+
+def _offences(active_only: bool = False) -> list[dict[str, Any]]:
+    import frappe
+
+    if not _has(OFFENCE):
+        return []
+    filters = {"active": 1} if active_only else {}
+    rows = frappe.get_all(OFFENCE, filters=filters, fields=["name", "title", "category", "level", "suggested_sanction", "description", "active"], order_by="name asc", limit=0)
+    return [_offence_row(r) for r in rows]
+
+
+def open_impl(kind: str, employee: str, owner: str, description: str, next_step: str | None, next_step_due: str | None, subject: str | None = None, grievance_type: str | None = None,
+              offence: str | None = None) -> dict[str, Any]:
     """H10 Open a case (HR Manager)."""
     import frappe
 
@@ -309,6 +494,8 @@ def open_impl(kind: str, employee: str, owner: str, description: str, next_step:
     errs = [x for x in [owner_error(owner, [e.get("user_id")])] if x]
     if not (description or "").strip():
         errs.append("Say what happened.")
+    if kind == "disciplinary" and offence and not frappe.db.get_value(OFFENCE, {"name": offence, "active": 1}, "name"):
+        errs.append("Choose an active offence from the disciplinary code.")
     if errs:
         frappe.throw(" ".join(errs), frappe.ValidationError)
     day = _today().isoformat()
@@ -324,6 +511,7 @@ def open_impl(kind: str, employee: str, owner: str, description: str, next_step:
                 "owner_user": owner,
                 "stage": "Opened",
                 "allegation": description.strip(),
+                "offence": offence or None,
                 "next_step": (next_step or "").strip() or None,
                 "next_step_due": next_step_due or None,
             }
@@ -403,7 +591,8 @@ def mine_impl() -> dict[str, Any]:
     }
 
 
-def act_impl(kind: str, name: str, to_stage: str, note: str, next_step: str | None, next_step_due: str | None, outcome: str | None, appeal_owner: str | None) -> dict[str, Any]:
+def act_impl(kind: str, name: str, to_stage: str, note: str, next_step: str | None, next_step_due: str | None, outcome: str | None, appeal_owner: str | None,
+             offence: str | None = None, sanction: str | None = None, appeal_result: str | None = None) -> dict[str, Any]:
     """H10a: move a case on one step (owner, appeal owner or HR Manager)."""
     import frappe
 
@@ -412,7 +601,11 @@ def act_impl(kind: str, name: str, to_stage: str, note: str, next_step: str | No
     user = frappe.session.user
     if not (_is_manager() or user == f["owner"] or (f["stage"] == "Appeal" and user == f["appeal_owner"])):
         frappe.throw("Only the case owner or an HR Manager can move it on.", frappe.PermissionError)
-    errs = move_errors(kind, f["stage"], to_stage, note, outcome, appeal_owner, f["decided_by"])
+    offence = offence or f["offence"]
+    active_code = bool(kind == "disciplinary" and _offences(active_only=True))
+    errs = move_errors(kind, f["stage"], to_stage, note, outcome, appeal_owner, f["decided_by"], offence, sanction, active_code, appeal_result)
+    if kind == "disciplinary" and to_stage == "Outcome issued" and offence and not frappe.db.get_value(OFFENCE, {"name": offence, "active": 1}, "name"):
+        errs.append("Choose an active offence from the disciplinary code.")
     if appeal_owner and appeal_owner == _user_of(f["employee"]):
         errs.append("The appeal can't go to the person the case is about.")
     if errs:
@@ -432,6 +625,15 @@ def act_impl(kind: str, name: str, to_stage: str, note: str, next_step: str | No
         if to_stage == "Outcome issued":
             doc.outcome = outcome.strip()
             doc.decided_by = user
+            doc.offence = offence or None
+            doc.sanction = sanction
+            doc.outcome_on = day
+            expires = warning_expiry(sanction, day, warning_months())
+            doc.warning_expires_on = expires.isoformat() if expires else None
+            doc.warning_status = ACTIVE if is_warning(sanction) else None
+        if f["stage"] == "Appeal" and to_stage == "Closed":
+            doc.appeal_result = appeal_result
+            doc.warning_status = appeal_warning_status(f["warning_status"], appeal_result)
         if to_stage == "Appeal":
             doc.appeal_owner = appeal_owner
         if closing:
@@ -443,6 +645,10 @@ def act_impl(kind: str, name: str, to_stage: str, note: str, next_step: str | No
     if kind == "grievance" and closing and int(doc.docstatus or 0) == 0:
         doc.submit()
     doc.add_comment("Comment", f"{to_stage}: {note.strip()}")
+    if kind == "disciplinary" and to_stage == "Outcome issued":
+        doc.add_comment("Comment", outcome_comment(sanction, doc.get("warning_expires_on")))
+    if kind == "disciplinary" and f["stage"] == "Appeal" and to_stage == "Closed":
+        doc.add_comment("Comment", f"Appeal {appeal_result.lower()}." + (" The warning is withdrawn." if doc.get("warning_status") == WITHDRAWN and f["warning_status"] != WITHDRAWN else ""))
     who = None if closing else appeal_owner if to_stage == "Appeal" else f["owner"]
     _route(doc, who, None if closing else (next_step or to_stage), None if closing else next_step_due)
     return detail_impl(kind, name)
@@ -482,6 +688,136 @@ def reassign_impl(kind: str, name: str, owner: str, note: str) -> dict[str, Any]
     if f["stage"] not in CLOSED[kind]:
         _route(doc, owner, f["next_step"], f["next_step_due"])
     return detail_impl(kind, name)
+
+
+def warnings_impl(employee: str) -> dict[str, Any]:
+    """H1b Warnings: the person's warnings. HR Manager sees all; a case owner only those on cases they may read.
+    Everyone else is refused. Never carries the allegation."""
+    import frappe
+
+    if not employee or not frappe.db.exists("Employee", employee):
+        frappe.throw("Employee not found.", frappe.DoesNotExistError)
+    manager = _is_manager()
+    user = frappe.session.user
+    rows = frappe.get_all(DISCIPLINARY, filters={"employee": employee, "warning_status": ["is", "set"], "docstatus": ["<", 2]}, fields=["name"], order_by="creation desc", limit=0) if _has(DISCIPLINARY) else []
+    mine = [f for f in (_fields(frappe.get_doc(DISCIPLINARY, r["name"])) | {"id": r["name"]} for r in rows) if manager or _can_read(f, user)]
+    if not manager and not mine:
+        frappe.throw("Only the HR Manager and the case owner can see warnings.", frappe.PermissionError)
+    titles = {o["code"]: o["title"] for o in _offences()}
+    items = [
+        {
+            "case": f["id"],
+            "sanction": f["sanction"],
+            "offence": f["offence"],
+            "offence_title": titles.get(f["offence"]) if f["offence"] else None,
+            "issued_on": str(f["outcome_on"]) if f["outcome_on"] else None,
+            "expires_on": str(f["warning_expires_on"]) if f["warning_expires_on"] else None,
+            "status": f["warning_status"],
+        }
+        for f in mine
+    ]
+    active = active_warnings(mine, _today())
+    dated = sorted(str(a["warning_expires_on"]) for a in active if a["warning_expires_on"])
+    # "Active until" only when every active warning has a date; one without an expiry keeps the flag open-ended.
+    return {"employee": employee, "items": items, "active": len(active), "active_until": dated[-1] if dated and len(dated) == len(active) else None}
+
+
+def offences_impl() -> dict[str, Any]:
+    """H10b: the disciplinary code (HR roles read; HR Manager edits)."""
+    import frappe
+
+    if not set(frappe.get_roles()) & HR_ROLES:
+        frappe.throw("Only HR can see the disciplinary code.", frappe.PermissionError)
+    return {"items": _offences(), "can_edit": _is_manager(), "levels": list(LEVELS), "sanctions": list(SANCTIONS), "warning_months": warning_months()}
+
+
+def _require_code_editor() -> None:
+    import frappe
+
+    if not _is_manager():
+        frappe.throw("Only an HR Manager can change the disciplinary code.", frappe.PermissionError)
+    if not _has(OFFENCE):
+        frappe.throw("The disciplinary code isn't installed on this site yet (bench migrate).", frappe.ValidationError)
+
+
+def create_offence_impl(code: str, title: str, level: str, category: str | None = None, suggested_sanction: str | None = None, description: str | None = None) -> dict[str, Any]:
+    import frappe
+
+    _require_code_editor()
+    taken = [r["name"] for r in frappe.get_all(OFFENCE, fields=["name"], limit=0)]
+    errs = offence_errors(code, title, level, suggested_sanction, taken)
+    if errs:
+        frappe.throw(" ".join(errs), frappe.ValidationError)
+    frappe.get_doc(
+        {
+            "doctype": OFFENCE,
+            "name": code.strip(),  # autoname field:code; set so the row is addressable straight away
+            "code": code.strip(),
+            "title": title.strip(),
+            "category": (category or "").strip() or None,
+            "level": level,
+            "suggested_sanction": suggested_sanction or None,
+            "description": (description or "").strip() or None,
+            "active": 1,
+        }
+    ).insert(ignore_permissions=True)
+    return offences_impl()
+
+
+def update_offence_impl(code: str, changes: dict[str, Any]) -> dict[str, Any]:
+    """Edit or deactivate an offence. The code stays (cases link to it); an offence is never deleted."""
+    import frappe
+
+    _require_code_editor()
+    if not frappe.db.exists(OFFENCE, code):
+        frappe.throw("Offence not found.", frappe.DoesNotExistError)
+    cur = frappe.db.get_value(OFFENCE, code, ["title", "level", "suggested_sanction"], as_dict=True)
+    allowed = {k: v for k, v in (changes or {}).items() if k in ("title", "category", "level", "suggested_sanction", "description", "active") and v is not None}
+    merged = {**cur, **allowed}
+    errs = offence_errors(code, merged.get("title"), merged.get("level"), merged.get("suggested_sanction"))
+    if errs:
+        frappe.throw(" ".join(errs), frappe.ValidationError)
+    if "active" in allowed:
+        allowed["active"] = 1 if allowed["active"] in (True, 1, "1") else 0
+    for k in ("title", "category", "description"):
+        if k in allowed:
+            allowed[k] = (str(allowed[k]).strip() or None) if k != "title" else str(allowed[k]).strip()
+    if allowed:
+        frappe.db.set_value(OFFENCE, code, allowed)
+    return offences_impl()
+
+
+def expire_warnings() -> int:
+    """Daily (plan 01): lapsed warnings become Expired; the case owner alone is told, once per case."""
+    import frappe
+
+    from eswasa_hr.alerts import raise_alert
+
+    if not _has(DISCIPLINARY):
+        return 0
+    day = _today()
+    rows = frappe.get_all(DISCIPLINARY, filters={"warning_status": ACTIVE, "warning_expires_on": ["<", day.isoformat()]},
+                          fields=["name", "owner_user", "sanction", "warning_status", "warning_expires_on"], limit=0)
+    n = 0
+    for r in lapsed_warnings(rows, day):
+        frappe.db.set_value(DISCIPLINARY, r["name"], "warning_status", EXPIRED)
+        exp = _d(r["warning_expires_on"])
+        # No employee on the alert: HR Alerts are wider-read than cases; the case id is enough for the owner.
+        raise_alert(f"warning:{r['name']}:expired", WARNING_RULE, f"Case {r['name']}: warning expired on {exp.day} {exp.strftime('%b %Y')}",
+                    [u for u in [r.get("owner_user")] if u], day.isoformat(), None, (DISCIPLINARY, r["name"]))
+        n += 1
+    return n
+
+
+def code_step() -> dict[str, Any]:
+    """HR setup step "Disciplinary code" (overview.setup_status_impl)."""
+    import frappe
+
+    from eswasa_hr.overview import AWAITING, DONE, step
+
+    active = frappe.db.count(OFFENCE, {"active": 1}) if _has(OFFENCE) else 0
+    done, detail = code_state(active, warning_months())
+    return step("disciplinary_code", "Disciplinary code", DONE if done else AWAITING, detail, "/hr/cases/code", awaiting=None if done else "A1")
 
 
 def board_impl() -> dict[str, Any]:
@@ -579,15 +915,17 @@ def detail(kind: str, name: str) -> dict[str, Any]:
 
 
 @_whitelist
-def open_case(kind: str, employee: str, owner: str, description: str, next_step: str | None = None, next_step_due: str | None = None, subject: str | None = None, grievance_type: str | None = None, confirm: Any = False) -> dict[str, Any]:
+def open_case(kind: str, employee: str, owner: str, description: str, next_step: str | None = None, next_step_due: str | None = None, subject: str | None = None, grievance_type: str | None = None,
+              offence: str | None = None, confirm: Any = False) -> dict[str, Any]:
     _confirm(confirm)
-    return open_impl(kind, employee, owner, description, next_step, next_step_due, subject, grievance_type)
+    return open_impl(kind, employee, owner, description, next_step, next_step_due, subject, grievance_type, offence)
 
 
 @_whitelist
-def act(kind: str, name: str, to_stage: str, note: str = "", next_step: str | None = None, next_step_due: str | None = None, outcome: str | None = None, appeal_owner: str | None = None, confirm: Any = False) -> dict[str, Any]:
+def act(kind: str, name: str, to_stage: str, note: str = "", next_step: str | None = None, next_step_due: str | None = None, outcome: str | None = None, appeal_owner: str | None = None,
+        offence: str | None = None, sanction: str | None = None, appeal_result: str | None = None, confirm: Any = False) -> dict[str, Any]:
     _confirm(confirm)
-    return act_impl(kind, name, to_stage, note, next_step, next_step_due, outcome, appeal_owner)
+    return act_impl(kind, name, to_stage, note, next_step, next_step_due, outcome, appeal_owner, offence, sanction, appeal_result)
 
 
 @_whitelist
@@ -621,3 +959,26 @@ def board() -> dict[str, Any]:
 
     _require_hr()
     return board_impl()
+
+
+@_whitelist
+def offences() -> dict[str, Any]:
+    return offences_impl()
+
+
+@_whitelist
+def create_offence(code: str = "", title: str = "", level: str = "", category: str | None = None, suggested_sanction: str | None = None, description: str | None = None,
+                   confirm: Any = False) -> dict[str, Any]:
+    _confirm(confirm)
+    return create_offence_impl(code, title, level, category, suggested_sanction, description)
+
+
+@_whitelist
+def update_offence(code: str, changes: Any = None, confirm: Any = False) -> dict[str, Any]:
+    _confirm(confirm)
+    return update_offence_impl(code, _json(changes) or {})
+
+
+@_whitelist
+def warnings(employee: str) -> dict[str, Any]:
+    return warnings_impl(employee)

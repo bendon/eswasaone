@@ -3390,6 +3390,87 @@ paths:
         "503":
           description: Frappe unavailable
 
+  # plan 01: disciplinary code and warnings
+  /hr/disciplinary/offences:
+    get:
+      tags: [hr]
+      operationId: listHrOffences
+      summary: ESWASA's disciplinary code (empty until ESWASA supplies it, A1) with levels, sanctions and warning validity
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrOffenceList" }
+        "403":
+          description: Not HR
+    post:
+      tags: [hr]
+      operationId: createHrOffence
+      summary: Add an offence to the disciplinary code (HR Manager)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrOffenceBody" }
+      responses:
+        "200":
+          description: Added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrOffenceList" }
+        "400":
+          description: confirm is not true
+        "403":
+          description: Not an HR Manager
+        "422":
+          description: Rule failed
+
+  /hr/disciplinary/offences/{code}:
+    patch:
+      tags: [hr]
+      operationId: updateHrOffence
+      summary: Edit or deactivate an offence (HR Manager); offences are never deleted
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: code, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrOffencePatch" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrOffenceList" }
+        "400":
+          description: confirm is not true
+        "403":
+          description: Not an HR Manager
+        "422":
+          description: Rule failed
+
+  /hr/employees/{employee_id}/warnings:
+    get:
+      tags: [hr]
+      operationId: listHrEmployeeWarnings
+      summary: The person's disciplinary warnings (HR Manager, or the case owner for their cases); never the allegation
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrWarnings" }
+        "403":
+          description: Not the HR Manager or the case owner
+
   /hr/designations:
     get:
       tags: [hr]
@@ -8322,6 +8403,21 @@ components:
         decided_by_name: { anyOf: [{ type: string }, { type: "null" }] }
         appeal_owner_name: { anyOf: [{ type: string }, { type: "null" }] }
         talk_first: { type: boolean }
+        # plan 01 (disciplinary only)
+        offence: { anyOf: [{ type: string }, { type: "null" }] }
+        offence_title: { anyOf: [{ type: string }, { type: "null" }] }
+        sanction: { anyOf: [{ type: string }, { type: "null" }] }
+        outcome_on: { anyOf: [{ type: string }, { type: "null" }] }
+        warning_expires_on: { anyOf: [{ type: string }, { type: "null" }] }
+        warning_status: { anyOf: [{ type: string, enum: [Active, Expired, Withdrawn] }, { type: "null" }] }
+        appeal_result: { anyOf: [{ type: string, enum: [Upheld, Overturned] }, { type: "null" }] }
+        sanctions: { type: array, items: { type: string } }
+        appeal_results: { type: array, items: { type: string } }
+        offences: { type: array, items: { $ref: "#/components/schemas/HrOffence" } }
+        warning_months:
+          type: object
+          description: Months each warning stays active, from HR Settings; null while awaiting ESWASA (A1)
+          additionalProperties: { anyOf: [{ type: integer }, { type: "null" }] }
         notes:
           type: array
           items:
@@ -8344,6 +8440,7 @@ components:
         next_step_due: { anyOf: [{ type: string }, { type: "null" }] }
         subject: { anyOf: [{ type: string }, { type: "null" }] }
         grievance_type: { anyOf: [{ type: string }, { type: "null" }] }
+        offence: { anyOf: [{ type: string }, { type: "null" }] }  # plan 01, disciplinary only
         confirm: { type: boolean }
     HrCaseActBody:
       type: object
@@ -8355,6 +8452,10 @@ components:
         next_step_due: { anyOf: [{ type: string }, { type: "null" }] }
         outcome: { anyOf: [{ type: string }, { type: "null" }] }
         appeal_owner: { anyOf: [{ type: string }, { type: "null" }] }
+        # plan 01: offence and sanction at "Outcome issued"; appeal_result when an appeal closes
+        offence: { anyOf: [{ type: string }, { type: "null" }] }
+        sanction: { anyOf: [{ type: string }, { type: "null" }] }
+        appeal_result: { anyOf: [{ type: string, enum: [Upheld, Overturned] }, { type: "null" }] }
         confirm: { type: boolean }
     HrCaseNoteBody:
       type: object
@@ -11567,3 +11668,67 @@ components:
         expense_type: {type: string}
         description: {type: [string, 'null']}
         status: {type: string}
+    # plan 01: disciplinary code and warnings
+    HrOffence:
+      type: object
+      required: [code, active]
+      properties:
+        code: { type: string }
+        title: { anyOf: [{ type: string }, { type: "null" }] }
+        category: { anyOf: [{ type: string }, { type: "null" }] }
+        level: { anyOf: [{ type: string, enum: [Minor, Serious, Gross] }, { type: "null" }] }
+        suggested_sanction: { anyOf: [{ type: string }, { type: "null" }] }
+        description: { anyOf: [{ type: string }, { type: "null" }] }
+        active: { type: boolean }
+    HrOffenceList:
+      type: object
+      required: [items, can_edit, levels, sanctions, warning_months]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/HrOffence" } }
+        can_edit: { type: boolean }
+        levels: { type: array, items: { type: string } }
+        sanctions: { type: array, items: { type: string } }
+        warning_months:
+          type: object
+          additionalProperties: { anyOf: [{ type: integer }, { type: "null" }] }
+    HrOffenceBody:
+      type: object
+      required: [code, title, level, confirm]
+      properties:
+        code: { type: string }
+        title: { type: string }
+        level: { type: string, enum: [Minor, Serious, Gross] }
+        category: { anyOf: [{ type: string }, { type: "null" }] }
+        suggested_sanction: { anyOf: [{ type: string }, { type: "null" }] }
+        description: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrOffencePatch:
+      type: object
+      required: [confirm]
+      properties:
+        title: { anyOf: [{ type: string }, { type: "null" }] }
+        level: { anyOf: [{ type: string }, { type: "null" }] }
+        category: { anyOf: [{ type: string }, { type: "null" }] }
+        suggested_sanction: { anyOf: [{ type: string }, { type: "null" }] }
+        description: { anyOf: [{ type: string }, { type: "null" }] }
+        active: { anyOf: [{ type: boolean }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrWarning:
+      type: object
+      required: [case]
+      properties:
+        case: { type: string }
+        sanction: { anyOf: [{ type: string }, { type: "null" }] }
+        offence: { anyOf: [{ type: string }, { type: "null" }] }
+        offence_title: { anyOf: [{ type: string }, { type: "null" }] }
+        issued_on: { anyOf: [{ type: string }, { type: "null" }] }
+        expires_on: { anyOf: [{ type: string }, { type: "null" }] }
+        status: { anyOf: [{ type: string, enum: [Active, Expired, Withdrawn] }, { type: "null" }] }
+    HrWarnings:
+      type: object
+      required: [employee, items, active]
+      properties:
+        employee: { type: string }
+        items: { type: array, items: { $ref: "#/components/schemas/HrWarning" } }
+        active: { type: integer }
+        active_until: { anyOf: [{ type: string }, { type: "null" }] }

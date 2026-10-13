@@ -17,7 +17,7 @@ const STATE: Record<HrSetupStepState, { cls: string; label: string }> = {
   done: { cls: "ok", label: "Done" },
   partial: { cls: "leave", label: "Partly done" },
   todo: { cls: "info", label: "To do" },
-  awaiting: { cls: "info", label: "To do" },
+  awaiting: { cls: "leave", label: "Awaiting ESWASA" },
   excluded: { cls: "mute", label: "Excluded" },
 };
 

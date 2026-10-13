@@ -99,6 +99,10 @@ from app.schemas import (
     HrAccessReviewBody,
     HrChanges,
     HrCaseActBody,
+    HrOffenceBody,
+    HrOffenceList,
+    HrOffencePatch,
+    HrWarnings,
     HrCaseBoard,
     HrCaseDetail,
     HrCaseNoteBody,
@@ -5207,7 +5211,7 @@ async def act_on_hr_case(
 ) -> HrCaseDetail:
     """Move a case one step (owner, appeal owner or HR Manager). An appeal never goes to whoever issued the outcome."""
     _require_confirm(body.confirm)
-    audit_log(action="hr.case.act", actor=auth.user.username, resource=f"{_case_kind(kind)}:{name}", detail={"to_stage": body.to_stage}, confirmed=True)
+    audit_log(action="hr.case.act", actor=auth.user.username, resource=f"{_case_kind(kind)}:{name}", detail={"to_stage": body.to_stage, "sanction": body.sanction}, confirmed=True)
     raw = await _hr_call(auth, frappe, f"{_CASES}.act", json={"kind": kind, "name": name, **body.model_dump(exclude={"confirm"}), "confirm": 1})
     return HrCaseDetail.model_validate(raw)
 
@@ -5941,6 +5945,59 @@ async def get_hr_payroll_status(
     except FrappeError as exc:
         _raise_from_frappe(exc)
         raise  # pragma: no cover
+
+
+# --- HR additions: plan 01 ---
+# Disciplinary code (H10b) and warnings on the record (H1b). Guards live in eswasa_hr.cases: HR roles read the
+# code, HR Managers edit it; warnings are for the HR Manager and the case owner only.
+
+
+@router.get("/hr/disciplinary/offences", response_model=HrOffenceList, tags=["hr"])
+async def list_hr_offences(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrOffenceList:
+    """ESWASA's disciplinary code (empty until ESWASA supplies it, A1), with the levels, sanctions and warning validity."""
+    return HrOffenceList.model_validate(await _hr_call(auth, frappe, f"{_CASES}.offences"))
+
+
+@router.post("/hr/disciplinary/offences", response_model=HrOffenceList, tags=["hr"])
+async def create_hr_offence(
+    body: HrOffenceBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrOffenceList:
+    """Add an offence to the code (HR Manager)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.offence.create", actor=auth.user.username, resource=f"offence:{body.code}", detail={"level": body.level}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_CASES}.create_offence", json={**body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrOffenceList.model_validate(raw)
+
+
+@router.patch("/hr/disciplinary/offences/{code}", response_model=HrOffenceList, tags=["hr"])
+async def update_hr_offence(
+    code: str,
+    body: HrOffencePatch,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrOffenceList:
+    """Edit or deactivate an offence (HR Manager). Offences are never deleted: cases link to them."""
+    _require_confirm(body.confirm)
+    changes = body.model_dump(exclude={"confirm"}, exclude_none=True)
+    audit_log(action="hr.offence.update", actor=auth.user.username, resource=f"offence:{code}", detail={"fields": sorted(changes)}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_CASES}.update_offence", json={"code": code, "changes": changes, "confirm": 1})
+    return HrOffenceList.model_validate(raw)
+
+
+@router.get("/hr/employees/{employee_id}/warnings", response_model=HrWarnings, tags=["hr"])
+async def list_hr_employee_warnings(
+    employee_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrWarnings:
+    """The person's disciplinary warnings: HR Manager, or the case owner for their own cases. Everyone else 403."""
+    return HrWarnings.model_validate(await _hr_call(auth, frappe, f"{_CASES}.warnings", params={"employee": employee_id}))
+
 
 
 @router.get("/crm/leads", tags=["crm"])

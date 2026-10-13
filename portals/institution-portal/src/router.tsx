@@ -871,6 +871,17 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "cases/code",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.DisciplinaryCode }))
+                        }
+                        skeleton="panel"
+                      />
+                    ),
+                  },
+                  {
                     path: "cases/:kind/:id",
                     element: (
                       <L

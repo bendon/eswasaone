@@ -25,6 +25,7 @@ def daily() -> None:
     expense_escalation()
     recruitment_reminders()
     document_expiry_alerts()
+    expire_warnings()
 
 
 def release_deciders() -> int:
@@ -151,3 +152,10 @@ def document_expiry_alerts() -> int:
     from eswasa_hr.documents import expiry_alerts
 
     return expiry_alerts()
+
+
+def expire_warnings() -> int:
+    """HR additions plan 01: lapsed disciplinary warnings become Expired; the case owner is told once."""
+    from eswasa_hr.cases import expire_warnings as run
+
+    return run()

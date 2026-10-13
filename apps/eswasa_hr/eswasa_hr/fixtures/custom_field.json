@@ -492,5 +492,35 @@
   "insert_after": "custom_owner",
   "description": "Shown next to the task, e.g. ICT or Finance.",
   "name": "Employee Boarding Activity-custom_team"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_verbal_warning_months",
+  "label": "Verbal warning valid (months)",
+  "fieldtype": "Int",
+  "insert_after": "custom_hr_email",
+  "description": "Provisional, awaiting ESWASA (A1). Empty: warnings of this kind get no expiry date.",
+  "name": "HR Settings-custom_verbal_warning_months"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_written_warning_months",
+  "label": "Written warning valid (months)",
+  "fieldtype": "Int",
+  "insert_after": "custom_verbal_warning_months",
+  "description": "Provisional, awaiting ESWASA (A1). Empty: warnings of this kind get no expiry date.",
+  "name": "HR Settings-custom_written_warning_months"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_final_warning_months",
+  "label": "Final written warning valid (months)",
+  "fieldtype": "Int",
+  "insert_after": "custom_written_warning_months",
+  "description": "Provisional, awaiting ESWASA (A1). Empty: warnings of this kind get no expiry date.",
+  "name": "HR Settings-custom_final_warning_months"
  }
 ]

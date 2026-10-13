@@ -1544,6 +1544,18 @@ class HrCaseDetail(BaseModel):
     talk_first: bool = False
     notes: list[HrCaseNote] = Field(default_factory=list)
     owners: list[HrCaseOwner] = Field(default_factory=list)
+    # HR additions plan 01 (disciplinary only): offence, sanction and warning, plus what the outcome form offers.
+    offence: str | None = None
+    offence_title: str | None = None
+    sanction: str | None = None
+    outcome_on: str | None = None
+    warning_expires_on: str | None = None
+    warning_status: str | None = None  # Active | Expired | Withdrawn
+    appeal_result: str | None = None  # Upheld | Overturned
+    sanctions: list[str] = Field(default_factory=list)
+    appeal_results: list[str] = Field(default_factory=list)
+    offences: list["HrOffence"] = Field(default_factory=list)
+    warning_months: dict[str, int | None] = Field(default_factory=dict)  # None = awaiting ESWASA (A1)
 
 
 class HrCaseOpenBody(BaseModel):
@@ -1555,6 +1567,7 @@ class HrCaseOpenBody(BaseModel):
     next_step_due: str | None = None
     subject: str | None = None
     grievance_type: str | None = None
+    offence: str | None = None  # plan 01, disciplinary only
     confirm: bool
 
 
@@ -1565,6 +1578,10 @@ class HrCaseActBody(BaseModel):
     next_step_due: str | None = None
     outcome: str | None = None
     appeal_owner: str | None = None
+    # Plan 01: at "Outcome issued" (disciplinary); appeal_result when an appeal closes.
+    offence: str | None = None
+    sanction: str | None = None
+    appeal_result: str | None = None
     confirm: bool
 
 
@@ -2988,3 +3005,68 @@ class AdminAccessEvaluateResult(BaseModel):
     on_trusted_network: bool
     device_status: str | None = None
     redirect_path: str = "/"
+
+
+# --- HR additions: plan 01 (disciplinary offences and warnings) ---
+
+
+class HrOffence(BaseModel):
+    """OpenAPI: HrOffence — one entry in ESWASA's disciplinary code (A1)."""
+
+    code: str
+    title: str | None = None
+    category: str | None = None
+    level: str | None = None  # Minor | Serious | Gross
+    suggested_sanction: str | None = None
+    description: str | None = None
+    active: bool = True
+
+
+class HrOffenceList(BaseModel):
+    items: list[HrOffence] = Field(default_factory=list)
+    can_edit: bool = False
+    levels: list[str] = Field(default_factory=list)
+    sanctions: list[str] = Field(default_factory=list)
+    warning_months: dict[str, int | None] = Field(default_factory=dict)
+
+
+class HrOffenceBody(BaseModel):
+    code: str
+    title: str
+    level: str
+    category: str | None = None
+    suggested_sanction: str | None = None
+    description: str | None = None
+    confirm: bool
+
+
+class HrOffencePatch(BaseModel):
+    title: str | None = None
+    level: str | None = None
+    category: str | None = None
+    suggested_sanction: str | None = None
+    description: str | None = None
+    active: bool | None = None
+    confirm: bool
+
+
+class HrWarning(BaseModel):
+    """OpenAPI: HrWarning — a warning on file. Never carries the allegation."""
+
+    case: str
+    sanction: str | None = None
+    offence: str | None = None
+    offence_title: str | None = None
+    issued_on: str | None = None
+    expires_on: str | None = None
+    status: str | None = None
+
+
+class HrWarnings(BaseModel):
+    employee: str
+    items: list[HrWarning] = Field(default_factory=list)
+    active: int = 0
+    active_until: str | None = None
+
+
+HrCaseDetail.model_rebuild()

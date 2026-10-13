@@ -419,9 +419,17 @@ def setup_status_impl() -> dict[str, Any]:
             "expense-claim-type",
             desk=True,
         ),
+        _code_step(),
         # _payroll_step(),  # off: ESWASA doesn't run payroll in EswasaOne; restore when it does
     ]
     return {"steps": steps, **progress(steps)}
+
+
+def _code_step() -> dict[str, Any]:
+    """HR additions plan 01: the disciplinary code and warning validity (awaiting ESWASA, A1)."""
+    from eswasa_hr.cases import code_step
+
+    return code_step()
 
 
 def _import_step(active: int, linked: int) -> dict[str, Any]:

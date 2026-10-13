@@ -13,6 +13,7 @@ vi.mock("../../layout/InstitutionLayout", () => ({
 }));
 
 import { CaseDetail, CaseNew, CasesView } from "./Cases";
+import { DisciplinaryCode } from "./DisciplinaryCode";
 import { RaiseConcern } from "../../me/RaiseConcern";
 import { settingsResponse } from "../../test/hrSettings";
 
@@ -28,6 +29,15 @@ const CASE = {
   people: [{ employee: "EMP-7", employee_name: "Thandi Mamba", role: "Subject of the case" }], description: "Alleged breach of the impartiality policy",
   outcome: "Final written warning", decided_by: "hrm@x", decided_by_name: "Nokuthula Shongwe", talk_first: false, notes: [{ text: "Hearing held", by: "Nokuthula Shongwe", on: "2026-10-09" }], owners: OWNERS,
 };
+
+const OFFENCES = [{ code: "D01", title: "Late coming", level: "Minor", suggested_sanction: "Verbal warning", active: true },
+  { code: "D07", title: "Breach of impartiality", level: "Serious", suggested_sanction: "Written warning", active: true }];
+const SANCTIONS = ["No action", "Verbal warning", "Written warning", "Final written warning", "Suspension", "Dismissal"];
+const HEARING = {
+  ...CASE, id: "HRC-2026-00006", stage: "Hearing scheduled", next: ["Outcome issued"], outcome: null, decided_by: null, decided_by_name: null,
+  offences: OFFENCES, sanctions: SANCTIONS, warning_months: { "Verbal warning": 3, "Written warning": 6, "Final written warning": null },
+};
+let code = { items: [] as typeof OFFENCES, can_edit: true, levels: ["Minor", "Serious", "Gross"], sanctions: SANCTIONS, warning_months: { "Verbal warning": null } as Record<string, number | null> };
 
 type Call = { url: string; method: string; body?: Record<string, unknown> };
 function stub() {
@@ -45,7 +55,9 @@ function stub() {
         return method === "POST"
           ? json({ id: "HR-GRV-2026-0001", raised_on: "2026-10-12", status: "Open", handled_by: "Nokuthula Shongwe" })
           : json({ items: [], categories: ["Working conditions"], handlers: [{ user: "hrm@x", name: "Nokuthula Shongwe" }, { user: "hrm2@x", name: "Lwazi Kunene" }] });
+      if (url.includes("/hr/disciplinary/offences")) return json(code);
       if (method === "POST") return json({ ...CASE, stage: "Appeal", next: ["Closed"], appeal_owner_name: "Executive Director" });
+      if (url.includes("HRC-2026-00006")) return json(HEARING);
       if (url.includes("/hr/cases/disciplinary/")) return json(CASE);
       if (url.endsWith("/hr/cases")) return json(REGISTER);
       if (url.includes("/hr/employees")) return json({ items: [{ id: "EMP-7", employee_name: "Thandi Mamba", user_id: "hrm@x" }, { id: "EMP-8", employee_name: "Bongani Dube", user_id: "bd@x" }] });
@@ -60,6 +72,7 @@ function mount(path: string) {
     [
       { path: "/hr/cases", element: <CasesView /> },
       { path: "/hr/cases/new", element: <CaseNew /> },
+      { path: "/hr/cases/code", element: <DisciplinaryCode /> },
       { path: "/hr/cases/:kind/:id", element: <CaseDetail /> },
       { path: "/me/concern", element: <RaiseConcern /> },
     ],
@@ -109,6 +122,44 @@ describe("Case (H10a)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Move to Appeal" }));
     await waitFor(() => expect(calls.some((c) => c.url.endsWith("/act"))).toBe(true));
     expect(calls.find((c) => c.url.endsWith("/act"))?.body).toMatchObject({ to_stage: "Appeal", appeal_owner: "ed@x", note: "Appeal lodged on 10 Oct", confirm: true });
+  });
+});
+
+describe("Disciplinary outcome (plan 01)", () => {
+  it("pre-fills the sanction from the offence, shows the expiry and sends offence and sanction", async () => {
+    const calls = stub();
+    mount("/hr/cases/disciplinary/HRC-2026-00006");
+    fireEvent.change(await screen.findByLabelText(/^Offence/), { target: { value: "D07" } });
+    const sanction = screen.getByLabelText(/^Sanction/) as HTMLSelectElement;
+    expect(sanction.value).toBe("Written warning");
+    expect(screen.getByText(/Active for 6 months, until/)).toBeInTheDocument();
+    fireEvent.change(sanction, { target: { value: "Final written warning" } });
+    expect(screen.getByText("Expiry not set: awaiting ESWASA (A1).")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("What happened at this step"), { target: { value: "Hearing held" } });
+    fireEvent.change(screen.getByLabelText("Outcome"), { target: { value: "Final written warning issued" } });
+    fireEvent.click(screen.getByRole("button", { name: "Move to Outcome issued" }));
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/act"))).toBe(true));
+    expect(calls.find((c) => c.url.endsWith("/act"))?.body).toMatchObject({ to_stage: "Outcome issued", offence: "D07", sanction: "Final written warning", confirm: true });
+  });
+
+  it("links the disciplinary code from the register and shows its empty state", async () => {
+    stub();
+    mount("/hr/cases");
+    expect(await screen.findByRole("link", { name: "Disciplinary code" })).toHaveAttribute("href", "/hr/cases/code");
+    mount("/hr/cases/code");
+    expect(await screen.findByText("No disciplinary code yet")).toBeInTheDocument();
+    expect(screen.getByText("ESWASA to supply its offences and sanctions (A1).")).toBeInTheDocument();
+    expect(screen.getByText("Not set: awaiting ESWASA (A1)")).toBeInTheDocument();
+  });
+
+  it("lets an HR Manager deactivate an offence", async () => {
+    code = { ...code, items: OFFENCES };
+    const calls = stub();
+    mount("/hr/cases/code");
+    fireEvent.click((await screen.findAllByRole("button", { name: "Deactivate" }))[0]);
+    await waitFor(() => expect(calls.some((c) => c.method === "PATCH")).toBe(true));
+    expect(calls.find((c) => c.method === "PATCH")).toMatchObject({ url: expect.stringContaining("/hr/disciplinary/offences/D01"), body: { active: false, confirm: true } });
+    code = { ...code, items: [] };
   });
 });
 

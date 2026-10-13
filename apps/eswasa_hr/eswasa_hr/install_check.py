@@ -126,11 +126,42 @@ def warnings() -> list[str]:
     return out
 
 
+def select_gaps(want: dict[str, dict[str, list[str]]], have: dict[str, dict[str, list[str]]]) -> dict[str, list[str]]:
+    """Select options the app needs that the site's meta lacks, as ``{"DocType.field": [options]}``."""
+    out = {}
+    for dt, fields in want.items():
+        for field, options in fields.items():
+            gone = sorted(set(options) - set((have.get(dt) or {}).get(field) or []))
+            if gone:
+                out[f"{dt}.{field}"] = gone
+    return out
+
+
+def _site_options(want: dict[str, dict[str, list[str]]]) -> dict[str, dict[str, list[str]]]:
+    import frappe
+
+    have: dict[str, dict[str, list[str]]] = {}
+    for dt, fields in want.items():
+        if not frappe.db.exists("DocType", dt):
+            continue
+        meta = frappe.get_meta(dt)
+        have[dt] = {f: [o for o in (meta.get_field(f).options or "").split("\n") if o] for f in fields if meta.get_field(f)}
+    return have
+
+
+def _check_plan_01() -> dict[str, Any]:
+    """HR additions plan 01: the ``Warning expired`` alert rule (DocType fields and HR Settings fields are covered above)."""
+    want = {"HR Alert": {"rule": ["Warning expired"]}, "Disciplinary Case": {"warning_status": ["Active", "Expired", "Withdrawn"]}}
+    gaps = select_gaps(want, _site_options(want))
+    return {"select_options": gaps} if gaps else {}
+
+
 def run() -> dict[str, Any]:
     from eswasa_hr import hooks
 
     want = expected(hooks, app_doctypes(), PATCHES.read_text())
     missing = compare(want, site_state(want))
+    missing.update(_check_plan_01())
     result = {
         "ok": not missing,
         "missing": missing,

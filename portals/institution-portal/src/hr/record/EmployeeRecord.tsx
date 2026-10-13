@@ -3,19 +3,20 @@ import { Link, useParams } from "react-router-dom";
 import { useApiResource } from "../../hooks/useApiResource";
 import { ResourceGate } from "../../components/PageStates";
 import { useInstitution } from "../../layout/InstitutionLayout";
-import type { HrEmployeeRecord } from "../../api/types";
-import { Banner, Crumbs, Tabs } from "../../me/parts";
+import type { HrEmployeeRecord, HrWarnings } from "../../api/types";
+import { Banner, Crumbs, StatusPill, Tabs } from "../../me/parts";
 import { errorText, fileUrl, hrSend } from "../api";
 import { AccessLogSection, SensitivePanel } from "../sensitive/Sensitive";
 import { DocumentsPanel } from "./Documents";
 import { CompetenceSection, HistorySection, JobSection, LeaveSection, OpenItems } from "./RecordParts";
+import { warningFlag, WarningsSection } from "./Warnings";
 
 /**
  * H1b Employee record: everything about one person, scoped by the server (HR sees all, a line manager job fields
  * only, never pay). Live GET /hr/employees/{id}. HR can correct name, work email and status (PATCH; moves go
  * through promotion/transfer), verify documents and print the certificate of service.
  */
-type Tab = "summary" | "job" | "leave" | "competence" | "documents" | "history" | "access";
+type Tab = "summary" | "job" | "leave" | "competence" | "documents" | "history" | "warnings" | "access";
 
 export function EmployeeRecord() {
   const { id = "" } = useParams();
@@ -25,6 +26,10 @@ export function EmployeeRecord() {
   const res = useApiResource<HrEmployeeRecord>(`/hr/employees/${encodeURIComponent(id)}`, { enabled: Boolean(user && id), refreshKey: sessionKey });
   const r = res.data;
   const hr = r?.viewer === "hr";
+  // Plan 01: warnings are for HR Managers only (HR User and line managers get 403, so don't ask).
+  const hrManager = hr && (user?.roles ?? []).includes("HR Manager");
+  const warnings = useApiResource<HrWarnings>(`/hr/employees/${encodeURIComponent(id)}/warnings`, { enabled: Boolean(hrManager && id), refreshKey: sessionKey });
+  const flag = hrManager ? warningFlag(warnings.data) : null;
   const base = `/hr/directory/${encodeURIComponent(id)}`;
 
   const tabs: Array<[Tab, string]> = [
@@ -34,6 +39,7 @@ export function EmployeeRecord() {
     ["competence", "Competence"],
     ["documents", "Documents"],
     ["history", "History"],
+    ...(hrManager ? ([["warnings", "Warnings"]] as Array<[Tab, string]>) : []),
     ...(hr ? ([["access", "Access log"]] as Array<[Tab, string]>) : []),
   ];
 
@@ -49,6 +55,11 @@ export function EmployeeRecord() {
                 {[r.designation, r.department, r.status].filter(Boolean).join(" · ") || r.id}
                 {r.viewer === "manager" ? ". You see job details only, as their line manager." : ""}
               </p>
+              {flag ? (
+                <p>
+                  <StatusPill cls="bad" label={flag} />
+                </p>
+              ) : null}
             </div>
             {hr ? (
               <div className="hr-head__r">
@@ -105,6 +116,7 @@ export function EmployeeRecord() {
           {tab === "competence" ? <CompetenceSection r={r} /> : null}
           {tab === "documents" ? <DocumentsPanel base={`/hr/employees/${encodeURIComponent(r.id)}/documents`} canVerify={hr} /> : null}
           {tab === "history" ? <HistorySection r={r} /> : null}
+          {tab === "warnings" && hrManager ? <WarningsSection w={warnings.data} /> : null}
           {tab === "access" && hr ? <AccessLogSection employee={r.id} refreshKey={logKey} /> : null}
         </div>
       ) : null}

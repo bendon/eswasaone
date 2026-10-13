@@ -3,9 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 
+const who = vi.hoisted(() => ({ roles: ["HR Manager"] }));
 vi.mock("../../layout/InstitutionLayout", () => ({
   useInstitution: () => ({
-    user: { username: "hrm@eswasa.co.sz", full_name: "Nokuthula Shongwe", email: "hrm@eswasa.co.sz", roles: ["HR Manager"] },
+    user: { username: "hrm@eswasa.co.sz", full_name: "Nokuthula Shongwe", email: "hrm@eswasa.co.sz", roles: who.roles },
     openAuth: () => undefined,
     refreshUser: () => undefined,
     sessionKey: "hr",
@@ -55,6 +56,33 @@ const REC = {
   history: [{ id: "PROMO-1", kind: "promotion", date: "2025-04-01", state: "Approved", changes: [{ property: "Designation", current: "Auditor", new: "Lead Auditor" }] }],
   contract: { employment_type: "Permanent", contract_end_date: null, pending: null }, open_items: [],
 };
+
+describe("Record warnings (plan 01)", () => {
+  const WARNINGS = { employee: "HR-EMP-0044", active: 1, active_until: "2027-04-13",
+    items: [{ case: "HRC-2026-00005", sanction: "Written warning", offence: "D07", offence_title: "Breach of impartiality", issued_on: "2026-10-13", expires_on: "2027-04-13", status: "Active" }] };
+  afterEach(() => {
+    who.roles = ["HR Manager"];
+  });
+
+  it("an HR Manager sees the Warnings tab and the active-warning flag", async () => {
+    routes = [["/hr/employees/HR-EMP-0044", REC], ["/hr/employees/HR-EMP-0044/warnings", WARNINGS]];
+    at("/hr/directory/HR-EMP-0044/record", "/hr/directory/:id/record", <EmployeeRecord />);
+    expect(await screen.findByText("Active warning until 13 Apr 2027")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Warnings" }));
+    expect(screen.getByText("Breach of impartiality")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "HRC-2026-00005" })).toHaveAttribute("href", "/hr/cases/disciplinary/HRC-2026-00005");
+  });
+
+  it("is hidden from HR User, and the warnings aren't even asked for", async () => {
+    who.roles = ["HR User"];
+    routes = [["/hr/employees/HR-EMP-0044", REC], ["/hr/employees/HR-EMP-0044/warnings", WARNINGS]];
+    at("/hr/directory/HR-EMP-0044/record", "/hr/directory/:id/record", <EmployeeRecord />);
+    expect(await screen.findByRole("heading", { name: "Thandi Mamba" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Warnings" })).toBeNull();
+    expect(screen.queryByText(/Active warning/)).toBeNull();
+    expect(calls.some((c) => c.url.includes("/warnings"))).toBe(false);
+  });
+});
 
 describe("Employee record (H1b)", () => {
   it("shows the record with HR actions, certificate link and history", async () => {

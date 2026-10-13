@@ -326,6 +326,7 @@ async def login(
             full_name=user_data.get("full_name") or user_data["username"],
             email=user_data.get("email") or (identity if "@" in identity else None),
             roles=user_data.get("roles") or ["Desk User"],
+            otp_enabled=bool(user_data.get("otp_enabled", True)),
         )
         frappe_sid = result.get("sid")
         api_key, api_secret = await _provision_api_keys(
@@ -350,6 +351,19 @@ async def login(
                 reason="invalid_credentials",
                 detail="Invalid credentials",
             ) from exc
+
+    # --- Skip OTP if the user has disabled it in their preferences ---
+    if not user.otp_enabled:
+        return await _build_session(
+            store=store,
+            response=response,
+            settings=settings,
+            user=user,
+            frappe_sid=frappe_sid,
+            frappe_api_key=api_key,
+            frappe_api_secret=api_secret,
+            mock=mock,
+        )
 
     challenge_id = secrets.token_urlsafe(24)
     email_to = user.email or (identity if "@" in identity else f"{identity}@localhost")
@@ -719,11 +733,72 @@ async def me(
                 full_name=auth.user.full_name,
                 email=auth.user.email,
                 roles=list(refreshed),
+                otp_enabled=auth.user.otp_enabled,
             )
             store.update(auth.token, user=updated.model_dump())
             return updated
 
     return auth.user
+
+
+# ---------------------------------------------------------------------------
+# User preferences (OTP toggle)
+# ---------------------------------------------------------------------------
+
+class PreferencesResponse(BaseModel):
+    otp_enabled: bool = True
+
+
+class PreferencesUpdate(BaseModel):
+    otp_enabled: bool | None = None
+
+
+@router.get("/preferences", response_model=PreferencesResponse)
+async def get_preferences(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> PreferencesResponse:
+    """Return the authenticated user's security preferences."""
+    otp_enabled = auth.user.otp_enabled
+    if not auth.mock and auth.frappe_sid:
+        # Always read live from Frappe so toggles made in Desk are reflected.
+        refreshed = await frappe.get_otp_enabled(auth.user.username)
+        if refreshed != otp_enabled:
+            otp_enabled = refreshed
+    return PreferencesResponse(otp_enabled=otp_enabled)
+
+
+@router.put("/preferences", response_model=PreferencesResponse)
+async def update_preferences(
+    body: PreferencesUpdate,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    store: Annotated[SessionStore, Depends(get_session_store)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> PreferencesResponse:
+    """Update the authenticated user's security preferences.
+
+    Currently supports toggling OTP (two-factor) on/off. Writes through to
+    Frappe User.custom_otp_enabled so the setting persists across sessions
+    and is respected at next login.
+    """
+    if auth.is_guest:
+        raise AuthRequired(detail="Authentication required")
+
+    otp_enabled = body.otp_enabled if body.otp_enabled is not None else auth.user.otp_enabled
+
+    if not auth.mock:
+        otp_enabled = await frappe.set_otp_enabled(auth.user.username, otp_enabled)
+
+    # Update the live Core session so the change takes effect immediately.
+    updated = SessionUser(
+        username=auth.user.username,
+        full_name=auth.user.full_name,
+        email=auth.user.email,
+        roles=auth.user.roles,
+        otp_enabled=otp_enabled,
+    )
+    store.update(auth.token, user=updated.model_dump())
+    return PreferencesResponse(otp_enabled=otp_enabled)
 
 
 @router.post("/password/reset", response_model=PasswordResetResponse)

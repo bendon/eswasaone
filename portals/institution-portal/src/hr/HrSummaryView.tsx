@@ -215,7 +215,7 @@ export function HrSummaryView() {
         {data ? (
           <div className="hr">
             <div className="hr-head">
-              <div>
+                <div>
                 <h2>People overview</h2>
                 <p>
                   {employees > 0
@@ -251,7 +251,7 @@ export function HrSummaryView() {
               </div>
             ) : (
               <div className="kpis kpis--5" role="group" aria-label="People KPIs">
-                <div className="kpi">
+              <div className="kpi">
                   <span className="l">Headcount</span>
                   <span className="v">
                     {filled}
@@ -306,9 +306,9 @@ export function HrSummaryView() {
               </div>
               <div className="hr-stack">
                 {live ? <Side live={live} /> : null}
-                <div className="hr-box">
-                  <div className="hr-box__h">
-                    <div>
+              <div className="hr-box">
+                <div className="hr-box__h">
+                  <div>
                       <h3>Structure</h3>
                       <p>
                         {departments === 0

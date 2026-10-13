@@ -6,6 +6,8 @@ import { apiErrorFromResponse } from "../api/errors";
 
 export type Session = components["schemas"]["Session"];
 export type SessionUser = components["schemas"]["SessionUser"];
+export type UserPreferences = components["schemas"]["UserPreferences"];
+export type UserPreferencesUpdate = components["schemas"]["UserPreferencesUpdate"];
 export type RegisterRequest = components["schemas"]["RegisterRequest"];
 export type AuthRequiredError = components["schemas"]["AuthRequiredError"];
 export type LoginChallenge = components["schemas"]["LoginChallenge"];
@@ -306,4 +308,19 @@ export async function me(): Promise<SessionUser | null> {
     if (err instanceof AuthError && err.authRequired) return null;
     throw err;
   }
+}
+
+/** Get the current user's security preferences (OTP toggle). */
+export async function getPreferences(): Promise<UserPreferences> {
+  return await sessionFetch<UserPreferences>("/auth/preferences");
+}
+
+/** Update the current user's security preferences (e.g. toggle OTP). */
+export async function updatePreferences(
+  body: UserPreferencesUpdate,
+): Promise<UserPreferences> {
+  return await sessionFetch<UserPreferences>("/auth/preferences", {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
 }

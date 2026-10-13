@@ -262,6 +262,13 @@ class SessionUser(BaseModel):
     full_name: str
     roles: list[str]
     email: str | None = None
+    otp_enabled: bool = True
+
+
+class UserPreferences(BaseModel):
+    """Per-user security / notification preferences (mirrors Frappe User custom fields)."""
+
+    otp_enabled: bool = True
 
 
 class Session(BaseModel):

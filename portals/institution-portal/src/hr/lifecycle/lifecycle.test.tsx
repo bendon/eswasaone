@@ -144,3 +144,28 @@ describe("Offboarding (H7b)", () => {
     await waitFor(() => expect(calls.some((c) => c.method === "POST" && c.url.endsWith("/hr/onboarding/tasks/T-9/done"))).toBe(true));
   });
 });
+
+describe("Offboarding clearance (HR additions plan 02)", () => {
+  const OUT = { name: "HRI-2026-00001", employee: "EMP-19", item_type: "Laptop", tag: "DL-1", issued_on: "2026-01-10", status: "Acknowledged", overdue: false };
+  it("shows the items still out above the checklist and why the clearance task can't be ticked", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        const settings = settingsResponse(url);
+        if (settings) return settings;
+        return new Response(
+          JSON.stringify({ id: "HR-EMP-SEP-1", kind: "offboarding", employee: "EMP-19", employee_name: "Mandla Zwane", last_day: "2026-10-31", reason: "Resignation", done: 0, total: 1,
+            activities: [{ activity_name: "Return issued items (1)", user: "hr@x", user_name: "Nokuthula Shongwe", task: "T-10", status: "Open", blocked: "1 item is still out: Laptop DL-1." }],
+            items_out: [OUT] }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+    mount("/hr/offboarding/HR-EMP-SEP-1");
+    expect(await screen.findByText("Items still out (1)")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Return" })).toBeInTheDocument();
+    expect(screen.getByText("Can't be ticked yet: 1 item is still out: Laptop DL-1.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mark done" })).not.toBeInTheDocument();
+  });
+});

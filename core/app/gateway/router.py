@@ -89,6 +89,13 @@ from app.schemas import (
     HrScheduleInterviewBody,
     HrConfirmBody,
     HrOnboarding,
+    HrEmployeeItems,
+    HrIssuedItemList,
+    HrIssuedItemTypes,
+    HrIssueItemBody,
+    HrMyItems,
+    HrOffboardingDetail,
+    HrReturnItemBody,
     HrOnboardingDefaults,
     HrStartOnboardingBody,
     HrProbationBody,
@@ -5716,14 +5723,14 @@ async def get_hr_board_pack(
     return HrBoardPack.model_validate(await _hr_call(auth, frappe, f"{_OVERVIEW}.board_pack"))
 
 
-@router.get("/hr/offboarding/{name}", response_model=HrOnboarding, tags=["hr"])
+@router.get("/hr/offboarding/{name}", response_model=HrOffboardingDetail, tags=["hr"])
 async def get_offboarding(
     name: str,
     auth: Annotated[AuthContext, Depends(require_auth)],
     frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
-) -> HrOnboarding:
-    """A leaver's offboarding checklist (tasks are ticked with /hr/onboarding/tasks/{task}/done)."""
-    return HrOnboarding.model_validate(await _hr_call(auth, frappe, f"{_LIFE}.offboarding", params={"name": name}))
+) -> HrOffboardingDetail:
+    """A leaver's offboarding checklist and the items still out (tasks are ticked with /hr/onboarding/tasks/{task}/done)."""
+    return HrOffboardingDetail.model_validate(await _hr_call(auth, frappe, f"{_LIFE}.offboarding", params={"name": name}))
 
 
 @router.post(
@@ -5998,6 +6005,96 @@ async def list_hr_employee_warnings(
     """The person's disciplinary warnings: HR Manager, or the case owner for their own cases. Everyone else 403."""
     return HrWarnings.model_validate(await _hr_call(auth, frappe, f"{_CASES}.warnings", params={"employee": employee_id}))
 
+
+# --- HR additions: plan 02 ---
+# Items issued to staff and offboarding clearance. Guards live in eswasa_hr.issued_items: HR issues and sees the
+# register; the line manager sees and takes back their reports' items; only the holder acknowledges.
+_ITEMS = "eswasa_hr.issued_items"
+
+
+@router.get("/hr/items", response_model=HrIssuedItemList, tags=["hr"])
+async def list_hr_items(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+    item_type: str | None = None,
+    department: str | None = None,
+    overdue: bool = False,
+) -> HrIssuedItemList:
+    """H19: every issued item (HR only). ``status=out`` means issued or acknowledged."""
+    params = {"status": status_filter, "item_type": item_type, "department": department, "overdue": 1 if overdue else 0}
+    raw = await _hr_call(auth, frappe, f"{_ITEMS}.register", params={k: v for k, v in params.items() if v not in (None, "")})
+    return HrIssuedItemList.model_validate(raw)
+
+
+@router.get("/hr/items/types", response_model=HrIssuedItemTypes, tags=["hr"])
+async def list_hr_item_types(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrIssuedItemTypes:
+    """The item types HR can issue (HR Settings); empty and ``awaiting: A2`` until ESWASA supplies them."""
+    return HrIssuedItemTypes.model_validate(await _hr_call(auth, frappe, f"{_ITEMS}.item_types"))
+
+
+@router.post("/hr/items/{name}/return", response_model=HrEmployeeItems, tags=["hr"])
+async def return_hr_item(
+    name: str,
+    body: HrReturnItemBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEmployeeItems:
+    """Take an item back (HR or the line manager), or mark it lost or written off (HR Manager, with a note)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.item.return", actor=auth.user.username, resource=f"HR Issued Item:{name}", detail={"outcome": body.outcome}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_ITEMS}.return_item", json={"name": name, **body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrEmployeeItems.model_validate(raw)
+
+
+@router.get("/hr/employees/{employee_id}/items", response_model=HrEmployeeItems, tags=["hr"])
+async def list_hr_employee_items(
+    employee_id: str,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEmployeeItems:
+    """The person's items: HR, their line manager, or the person."""
+    return HrEmployeeItems.model_validate(await _hr_call(auth, frappe, f"{_ITEMS}.employee_items", params={"employee": employee_id}))
+
+
+@router.post("/hr/employees/{employee_id}/items", response_model=HrEmployeeItems, tags=["hr"])
+async def issue_hr_item(
+    employee_id: str,
+    body: HrIssueItemBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrEmployeeItems:
+    """Issue an item (HR). The holder gets an "Acknowledge receipt" card in Approvals."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.item.issue", actor=auth.user.username, resource=f"Employee:{employee_id}", detail={"item_type": body.item_type, "tag": body.tag}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_ITEMS}.issue", json={"employee": employee_id, **body.model_dump(exclude={"confirm"}), "confirm": 1})
+    return HrEmployeeItems.model_validate(raw)
+
+
+@router.get("/hr/me/items", response_model=HrMyItems, tags=["hr"])
+async def list_my_hr_items(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrMyItems:
+    """E11: what I hold, and what I still have to acknowledge."""
+    return HrMyItems.model_validate(await _hr_call(auth, frappe, f"{_ITEMS}.my_items"))
+
+
+@router.post("/hr/me/items/{name}/acknowledge", response_model=HrMyItems, tags=["hr"])
+async def acknowledge_my_hr_item(
+    name: str,
+    body: HrConfirmBody,
+    auth: Annotated[AuthContext, Depends(require_auth_csrf)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+) -> HrMyItems:
+    """Acknowledge receipt of an item (the holder only)."""
+    _require_confirm(body.confirm)
+    audit_log(action="hr.item.acknowledge", actor=auth.user.username, resource=f"HR Issued Item:{name}", detail={}, confirmed=True)
+    raw = await _hr_write(auth, frappe, f"{_ITEMS}.acknowledge", json={"name": name, "confirm": 1})
+    return HrMyItems.model_validate(raw)
 
 
 @router.get("/crm/leads", tags=["crm"])

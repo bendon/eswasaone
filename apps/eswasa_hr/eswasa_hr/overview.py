@@ -252,6 +252,9 @@ def overview_impl() -> dict[str, Any]:
         if end and (end - day).days <= settings.get("cycle_warn_days") and left:
             items.append(attention("appraisal", left, f"1 appraisal not finished in {c['cycle_name']}", f"{{n}} appraisals not finished in {c['cycle_name']}",
                                    f"/hr/performance/cycles/{c['name']}", end, "Remind people from the cycle page.", 1))
+    leavers = alerts.get("Items not returned", {})  # additions plan 02
+    items.append(attention("items_not_returned", leavers.get("count", 0), "1 leaver hasn't returned issued items", "{n} leavers haven't returned issued items",
+                           "/hr/items?status=out", leavers.get("due"), "Items not returned by leavers. Take them back or have an HR Manager write them off.", 2))
     if manager and (_has("Employee Grievance") or _has("Disciplinary Case")):
         from eswasa_hr.cases import board_impl
 
@@ -420,6 +423,7 @@ def setup_status_impl() -> dict[str, Any]:
             desk=True,
         ),
         _code_step(),
+        _items_step(),
         # _payroll_step(),  # off: ESWASA doesn't run payroll in EswasaOne; restore when it does
     ]
     return {"steps": steps, **progress(steps)}
@@ -430,6 +434,13 @@ def _code_step() -> dict[str, Any]:
     from eswasa_hr.cases import code_step
 
     return code_step()
+
+
+def _items_step() -> dict[str, Any]:
+    """HR additions plan 02: the issued item types (awaiting ESWASA, A2)."""
+    from eswasa_hr.issued_items import setup_step
+
+    return setup_step()
 
 
 def _import_step(active: int, linked: int) -> dict[str, Any]:

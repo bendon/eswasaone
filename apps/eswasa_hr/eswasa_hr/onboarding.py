@@ -293,6 +293,13 @@ def complete_task_impl(task: str) -> dict[str, Any]:
     owner = frappe.db.get_value("Employee Boarding Activity", {"parent": onboarding, "task": task}, "user")
     if not (_is_hr() or owner == frappe.session.user):
         frappe.throw("Only the task's owner or HR can mark it done.", frappe.PermissionError)
+    if doctype == SEPARATION:  # additions plan 02: "Return issued items" waits until everything is back
+        from eswasa_hr.issued_items import clearance_error
+
+        blocked = clearance_error(frappe.db.get_value(doctype, onboarding, "employee"),
+                                  frappe.db.get_value("Employee Boarding Activity", {"parent": onboarding, "task": task}, "activity_name"))
+        if blocked:
+            frappe.throw(blocked, frappe.ValidationError)
     t = frappe.get_doc("Task", task)
     if t.status not in ("Completed", "Cancelled"):
         t.status = "Completed"

@@ -777,6 +777,17 @@ export const router = createBrowserRouter(
                     ),
                   },
                   {
+                    path: "items",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./hr/sub-views").then((m) => ({ default: m.ItemsRegister }))
+                        }
+                        skeleton="list"
+                      />
+                    ),
+                  },
+                  {
                     path: "offboarding/:id",
                     element: (
                       <L
@@ -1039,6 +1050,17 @@ export const router = createBrowserRouter(
                       <L
                         factory={() =>
                           import("./me/sub-views").then((m) => ({ default: m.MyCompetence }))
+                        }
+                        skeleton="list"
+                      />
+                    ),
+                  },
+                  {
+                    path: "items",
+                    element: (
+                      <L
+                        factory={() =>
+                          import("./me/sub-views").then((m) => ({ default: m.MyItems }))
                         }
                         skeleton="list"
                       />

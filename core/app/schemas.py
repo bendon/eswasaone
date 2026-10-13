@@ -3070,3 +3070,91 @@ class HrWarnings(BaseModel):
 
 
 HrCaseDetail.model_rebuild()
+
+
+# --- HR additions: plan 02 ---
+# Items issued to staff (H19 register, record Items tab, E11 My items) and offboarding clearance.
+
+
+class HrIssuedItem(BaseModel):
+    """OpenAPI: HrIssuedItem — one item a person holds or held."""
+
+    name: str
+    employee: str
+    employee_name: str | None = None
+    department: str | None = None
+    item_type: str
+    description: str | None = None
+    tag: str | None = None
+    asset: str | None = None
+    issued_on: str | None = None
+    issued_by: str | None = None
+    condition_out: str | None = None
+    acknowledged_on: str | None = None
+    return_due: str | None = None
+    returned_on: str | None = None
+    received_by: str | None = None
+    condition_in: str | None = None
+    note: str | None = None
+    status: str  # Issued | Acknowledged | Returned | Lost | Written off
+    overdue: bool = False
+
+
+class HrIssuedItemList(BaseModel):
+    """OpenAPI: HrIssuedItemList — the H19 register (HR only)."""
+
+    items: list[HrIssuedItem] = Field(default_factory=list)
+    types: list[str] = Field(default_factory=list)
+    out: int = 0
+    overdue: int = 0
+
+
+class HrIssuedItemTypes(BaseModel):
+    types: list[str] = Field(default_factory=list)
+    awaiting: str | None = None  # "A2" while ESWASA hasn't supplied the list
+
+
+class HrEmployeeItems(BaseModel):
+    """A person's items (record Items tab) with what the viewer may do."""
+
+    employee: str
+    employee_name: str | None = None
+    items: list[HrIssuedItem] = Field(default_factory=list)
+    types: list[str] = Field(default_factory=list)
+    can_issue: bool = False
+    can_return: bool = False
+    can_write_off: bool = False
+
+
+class HrMyItems(BaseModel):
+    employee: str | None = None
+    items: list[HrIssuedItem] = Field(default_factory=list)
+    waiting: int = 0  # still to acknowledge
+
+
+class HrIssueItemBody(BaseModel):
+    item_type: str
+    description: str | None = None
+    tag: str | None = None
+    condition_out: str | None = None
+    return_due: str | None = None
+    asset: str | None = None
+    confirm: bool
+
+
+class HrReturnItemBody(BaseModel):
+    outcome: Literal["Returned", "Lost", "Written off"] = "Returned"
+    condition_in: str | None = None
+    note: str | None = None
+    confirm: bool
+
+
+class HrOffboardingActivity(HrOnboardingActivity):
+    blocked: str | None = None  # why the clearance task can't be ticked yet
+
+
+class HrOffboardingDetail(HrOnboarding):
+    """OpenAPI: HrOffboardingDetail — the leaver's checklist plus the items still out."""
+
+    activities: list[HrOffboardingActivity] = Field(default_factory=list)
+    items_out: list[HrIssuedItem] = Field(default_factory=list)

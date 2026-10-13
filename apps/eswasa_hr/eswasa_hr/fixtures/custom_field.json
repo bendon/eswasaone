@@ -522,5 +522,15 @@
   "insert_after": "custom_written_warning_months",
   "description": "Provisional, awaiting ESWASA (A1). Empty: warnings of this kind get no expiry date.",
   "name": "HR Settings-custom_final_warning_months"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_issued_item_types",
+  "label": "Issued item types",
+  "fieldtype": "Small Text",
+  "insert_after": "custom_hr_email",
+  "description": "One item type per line. Awaiting ESWASA (A2): until this list has entries, HR can't issue items.",
+  "name": "HR Settings-custom_issued_item_types"
  }
 ]

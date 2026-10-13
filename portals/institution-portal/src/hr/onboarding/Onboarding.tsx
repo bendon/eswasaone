@@ -271,7 +271,7 @@ export function Checklist({
   canTick,
   links,
 }: {
-  activities: HrOnboardingActivity[];
+  activities: Array<HrOnboardingActivity & { blocked?: string | null }>;
   onDone: (task: string) => void;
   canTick: boolean | ((a: HrOnboardingActivity) => boolean);
   links?: Record<string, string>;
@@ -289,6 +289,7 @@ export function Checklist({
                 <div>
                   <b style={isDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}>{a.activity_name}</b>
                   <span className="s">{a.user_name ?? a.user ?? "No owner"}</span>
+                  {!isDone && a.blocked ? <span className="s">Can't be ticked yet: {a.blocked}</span> : null}
                 </div>
                 <span className="r">
                   {isDone ? (
@@ -297,7 +298,7 @@ export function Checklist({
                     <Link className="btn pri sm" to={link}>
                       Start
                     </Link>
-                  ) : tick && a.task ? (
+                  ) : tick && a.task && !a.blocked ? (
                     <button type="button" className="btn ghost sm" onClick={() => onDone(a.task!)}>
                       Mark done
                     </button>

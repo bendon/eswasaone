@@ -3,7 +3,7 @@ import { Icon } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
-import type { HrAppraisal, HrMe, HrMyDeclaration, HrOnboarding } from "../api/types";
+import type { HrAppraisal, HrMe, HrMyDeclaration, HrMyItems, HrOnboarding } from "../api/types";
 import { Banner, fmtDay, fmtDays, fmtRange, leaveStatus, NextStep, StatusPill } from "./parts";
 
 /** E1 My HR — the signed-in person's own record, balances and leave. Live GET /hr/me only. */
@@ -51,6 +51,8 @@ function Linked({ me }: { me: HrMe }) {
   const firstDays = onb.data?.onboarding ?? null;
   const apr = useApiResource<{ appraisal: HrAppraisal | null }>("/hr/me/appraisal", { refreshKey: sessionKey });
   const selfDue = apr.data?.appraisal?.can_self && !apr.data.appraisal.self_done ? apr.data.appraisal : null;
+  const items = useApiResource<HrMyItems>("/hr/me/items", { refreshKey: sessionKey });
+  const toAcknowledge = items.data?.waiting ?? 0;
   const emp = me.employee;
   const first = (emp?.employee_name ?? "").split(" ")[0] || "there";
   const annual = me.balances.find((b) => /annual/i.test(b.leave_type)) ?? me.balances[0];
@@ -128,6 +130,20 @@ function Linked({ me }: { me: HrMe }) {
           }
         >
           Then {selfDue.manager_name ?? "your line manager"} adds their ratings.
+        </Banner>
+      ) : null}
+
+      {toAcknowledge ? (
+        <Banner
+          kind="info"
+          title={`${toAcknowledge} issued item${toAcknowledge === 1 ? "" : "s"} to acknowledge`}
+          action={
+            <Link className="btn pri sm" to="items">
+              My items
+            </Link>
+          }
+        >
+          HR has issued you equipment or a card. Confirm you received it.
         </Banner>
       ) : null}
 

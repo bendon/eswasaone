@@ -156,12 +156,25 @@ def _check_plan_01() -> dict[str, Any]:
     return {"select_options": gaps} if gaps else {}
 
 
+def _check_plan_02() -> dict[str, Any]:
+    """HR additions plan 02: the ``Items not returned`` alert rule (the DocType and HR Settings field are covered above)."""
+    import frappe
+
+    if not frappe.db.exists("DocType", "HR Alert"):
+        return {}
+    field = frappe.get_meta("HR Alert").get_field("rule")
+    if field and "Items not returned" in (field.options or "").split("\n"):
+        return {}
+    return {"plan_02": ["HR Alert.rule option Items not returned"]}
+
+
 def run() -> dict[str, Any]:
     from eswasa_hr import hooks
 
     want = expected(hooks, app_doctypes(), PATCHES.read_text())
     missing = compare(want, site_state(want))
     missing.update(_check_plan_01())
+    missing.update(_check_plan_02())
     result = {
         "ok": not missing,
         "missing": missing,

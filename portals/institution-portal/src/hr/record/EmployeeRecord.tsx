@@ -10,13 +10,14 @@ import { AccessLogSection, SensitivePanel } from "../sensitive/Sensitive";
 import { DocumentsPanel } from "./Documents";
 import { CompetenceSection, HistorySection, JobSection, LeaveSection, OpenItems } from "./RecordParts";
 import { warningFlag, WarningsSection } from "./Warnings";
+import { ItemsPanel } from "../items/Items";
 
 /**
  * H1b Employee record: everything about one person, scoped by the server (HR sees all, a line manager job fields
  * only, never pay). Live GET /hr/employees/{id}. HR can correct name, work email and status (PATCH; moves go
  * through promotion/transfer), verify documents and print the certificate of service.
  */
-type Tab = "summary" | "job" | "leave" | "competence" | "documents" | "history" | "warnings" | "access";
+type Tab = "summary" | "job" | "leave" | "competence" | "documents" | "history" | "warnings" | "items" | "access";
 
 export function EmployeeRecord() {
   const { id = "" } = useParams();
@@ -40,6 +41,7 @@ export function EmployeeRecord() {
     ["documents", "Documents"],
     ["history", "History"],
     ...(hrManager ? ([["warnings", "Warnings"]] as Array<[Tab, string]>) : []),
+    ...(hr || r?.viewer === "manager" ? ([["items", "Items"]] as Array<[Tab, string]>) : []),
     ...(hr ? ([["access", "Access log"]] as Array<[Tab, string]>) : []),
   ];
 
@@ -117,6 +119,7 @@ export function EmployeeRecord() {
           {tab === "documents" ? <DocumentsPanel base={`/hr/employees/${encodeURIComponent(r.id)}/documents`} canVerify={hr} /> : null}
           {tab === "history" ? <HistorySection r={r} /> : null}
           {tab === "warnings" && hrManager ? <WarningsSection w={warnings.data} /> : null}
+          {tab === "items" && (hr || r.viewer === "manager") ? <ItemsPanel employee={r.id} /> : null}
           {tab === "access" && hr ? <AccessLogSection employee={r.id} refreshKey={logKey} /> : null}
         </div>
       ) : null}

@@ -2646,7 +2646,7 @@ paths:
     get:
       tags: [hr]
       operationId: getOffboarding
-      summary: A leaver's offboarding checklist
+      summary: A leaver's offboarding checklist and the items still out
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: name, in: path, required: true, schema: { type: string } }
@@ -2655,7 +2655,7 @@ paths:
           description: OK
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/HrOnboarding" }
+              schema: { $ref: "#/components/schemas/HrOffboardingDetail" }
 
   /hr/leave/preview:
     post:
@@ -4150,6 +4150,130 @@ paths:
                   items:
                     type: array
                     items: { $ref: "#/components/schemas/GovernanceDeclaration" }
+
+  # plan 02: issued items and offboarding clearance (H19, E11, record Items tab)
+  /hr/items:
+    get:
+      tags: [hr]
+      operationId: listHrItems
+      summary: The issued item register (HR only). status=out means issued or acknowledged
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string } }
+        - { name: item_type, in: query, required: false, schema: { type: string } }
+        - { name: department, in: query, required: false, schema: { type: string } }
+        - { name: overdue, in: query, required: false, schema: { type: boolean, default: false } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrIssuedItemList" }
+
+  /hr/items/types:
+    get:
+      tags: [hr]
+      operationId: listHrItemTypes
+      summary: Item types HR can issue; empty with awaiting A2 until ESWASA supplies them
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrIssuedItemTypes" }
+
+  /hr/items/{name}/return:
+    post:
+      tags: [hr]
+      operationId: returnHrItem
+      summary: Take an item back (HR or line manager), or mark it lost or written off (HR Manager, with a note)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrReturnItemBody" }
+      responses:
+        "200":
+          description: Returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeItems" }
+        "422":
+          description: Rule failed
+
+  /hr/employees/{employee_id}/items:
+    get:
+      tags: [hr]
+      operationId: listHrEmployeeItems
+      summary: The person's items (HR, line manager or the person)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeItems" }
+    post:
+      tags: [hr]
+      operationId: issueHrItem
+      summary: Issue an item (HR); the holder gets an Acknowledge receipt card in Approvals
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: employee_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrIssueItemBody" }
+      responses:
+        "200":
+          description: Issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrEmployeeItems" }
+        "422":
+          description: Rule failed (no item types yet, inactive person, unknown type)
+
+  /hr/me/items:
+    get:
+      tags: [hr]
+      operationId: listMyHrItems
+      summary: What I hold and what I still have to acknowledge (E11)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrMyItems" }
+
+  /hr/me/items/{name}/acknowledge:
+    post:
+      tags: [hr]
+      operationId: acknowledgeMyHrItem
+      summary: Acknowledge receipt of an item (the holder only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HrConfirmBody" }
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HrMyItems" }
+        "422":
+          description: Already acknowledged or returned
 
 components:
   securitySchemes:
@@ -11732,3 +11856,92 @@ components:
         items: { type: array, items: { $ref: "#/components/schemas/HrWarning" } }
         active: { type: integer }
         active_until: { anyOf: [{ type: string }, { type: "null" }] }
+    # plan 02: issued items and offboarding clearance
+    HrIssuedItem:
+      type: object
+      required: [name, employee, item_type, status, overdue]
+      properties:
+        name: { type: string }
+        employee: { type: string }
+        item_type: { type: string }
+        status: { type: string, enum: [Issued, Acknowledged, Returned, Lost, Written off] }
+        overdue: { type: boolean }
+        employee_name: { anyOf: [{ type: string }, { type: "null" }] }
+        department: { anyOf: [{ type: string }, { type: "null" }] }
+        description: { anyOf: [{ type: string }, { type: "null" }] }
+        tag: { anyOf: [{ type: string }, { type: "null" }] }
+        asset: { anyOf: [{ type: string }, { type: "null" }] }
+        issued_on: { anyOf: [{ type: string }, { type: "null" }] }
+        issued_by: { anyOf: [{ type: string }, { type: "null" }] }
+        condition_out: { anyOf: [{ type: string }, { type: "null" }] }
+        acknowledged_on: { anyOf: [{ type: string }, { type: "null" }] }
+        return_due: { anyOf: [{ type: string }, { type: "null" }] }
+        returned_on: { anyOf: [{ type: string }, { type: "null" }] }
+        received_by: { anyOf: [{ type: string }, { type: "null" }] }
+        condition_in: { anyOf: [{ type: string }, { type: "null" }] }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+    HrIssuedItemList:
+      type: object
+      required: [items, types, out, overdue]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/HrIssuedItem" } }
+        types: { type: array, items: { type: string } }
+        out: { type: integer }
+        overdue: { type: integer }
+    HrIssuedItemTypes:
+      type: object
+      required: [types]
+      properties:
+        types: { type: array, items: { type: string } }
+        awaiting: { anyOf: [{ type: string }, { type: "null" }] }
+    HrEmployeeItems:
+      type: object
+      required: [employee, items, types, can_issue, can_return, can_write_off]
+      properties:
+        employee: { type: string }
+        employee_name: { anyOf: [{ type: string }, { type: "null" }] }
+        items: { type: array, items: { $ref: "#/components/schemas/HrIssuedItem" } }
+        types: { type: array, items: { type: string } }
+        can_issue: { type: boolean }
+        can_return: { type: boolean }
+        can_write_off: { type: boolean }
+    HrMyItems:
+      type: object
+      required: [items, waiting]
+      properties:
+        employee: { anyOf: [{ type: string }, { type: "null" }] }
+        items: { type: array, items: { $ref: "#/components/schemas/HrIssuedItem" } }
+        waiting: { type: integer }
+    HrIssueItemBody:
+      type: object
+      required: [item_type, confirm]
+      properties:
+        item_type: { type: string }
+        description: { anyOf: [{ type: string }, { type: "null" }] }
+        tag: { anyOf: [{ type: string }, { type: "null" }] }
+        condition_out: { anyOf: [{ type: string }, { type: "null" }] }
+        return_due: { anyOf: [{ type: string }, { type: "null" }] }
+        asset: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrReturnItemBody:
+      type: object
+      required: [confirm]
+      properties:
+        outcome: { type: string, enum: [Returned, Lost, Written off], default: Returned }
+        condition_in: { anyOf: [{ type: string }, { type: "null" }] }
+        note: { anyOf: [{ type: string }, { type: "null" }] }
+        confirm: { type: boolean }
+    HrOffboardingActivity:
+      allOf:
+        - $ref: "#/components/schemas/HrOnboardingActivity"
+        - type: object
+          properties:
+            blocked: { anyOf: [{ type: string }, { type: "null" }] }
+    HrOffboardingDetail:
+      allOf:
+        - $ref: "#/components/schemas/HrOnboarding"
+        - type: object
+          required: [items_out]
+          properties:
+            activities: { type: array, items: { $ref: "#/components/schemas/HrOffboardingActivity" } }
+            items_out: { type: array, items: { $ref: "#/components/schemas/HrIssuedItem" } }

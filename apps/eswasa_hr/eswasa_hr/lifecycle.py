@@ -456,11 +456,17 @@ def separation_defaults_impl(employee: str) -> dict[str, Any]:
     _require_hr()
     e = _employee(employee)
     manager_user = frappe.db.get_value("Employee", e["reports_to"], "user_id") if e.get("reports_to") else None
+    rows = default_offboarding(frappe.session.user, manager_user, _separation_template(e))
+    from eswasa_hr.issued_items import separation_activity  # additions plan 02: clearance of issued items
+
+    clearance = separation_activity(employee, frappe.session.user)
+    if clearance:
+        rows.append(clearance)
     return {
         "employee": employee,
         "employee_name": e["employee_name"],
         "reasons": list(REASONS),
-        "activities": [{**r, "user_name": (frappe.db.get_value("User", r["user"], "full_name") or r["user"]) if r["user"] else None} for r in default_offboarding(frappe.session.user, manager_user, _separation_template(e))],
+        "activities": [{**r, "user_name": (frappe.db.get_value("User", r["user"], "full_name") or r["user"]) if r["user"] else None} for r in rows],
     }
 
 
@@ -493,6 +499,9 @@ def process_last_days() -> int:
             continue  # not approved: nothing happens on the date
         manager_user = frappe.db.get_value("Employee", e["reports_to"], "user_id") if e.get("reports_to") else None
         last = _d(e["relieving_date"])
+        from eswasa_hr.issued_items import on_last_day  # additions plan 02: items still out raise one alert
+
+        on_last_day(e, manager_user)
         if e.get("user_id"):
             for t in frappe.get_all("ToDo", filters={"allocated_to": e["user_id"], "status": "Open"}, fields=["name", "description"], limit=0):
                 if manager_user:
@@ -561,6 +570,7 @@ def separation_defaults(employee: str) -> dict[str, Any]:
 
 @_whitelist
 def offboarding(name: str) -> dict[str, Any]:
+    from eswasa_hr.issued_items import offboarding_items
     from eswasa_hr.onboarding import detail_impl
 
-    return detail_impl(name, SEPARATION)
+    return offboarding_items(detail_impl(name, SEPARATION))

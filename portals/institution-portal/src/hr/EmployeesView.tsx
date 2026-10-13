@@ -10,6 +10,7 @@ import { errorText, hrSend } from "./api";
 import { initialsFromName } from "./helpers";
 import { fmtDay } from "../me/parts";
 import { SensitivePanel } from "./sensitive/Sensitive";
+import { DirectorySwitch } from "./items/Items";
 
 /** Directory — live /hr/employees only. */
 
@@ -203,6 +204,7 @@ export function EmployeesView() {
         label="Loading directory…"
       >
         <div className="hr">
+          <DirectorySwitch current="people" />
           <div className="hr-head">
             <div>
               <h2>Directory</h2>

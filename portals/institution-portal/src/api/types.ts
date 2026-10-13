@@ -518,3 +518,41 @@ export type HrEmployeeDocuments = components["schemas"]["HrEmployeeDocuments"];
 export type HrProfileChange = components["schemas"]["HrProfileChange"];
 export type HrProfileChanges = components["schemas"]["HrProfileChanges"];
 export type HrEmployeeRecord = components["schemas"]["HrEmployeeRecord"];
+
+/* HR additions plan 02: issued items and offboarding clearance (hand-written until contracts/types.ts is regenerated). */
+export type HrIssuedItemStatus = "Issued" | "Acknowledged" | "Returned" | "Lost" | "Written off";
+export type HrIssuedItem = {
+  name: string;
+  employee: string;
+  employee_name?: string | null;
+  department?: string | null;
+  item_type: string;
+  description?: string | null;
+  tag?: string | null;
+  asset?: string | null;
+  issued_on?: string | null;
+  issued_by?: string | null;
+  condition_out?: string | null;
+  acknowledged_on?: string | null;
+  return_due?: string | null;
+  returned_on?: string | null;
+  received_by?: string | null;
+  condition_in?: string | null;
+  note?: string | null;
+  status: HrIssuedItemStatus;
+  overdue: boolean;
+};
+export type HrIssuedItemList = { items: HrIssuedItem[]; types: string[]; out: number; overdue: number };
+export type HrIssuedItemTypes = { types: string[]; awaiting?: string | null };
+export type HrEmployeeItems = {
+  employee: string;
+  employee_name?: string | null;
+  items: HrIssuedItem[];
+  types: string[];
+  can_issue: boolean;
+  can_return: boolean;
+  can_write_off: boolean;
+};
+export type HrMyItems = { employee?: string | null; items: HrIssuedItem[]; waiting: number };
+export type HrOffboardingActivity = HrOnboardingActivity & { blocked?: string | null };
+export type HrOffboardingDetail = Omit<HrOnboarding, "activities"> & { activities: HrOffboardingActivity[]; items_out: HrIssuedItem[] };

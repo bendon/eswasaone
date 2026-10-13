@@ -5,9 +5,10 @@ import { useApiResource } from "../../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../../components/PageStates";
 import { RequireStaff } from "../../components/RequireStaff";
 import { useInstitution } from "../../layout/InstitutionLayout";
-import type { HrChanges, HrContractDefaults, HrEmployeesResponse, HrOnboarding, HrOnboardingActivity, HrPickItem, HrSeparationDefaults } from "../../api/types";
+import type { HrChanges, HrContractDefaults, HrEmployeesResponse, HrOffboardingDetail, HrOnboarding, HrOnboardingActivity, HrPickItem, HrSeparationDefaults } from "../../api/types";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill, Track } from "../../me/parts";
 import { Checklist } from "../onboarding/Onboarding";
+import { ItemsOutBox } from "../items/Items";
 import { AccessLogSection, SensitivePanel } from "../sensitive/Sensitive";
 
 /**
@@ -526,8 +527,9 @@ export function ContractForm() {
 export function OffboardingDetail() {
   const { id = "" } = useParams();
   const { user, sessionKey } = useInstitution();
-  const res = useApiResource<HrOnboarding>(`/hr/offboarding/${encodeURIComponent(id)}`, { enabled: Boolean(user), refreshKey: sessionKey });
-  const [d, setD] = useState<HrOnboarding | null>(null);
+  const res = useApiResource<HrOffboardingDetail>(`/hr/offboarding/${encodeURIComponent(id)}`, { enabled: Boolean(user), refreshKey: sessionKey });
+  const [d, setD] = useState<HrOffboardingDetail | null>(null);
+  const canWriteOff = (user?.roles ?? []).some((r) => r === "HR Manager" || r === "System Manager");
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     if (res.data) setD(res.data);
@@ -536,7 +538,7 @@ export function OffboardingDetail() {
     setErr(null);
     try {
       const next = await apiFetch<HrOnboarding>(`/hr/onboarding/tasks/${encodeURIComponent(task)}/done`, { method: "POST", body: JSON.stringify({ confirm: true }) });
-      if (next && "activities" in next) setD(next);
+      if (next && "activities" in next) res.reload(); // reload: the detail also carries the items still out
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Not saved.");
     }
@@ -560,6 +562,7 @@ export function OffboardingDetail() {
                 {err}
               </Banner>
             ) : null}
+            <ItemsOutBox items={d.items_out ?? []} canWriteOff={canWriteOff} onChanged={res.reload} />
             <Checklist activities={d.activities} onDone={(t) => void done(t)} canTick />
             <Banner kind="info" title="On the last day">
               The login is disabled and open approvals and tasks move to the line manager, with the reason logged.

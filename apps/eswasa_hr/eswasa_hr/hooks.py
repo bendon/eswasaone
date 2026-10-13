@@ -66,6 +66,7 @@ fixtures = [
                     "HR Settings-custom_verbal_warning_months",
                     "HR Settings-custom_written_warning_months",
                     "HR Settings-custom_final_warning_months",
+                    "HR Settings-custom_issued_item_types",
                 ],
             ]
         ],
@@ -122,6 +123,8 @@ permission_query_conditions = {
     # Plan 06: HR and the person; exit interviews like cases (HR Managers and the interviewer).
     "Profile Change Request": "eswasa_hr.profile_changes.query",
     "Exit Interview": "eswasa_hr.lifecycle.exit_interview_query",
+    # HR additions plan 02: HR sees every issued item; others their own and their reports'.
+    "HR Issued Item": "eswasa_hr.issued_items.query",
 }
 has_permission = {
     "Employee Grievance": "eswasa_hr.cases.has_permission",
@@ -133,6 +136,7 @@ has_permission = {
     "Employee Document": "eswasa_hr.scope.document_has_permission",
     "Profile Change Request": "eswasa_hr.profile_changes.has_permission",
     "Exit Interview": "eswasa_hr.lifecycle.exit_interview_has_permission",
+    "HR Issued Item": "eswasa_hr.issued_items.has_permission",
 }
 
 after_migrate = ["eswasa_hr.setup.after_migrate"]
@@ -208,4 +212,6 @@ eswasa_approval_handlers = {
     "Profile Change Request": "eswasa_hr.profile_changes.decide",
     # Plan 06: the interviewer marks the exit interview held, with a summary.
     "Exit Interview": "eswasa_hr.lifecycle.decide_exit_interview",
+    # HR additions plan 02: the holder acknowledges receipt of an issued item (a do card).
+    "HR Issued Item": "eswasa_hr.issued_items.decide",
 }

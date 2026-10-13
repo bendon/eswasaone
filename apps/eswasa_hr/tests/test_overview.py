@@ -65,11 +65,12 @@ class SetupTests(unittest.TestCase):
         out = ov.setup_status_impl()
         by = {s["id"]: s for s in out["steps"]}
         # Everything is to do, except the disciplinary code, which waits on ESWASA (A1).
-        self.assertEqual({s["state"] for s in out["steps"] if s["id"] != "disciplinary_code"}, {ov.TODO})
-        self.assertTrue(all(s["awaiting"] is None for s in out["steps"] if s["id"] != "disciplinary_code"))
+        self.assertEqual({s["state"] for s in out["steps"] if s["id"] not in ("disciplinary_code", "item_types")}, {ov.TODO})
+        self.assertTrue(all(s["awaiting"] is None for s in out["steps"] if s["id"] not in ("disciplinary_code", "item_types")))
         self.assertEqual((by["disciplinary_code"]["state"], by["disciplinary_code"]["awaiting"]), (ov.AWAITING, "A1"))
         self.assertIn("Awaiting ESWASA (A1)", by["disciplinary_code"]["detail"])
         self.assertEqual(by["disciplinary_code"]["href"], "/hr/cases/code")
+        self.assertEqual((by["item_types"]["state"], by["item_types"]["awaiting"]), (ov.AWAITING, "A2"))  # additions plan 02
         self.assertEqual(by["import"]["href"], "/system-admin?tab=hr-setup#hr-import")
         self.assertFalse(by["import"]["desk"])
         self.assertNotIn("payroll", by)  # payroll is off

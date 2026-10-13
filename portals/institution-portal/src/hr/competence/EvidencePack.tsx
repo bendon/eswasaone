@@ -8,22 +8,24 @@ import type { components } from "@contracts";
 import type { HrCompetenceMatrix, HrEmployeesResponse } from "../../api/types";
 import { Banner, Crumbs, fmtDay, Track } from "../../me/parts";
 import { errorText, fileUrl, hrSend } from "../api";
+import { useHrSettings } from "../useHrSettings";
 
 type Job = components["schemas"]["HrEvidencePackJob"];
 type HrExternalPeople = components["schemas"]["HrExternalPeople"];
 type Kind = "employee" | "external_person" | "scheme" | "discipline";
 
-const SECTIONS: Array<[string, string]> = [
-  ["authorisations", "Authorisations and their evidence"],
-  ["monitoring", "Monitoring (evidence rows, field visits led, audits completed)"],
-  ["declarations", "Impartiality declarations (two years)"],
-  ["training", "Training records"],
-];
+/** How each section eswasa_hr builds (GET /hr/settings lists.evidence_sections) reads on screen. */
+const SECTION_LABEL: Record<string, string> = {
+  authorisations: "Authorisations and their evidence",
+  monitoring: "Monitoring (evidence rows, field visits led, audits completed)",
+  declarations: "Impartiality declarations",
+  training: "Training records",
+};
 
 /**
  * H5e Accreditation evidence pack for SADCAS and internal audits (ISO/IEC 17021-1, 17065, 17025). HR Manager or Quality
  * Manager. POST /hr/evidence-pack builds the ZIP in the background; the page polls GET /hr/evidence-pack/{job} and links
- * the download. Sections are provisional until ESWASA confirms what SADCAS asks for (H11). Never includes pay or personal data.
+ * the download. The sections are the ones eswasa_hr builds. Never includes pay or personal data.
  */
 export function EvidencePack() {
   const { user, sessionKey } = useInstitution();
@@ -31,7 +33,9 @@ export function EvidencePack() {
   const [jobId, setJobId] = useState<string | null>(() => params.get("job"));
   const [kind, setKind] = useState<Kind>("employee");
   const [value, setValue] = useState("");
-  const [sections, setSections] = useState<string[]>(SECTIONS.map(([k]) => k));
+  const SECTIONS = useHrSettings()?.lists.evidence_sections ?? [];
+  const [picked, setSections] = useState<string[] | null>(null);
+  const sections = picked ?? SECTIONS;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [job, setJob] = useState<Job | null>(null);
@@ -89,7 +93,7 @@ export function EvidencePack() {
       </select>
     ) : kind === "external_person" ? (
       <select className="hr-in" value={value} onChange={(e) => setValue(e.target.value)} disabled={busy}>
-        <option value="">{ext.data && !ext.data.enabled ? "Register is off (H10)" : "Choose a person…"}</option>
+        <option value="">{ext.data && !ext.data.enabled ? "The external personnel register is off" : "Choose a person…"}</option>
         {(ext.data?.items ?? []).map((p) => (
           <option key={p.id} value={p.id}>
             {p.full_name}
@@ -116,9 +120,7 @@ export function EvidencePack() {
           <p>For SADCAS assessments and internal audits under ISO/IEC 17021-1, 17065 and 17025. Each person included is logged.</p>
         </div>
       </div>
-      <Banner kind="info" title="Sections are provisional (H11)">
-        ESWASA hasn't confirmed what SADCAS asks for. Pay and personal details are never included.
-      </Banner>
+      <p className="hr-note">Pay and personal details are never included.</p>
 
       {job ? (
         <div className="hr-box">
@@ -188,10 +190,10 @@ export function EvidencePack() {
             </label>
             <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
               <legend className="hr-note">Sections</legend>
-              {SECTIONS.map(([k, label]) => (
+              {SECTIONS.map((k) => (
                 <label key={k} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}>
-                  <input type="checkbox" checked={sections.includes(k)} onChange={(e) => setSections((s) => (e.target.checked ? [...s, k] : s.filter((x) => x !== k)))} disabled={busy} />
-                  {label}
+                  <input type="checkbox" checked={sections.includes(k)} onChange={(e) => setSections(e.target.checked ? [...sections, k] : sections.filter((x) => x !== k))} disabled={busy} />
+                  {SECTION_LABEL[k] ?? k}
                 </label>
               ))}
             </fieldset>

@@ -6,6 +6,7 @@ import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrExpenseClaim, HrExpenseClaims, HrExpenseOptions } from "../api/types";
 import { errorText, hrSend } from "../hr/api";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill } from "./parts";
+import { money, useHrSettings } from "../hr/useHrSettings";
 
 /**
  * Expense claims (reimbursement, not payroll). Live GET /hr/me/expense-claims and /options;
@@ -16,8 +17,6 @@ import { Banner, Crumbs, fmtDay, NextStep, StatusPill } from "./parts";
 type Line = { expense_type: string; expense_date: string; amount: string; description: string; receipt: File | null };
 
 const ACCEPT = "application/pdf,image/jpeg,image/png";
-const money = (n: number | null | undefined, currency?: string | null) =>
-  n == null ? "—" : `${currency || "SZL"} ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 function blank(type = ""): Line {
   return { expense_type: type, expense_date: "", amount: "", description: "", receipt: null };
@@ -30,6 +29,7 @@ export function claimPill(c: Pick<HrExpenseClaim, "status" | "approval_status" |
 
 export function MyExpenses() {
   const { user, sessionKey } = useInstitution();
+  const currency = useHrSettings()?.currency ?? null;
   const claims = useApiResource<HrExpenseClaims>("/hr/me/expense-claims", { enabled: Boolean(user), refreshKey: sessionKey });
   const opts = useApiResource<HrExpenseOptions>("/hr/me/expense-claims/options", { enabled: Boolean(user), refreshKey: sessionKey });
   const [open, setOpen] = useState(false);
@@ -56,8 +56,7 @@ export function MyExpenses() {
       if (!l.expense_date) return `${at}give the date of the expense.`;
       if (l.expense_date > today) return `${at}the date can't be in the future.`;
       if (!(n > 0)) return `${at}the amount must be more than 0.`;
-      if ((above == null || n > above) && !l.receipt) return `${at}attach the receipt${above != null ? ` (needed above ${money(above)})` : ""}.`;
-      if (l.receipt && l.receipt.size > 5 * 1024 * 1024) return `${at}${l.receipt.name} is larger than 5 MB.`;
+      if ((above == null || n > above) && !l.receipt) return `${at}attach the receipt${above != null ? ` (needed above ${money(above, currency)})` : ""}.`;
     }
     return null;
   }
@@ -117,8 +116,8 @@ export function MyExpenses() {
         </div>
 
         {!types.length ? (
-          <Banner kind="info" title={`Awaiting ${opts.data?.awaiting ?? "ESWASA Finance"}`}>
-            Claims open once Finance sets up the expense types.
+          <Banner kind="info" title="No expense types yet">
+            Claims open once Finance adds the expense types you can claim.
           </Banner>
         ) : null}
 
@@ -129,7 +128,7 @@ export function MyExpenses() {
             <div className="hr-box__h">
               <div>
                 <h3>New claim</h3>
-                <p>{above == null ? "Every line needs a receipt." : `Lines above ${money(above)} need a receipt.`}</p>
+                <p>{above == null ? "Every line needs a receipt." : `Lines above ${money(above, currency)} need a receipt.`}</p>
               </div>
             </div>
             <div className="hr-box__b hr-view" style={{ gap: 12 }}>
@@ -181,7 +180,7 @@ export function MyExpenses() {
                 <input className="hr-in" value={note} onChange={(e) => setNote(e.target.value)} disabled={busy} />
               </label>
               <p style={{ margin: 0 }}>
-                Total <b className="mono">{money(total)}</b>
+                Total <b className="mono">{money(total, currency)}</b>
               </p>
               {err ? (
                 <Banner kind="bad" title="Not sent">

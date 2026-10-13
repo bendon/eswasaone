@@ -15,6 +15,7 @@ vi.mock("../../layout/InstitutionLayout", () => ({
 import { RequisitionsView } from "./RequisitionsView";
 import { RaiseRequisition } from "./RaiseRequisition";
 import { PublishOpening } from "./PublishOpening";
+import { settingsResponse } from "../../test/hrSettings";
 
 const APPROVED = { id: "HR-HIREQ-0001", designation: "Certification Officer", department: "Certification", status: "Open & Approved",
   requested_by: "Nomvula Tsabedze", posting_date: "2026-10-12", opening: null, applicants: {} };
@@ -29,6 +30,8 @@ function stub(opts: { reqs?: unknown[]; vac?: unknown[]; post?: { status?: numbe
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });

@@ -74,7 +74,7 @@ async def test_leave_act_goes_through_the_approvals_handler(client: AsyncClient,
     r = await client.post("/api/hr/leave/LA-9/act", json={"decision": "approve", "confirm": True})
     assert r.status_code == 200, r.text
     assert r.json() == {"id": "LA-9", "employee": "Thandi Dlamini", "leave_type": "Annual Leave",
-                        "from_date": "2026-10-20", "to_date": "2026-10-22", "status": "Approved"}
+                        "from_date": "2026-10-20", "to_date": "2026-10-22", "status": "Approved", "days": None}
     assert calls[0] == ("eswasa_governance.api.act_on_approval",
                         {"doctype": "Leave Application", "name": "LA-9", "action": "approve", "comment": None, "confirm": True})
     assert [m for m, _ in calls] == ["eswasa_governance.api.act_on_approval", "frappe.client.get"]

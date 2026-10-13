@@ -23,6 +23,7 @@ import { LeavePolicyView } from "./LeavePolicy";
 import { EmployeesView } from "./EmployeesView";
 import { AccessRequestsView } from "./AccessRequestsView";
 import { AccessDeniedPanel } from "../components/AccessDeniedPanel";
+import { settingsResponse } from "../test/hrSettings";
 
 type Call = { url: string; method: string; body: unknown };
 let calls: Call[] = [];
@@ -40,6 +41,8 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const hit = routes.find(([k]) => url.includes(k) && (k.startsWith(method + " ") ? true : !/^(GET|POST|PATCH|DELETE) /.test(k)))
@@ -67,7 +70,7 @@ describe("Time off (H4) is read-only", () => {
     routes = [
       ["/hr/leave/requests", { items: [REQ] }],
       ["/hr/leave/calendar", { start: "2026-10-12", end: "2026-10-23", people: [{ employee: "HR-EMP-0044", employee_name: "Thandi Mamba", department: "Certification" }], entries: [{ employee: "HR-EMP-0044", kind: "leave", label: "Annual Leave", from_date: "2000-01-01", to_date: "2100-01-01", approved: false, style: "dashed" }] }],
-      ["/hr/leave/balances", { items: [], awaiting: "H14" }],
+      ["/hr/leave/balances", { items: [], awaiting: null }],
       ["/hr/holidays", { items: [] }],
     ];
     mount(<LeaveView />);
@@ -78,7 +81,8 @@ describe("Time off (H4) is read-only", () => {
     expect(screen.getAllByRole("link", { name: "Approvals" })[0]).toHaveAttribute("href", "/approvals");
     expect(await screen.findByLabelText("Leave calendar")).toBeInTheDocument();
     expect((await screen.findAllByText("Thandi Mamba · Annual Leave (requested)")).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Awaiting ESWASA \(H14\)/)).toBeInTheDocument();
+    expect(screen.getByText("No leave allocated to you for this period.")).toBeInTheDocument();
+    expect(screen.queryByText(/Awaiting ESWASA/)).toBeNull();
     expect(calls.some((c) => c.method === "POST")).toBe(false);
   });
 
@@ -90,10 +94,11 @@ describe("Time off (H4) is read-only", () => {
     expect(await screen.findByText(/offline/i)).toBeInTheDocument();
   });
 
-  it("leave policy says Awaiting ESWASA when nothing is set", async () => {
-    routes = [["/hr/leave/policy", { configured: false, awaiting: "H14", leave_period: null, leave_types: [] }]];
+  it("leave policy says nothing is set up, without waiting on anyone", async () => {
+    routes = [["/hr/leave/policy", { configured: false, awaiting: null, leave_period: null, leave_types: [] }]];
     mount(<LeavePolicyView />);
-    expect(await screen.findByText("Awaiting ESWASA (H14)")).toBeInTheDocument();
+    expect(await screen.findByText("No leave policy yet")).toBeInTheDocument();
+    expect(screen.queryByText(/Awaiting ESWASA/)).toBeNull();
     expect(screen.getByText("No leave types set up")).toBeInTheDocument();
   });
 

@@ -20,6 +20,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from eswasa_hr import settings
+
 DOCTYPE = "Module Access Request"
 ANY_STAFF = None
 ADMIN_ROLES = ("System Manager", "Administrator", "Desk User")
@@ -202,7 +204,7 @@ def submit_impl(module_id: str, module_label: str | None = None, note: str | Non
         }
     )
     doc.insert(ignore_permissions=True)
-    _route(doc, f"Review access to {label} for {doc.requester_name}", add_days(nowdate(), 3))  # provisional SLA
+    _route(doc, f"Review access to {label} for {doc.requester_name}", add_days(nowdate(), settings.get("decision_sla_days")))
     return to_api(_get(doc.name))
 
 

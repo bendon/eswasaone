@@ -15,6 +15,7 @@ vi.mock("../layout/InstitutionLayout", () => ({
 import { HrSummaryView } from "./HrSummaryView";
 import { HrSetup } from "../admin/HrSetup";
 import { BoardHrPack } from "../board/HrPack";
+import { settingsResponse } from "../test/hrSettings";
 
 const ORG = { counts: { employees: 86, departments: 10, vacant_positions: 0, filled_positions: 86 } };
 const LIVE = {
@@ -24,16 +25,17 @@ const LIVE = {
   attention: [
     { kind: "R-H2", count: 2, title: "2 contracts end within 60 days", detail: "Acknowledge in Approvals once handled.", due: "2026-10-01", href: "/hr/directory" },
     { kind: "leave", count: 1, title: "1 leave request waiting for a decision", detail: null, due: null, href: "/hr/time-off" },
+    { kind: "record_gaps", count: 1, title: "1 employee record has gaps", detail: "No line manager (1). Checked just now.", due: null, href: "/hr/directory" },
   ],
   away_today: [{ employee: "EMP-9", employee_name: "Thandi Nxumalo", leave_type: "Annual Leave", back_on: "2026-10-15" }],
-  movements: { joiners: 3, leavers: 1 }, turnover: { joiners: 12, leavers: 7, pct: 8.4 },
+  movements: { joiners: 3, leavers: 1 }, windows: { movement_days: 90, turnover_days: 365, contract_notice_days: 60, probation_notice_days: 30 }, turnover: { joiners: 12, leavers: 7, pct: 8.4 },
   ending_soon: { contracts: 2, probations: 1 }, record_quality: [{ field: "reports_to", label: "No line manager", count: 1 }], cycles: [],
 };
 const SETUP = {
   steps: [
     { id: "departments", title: "Departments and heads", state: "partial", detail: "10 departments, 7 with a head.", href: "/hr/structure?tab=departments", awaiting: null, desk: false },
-    { id: "leave", title: "Leave policy", state: "awaiting", detail: "4 leave types, 0 submitted leave policies.", href: "leave-policy", awaiting: "§0.5 #4", desk: true },
-    { id: "payroll", title: "Payroll scope", state: "excluded", detail: "Excluded until ESWASA decides whether payroll runs in EswasaOne.", href: null, awaiting: "H15, H16", desk: false },
+    { id: "leave", title: "Leave policy", state: "todo", detail: "4 leave types, 0 submitted leave policies.", href: "leave-policy", awaiting: null, desk: true },
+    { id: "payroll", title: "Payroll", state: "todo", detail: "0 salary structures, 0 employees assigned one.", href: "salary-structure", awaiting: null, desk: true },
   ],
   done: 0, total: 2, pct: 0,
 };
@@ -50,6 +52,8 @@ function stub(liveUp = true, org: unknown = ORG) {
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });
       if (url.includes("/hr/organisation/overview")) return json(org);
       if (url.includes("/hr/overview/live")) return liveUp ? json(LIVE) : json({ detail: "Frappe unavailable" }, 503);
@@ -94,29 +98,39 @@ describe("HR Overview", () => {
     expect(screen.getByText("Showing 1 of 1 department")).toBeInTheDocument();
   });
 
-  it("takes the headcount from the live overview when the organisation list comes back empty", async () => {
-    stub(true, { counts: { employees: 0, departments: 0, vacant_positions: 0, filled_positions: 0 } });
+  it("takes the headcount and its windows from the live overview only", async () => {
+    stub();
     mount(<HrSummaryView />);
     expect(await screen.findByText("86 active employees in 10 departments.")).toBeInTheDocument();
-    expect(screen.queryByText(/HR is not set up yet/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/not set up/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Last 90 days")).toBeInTheDocument();
   });
 
-  it("keeps the panels closed when the live overview can't be reached", async () => {
+  it("shows the error instead of zeros when the live overview can't be reached", async () => {
     stub(false);
     mount(<HrSummaryView />);
-    expect(await screen.findByText(/can't be reached, so these panels stay closed/)).toBeInTheDocument();
+    expect(await screen.findByText(/Frappe unavailable/)).toBeInTheDocument();
     expect(screen.queryByText("8.4%")).not.toBeInTheDocument();
+    expect(screen.queryByText(/No active employee records/)).not.toBeInTheDocument();
+  });
+
+  it("names what the records are missing instead of a fixed sentence", async () => {
+    stub();
+    mount(<HrSummaryView />);
+    expect(await screen.findByText("1 employee record has gaps")).toBeInTheDocument();
+    expect(screen.getByText("No line manager (1). Checked just now.")).toBeInTheDocument();
+    expect(screen.queryByText(/Checked nightly/)).not.toBeInTheDocument();
   });
 });
 
 describe("HR setup", () => {
-  it("shows each step's state, what ESWASA must supply, and payroll as excluded", async () => {
+  it("shows each step's state from live counts, with no waiting-on-ESWASA text", async () => {
     stub();
     mount(<HrSetup />);
     expect(await screen.findByText("Partly done")).toBeInTheDocument();
-    expect(screen.getByText(/ESWASA input: §0.5 #4/)).toBeInTheDocument();
-    expect(screen.getByText("Excluded")).toBeInTheDocument();
-    expect(screen.getByText("Payroll is out of scope for now")).toBeInTheDocument();
+    expect(screen.getAllByText("To do")).toHaveLength(2);
+    expect(screen.getByText("0 salary structures, 0 employees assigned one.")).toBeInTheDocument();
+    expect(screen.queryByText(/ESWASA input|Awaiting ESWASA|out of scope/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open" })).toHaveAttribute("href", "/hr/structure?tab=departments");
   });
 });

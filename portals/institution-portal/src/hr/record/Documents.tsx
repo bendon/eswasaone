@@ -14,7 +14,6 @@ import { errorText, fileUrl, hrSend, hrUpload } from "../api";
  */
 
 const ACCEPT = "application/pdf,image/jpeg,image/png";
-const MAX = 5 * 1024 * 1024;
 
 function pill(d: HrEmployeeDocument) {
   if (d.status === "Verified") return <StatusPill cls="ok" label="Verified" />;
@@ -40,7 +39,6 @@ export function DocumentsPanel({ base, canVerify = false, self = false }: { base
     setOk(null);
     if (!type) return setErr("Choose what kind of document this is.");
     if (!file) return setErr("Choose the file.");
-    if (file.size > MAX) return setErr(`${file.name} is larger than 5 MB.`);
     if (!ACCEPT.split(",").includes(file.type)) return setErr(`${file.name} isn't a PDF, JPEG or PNG.`);
     setBusy("upload");
     try {
@@ -77,9 +75,9 @@ export function DocumentsPanel({ base, canVerify = false, self = false }: { base
     <ResourceGate loading={res.loading} error={res.error} onRetry={res.reload} refreshing={res.refreshing} hasData={Boolean(d)}>
       <div className="hr-view">
         {d && !d.required_set ? (
-          <Banner kind="info" title="Required documents: awaiting ESWASA (H14)">
-            ESWASA HR hasn't listed which documents each kind of employment needs, so nothing shows as missing yet.
-          </Banner>
+          <p className="hr-note">
+            No employment type lists required documents yet, so nothing shows as missing. HR sets them on each Employment Type.
+          </p>
         ) : d?.missing.length ? (
           <Banner kind="warn" title={`${d.missing.length} required ${d.missing.length === 1 ? "document is" : "documents are"} missing`}>
             {d.missing.join(", ")}
@@ -142,7 +140,7 @@ export function DocumentsPanel({ base, canVerify = false, self = false }: { base
           <div className="hr-box__h">
             <div>
               <h3>Upload a document</h3>
-              <p>PDF, JPEG or PNG, up to 5 MB. Kept private: only HR and {self ? "you" : "the person"} can open it.</p>
+              <p>PDF, JPEG or PNG. Kept private: only HR and {self ? "you" : "the person"} can open it.</p>
             </div>
           </div>
           <div className="hr-box__b hr-view" style={{ gap: 10 }}>

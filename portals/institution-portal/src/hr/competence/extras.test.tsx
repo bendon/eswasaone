@@ -15,6 +15,7 @@ vi.mock("../../layout/InstitutionLayout", () => ({
 import { AuthorisationDetail } from "./AuthorisationDetail";
 import { ExternalPeople } from "./ExternalPeople";
 import { EvidencePack } from "./EvidencePack";
+import { settingsResponse } from "../../test/hrSettings";
 
 type Call = { url: string; method: string; body: unknown };
 let calls: Call[] = [];
@@ -28,6 +29,8 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       const body = init?.body instanceof FormData ? Object.fromEntries(init.body.entries()) : init?.body ? JSON.parse(String(init.body)) : undefined;
       calls.push({ url, method, body });
@@ -84,7 +87,7 @@ describe("External personnel (H5d)", () => {
   it("is off until ESWASA decides, with no add form", async () => {
     routes = [["GET /hr/external-people", { enabled: false, items: [] }]];
     at("/x", "/x", <ExternalPeople />);
-    expect(await screen.findByText(/waiting for ESWASA's decision \(H10\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/The external personnel register is off/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add external person" })).toBeNull();
   });
 

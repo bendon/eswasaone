@@ -4,9 +4,10 @@ import { apiFetch } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { useInstitution } from "../layout/InstitutionLayout";
-import type { HrTeam, HrTeamCalendar, HrTeamMemberDetail } from "../api/types";
+import type { HrSettings, HrTeam, HrTeamCalendar, HrTeamMemberDetail } from "../api/types";
 import { AuthPill } from "../hr/competence/shared";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill, Track } from "../me/parts";
+import { useHrSettings } from "../hr/useHrSettings";
 
 /**
  * My team (screens T1–T4): a line manager's direct and indirect reports. Live /hr/team only; job fields,
@@ -15,6 +16,7 @@ import { Banner, Crumbs, fmtDay, NextStep, StatusPill, Track } from "../me/parts
 
 export function TeamHome() {
   const { user, sessionKey } = useInstitution();
+  const rules = useHrSettings();
   const res = useApiResource<HrTeam>("/hr/team", { enabled: Boolean(user), refreshKey: sessionKey });
   const d = res.data;
   const due = (d?.members ?? []).filter((m) => m.direct && m.probation_review_due);
@@ -47,23 +49,23 @@ export function TeamHome() {
               <div className="hr-cards">
                 <Link className="hr-card" to="/approvals">
                   <span className="l">Waiting for you</span>
-                  <span className="v">{d.summary.waiting_for_you ?? 0}</span>
+                  <span className="v">{d.summary.waiting_for_you ?? "—"}</span>
                   <span className="d">Decisions and tasks in Approvals</span>
                 </Link>
                 <Link className="hr-card" to="/team/calendar">
                   <span className="l">Away today</span>
-                  <span className="v">{d.summary.away_today ?? 0}</span>
+                  <span className="v">{d.summary.away_today ?? "—"}</span>
                   <span className="d">On approved leave</span>
                 </Link>
                 <div className="hr-card">
                   <span className="l">Probation reviews due</span>
-                  <span className="v">{d.summary.probation_reviews_due ?? 0}</span>
-                  <span className="d">Within 30 days</span>
+                  <span className="v">{d.summary.probation_reviews_due ?? "—"}</span>
+                  <span className="d">{rules ? `Within ${rules.probation_notice_days} days` : "Coming up"}</span>
                 </div>
                 <div className="hr-card">
                   <span className="l">Contracts ending</span>
-                  <span className="v">{d.summary.contracts_ending ?? 0}</span>
-                  <span className="d">Within 60 days; HR decides with you</span>
+                  <span className="v">{d.summary.contracts_ending ?? "—"}</span>
+                  <span className="d">{rules ? `Within ${rules.contract_notice_days} days; HR decides with you` : "HR decides with you"}</span>
                 </div>
               </div>
 
@@ -133,19 +135,24 @@ function mondayOf(d: Date): Date {
 /** T2 Team calendar: two weeks of leave and field work. */
 export function TeamCalendar() {
   const { user, sessionKey } = useInstitution();
+  // Working days come from the company Holiday List's weekly offs (GET /hr/settings working_week, ISO 1 = Monday);
+  // when settings can't be read every day is shown rather than assuming a week.
+  const rulesRes = useApiResource<HrSettings>("/hr/settings", { enabled: Boolean(user), refreshKey: sessionKey });
+  const week = rulesRes.data?.working_week;
+  const weekKnown = !rulesRes.loading;
   const [start, setStart] = useState(() => mondayOf(new Date()));
   const days = useMemo(() => {
     const out: Date[] = [];
     for (let i = 0; i < 14; i++) {
       const x = new Date(start);
       x.setUTCDate(start.getUTCDate() + i);
-      if (x.getUTCDay() !== 0 && x.getUTCDay() !== 6) out.push(x);
+      if (!week || week.includes(x.getUTCDay() || 7)) out.push(x);
     }
     return out;
-  }, [start]);
+  }, [start, week]);
   const from = iso(days[0]);
   const to = iso(days[days.length - 1]);
-  const res = useApiResource<HrTeamCalendar>(`/hr/team/calendar?from_date=${from}&to_date=${to}`, { enabled: Boolean(user), refreshKey: sessionKey });
+  const res = useApiResource<HrTeamCalendar>(`/hr/team/calendar?from_date=${from}&to_date=${to}`, { enabled: Boolean(user) && weekKnown, refreshKey: sessionKey });
   const d = res.data;
 
   function cell(employee: string, day: string) {
@@ -273,7 +280,7 @@ export function TeamMember() {
                   </div>
                   <div>
                     <dt>Probation</dt>
-                    <dd>{m.on_probation ? `Review by ${fmtDay(m.scheduled_confirmation_date, true)}` : "Confirmed"}</dd>
+                    <dd>{m.on_probation ? `Review by ${fmtDay(m.scheduled_confirmation_date, true)}` : "Not on probation"}</dd>
                   </div>
                   <div>
                     <dt>Contract</dt>

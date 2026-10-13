@@ -29,14 +29,6 @@ export function fmtDateRange(from?: string | null, to?: string | null): string {
   return fmtDate(from || to);
 }
 
-export function dayCount(from?: string | null, to?: string | null): number {
-  if (!from || !to) return 1;
-  const a = Date.parse(from);
-  const b = Date.parse(to);
-  if (Number.isNaN(a) || Number.isNaN(b)) return 1;
-  return Math.max(1, Math.round((b - a) / 86_400_000) + 1);
-}
-
 export type StatusKind = "pend" | "done" | "rej" | "other";
 
 export function statusKind(status?: string | null): StatusKind {
@@ -49,29 +41,18 @@ export function statusKind(status?: string | null): StatusKind {
 }
 
 export function statusLabel(status?: string | null): string {
-  if (!status) return "Pending";
-  return status;
+  return status || "—";
 }
 
+/** "Annual Leave · 3 days" with HRMS's own count (holidays and half days included); no count when it sent none. */
 export function leaveRowTitle(item: HrLeaveSummary): string {
-  const days = dayCount(item.from_date, item.to_date);
-  return `${item.leave_type} · ${days} day${days === 1 ? "" : "s"}`;
+  const days = item.days;
+  return days == null ? item.leave_type : `${item.leave_type} · ${days} day${days === 1 ? "" : "s"}`;
 }
 
-export function fmtSzl(n: number | null | undefined): string {
-  if (n == null || Number.isNaN(n)) return "SZL —";
-  return `SZL ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-}
-
-export function ytdFromSlips(
-  items: Array<{ period?: string | null; net_pay?: number | null }>,
-  year = new Date().getFullYear(),
-): number {
-  return items.reduce((sum, s) => {
-    const p = s.period ?? "";
-    if (p.includes(String(year)) || (!p && year === new Date().getFullYear())) {
-      return sum + (Number(s.net_pay) || 0);
-    }
-    return sum;
-  }, 0);
+/** An amount in the given currency (the claim's own, else the company's); just the number when none is known. */
+export function fmtMoney(n: number | null | undefined, currency?: string | null): string {
+  if (n == null || Number.isNaN(n)) return "—";
+  const v = n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return currency ? `${currency} ${v}` : v;
 }

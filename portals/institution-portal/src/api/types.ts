@@ -203,9 +203,12 @@ export type HrLiveOverview = {
   attention: HrAttentionItem[];
   away_today: Array<{ employee?: string | null; employee_name?: string | null; leave_type?: string | null; back_on?: string | null }>;
   movements: { joiners: number; leavers: number };
+  /** Day windows behind movements, turnover and ending soon (HR Settings). */
+  windows?: { movement_days?: number; turnover_days?: number; contract_notice_days?: number; probation_notice_days?: number };
   turnover: HrTurnover;
   ending_soon: { contracts?: number; probations?: number };
   record_quality: Array<{ field: string; label: string; count: number }>;
+  record_checked_on?: string | null;
   cycles: HrCycleStatus[];
 };
 export type HrSetupStepState = "done" | "partial" | "todo" | "awaiting" | "excluded";
@@ -464,6 +467,7 @@ export type AnalyticsReportsResponse = { items: AnalyticsReportSummary[] };
 export type HrLeaveRequest = components["schemas"]["HrLeaveRequest"];
 export type HrLeaveRequests = components["schemas"]["HrLeaveRequests"];
 export type HrLeaveCalendar = components["schemas"]["HrLeaveCalendar"];
+export type HrSettings = components["schemas"]["HrSettings"];
 export type HrLeavePolicy = components["schemas"]["HrLeavePolicy"];
 export type HrEmployeeOptions = components["schemas"]["HrEmployeeOptions"];
 export type HrExpenseOptions = components["schemas"]["HrExpenseOptions"];

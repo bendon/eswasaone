@@ -16,10 +16,11 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any
 
+from eswasa_hr import settings
+
 from eswasa_hr.scope import employee_tree, report_tree  # noqa: F401  (report_tree re-exported for callers)
 
-PROBATION_NOTICE_DAYS = 30  # brief §4 R-H1
-CONTRACT_NOTICE_DAYS = 60  # brief §4 R-H2
+# R-H1 / R-H2 notice windows come from HR Settings (eswasa_hr.settings).
 OUTCOMES = ("confirm", "extend", "end")
 
 
@@ -37,12 +38,12 @@ def probation_due(scheduled: Any, final: Any, today: date) -> date | None:
     s = _d(scheduled)
     if not s or _d(final):
         return None
-    return s if s <= today + timedelta(days=PROBATION_NOTICE_DAYS) else None
+    return s if s <= today + timedelta(days=settings.get("probation_notice_days")) else None
 
 
 def contract_ending(end: Any, today: date) -> date | None:
     e = _d(end)
-    return e if e and today <= e <= today + timedelta(days=CONTRACT_NOTICE_DAYS) else None
+    return e if e and today <= e <= today + timedelta(days=settings.get("contract_notice_days")) else None
 
 
 def probation_errors(outcome: str, summary: str, extend_to: Any, scheduled: Any) -> list[str]:
@@ -192,8 +193,8 @@ def calendar_impl(from_date: str, to_date: str) -> dict[str, Any]:
     if not me:
         frappe.throw("Your login isn't linked to an employee record.", frappe.DoesNotExistError)
     start, end = _d(from_date), _d(to_date)
-    if not start or not end or end < start or (end - start).days > 62:
-        frappe.throw("Choose a range of up to two months.", frappe.ValidationError)
+    if not start or not end or end < start or (end - start).days > settings.get("calendar_max_days"):
+        frappe.throw(f"Choose a range of up to {settings.get('calendar_max_days')} days.", frappe.ValidationError)
     ids = _tree(me)
     names = {r["name"]: r["employee_name"] for r in frappe.get_all("Employee", filters={"name": ["in", ids or ["__none__"]]}, fields=["name", "employee_name", "user_id"], limit=0)}
     users = {r["user_id"]: r["name"] for r in frappe.get_all("Employee", filters={"name": ["in", ids or ["__none__"]]}, fields=["name", "user_id"], limit=0) if r.get("user_id")}
@@ -254,7 +255,7 @@ def probation_review_impl(employee: str, outcome: str, summary: str, extend_to: 
                     "reference_name": employee,
                     "status": "Open",
                     "priority": "High",
-                    "date": add_days(day, 3),
+                    "date": add_days(day, settings.get("decision_sla_days")),
                 }
             ).insert(ignore_permissions=True)
     return member_impl(employee)
@@ -269,7 +270,7 @@ def open_probation_reviews() -> int:
     created = 0
     for e in frappe.get_all(
         "Employee",
-        filters={"status": "Active", "scheduled_confirmation_date": ["<=", add_days(day, PROBATION_NOTICE_DAYS)], "final_confirmation_date": ["in", ["", None]]},
+        filters={"status": "Active", "scheduled_confirmation_date": ["<=", add_days(day, settings.get("probation_notice_days"))], "final_confirmation_date": ["in", ["", None]]},
         fields=["name", "employee_name", "reports_to", "scheduled_confirmation_date"],
         limit=0,
     ):

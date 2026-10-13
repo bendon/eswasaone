@@ -13,6 +13,7 @@ vi.mock("../layout/InstitutionLayout", () => ({
 }));
 
 import { ProbationReview, TeamCalendar, TeamHome, TeamMember } from "./Team";
+import { settingsResponse } from "../test/hrSettings";
 
 const BONGANI = { employee: "EMP-79", employee_name: "Bongani Dlamini", designation: "Certification Officer", department: "Certification",
   direct: true, on_probation: true, probation_review_due: "2026-10-31", contract_ends: null, away_today: null, date_of_joining: "2026-05-04" };
@@ -29,6 +30,8 @@ function stub(team: unknown = TEAM) {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });

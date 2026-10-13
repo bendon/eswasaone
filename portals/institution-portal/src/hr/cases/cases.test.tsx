@@ -14,6 +14,7 @@ vi.mock("../../layout/InstitutionLayout", () => ({
 
 import { CaseDetail, CaseNew, CasesView } from "./Cases";
 import { RaiseConcern } from "../../me/RaiseConcern";
+import { settingsResponse } from "../../test/hrSettings";
 
 const OWNERS = [{ user: "hrm@x", name: "Nokuthula Shongwe" }, { user: "ed@x", name: "Executive Director" }];
 const REGISTER = {
@@ -35,6 +36,8 @@ function stub() {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });

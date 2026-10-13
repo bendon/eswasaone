@@ -18,7 +18,6 @@ from typing import Any
 
 FORMAT = "Certificate of Service"
 TERMS = "Certificate of service"  # Terms and Conditions record holding ESWASA HR's wording
-WORDING_AWAITING = "Certificate wording: awaiting ESWASA HR."
 FIELDS = ("employee_name", "employee_number", "designation", "date_of_joining", "relieving_date", "status")
 NEVER = ("ctc", "salary_currency", "salary_mode", "bank_name", "bank_ac_no", "iban", "reason_for_leaving", "custom_reason")
 
@@ -66,7 +65,7 @@ def certificate_context(employee: dict[str, Any], posts: list[dict[str, Any]], w
         "still_employed": not employee.get("relieving_date") or employee.get("status") == "Active",
         "posts": posts,
         "wording": wording,
-        "wording_awaiting": None if wording else WORDING_AWAITING,
+        "wording_awaiting": None,
         "signatory": signatory,
         "signatory_awaiting": signatory_awaiting,
     }

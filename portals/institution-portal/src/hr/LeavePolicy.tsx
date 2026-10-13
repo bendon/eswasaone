@@ -4,7 +4,7 @@ import { useInstitution } from "../layout/InstitutionLayout";
 import type { HrLeavePolicy } from "../api/types";
 import { Banner, Crumbs, fmtDay } from "../me/parts";
 
-/** H4b Leave policy: the leave types and entitlements in force, read-only. Live GET /hr/leave/policy (H14). */
+/** H4b Leave policy: the leave types and entitlements in force, read-only. Live GET /hr/leave/policy. */
 
 type PolicyType = HrLeavePolicy["leave_types"][number] & Record<string, unknown>;
 
@@ -50,8 +50,8 @@ export function LeavePolicyView() {
         </div>
 
         {!d?.configured ? (
-          <Banner kind="warn" title={`Awaiting ESWASA${d?.awaiting ? ` (${d.awaiting})` : ""}`}>
-            ESWASA HR hasn't confirmed its leave types, entitlements and carry-over yet. Nothing is assumed until it does.
+          <Banner kind="info" title="No leave policy yet">
+            No leave types with entitlements are set up, so nothing is assumed. Add leave types and a leave policy in HR setup.
           </Banner>
         ) : null}
 

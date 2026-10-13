@@ -38,10 +38,12 @@ function stClass(bucket: StatusFilter): string {
   return "leave";
 }
 
+const PAGE = 200; // directory rows loaded at once
+
 export function EmployeesView() {
   const { openAuth, user, sessionKey } = useInstitution();
   const { data, loading, refreshing, error, authRequired, reload } = useApiResource<HrEmployeesResponse>(
-    "/hr/employees?limit=200",
+    `/hr/employees?limit=${PAGE}`,
     { enabled: Boolean(user), refreshKey: sessionKey },
   );
 
@@ -205,7 +207,7 @@ export function EmployeesView() {
             <div>
               <h2>Directory</h2>
               <p>
-                {items.length} {items.length === 1 ? "person" : "people"} on record
+                {items.length >= PAGE ? `The first ${PAGE} people on record` : `${items.length} ${items.length === 1 ? "person" : "people"} on record`}
                 {filtered.length !== items.length ? `, ${filtered.length} shown` : ""}.
               </p>
             </div>

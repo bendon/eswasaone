@@ -123,7 +123,7 @@ def _leave(employee: str, day: date) -> dict[str, Any]:
     try:
         balances = balances_impl(employee)
     except frappe.PermissionError:
-        balances = {"items": [], "awaiting": "H14"}
+        balances = {"items": [], "awaiting": None}
     rows = frappe.get_all(
         "Leave Application",
         filters={"employee": employee, "status": "Approved", "docstatus": 1, "to_date": [">=", day]},

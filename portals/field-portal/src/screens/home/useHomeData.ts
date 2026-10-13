@@ -4,21 +4,13 @@ import { useAuth } from "../../auth/AuthProvider";
 import { readSnapshot, writeSnapshot } from "../../lib/localSnapshot";
 import { companyOf, schemeLabel } from "../audits/api";
 import type { FieldAuditRow } from "../audits/types";
-import {
-  EMPTY_ME_GLANCE,
-  type MeGlance,
-  type NextAudit,
-  type ScheduleItem,
-} from "./mockData";
+import { EMPTY_ME_GLANCE, type MeGlance, type NextAudit, type ScheduleItem } from "./homeTypes";
 
 const AUDITS_PATH = "/certification/audits?limit=50";
 const BALANCES_PATH = "/hr/leave/balances";
 
 type LeaveBalances = {
-  annual?: number | null;
-  sick?: number | null;
-  study?: number | null;
-  items?: Array<{ leave_type?: string; balance?: number }>;
+  items?: Array<{ leave_type?: string; allocated?: number; balance?: number }>;
 };
 
 function pickNext(rows: FieldAuditRow[]): NextAudit | null {
@@ -27,10 +19,10 @@ function pickNext(rows: FieldAuditRow[]): NextAudit | null {
   return {
     id: a.id,
     company: companyOf(a),
-    standard: a.scheme || "ISO",
-    stage: a.stage || a.status || "Visit",
-    time: a.time_label || "—",
-    location: a.location || "TBD",
+    standard: a.scheme || null,
+    stage: a.stage || a.status || null,
+    time: a.time_label || null,
+    location: a.location || null,
     whenLabel: a.due_date ? `DUE ${a.due_date}` : "SCHEDULED",
     mapsQuery: `${companyOf(a)}${a.location ? `, ${a.location}` : ""}`,
   };
@@ -45,11 +37,12 @@ function toSchedule(rows: FieldAuditRow[]): ScheduleItem[] {
   }));
 }
 
+/** The leave type with the largest allocation (the main entitlement), as HR named it. */
 function balancesToGlance(b: LeaveBalances | null): MeGlance {
-  if (!b) return EMPTY_ME_GLANCE;
-  if (typeof b.annual === "number") return { leaveDaysLeft: b.annual };
-  const annual = b.items?.find((i) => /annual/i.test(i.leave_type || ""))?.balance;
-  return { leaveDaysLeft: typeof annual === "number" ? annual : null };
+  const items = (b?.items ?? []).filter((i) => typeof i.balance === "number");
+  if (!items.length) return EMPTY_ME_GLANCE;
+  const main = items.reduce((a, c) => ((c.allocated ?? 0) > (a.allocated ?? 0) ? c : a));
+  return { leaveDaysLeft: main.balance ?? null, leaveType: main.leave_type ?? null };
 }
 
 /**
@@ -59,12 +52,11 @@ export function useHomeData() {
   const { user } = useAuth();
   const [next, setNext] = useState<NextAudit | null>(() => {
     const snap = readSnapshot<{ items: FieldAuditRow[] }>(AUDITS_PATH);
-    return (snap && pickNext(snap.data.items ?? [])) || null;
+    return snap ? pickNext(snap.data.items ?? []) : null;
   });
   const [schedule, setSchedule] = useState<ScheduleItem[]>(() => {
     const snap = readSnapshot<{ items: FieldAuditRow[] }>(AUDITS_PATH);
-    const rows = snap?.data.items ?? [];
-    return rows.length ? toSchedule(rows) : [];
+    return toSchedule(snap?.data.items ?? []);
   });
   const [me, setMe] = useState<MeGlance>(() => {
     const snap = readSnapshot<LeaveBalances>(`${user?.username ?? "guest"}:${BALANCES_PATH}`);
@@ -80,9 +72,8 @@ export function useHomeData() {
       const audits = await apiFetch<{ items: FieldAuditRow[] }>(AUDITS_PATH);
       writeSnapshot(AUDITS_PATH, audits);
       const rows = audits.items ?? [];
-      const n = pickNext(rows);
-      if (n) setNext(n);
-      if (rows.length) setSchedule(toSchedule(rows));
+      setNext(pickNext(rows));
+      setSchedule(toSchedule(rows));
       gotNetwork = true;
     } catch (e) {
       if (!(e instanceof AuthError)) {

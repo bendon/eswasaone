@@ -8,6 +8,7 @@ import { useInstitution } from "../../layout/InstitutionLayout";
 import { errorText, hrSend } from "../api";
 import type { HrCase, HrCaseKind, HrCaseRegister, HrEmployeesResponse } from "../../api/types";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill } from "../../me/parts";
+import { useHrSettings } from "../useHrSettings";
 
 /**
  * Cases (journey J10; screens H10, H10a). Grievances (HRMS Employee Grievance) and disciplinary cases. Only HR
@@ -243,6 +244,8 @@ export function CaseNew() {
 export function CaseDetail() {
   const { kind = "", id = "" } = useParams();
   const { user, sessionKey } = useInstitution();
+  // Stages that close a case of this kind (eswasa_hr.cases.CLOSED), from GET /hr/settings.
+  const closedStages = useHrSettings()?.lists.case_closed?.[kind] ?? [];
   const res = useApiResource<HrCase>(caseUrl(kind, id), { enabled: Boolean(user), refreshKey: sessionKey });
   const [c, setC] = useState<HrCase | null>(null);
   const [to, setTo] = useState("");
@@ -272,8 +275,8 @@ export function CaseDetail() {
     }
   }
 
-  const needsOutcome = ["Outcome issued", "Resolved", "Invalid"].includes(to);
-  const closing = ["Closed", "Resolved", "Invalid"].includes(to);
+  const closing = closedStages.includes(to);
+  const needsOutcome = to === "Outcome issued" || (closing && to !== "Closed" && to !== "Cancelled");
   const ready = to && note.trim() && (!needsOutcome || outcome.trim()) && (to !== "Appeal" || appealOwner);
   const appealOwners = (c?.owners ?? []).filter((o) => o.user !== c?.decided_by);
 
@@ -296,7 +299,7 @@ export function CaseDetail() {
             <Banner kind="lock" title="Restricted">
               {LOCK}
             </Banner>
-            {(user?.roles ?? []).includes("HR Manager") && !["Closed", "Resolved", "Invalid"].includes(c.stage) ? (
+            {(user?.roles ?? []).includes("HR Manager") && !closedStages.includes(c.stage) ? (
               <ReassignOwner url={caseUrl(kind, id)} c={c} onDone={setC} />
             ) : null}
             <ol className="hr-steps" aria-label="Stages">
@@ -480,7 +483,7 @@ export function CaseDetail() {
                 </button>
               </div>
             ) : null}
-            {c.kind === "disciplinary" && !["Appeal", "Closed"].includes(c.stage) ? (
+            {c.kind === "disciplinary" && c.stage !== "Appeal" && !closedStages.includes(c.stage) ? (
               <Banner kind="info" title="If there is an appeal">
                 It goes to someone other than whoever issued the outcome.
               </Banner>

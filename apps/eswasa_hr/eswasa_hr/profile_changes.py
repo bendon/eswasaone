@@ -16,6 +16,8 @@ from __future__ import annotations
 
 from typing import Any, Iterable
 
+from eswasa_hr import settings
+
 DOCTYPE = "Profile Change Request"
 DECIDERS = ("HR Manager", "HR User", "System Manager")
 PENDING, APPROVED, REJECTED = "Pending", "Approved", "Rejected"
@@ -182,7 +184,7 @@ def submit_impl(field: str, requested_value: str, reason: str, evidence: str | N
                 "status": "Open",
                 "priority": "Medium",
                 "assigned_by": frappe.session.user,
-                "date": add_days(nowdate(), 3),  # provisional 3-day SLA (registry hr_profile_change_request)
+                "date": add_days(nowdate(), settings.get("decision_sla_days")),  # provisional 3-day SLA (registry hr_profile_change_request)
             }
         ).insert(ignore_permissions=True)
     return to_api({**values, "name": doc.name})

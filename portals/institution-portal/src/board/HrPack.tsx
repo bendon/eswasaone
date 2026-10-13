@@ -61,27 +61,29 @@ export function BoardHrPack() {
               detail={est?.approved ? `${Math.round((est.filled / est.approved) * 100)}% of the approved establishment` : "No approved establishment loaded yet"}
             />
             <Card
-              label="Turnover, 12 months"
+              label="Turnover"
               value={d.turnover.pct != null ? `${d.turnover.pct}%` : "—"}
               detail={`${d.turnover.leavers} leavers, ${d.turnover.joiners} joiners`}
             />
             <Card label="Vacancies" value={est ? est.vacant : "—"} detail={est ? `${est.in_recruitment} in recruitment, ${est.frozen} frozen` : "From the approved establishment"} />
             <Card
               label="Competence cover"
-              value={d.competence ? <>{d.competence.at_risk ?? 0} <small>at risk</small></> : "—"}
-              detail={d.competence ? `Competences with one or no holder, of ${d.competence.catalogue ?? 0}` : "No competence catalogue yet"}
+              value={d.competence?.at_risk != null ? <>{d.competence.at_risk} <small>at risk</small></> : "—"}
+              detail={d.competence?.catalogue != null ? `Competences with thin cover, of ${d.competence.catalogue}` : "No competence catalogue yet"}
             />
             <Card
               label="Appraisals"
               value={appr && appr.people ? `${Math.round((appr.manager_done / appr.people) * 100)}%` : "—"}
-              detail={appr ? `Manager reviews done, ${appr.cycle_name}${appr.end_date ? `, closes ${fmtDay(appr.end_date, true)}` : ""}` : "No appraisal cycle in the last quarter"}
+              detail={appr ? `Manager reviews done, ${appr.cycle_name}${appr.end_date ? `, closes ${fmtDay(appr.end_date, true)}` : ""}` : "No recent appraisal cycle"}
             />
             <Card
               label="Cases"
               value={openCases ?? "—"}
               detail={
                 cases
-                  ? `${cases.map((c) => `${c.open} ${KIND[c.kind] ?? c.kind}`).join(", ")} open${days.length ? `. ${Math.round(days.reduce((a, b) => a + b, 0) / days.length)} days average to close` : ""}`
+                  ? `${cases.map((c) => `${c.open} ${KIND[c.kind] ?? c.kind}`).join(", ")} open${
+                      days.length ? `. Average days to close: ${cases.filter((c) => c.avg_days_to_close != null).map((c) => `${KIND[c.kind] ?? c.kind} ${c.avg_days_to_close}`).join(", ")}` : ""
+                    }`
                   : "Not recorded yet"
               }
             />

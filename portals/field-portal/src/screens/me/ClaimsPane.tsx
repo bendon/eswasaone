@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { AuthError, DateField, Icon, Select, uploadMedia, useDialogs, validateUpload } from "@eswasaone/shared-ui";
 import { errorText, submitClaim } from "./api";
-import { fmtDate, fmtSzl, statusKind, statusLabel } from "./helpers";
+import { fmtDate, fmtMoney, statusKind, statusLabel } from "./helpers";
+import { useHrSettings } from "./useHrSettings";
 import type { HrExpenseClaims, HrExpenseOptions } from "./types";
 import { useMeResource } from "./useMeResource";
 
@@ -27,6 +28,7 @@ export function ClaimsPane({ enabled = true, refreshKey = "", onAuthRequired }: 
   const dialogs = useDialogs();
   const claimsRes = useMeResource<HrExpenseClaims>("/hr/me/expense-claims", { enabled, refreshKey });
   const optsRes = useMeResource<HrExpenseOptions>("/hr/me/expense-claims/options", { enabled, refreshKey });
+  const currency = useHrSettings(enabled, refreshKey)?.currency ?? null;
   const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [lines, setLines] = useState<Line[]>([blankLine()]);
@@ -59,9 +61,9 @@ export function ClaimsPane({ enabled = true, refreshKey = "", onAuthRequired }: 
       if (!l.expense_date) return `${which}give the date of the expense.`;
       if (l.expense_date > today) return `${which}the date can't be in the future.`;
       if (!Number.isFinite(n) || n <= 0) return `${which}the amount must be more than 0.`;
-      if (needsReceipt(n) && !l.receipt) return `${which}attach the receipt${above != null ? ` (needed above ${fmtSzl(above)})` : ""}.`;
+      if (needsReceipt(n) && !l.receipt) return `${which}attach the receipt${above != null ? ` (needed above ${fmtMoney(above, currency)})` : ""}.`;
       if (l.receipt) {
-        const bad = validateUpload(l.receipt, { maxBytes: 5 * 1024 * 1024, accept: RECEIPT_ACCEPT });
+        const bad = validateUpload(l.receipt, { accept: RECEIPT_ACCEPT });
         if (bad) return `${which}${bad}`;
       }
     }
@@ -73,7 +75,7 @@ export function ClaimsPane({ enabled = true, refreshKey = "", onAuthRequired }: 
     const bad = problems();
     if (bad) return setErr(bad);
     const total = lines.reduce((s, l) => s + Number(l.amount), 0);
-    const ok = await dialogs.confirm({ title: "Send expense claim", message: `Send a claim for ${fmtSzl(total)} to your expense approver?`, confirmLabel: "Send" });
+    const ok = await dialogs.confirm({ title: "Send expense claim", message: `Send a claim for ${fmtMoney(total, currency)} to your expense approver?`, confirmLabel: "Send" });
     if (!ok) return;
     setBusy(true);
     try {
@@ -121,7 +123,7 @@ export function ClaimsPane({ enabled = true, refreshKey = "", onAuthRequired }: 
       ) : null}
       {awaiting ? (
         <div className="field-card">
-          <p className="field-muted">Expense claims open once ESWASA Finance sets up the expense types.</p>
+          <p className="field-muted">Expense claims open once Finance adds the expense types you can claim.</p>
         </div>
       ) : !showForm ? (
         <button
@@ -164,7 +166,7 @@ export function ClaimsPane({ enabled = true, refreshKey = "", onAuthRequired }: 
                 <DateField value={l.expense_date} onChange={(v) => setLine(i, { expense_date: v })} ariaLabel={`Date of expense ${i + 1}`} required disabled={busy} />
               </label>
               <label className="me-field">
-                <span>Amount (SZL)</span>
+                <span>Amount{currency ? ` (${currency})` : ""}</span>
                 <input type="number" min="0.01" step="0.01" value={l.amount} onChange={(e) => setLine(i, { amount: e.target.value })} required disabled={busy} />
               </label>
               <label className="me-field">
@@ -172,7 +174,7 @@ export function ClaimsPane({ enabled = true, refreshKey = "", onAuthRequired }: 
                 <input type="text" value={l.description} onChange={(e) => setLine(i, { description: e.target.value })} disabled={busy} />
               </label>
               <label className="me-field">
-                <span>Receipt (PDF, JPEG or PNG){above != null ? `, needed above ${fmtSzl(above)}` : ", needed"}</span>
+                <span>Receipt (PDF, JPEG or PNG){above != null ? `, needed above ${fmtMoney(above, currency)}` : ", needed"}</span>
                 <input type="file" accept={RECEIPT_ACCEPT} onChange={(e) => setLine(i, { receipt: e.target.files?.[0] ?? null })} disabled={busy} />
               </label>
               {lines.length > 1 ? (
@@ -234,7 +236,7 @@ export function ClaimsPane({ enabled = true, refreshKey = "", onAuthRequired }: 
               <div className="me-row__b">
                 <b>{item.description || item.id}</b>
                 <span className="mono">
-                  {fmtSzl(item.total)}
+                  {fmtMoney(item.total, item.currency ?? currency)}
                   {item.posting_date ? ` · ${fmtDate(item.posting_date)}` : ""}
                   {item.approver && item.approval_status === "Draft" ? ` · ${item.approver} decides` : ""}
                 </span>

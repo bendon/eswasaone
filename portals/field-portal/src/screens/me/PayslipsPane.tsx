@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon, Toast } from "@eswasaone/shared-ui";
-import { fmtSzl, ytdFromSlips } from "./helpers";
+import { fmtMoney } from "./helpers";
+import { useHrSettings } from "./useHrSettings";
 import type { HrPayslip, HrSlipsResponse } from "./types";
 import { useMeResource } from "./useMeResource";
 
@@ -24,7 +25,7 @@ export function PayslipsPane({ enabled, refreshKey, onAuthRequired }: Props) {
   }, [slipsRes.authRequired, slipsRes.error, onAuthRequired]);
 
   const items = (slipsRes.data?.items ?? []) as SlipWithUrl[];
-  const ytd = useMemo(() => ytdFromSlips(items), [items]);
+  const currency = useHrSettings(enabled, refreshKey)?.currency ?? null;
 
   function download(slip: SlipWithUrl) {
     const url = slip.pdf_url;
@@ -32,20 +33,12 @@ export function PayslipsPane({ enabled, refreshKey, onAuthRequired }: Props) {
       window.open(url, "_blank", "noopener,noreferrer");
       return;
     }
-    // HrPayslip has no PDF link yet (payroll is out of scope until ESWASA decides H15).
     setToast(`No PDF for ${slip.period || slip.id} yet. Ask HR for a copy.`);
   }
 
   return (
     <div className="me-pane">
       <Toast message={toast} />
-
-      {ytd > 0 ? (
-        <div className="field-card me-ytd">
-          <div className="me-ytd__lbl">Net pay this year (from your slips)</div>
-          <div className="me-ytd__n mono">{fmtSzl(ytd)}</div>
-        </div>
-      ) : null}
 
       <div className="me-sec-h">Payslips</div>
       {slipsRes.loading && !slipsRes.data ? (
@@ -63,7 +56,7 @@ export function PayslipsPane({ enabled, refreshKey, onAuthRequired }: Props) {
               </span>
               <div className="me-row__b">
                 <b>{slip.period || slip.id}</b>
-                <span className="mono">{fmtSzl(slip.net_pay)} net</span>
+                <span className="mono">{fmtMoney(slip.net_pay, currency)} net</span>
               </div>
               <button
                 type="button"

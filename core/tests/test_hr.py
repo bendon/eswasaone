@@ -139,7 +139,7 @@ async def test_hr_patch_employee_confirm_false_400(
 
 
 @pytest.mark.asyncio
-async def test_hr_employees_list_soft_empty(
+async def test_hr_employees_list_permission_error_is_not_an_empty_list(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     async def _ok_health(self: FrappeClient) -> bool:
@@ -161,8 +161,7 @@ async def test_hr_employees_list_soft_empty(
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             resp = await client.get("/api/hr/employees", params={"q": "Thandi"})
-        assert resp.status_code == 200, resp.text
-        assert resp.json()["items"] == []
+        assert resp.status_code == 403, resp.text
     finally:
         app.dependency_overrides.clear()
 
@@ -176,7 +175,7 @@ async def test_hr_leave_balances_empty_without_a_leave_policy(
 
     async def _method(self: FrappeClient, method: str, **kwargs: Any) -> Any:
         if method == "eswasa_hr.leave.balances":
-            return {"employee": "EMP-1", "items": [], "owed": None, "above_carry_over": None, "awaiting": "H14"}
+            return {"employee": "EMP-1", "items": [], "owed": None, "above_carry_over": None, "awaiting": None}
         raise AssertionError(f"unexpected {method}")
 
     monkeypatch.setattr(FrappeClient, "health", _ok_health)
@@ -197,7 +196,7 @@ async def test_hr_leave_balances_empty_without_a_leave_policy(
 
 
 @pytest.mark.asyncio
-async def test_hr_organisation_overview_soft_empty_on_permission(
+async def test_hr_organisation_overview_permission_error_passes_through(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     async def _ok_health(self: FrappeClient) -> bool:
@@ -219,26 +218,14 @@ async def test_hr_organisation_overview_soft_empty_on_permission(
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             resp = await client.get("/api/hr/organisation/overview")
-        assert resp.status_code == 200, resp.text
-        body = resp.json()
-        assert body["organisation"] is None
-        assert body["departments"] == []
-        assert body["designations_preview"] == []
-        assert body["designations_total"] == 0
-        assert body["locations"] == []
-        assert body["cost_centres"] == []
-        assert body["counts"]["employees"] == 0
-        assert body["counts"]["departments"] == 0
-        assert body["setup"]["steps_total"] == 7
-        assert body["setup"]["steps_completed"] == 0
-        assert body["setup"]["completion_pct"] == 0.0
-        assert body["payroll"]["ready"] is False
+        # Never zeros that aren't true: the screen shows the error instead of "HR is not set up".
+        assert resp.status_code == 403, resp.text
     finally:
         app.dependency_overrides.clear()
 
 
 @pytest.mark.asyncio
-async def test_hr_organisation_overview_soft_empty_when_frappe_down(
+async def test_hr_organisation_overview_503_when_frappe_down(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     async def _bad_health(self: FrappeClient) -> bool:
@@ -254,11 +241,7 @@ async def test_hr_organisation_overview_soft_empty_when_frappe_down(
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             resp = await client.get("/api/hr/organisation/overview")
-        assert resp.status_code == 200, resp.text
-        body = resp.json()
-        assert body["organisation"] is None
-        assert body["departments"] == []
-        assert body["payroll"]["ready"] is False
+        assert resp.status_code == 503, resp.text
     finally:
         app.dependency_overrides.clear()
 
@@ -274,3 +257,62 @@ async def test_hr_create_department_confirm_false_400(
     )
     assert resp.status_code == 400
     assert "confirm" in resp.json()["detail"].lower()
+
+_SETTINGS = {
+    "leave_sla_days": 2, "expense_sla_days": 3, "decision_sla_days": 3, "head_sla_days": 5, "interview_feedback_days": 1,
+    "offer_reply_days": 5, "contract_notice_days": 60, "probation_notice_days": 30, "expiry_alert_days": [60, 30, 7],
+    "thin_cover": 1, "declaration_handoff_days": 10, "movement_days": 90, "turnover_days": 365, "cycle_warn_days": 14,
+    "appraisal_reminder_days": [10, 3], "calendar_max_days": 62, "rating_max": 5,
+    "hr_email": "info@swasa.co.sz", "currency": "SZL", "working_week": [1, 2, 3, 4, 5],
+    "lists": {"evidence_types": ["File"], "case_stages": {"grievance": ["Open", "Resolved"]}},
+}
+
+
+@pytest.mark.asyncio
+async def test_hr_settings_come_from_eswasa_hr(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def _ok_health(self: FrappeClient) -> bool:
+        return True
+
+    async def _method(self: FrappeClient, method: str, **kwargs: Any) -> Any:
+        if method == "eswasa_hr.settings.settings":
+            return _SETTINGS
+        raise AssertionError(f"unexpected {method}")
+
+    monkeypatch.setattr(FrappeClient, "health", _ok_health)
+    monkeypatch.setattr(FrappeClient, "method", _method)
+
+    async def _override() -> AuthContext:
+        return _ctx()
+
+    app.dependency_overrides[require_auth] = _override
+    try:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/api/hr/settings")
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["expiry_alert_days"] == [60, 30, 7]
+        assert body["lists"]["case_stages"]["grievance"] == ["Open", "Resolved"]
+        assert body["lists"]["external_roles"] == []
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_hr_settings_503_when_frappe_down(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def _bad_health(self: FrappeClient) -> bool:
+        return False
+
+    monkeypatch.setattr(FrappeClient, "health", _bad_health)
+
+    async def _override() -> AuthContext:
+        return _ctx()
+
+    app.dependency_overrides[require_auth] = _override
+    try:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/api/hr/settings")
+        assert resp.status_code == 503, resp.text
+    finally:
+        app.dependency_overrides.clear()

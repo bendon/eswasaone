@@ -22,13 +22,13 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Iterable
 
+from eswasa_hr import settings
+
 from eswasa_hr.workdays import add_working_days  # noqa: F401  (re-exported: slice 1 callers use leave.add_working_days)
 
 DOCTYPE = "Leave Application"
-# Brief §12.1 proposal (2 working days, then the named HR Managers). Provisional: confirm with ESWASA.
-SLA_WORKING_DAYS = 2
+# Decision SLA (working days, then the named HR Managers): HR Settings ``leave_sla_days``.
 ESCALATED = "[escalated]"  # description prefix of the HR Manager's escalation ToDo
-MAX_CALENDAR_DAYS = 62
 RULE_APPROVER = "Leave approver"  # HR Alert rules
 RULE_CANCELLED = "Leave cancelled"
 RULE_COVER = "Leave cover"
@@ -153,9 +153,9 @@ def range_error(start: Any, end: Any) -> str | None:
     try:
         a, b = _as_date(start), _as_date(end)
     except (TypeError, ValueError):
-        return "Choose a range of up to two months."
-    if b < a or (b - a).days > MAX_CALENDAR_DAYS:
-        return "Choose a range of up to two months."
+        return f"Choose a range of up to {settings.get('calendar_max_days')} days."
+    if b < a or (b - a).days > settings.get("calendar_max_days"):
+        return f"Choose a range of up to {settings.get('calendar_max_days')} days."
     return None
 
 
@@ -274,7 +274,7 @@ POLICY_FIELDS = (
 
 
 def policy_view(types: list[dict[str, Any]], details: list[dict[str, Any]], periods: list[dict[str, Any]]) -> dict[str, Any]:
-    """Brief §5.2, read-only. Nothing configured means "Awaiting ESWASA leave policy (H14)", never defaults."""
+    """Brief §5.2, read-only. Nothing configured means empty lists, never defaults."""
     per_type: dict[str, list[dict[str, Any]]] = {}
     for d in details:
         per_type.setdefault(d.get("leave_type"), []).append({"policy": d.get("parent"), "annual_allocation": _num(d.get("annual_allocation"))})
@@ -283,7 +283,7 @@ def policy_view(types: list[dict[str, Any]], details: list[dict[str, Any]], peri
     configured = bool(leave_types and details)
     return {
         "configured": configured,
-        "awaiting": None if configured else "H14",
+        "awaiting": None,
         "leave_period": {"name": period.get("name"), "from_date": str(period.get("from_date"))[:10], "to_date": str(period.get("to_date"))[:10]} if period else None,
         "leave_types": leave_types,
     }
@@ -360,7 +360,7 @@ def sync_todo(doc: Any, method: str | None = None) -> None:
                 "status": "Open",
                 "priority": "Medium",
                 "assigned_by": applicant or frappe.session.user,
-                "date": add_working_days(_today(), SLA_WORKING_DAYS, _holidays(doc.employee)).isoformat(),
+                "date": add_working_days(_today(), settings.get("leave_sla_days"), _holidays(doc.employee)).isoformat(),
             }
         ).insert(ignore_permissions=True)
     _approver_alert(doc, applicant, still_open)
@@ -678,14 +678,14 @@ def calendar_impl(start: str, end: str, department: str | None = None) -> dict[s
 
 def balances_impl(employee: str | None = None) -> dict[str, Any]:
     """Balances from the Leave Ledger (HRMS get_leave_details), for yourself or someone you can see.
-    No Leave Period or allocation: empty items and None totals, so the screen says "Awaiting ESWASA (H14)"."""
+    No Leave Period or allocation: empty items and None totals, so the screen says nothing is allocated yet."""
     import frappe
 
     from eswasa_hr.scope import viewer_for
 
     v = viewer_for()
     employee = employee or v.employee or (frappe.db.get_value("Employee", {"user_id": v.user}, "name") if v.hr else None)
-    empty = {"employee": employee, "items": [], "owed": None, "above_carry_over": None, "awaiting": "H14"}
+    empty = {"employee": employee, "items": [], "owed": None, "above_carry_over": None, "awaiting": None}
     if not employee:
         return empty
     if not v.hr and employee not in v.people:

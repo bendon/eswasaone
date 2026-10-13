@@ -211,9 +211,6 @@ export function Declaration() {
                   <blockquote className="hr-banner" style={{ margin: 0, display: "block" }}>
                     {d.confidentiality_text}
                   </blockquote>
-                  {!d.wording_confirmed ? (
-                    <p className="hr-note">ESWASA is confirming this wording. If it changes, you'll be asked to sign again.</p>
-                  ) : null}
                   <label className="hr-radio">
                     <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
                     <span>

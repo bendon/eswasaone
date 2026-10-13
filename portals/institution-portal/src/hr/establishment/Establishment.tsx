@@ -17,6 +17,7 @@ import type {
   HrGradeBandsResponse,
 } from "../../api/types";
 import { Banner, Crumbs, fmtDay, NextStep, StatusPill, Track } from "../../me/parts";
+import { useHrSettings } from "../useHrSettings";
 
 /**
  * Establishment (journey J11; screens H3, H3a, H3b). Approved posts come from submitted Staffing Plans.
@@ -30,18 +31,20 @@ const deptPath = (d: string) => `${BASE}/departments/${encodeURIComponent(d)}`;
 const changePath = (id: string) => `${BASE}/changes/${encodeURIComponent(id)}`;
 
 const CHANGE_CHOICES: Array<{ value: HrEstChangeKind; title: string; detail: string }> = [
-  { value: "Add", title: "Add posts", detail: "More approved posts. Goes to the Council after the Executive Director." },
+  { value: "Add", title: "Add posts", detail: "More approved posts." },
   { value: "Remove", title: "Remove posts", detail: "Only empty posts that aren't being recruited." },
   { value: "Freeze", title: "Freeze posts", detail: "Keep vacant posts approved but stop recruiting to them." },
   { value: "Unfreeze", title: "Unfreeze posts", detail: "Frozen posts can be recruited to again." },
-  { value: "Regrade", title: "Regrade the post", detail: "Move the designation to another grade. Goes to the Council." },
+  { value: "Regrade", title: "Regrade the post", detail: "Move the designation to another grade." },
 ];
 
 export function changeState(state: HrEstChange["state"]): { label: string; cls: string } {
   if (state === "Approved") return { label: "Approved", cls: "ok" };
   if (state === "Sent back") return { label: "Sent back", cls: "leave" };
   if (state === "Not approved") return { label: "Not approved", cls: "bad" };
-  return { label: state === "Waiting for Council" ? "With the Council" : "With the Executive Director", cls: "info" };
+  if (state === "Waiting for Council") return { label: "With the Council", cls: "info" };
+  if (state === "Waiting for Executive Director") return { label: "With the Executive Director", cls: "info" };
+  return { label: state, cls: "info" };
 }
 
 function ChangeRows({ items }: { items: HrEstChange[] }) {
@@ -447,7 +450,9 @@ export function RequestChange() {
 
   const needCount = change !== "Regrade";
   const ready = Boolean(department && designation && reason.trim()) && (needCount ? Number(count) >= 1 : Boolean(grade));
-  const council = change === "Add" || change === "Regrade";
+  // Which kinds of change the Council decides after the Executive Director (eswasa_hr.establishment.COUNCIL_CHANGES).
+  const councilKinds = useHrSettings()?.lists.council_changes ?? [];
+  const council = councilKinds.includes(change);
 
   async function send() {
     setBusy(true);
@@ -533,7 +538,10 @@ export function RequestChange() {
                       <input type="radio" name="est_change" checked={change === c.value} disabled={c.value !== "Add" && Boolean(designation) && !post} onChange={() => setChange(c.value)} />
                       <span>
                         <b>{c.title}</b>
-                        <small>{c.detail}</small>
+                        <small>
+                          {c.detail}
+                          {councilKinds.includes(c.value) ? " Goes to the Council after the Executive Director." : ""}
+                        </small>
                       </span>
                     </label>
                   ))}

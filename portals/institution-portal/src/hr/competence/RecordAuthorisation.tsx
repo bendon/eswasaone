@@ -7,7 +7,7 @@ import { RequireStaff } from "../../components/RequireStaff";
 import { useInstitution } from "../../layout/InstitutionLayout";
 import type { HrAuthorisationDetail, HrCompetenceMatrix, HrEmployeesResponse } from "../../api/types";
 import { Banner, Crumbs, NextStep, Track } from "../../me/parts";
-import { EVIDENCE_TYPES } from "./shared";
+import { useEvidenceTypes } from "./shared";
 import { TrainingEvidence } from "./Training";
 import { errorText } from "../api";
 
@@ -21,6 +21,7 @@ const BLANK: Ev = { evidence_type: "", reference: "", notes: "" };
  */
 export function RecordAuthorisation() {
   const { user, sessionKey } = useInstitution();
+  const evidenceTypes = useEvidenceTypes();
   const [params] = useSearchParams();
   const people = useApiResource<HrEmployeesResponse>("/hr/employees?limit=500", { enabled: Boolean(user), refreshKey: sessionKey });
   const mx = useApiResource<HrCompetenceMatrix>("/hr/competence/matrix", { enabled: Boolean(user), refreshKey: sessionKey });
@@ -172,7 +173,7 @@ export function RecordAuthorisation() {
                     <span>Kind</span>
                     <select className="hr-in" value={e.evidence_type} onChange={(x) => setEvidence((es) => es.map((r, j) => (j === i ? { ...r, evidence_type: x.target.value } : r)))}>
                       <option value="">Choose…</option>
-                      {EVIDENCE_TYPES.map((t) => (
+                      {evidenceTypes.map((t) => (
                         <option key={t}>{t}</option>
                       ))}
                     </select>

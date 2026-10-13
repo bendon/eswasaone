@@ -21,6 +21,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from eswasa_hr import settings
+
 DOCTYPE = "Establishment Change"
 PLAN = "Staffing Plan"
 PLAN_ROW = "Staffing Plan Detail"
@@ -210,7 +212,7 @@ def _post(department: str, designation: str, base: dict[str, int] | None = None)
     import frappe
 
     b = base if base is not None else approved_posts().get((department, designation), {"approved": 0, "frozen": 0})
-    filled = frappe.db.count("Employee", {"status": "Active", "department": department, "designation": designation})
+    filled = frappe.db.count("Employee", settings.live({"status": "Active", "department": department, "designation": designation}))
     reqs = frappe.db.count(REQ, {"department": department, "designation": designation, "status": ["in", OPEN_REQ]})
     return post_counts(b["approved"], b["frozen"], filled, reqs)
 
@@ -277,7 +279,7 @@ def establishment_impl() -> dict[str, Any]:
         rows = sorted(by_dept.get(dept, []), key=lambda r: r["designation"] or "")
         sums = {k: sum(r[k] for r in rows) for k in keys}
         # People in a department with no approved posts still count as filled (over establishment).
-        people = frappe.db.count("Employee", {"status": "Active", "department": dept})
+        people = frappe.db.count("Employee", settings.live({"status": "Active", "department": dept}))
         sums["filled"] = max(sums["filled"], people)
         for k in keys:
             totals[k] += sums[k]
@@ -304,7 +306,7 @@ def department_impl(department: str) -> dict[str, Any]:
     people = [
         {"id": e.get("name"), "name": e.get("employee_name"), "designation": e.get("designation"), "reports_to": e.get("reports_to")}
         for e in frappe.get_all(
-            "Employee", filters={"status": "Active", "department": department}, fields=["name", "employee_name", "designation", "reports_to"], order_by="employee_name asc", limit=0
+            "Employee", filters=settings.live({"status": "Active", "department": department}), fields=["name", "employee_name", "designation", "reports_to"], order_by="employee_name asc", limit=0
         )
     ]
     ids = {p["id"] for p in people}
@@ -397,7 +399,7 @@ def prepare_impl(department: str, designation: str, change: str, reason: str, co
         }
     )
     doc.insert(ignore_permissions=True)
-    _route(doc, approvers, add_days(_today(), 5))
+    _route(doc, approvers, add_days(_today(), settings.get("head_sla_days")))
     return detail_impl(doc.name)
 
 
@@ -457,7 +459,7 @@ def _apply(doc: Any) -> str | None:
     keep = {r.designation: r for r in new.get("staffing_details") or []}
     new.set("staffing_details", [])
     for r in rows:
-        cur = frappe.db.count("Employee", {"status": "Active", "department": doc.department, "designation": r["designation"]})
+        cur = frappe.db.count("Employee", settings.live({"status": "Active", "department": doc.department, "designation": r["designation"]}))
         prev = keep.get(r["designation"])
         new.append(
             "staffing_details",

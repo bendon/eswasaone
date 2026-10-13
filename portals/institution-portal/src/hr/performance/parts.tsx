@@ -2,6 +2,7 @@ import { useState } from "react";
 import { apiFetch } from "@eswasaone/shared-ui";
 import type { HrAppraisal, HrPerfStep } from "../../api/types";
 import { Banner, StatusPill } from "../../me/parts";
+import { useHrSettings } from "../useHrSettings";
 
 /** Shared appraisal parts for H8b (HR, read-only), E7 (self-assessment) and T5 (manager review). */
 
@@ -19,13 +20,21 @@ export function Done({ done }: { done: boolean }) {
   return <StatusPill cls={done ? "ok" : "leave"} label={done ? "Done" : "Open"} />;
 }
 
-/** 1–5 stars. Read-only when no onChange is given. */
+/** 1 to HR Settings' rating_max stars. Read-only when no onChange is given. */
 export function Stars({ label, value, onChange }: { label: string; value?: number | null; onChange?: (n: number) => void }) {
-  if (!onChange) return <span className="hr-stars ro" aria-label={value ? `${label}: ${value} of 5` : `${label}: not rated`}>{value ? `${"★".repeat(value)}${"☆".repeat(5 - value)}` : "–"}</span>;
+  const top = useHrSettings()?.rating_max ?? 0;
+  if (!onChange) {
+    const full = value ? Math.round(value) : 0;
+    return (
+      <span className="hr-stars ro" aria-label={value ? `${label}: ${value}${top ? ` of ${top}` : ""}` : `${label}: not rated`}>
+        {value ? `${"★".repeat(full)}${"☆".repeat(Math.max(0, top - full))}` : "–"}
+      </span>
+    );
+  }
   return (
     <span className="hr-stars" role="radiogroup" aria-label={label}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button key={n} type="button" role="radio" aria-checked={value === n} aria-label={`${label}: ${n} of 5`} className={value && n <= value ? "on" : ""} onClick={() => onChange(n)}>
+      {Array.from({ length: top }, (_, i) => i + 1).map((n) => (
+        <button key={n} type="button" role="radio" aria-checked={value === n} aria-label={`${label}: ${n} of ${top}`} className={value && n <= value ? "on" : ""} onClick={() => onChange(n)}>
           ★
         </button>
       ))}

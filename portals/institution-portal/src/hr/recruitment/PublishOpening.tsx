@@ -7,11 +7,13 @@ import { RequireStaff } from "../../components/RequireStaff";
 import { useInstitution } from "../../layout/InstitutionLayout";
 import type { HrRequisition } from "../../api/types";
 import { Banner, Crumbs, fmtDay, NextStep } from "../../me/parts";
+import { useHrSettings } from "../useHrSettings";
 
 /** Publish an approved requisition to the careers page (journey J2). */
 export function PublishOpening() {
   const { id = "" } = useParams();
   const { user, sessionKey } = useInstitution();
+  const hrEmail = useHrSettings()?.hr_email ?? null;
   const reqs = useApiResource<{ items: HrRequisition[] }>("/hr/recruitment", { enabled: Boolean(user), refreshKey: sessionKey });
   const req = reqs.data?.items.find((r) => r.id === id);
 
@@ -52,8 +54,8 @@ export function PublishOpening() {
           </div>
         </div>
         <Banner kind="ok" title="People can apply online now">
-          Applications land in Recruitment as they arrive. Email applications to hr@eswasa.co.sz still count; add those
-          by hand.
+          Applications land in Recruitment as they arrive.
+          {hrEmail ? ` Email applications to ${hrEmail} still count; add those by hand.` : ""}
         </Banner>
         <NextStep title="Screen applicants as they arrive" body="Shortlist or decline each one. Only shortlisted candidates are contacted." to={done.opening ? `/hr/recruitment/openings/${encodeURIComponent(done.opening.id)}` : "/hr/recruitment"} label="Candidates" />
       </div>

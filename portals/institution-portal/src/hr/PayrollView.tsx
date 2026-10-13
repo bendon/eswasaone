@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Icon, NotConnectedPanel } from "@eswasaone/shared-ui";
+import { Icon } from "@eswasaone/shared-ui";
 import { useApiResource } from "../hooks/useApiResource";
 import { EmptyState, ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
@@ -7,12 +7,17 @@ import { useInstitution } from "../layout/InstitutionLayout";
 import type { components } from "@contracts";
 import { deskAvailable, openDeskOrExplain } from "./desk";
 import { initialsFromName } from "./helpers";
+import { useHrSettings } from "./useHrSettings";
 
 type HrPayslip = components["schemas"]["HrPayslip"];
 type HrPayrollStatus = components["schemas"]["HrPayrollStatus"];
 
 /** Payroll — live slips + run status; processing stays desk-linked when Desk is available. */
+/** Salary Slip status (HRMS) to pill colour. */
+const SLIP_CLS: Record<string, string> = { Submitted: "ok", Paid: "ok", Draft: "info", Withheld: "leave", Cancelled: "bad" };
+
 export function PayrollView() {
+  const currency = useHrSettings()?.currency ?? null;
   const { openAuth, user, sessionKey } = useInstitution();
   const statusRes = useApiResource<HrPayrollStatus>("/hr/payroll/status", {
     enabled: Boolean(user),
@@ -73,12 +78,6 @@ export function PayrollView() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <NotConnectedPanel
-              what="Payroll run tracker"
-              detail="The run tracker waits for ESWASA to confirm where payroll runs (Confirmation Pack H15) and for Finance's statutory tables (H16). The run status and slips on this page are read from HRMS."
-            />
-          </div>
 
           <div className="hr-box" style={{ marginTop: 16 }}>
             <div className="hr-box__h">
@@ -100,7 +99,7 @@ export function PayrollView() {
                       <th>Employee</th>
                       <th>Period</th>
                       <th className="mono" style={{ textAlign: "right" }}>
-                        Net (SZL)
+                        Net{currency ? ` (${currency})` : ""}
                       </th>
                       <th>Status</th>
                     </tr>
@@ -122,7 +121,7 @@ export function PayrollView() {
                           {s.net_pay != null ? s.net_pay.toLocaleString() : "—"}
                         </td>
                         <td>
-                          <span className="hr-st ok">
+                          <span className={`hr-st ${SLIP_CLS[s.status] ?? "mute"}`}>
                             <span className="d" />
                             {s.status}
                           </span>

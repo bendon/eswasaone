@@ -17,6 +17,7 @@ vi.mock("../layout/InstitutionLayout", () => ({
 
 import { MyHrHome } from "./MyHrHome";
 import { ApplyLeave } from "./ApplyLeave";
+import { settingsResponse } from "../test/hrSettings";
 
 const LINKED = {
   linked: true,
@@ -48,6 +49,8 @@ function stubCore(me: unknown, preview: unknown = PREVIEW) {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const json = (b: unknown, status = 200) =>

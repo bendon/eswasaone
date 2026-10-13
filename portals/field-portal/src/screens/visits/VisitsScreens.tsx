@@ -806,7 +806,7 @@ function ClaimSheet({ v, onClose, onDone }: { v: FieldVisit; onClose: () => void
         For {v.id}: {v.duration_days} day(s) at {v.site.name}. Your expense approver decides it in Approvals.
       </p>
       {opts && !opts.types.length ? (
-        <p className="fv-sub">Expense claims open once ESWASA Finance sets up the expense types.</p>
+        <p className="fv-sub">Expense claims open once Finance adds the expense types you can claim.</p>
       ) : (
         <>
           <div className="fv-seg">

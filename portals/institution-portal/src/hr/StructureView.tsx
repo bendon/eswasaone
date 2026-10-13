@@ -7,6 +7,7 @@ import { ResourceGate } from "../components/PageStates";
 import { RequireStaff } from "../components/RequireStaff";
 import { EstablishmentPanel } from "./establishment/Establishment";
 import { useInstitution } from "../layout/InstitutionLayout";
+import { useHrSettings } from "./useHrSettings";
 import type {
   HrCostCentre,
   HrCostCentreCreate,
@@ -858,6 +859,7 @@ function GradesPanel({
   openAuth: (reason?: string) => void;
   dialogs: Dialogs;
 }) {
+  const currency = useHrSettings()?.currency ?? null;
   const [show, setShow] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -879,7 +881,7 @@ function GradesPanel({
         code: code.trim(),
         name: name.trim() || undefined,
         level: level ? Number(level) : undefined,
-        currency: "SZL",
+        currency: currency ?? undefined,
         confirm: true,
       };
       await apiFetch<HrGradeBand>("/hr/grade-bands", {
@@ -981,7 +983,7 @@ function GradesPanel({
                     <td>{g.level ?? "—"}</td>
                     <td>
                       {g.min_salary != null || g.max_salary != null
-                        ? `${g.currency || "SZL"} ${g.min_salary ?? "—"} – ${g.max_salary ?? "—"}`
+                        ? `${g.currency ? `${g.currency} ` : ""}${g.min_salary ?? "—"} – ${g.max_salary ?? "—"}`
                         : "—"}
                     </td>
                     <td style={{ textAlign: "right" }}>

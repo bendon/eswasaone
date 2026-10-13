@@ -8,11 +8,14 @@ import unittest
 from types import SimpleNamespace
 
 from eswasa_hr import onboarding as ob
+from eswasa_hr.seed_records import ONBOARDING, OWNER_KIND
+
+SEEDED = [(OWNER_KIND[o], n, t) for o, n, t in ONBOARDING]  # HR's template as first seeded
 
 
 class RuleTests(unittest.TestCase):
     def test_default_checklist_names_owners(self):
-        rows = ob.default_checklist("hr@x", "sipho@x", "ayanda@x")
+        rows = ob.default_checklist("hr@x", "sipho@x", "ayanda@x", SEEDED)
         owners = {r["activity_name"]: r["user"] for r in rows}
         self.assertEqual(owners["Contract signed and filed"], "hr@x")
         self.assertEqual(owners["Welcome meeting and first-week plan"], "sipho@x")
@@ -130,6 +133,8 @@ class NoOfferTests(unittest.TestCase):
                     "company": "ESWASA", "department": "Metrology", "designation": "Technician", "date_of_joining": "2019-03-01", "holiday_list": None,
                     "company_email": "sipho@eswasa.org.sz"}
         self.f.docs["E-7"] = _Emp(self.emp)
+        self._template = ob._template
+        ob._template = lambda e: SEEDED
         self.reqd = False
         self.f.get_meta = lambda dt: SimpleNamespace(get_field=lambda fn: SimpleNamespace(reqd=1 if self.reqd else 0), has_field=lambda fn: True)
         self.created = []
@@ -156,6 +161,8 @@ class NoOfferTests(unittest.TestCase):
 
     def tearDown(self):
         ob.detail_impl = self._detail
+        ob._template = self._template
+        ob._template = self._template
         sys.modules.pop("frappe", None)
         sys.modules.pop("frappe.utils", None)
 

@@ -2,15 +2,15 @@
 Recruitment, part 2 (brief §7; journey J2): shortlist → interview → feedback → offer → answer → employee.
 
 - HR moves an applicant between Open, Shortlisted, Hold and Rejected (process steps, not approvals).
-- An interview has named interviewers; each gets one ToDo to record feedback (Interview Feedback, ratings 1–5).
+- An interview has named interviewers; each gets one ToDo to record feedback (Interview Feedback, ratings 1 to HR Settings' rating_max).
   HR then marks the interview Cleared or Rejected, which submits it.
 - HR prepares a Job Offer as a draft. Each HR Manager except the preparer gets an approval ToDo
   (``eswasa_approval_handlers``); approving submits it (status Awaiting Response). HRMS's own validation
   refuses offers beyond the Staffing Plan vacancies and duplicates.
 - HR records the candidate's answer. On Accepted, HR creates the Employee through HRMS's ``make_employee``.
 - Offer letter (plan 08): print format ``ESWASA Offer Letter``. The wording comes from the Terms and Conditions
-  record "Offer letter", the signatory from ``HR Settings.custom_offer_signatory_role`` (H3; empty means the
-  letter says "awaiting ESWASA"). Approving the offer attaches the PDF and emails it to the applicant.
+  record "Offer letter" (seeded once, HR edits it), the signatory from ``HR Settings.custom_offer_signatory_role``
+  (empty: the Executive Director). Approving the offer attaches the PDF and emails it to the applicant.
 
 Field names follow HRMS version-16. Pure rules sit at the top and are tested without Frappe.
 """
@@ -18,6 +18,8 @@ Field names follow HRMS version-16. Pure rules sit at the top and are tested wit
 from __future__ import annotations
 
 from typing import Any
+
+from eswasa_hr import settings
 
 APPLICANT = "Job Applicant"
 INTERVIEW = "Interview"
@@ -28,8 +30,7 @@ HR_STATUSES = ("Open", "Shortlisted", "Hold", "Rejected")
 LETTER_FORMAT = "ESWASA Offer Letter"
 LETTER_TERMS = "Offer letter"  # Terms and Conditions record holding ESWASA HR's wording
 SIGNATORY_FIELD = "custom_offer_signatory_role"
-SIGNATORY_AWAITING = "Signatory: awaiting ESWASA (H3)"
-WORDING_AWAITING = "Offer letter wording: awaiting ESWASA HR."
+DEFAULT_SIGNATORY = "Eswasa Executive Director"  # when HR Settings names no signatory role
 ROLE_TITLES = {"Eswasa Executive Director": "Executive Director", "HR Manager": "HR Manager"}
 
 
@@ -62,17 +63,18 @@ def status_change_error(current: str | None, target: str, note: str | None) -> s
 
 
 def rating_to_frappe(stars: int) -> float:
-    """HRMS Rating fields store a 0–1 fraction; the UI uses 1–5 stars."""
+    """HRMS Rating fields store a 0–1 fraction; the UI uses 1 to HR Settings' rating_max stars."""
+    top = settings.get("rating_max")
     s = int(stars)
-    if s < 1 or s > 5:
-        raise ValueError("Ratings are 1 to 5.")
-    return round(s / 5, 2)
+    if s < 1 or s > top:
+        raise ValueError(f"Ratings are 1 to {top}.")
+    return round(s / top, 2)
 
 
 def rating_to_stars(value: Any) -> float | None:
     if value in (None, ""):
         return None
-    return round(float(value) * 5, 1)
+    return round(float(value) * settings.get("rating_max"), 1)
 
 
 def offer_title(applicant_name: str, designation: str) -> str:
@@ -83,8 +85,6 @@ def interview_todo_title(applicant_name: str, scheduled_on: str, from_time: str)
     return f"Interview {applicant_name} on {scheduled_on} at {str(from_time)[:5]}, then record your feedback"
 
 
-FEEDBACK_DAYS = 1  # working days after the interview (brief §7, provisional)
-OFFER_WAIT_DAYS = 5  # working days an offer may wait for the candidate's answer (provisional)
 REMINDER_RULE = "Recruitment reminder"
 OPEN_INTERVIEW = ("Pending", "Under Review")
 
@@ -98,9 +98,8 @@ def offer_wait_title(applicant_name: str, offer_date: Any) -> str:
 
 
 def signatory_line(role: str | None, holder: str | None) -> str:
-    """Who signs (H3). No role configured: say so, never pick one."""
-    if not role:
-        return SIGNATORY_AWAITING
+    """Who signs: the HR Settings role (default the Executive Director), with the holder's name when there is one."""
+    role = role or DEFAULT_SIGNATORY
     title = ROLE_TITLES.get(role, role)
     return f"{holder}, {title}" if holder else title
 
@@ -116,7 +115,7 @@ def find_term(terms: list[dict[str, Any]], *words: str) -> str | None:
 
 def letter_context(offer: dict[str, Any], terms: list[dict[str, Any]], grade: str | None, department: str | None,
                    role: str | None, holder: str | None, wording: str | None) -> dict[str, Any]:
-    """Everything the offer letter prints. Missing configuration shows as awaiting text, not a default."""
+    """Everything the offer letter prints. The wording is HR's "Offer letter" Terms and Conditions record."""
     start = find_term(terms, "start", "commence", "joining")
     accept_by = find_term(terms, "accept", "respond", "deadline")
     used = {start, accept_by} - {None}
@@ -130,9 +129,9 @@ def letter_context(offer: dict[str, Any], terms: list[dict[str, Any]], grade: st
         "accept_by": accept_by,
         "terms": [{"label": t.get("offer_term"), "value": t.get("value")} for t in terms or [] if (str(t.get("value") or "").strip() or None) not in used],
         "wording": wording or None,
-        "wording_awaiting": None if wording else WORDING_AWAITING,
+        "wording_awaiting": None,
         "signatory": signatory_line(role, holder),
-        "signatory_awaiting": not role,
+        "signatory_awaiting": False,
     }
 
 
@@ -530,8 +529,7 @@ def _signatory() -> tuple[str | None, str | None]:
         role = frappe.db.get_single_value("HR Settings", SIGNATORY_FIELD) or None
     except Exception:  # noqa: BLE001  (custom field not migrated yet)
         role = None
-    if not role:
-        return None, None
+    role = role or DEFAULT_SIGNATORY
     holders = sorted({r["parent"] for r in frappe.get_all("Has Role", filters={"role": role, "parenttype": "User"}, fields=["parent"], limit=0)} - {"Administrator"})
     enabled = [u["name"] for u in frappe.get_all("User", filters={"name": ["in", holders], "enabled": 1}, fields=["name"], limit=0)] if holders else []
     holder = frappe.db.get_value("User", enabled[0], "full_name") if len(enabled) == 1 else None
@@ -606,7 +604,7 @@ def remind_due() -> int:
     n = 0
     for i in frappe.get_all(INTERVIEW, filters={"docstatus": 0, "status": ["in", list(OPEN_INTERVIEW)], "scheduled_on": ["<", day]},
                             fields=["name", "job_applicant", "scheduled_on"], limit=0):
-        due = add_working_days(getdate(i["scheduled_on"]), FEEDBACK_DAYS, off)
+        due = add_working_days(getdate(i["scheduled_on"]), settings.get("interview_feedback_days"), off)
         if due > day:
             continue
         panel = [d.get("interviewer") for d in frappe.get_all("Interview Detail", filters={"parent": i["name"], "parenttype": INTERVIEW}, fields=["interviewer"], limit=0)]
@@ -618,7 +616,7 @@ def remind_due() -> int:
     for o in frappe.get_all(OFFER, filters={"docstatus": 1, "status": "Awaiting Response"}, fields=["name", "applicant_name", "offer_date", "owner"], limit=0):
         if not o.get("offer_date"):
             continue
-        due = add_working_days(getdate(o["offer_date"]), OFFER_WAIT_DAYS, off)
+        due = add_working_days(getdate(o["offer_date"]), settings.get("offer_reply_days"), off)
         users = recipients(o.get("owner")) or recipients(_hr_managers(None))
         if due < day and users:
             n += raise_alert(f"offer-waiting:{o['name']}:{due.isoformat()}", REMINDER_RULE, offer_wait_title(o.get("applicant_name") or o["name"], o["offer_date"]),

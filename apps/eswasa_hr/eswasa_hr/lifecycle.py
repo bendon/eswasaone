@@ -19,6 +19,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from eswasa_hr import settings
+
 PROMOTION = "Employee Promotion"
 TRANSFER = "Employee Transfer"
 SEPARATION = "Employee Separation"
@@ -33,13 +35,7 @@ CHANGEABLE = {
     "branch": "Branch",
     "reports_to": "Reports To",
 }
-DEFAULT_OFFBOARDING: list[tuple[str, str, str]] = [
-    ("hr", "Exit interview", "HR"),
-    ("manager", "Handover of open work", "Line manager"),
-    ("pick", "Return laptop and access card", "ICT"),
-    ("pick", "Final pay with leave days owed", "Finance"),
-    ("hr", "Certificate of service", "HR"),
-]
+SEPARATION_TEMPLATE = "Employee Separation Template"  # HR's offboarding checklist (custom_owner, custom_team)
 
 
 # ---------------------------------------------------------------- pure rules
@@ -82,9 +78,9 @@ def separation_errors(reason: str, last_day: Any, notice_date: Any) -> list[str]
     return errs
 
 
-def default_offboarding(hr_user: str | None, manager_user: str | None) -> list[dict[str, Any]]:
+def default_offboarding(hr_user: str | None, manager_user: str | None, template: list[tuple[str, str, str]]) -> list[dict[str, Any]]:
     owners = {"hr": hr_user, "manager": manager_user, "pick": None}
-    return [{"activity_name": n, "group": g, "user": owners[k]} for k, n, g in DEFAULT_OFFBOARDING]
+    return [{"activity_name": n, "group": g, "user": owners.get(k)} for k, n, g in template]
 
 
 def interview_date(last_day: Any, today: date) -> date:
@@ -201,7 +197,7 @@ def prepare_change_impl(kind: str, employee: str, effective: str, wanted: dict[s
     d.insert()
     if (note or "").strip():
         d.add_comment("Comment", note.strip())
-    _route(d, change_title(kind, e["employee_name"], rows), add_days(_today(), 3))
+    _route(d, change_title(kind, e["employee_name"], rows), add_days(_today(), settings.get("decision_sla_days")))
     return changes_impl(employee)
 
 
@@ -239,7 +235,7 @@ def prepare_separation_impl(employee: str, reason: str, notice_date: str | None,
         }
     )
     d.insert()
-    _route(d, f"Approve separation: {e['employee_name']}, {reason.lower()}, last day {last_day}", add_days(_today(), 2))
+    _route(d, f"Approve separation: {e['employee_name']}, {reason.lower()}, last day {last_day}", add_days(_today(), settings.get("decision_sla_days")))
     frappe.db.set_value("Employee", employee, {"relieving_date": last_day, "reason_for_leaving": reason}, update_modified=True)
     return changes_impl(employee)
 
@@ -448,6 +444,12 @@ def history(employee: str) -> dict[str, Any]:
     return {"employee": employee, "employee_name": e["employee_name"], "status": e["status"], "items": items}
 
 
+def _separation_template(e: dict[str, Any]) -> list[tuple[str, str, str]]:
+    from eswasa_hr.seed_records import template_rows
+
+    return template_rows(SEPARATION_TEMPLATE, e)
+
+
 def separation_defaults_impl(employee: str) -> dict[str, Any]:
     import frappe
 
@@ -458,7 +460,7 @@ def separation_defaults_impl(employee: str) -> dict[str, Any]:
         "employee": employee,
         "employee_name": e["employee_name"],
         "reasons": list(REASONS),
-        "activities": [{**r, "user_name": (frappe.db.get_value("User", r["user"], "full_name") or r["user"]) if r["user"] else None} for r in default_offboarding(frappe.session.user, manager_user)],
+        "activities": [{**r, "user_name": (frappe.db.get_value("User", r["user"], "full_name") or r["user"]) if r["user"] else None} for r in default_offboarding(frappe.session.user, manager_user, _separation_template(e))],
     }
 
 

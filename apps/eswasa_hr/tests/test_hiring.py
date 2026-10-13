@@ -176,11 +176,12 @@ class OfferLetterTests(unittest.TestCase):
     TERMS = [{"offer_term": "Start date", "value": "1 Dec 2026"}, {"offer_term": "Accept by", "value": "20 Nov 2026"},
              {"offer_term": "Probation", "value": "6 months"}]
 
-    def test_letter_says_the_signatory_is_awaiting_eswasa_while_unset(self):
+    def test_letter_falls_back_to_the_executive_director_and_never_says_awaiting(self):
         c = hi.letter_context({"applicant_name": "Ayanda", "designation": "Officer", "offer_date": "2026-11-02"}, self.TERMS, "G5", "Certification", None, None, None)
-        self.assertEqual(c["signatory"], "Signatory: awaiting ESWASA (H3)")
-        self.assertTrue(c["signatory_awaiting"])
-        self.assertEqual(c["wording_awaiting"], hi.WORDING_AWAITING)
+        self.assertEqual(c["signatory"], "Executive Director")
+        self.assertFalse(c["signatory_awaiting"])
+        self.assertIsNone(c["wording_awaiting"])
+        self.assertNotIn("awaiting", " ".join(str(v) for v in c.values()).lower())
         self.assertEqual((c["start_date"], c["accept_by"], c["grade"]), ("1 Dec 2026", "20 Nov 2026", "G5"))
         self.assertEqual(c["terms"], [{"label": "Probation", "value": "6 months"}])
 

@@ -10,8 +10,8 @@ says so.
   Cases appear only for HR Managers, and only as counts.
 - Board HR pack: Council HR & Remuneration Committee (Board roles), HR Managers and the Executive Director.
   Aggregates only, never a name.
-- Setup: System Manager or HR Manager. Each step is done, partly done, to do, waiting for an ESWASA input,
-  or excluded (payroll, until Confirmation Pack H15 is answered).
+- Setup: System Manager or HR Manager. Each step is done, partly done or to do, from live counts, with a link to
+  where it is set up.
 
 Pure rules sit at the top and are tested without Frappe.
 """
@@ -21,12 +21,12 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any, Iterable
 
+from eswasa_hr import settings
+
 HR_ROLES = ("HR Manager", "HR User", "System Manager")
 BOARD_ROLES = ("Eswasa Board Member", "Eswasa Board Secretary", "Eswasa Executive Director", "HR Manager", "System Manager")
 SETUP_ROLES = ("HR Manager", "System Manager")
-SOON_DAYS = 60
-MOVEMENT_DAYS = 90
-CYCLE_WARN_DAYS = 14
+# Windows (contract and probation notice, movements, turnover, cycle warning) come from HR Settings.
 
 DONE, PARTIAL, TODO, AWAITING, EXCLUDED = "done", "partial", "todo", "awaiting", "excluded"
 
@@ -65,6 +65,16 @@ def attention(kind: str, count: int, one: str, many: str, href: str, due: Any = 
         "href": href,
         "weight": weight,
     }
+
+
+def gaps_detail(quality: list[dict[str, Any]], ran_on: Any) -> str | None:
+    """What the records are missing (largest gaps first, Executive Director excluded) and when that was checked."""
+    rows = sorted((q for q in quality if q["field"] != "executive_director"), key=lambda q: -q["count"])
+    if not rows:
+        return None
+    parts = [f"{q['label']} ({q['count']})" for q in rows[:3]] + ([f"{len(rows) - 3} more"] if len(rows) > 3 else [])
+    when = f"Checked {str(ran_on)[:16].replace('T', ' ')}." if ran_on else "Checked just now."
+    return f"{' · '.join(parts)}. {when}"
 
 
 def step(id_: str, title: str, state: str, detail: str, href: str | None = None, awaiting: str | None = None, desk: bool = False) -> dict[str, Any]:
@@ -123,34 +133,40 @@ def _earliest(dt: str, filters: dict[str, Any], field: str) -> Any:
 
 
 def _open_alerts() -> dict[str, dict[str, Any]]:
-    """Per rule: alerts someone still has to acknowledge, and the earliest due date."""
+    """Per rule: how many records (not alert rows: one authorisation can have an alert per threshold) still have an
+    unacknowledged alert, the earliest due date, and whether the viewer holds one of the open ToDos."""
     import frappe
 
     out: dict[str, dict[str, Any]] = {}
     if not _has("HR Alert"):
         return out
-    open_ids = {t.get("reference_name") for t in frappe.get_all("ToDo", filters={"reference_type": "HR Alert", "status": "Open"}, fields=["reference_name"], limit=0)}
+    todos = frappe.get_all("ToDo", filters={"reference_type": "HR Alert", "status": "Open"}, fields=["reference_name", "allocated_to"], limit=0)
+    open_ids = {t.get("reference_name") for t in todos}
+    mine = {t.get("reference_name") for t in todos if t.get("allocated_to") == frappe.session.user}
     if not open_ids:
         return out
-    for a in frappe.get_all("HR Alert", filters={"name": ["in", sorted(open_ids)]}, fields=["rule", "due"], limit=0):
-        c = out.setdefault(a.get("rule"), {"count": 0, "due": None})
-        c["count"] += 1
+    for a in frappe.get_all("HR Alert", filters={"name": ["in", sorted(open_ids)]}, fields=["name", "rule", "due", "subject_doctype", "subject_name", "key"], limit=0):
+        c = out.setdefault(a.get("rule"), {"subjects": set(), "due": None, "mine": False})
+        c["subjects"].add((a.get("subject_doctype"), a.get("subject_name")) if a.get("subject_name") else a.get("key") or a.get("name"))
+        c["mine"] = c["mine"] or a.get("name") in mine
         due = _d(a.get("due"))
         if due and (c["due"] is None or due < c["due"]):
             c["due"] = due
+    for c in out.values():
+        c["count"] = len(c.pop("subjects"))
     return out
 
 
 def _movements(day: date, days: int) -> dict[str, int]:
     since = day - timedelta(days=days)
     return {
-        "joiners": _count("Employee", {"date_of_joining": ["between", [since, day]]}),
-        "leavers": _count("Employee", {"relieving_date": ["between", [since, day]]}),
+        "joiners": _count("Employee", settings.live({"date_of_joining": ["between", [since, day]]})),
+        "leavers": _count("Employee", settings.live({"relieving_date": ["between", [since, day]]})),
     }
 
 
 def _turnover(day: date, headcount: int) -> dict[str, Any]:
-    m = _movements(day, 365)
+    m = _movements(day, settings.get("turnover_days"))
     return {**m, "pct": turnover_pct(m["leavers"], headcount, m["joiners"])}
 
 
@@ -195,25 +211,27 @@ def overview_impl() -> dict[str, Any]:
 
     _require(HR_ROLES, "HR overview")
     day = _today()
-    soon = day + timedelta(days=SOON_DAYS)
+    soon = day + timedelta(days=settings.get("contract_notice_days"))
+    probation_soon = day + timedelta(days=settings.get("probation_notice_days"))
     manager = bool(set(frappe.get_roles()) & {"HR Manager", "System Manager"})
-    active = frappe.get_all("Employee", filters={"status": "Active"}, fields=["name", "department", "designation", "reports_to", "leave_approver", "user_id"], limit=0)
+    active = frappe.get_all("Employee", filters=settings.live({"status": "Active"}), fields=["name", "department", "designation", "reports_to", "leave_approver", "user_id"], limit=0)
     headcount = len(active)
     alerts = _open_alerts()
 
+    notice, handoff = settings.get("contract_notice_days"), settings.get("declaration_handoff_days")
     items = []
     for rule, (one, many, href) in {
-        "R-H2": ("1 contract ends within 60 days", "{n} contracts end within 60 days", "/hr/directory"),
+        "R-H2": (f"1 contract ends within {notice} days", f"{{n}} contracts end within {notice} days", "/hr/directory"),
         "R-H3": ("1 staff authorisation is expiring", "{n} staff authorisations are expiring", "/hr/competence"),
         "R-H4": ("1 competence has thin cover", "{n} competences have thin cover", "/hr/competence"),
-        "Late declaration": ("1 declaration unsigned after 10 days", "{n} declarations unsigned after 10 days", "/hr/competence"),
+        "Late declaration": (f"1 declaration unsigned after {handoff} days", f"{{n}} declarations unsigned after {handoff} days", "/hr/competence"),
         "Document expiry": ("1 employee document is expiring", "{n} employee documents are expiring", "/hr/directory"),
     }.items():
         a = alerts.get(rule, {})
-        items.append(attention(rule, a.get("count", 0), one, many, href, a.get("due"), "Acknowledge in Approvals once handled.", 2))
-    probation = {"status": "Active", "scheduled_confirmation_date": ["<=", soon], "final_confirmation_date": ["in", ["", None]]}
+        items.append(attention(rule, a.get("count", 0), one, many, href, a.get("due"), "You have this in Approvals to acknowledge once handled." if a.get("mine") else None, 2))
+    probation = settings.live({"status": "Active", "scheduled_confirmation_date": ["<=", probation_soon], "final_confirmation_date": ["in", ["", None]]})
     items.append(attention("probation", _count("Employee", probation), "1 probation review due", "{n} probation reviews due", "/hr/directory",
-                           _earliest("Employee", probation, "scheduled_confirmation_date"), "The line manager records the outcome in My team.", 2))
+                           _earliest("Employee", probation, "scheduled_confirmation_date"), None, 2))
     items.append(attention("authorisation", _count("Staff Authorisation", {"docstatus": 0}), "1 staff authorisation waiting for the head",
                            "{n} staff authorisations waiting for the head", "/hr/competence"))
     items.append(attention("requisition", _count("Job Requisition", {"status": "Pending"}), "1 requisition waiting for approval", "{n} requisitions waiting for approval", "/hr/recruitment"))
@@ -224,14 +242,14 @@ def overview_impl() -> dict[str, Any]:
     items.append(attention("leave", _count("Leave Application", {"docstatus": 0, "status": "Open"}), "1 leave request waiting for a decision", "{n} leave requests waiting for a decision", "/hr/time-off"))
     overdue_leave = {"reference_type": "Leave Application", "status": "Open", "date": ["<", day], "description": ["not like", "[escalated]%"]}
     items.append(attention("leave_overdue", _count("ToDo", overdue_leave), "1 leave request past its decision date", "{n} leave requests past their decision date",
-                           "/approvals", _earliest("ToDo", overdue_leave, "date"), "Escalated to the HR Managers in Approvals (provisional 2-working-day SLA).", 2))
+                           "/approvals", _earliest("ToDo", overdue_leave, "date"), f"The approver had {settings.get('leave_sla_days')} working days to decide.", 2))
     items.append(attention("establishment", _count("Establishment Change", {"state": ["in", list(OPEN_STATES)]}), "1 establishment change waiting for a decision",
                            "{n} establishment changes waiting for a decision", "/hr/structure?tab=establishment"))
     cycles = _cycle_status(day)
     for c in cycles:
         end = _d(c["end_date"])
         left = c["people"] - c["manager_done"]
-        if end and (end - day).days <= CYCLE_WARN_DAYS and left:
+        if end and (end - day).days <= settings.get("cycle_warn_days") and left:
             items.append(attention("appraisal", left, f"1 appraisal not finished in {c['cycle_name']}", f"{{n}} appraisals not finished in {c['cycle_name']}",
                                    f"/hr/performance/cycles/{c['name']}", end, "Remind people from the cycle page.", 1))
     if manager and (_has("Employee Grievance") or _has("Disciplinary Case")):
@@ -247,8 +265,12 @@ def overview_impl() -> dict[str, Any]:
     if snap is None:
         live = integrity.summarise(integrity._active_rows(), integrity.top_employees(), integrity._departments())
         snap = {"ran_on": None, "counts": {"people": live["people"], "by_field": live["by_field"]}}
+    quality = integrity.quality(snap["counts"])
     items.append(attention("record_gaps", snap["counts"].get("people", 0), "1 employee record has gaps", "{n} employee records have gaps", "/hr/directory",
-                           None, "Checked nightly. See Record quality for what is missing."))
+                           None, gaps_detail(quality, snap["ran_on"])))
+    if (snap["counts"].get("by_field") or {}).get(integrity.NO_TOP[0]):
+        items.append(attention("executive_director", 1, "No Executive Director set", "No Executive Director set", "/system-admin?tab=users", None,
+                               f"Give one user the {integrity.TOP_ROLE} role so escalations and Council decisions have someone to go to.", 1))
 
     est = establishment_impl() if approved_posts() else None
     return {
@@ -262,13 +284,14 @@ def overview_impl() -> dict[str, Any]:
         },
         "attention": rank(items),
         "away_today": _away_today(day),
-        "movements": _movements(day, MOVEMENT_DAYS),
+        "movements": _movements(day, settings.get("movement_days")),
+        "windows": {k: settings.get(k) for k in ("movement_days", "turnover_days", "contract_notice_days", "probation_notice_days")},
         "turnover": _turnover(day, headcount),
         "ending_soon": {
-            "contracts": _count("Employee", {"status": "Active", "contract_end_date": ["between", [day, soon]]}),
+            "contracts": _count("Employee", settings.live({"status": "Active", "contract_end_date": ["between", [day, soon]]})),
             "probations": _count("Employee", probation),
         },
-        "record_quality": integrity.quality(snap["counts"]),
+        "record_quality": quality,
         "record_checked_on": snap["ran_on"],
         "cycles": cycles,
     }
@@ -282,9 +305,9 @@ def board_pack_impl() -> dict[str, Any]:
 
     _require(BOARD_ROLES, "Board HR pack")
     day = _today()
-    headcount = frappe.db.count("Employee", {"status": "Active"})
+    headcount = frappe.db.count("Employee", settings.live({"status": "Active"}))
     est = counts() if approved_posts() else None
-    cycles = _cycle_status(day - timedelta(days=90))
+    cycles = _cycle_status(day - timedelta(days=settings.get("movement_days")))
     latest = max(cycles, key=lambda c: c["end_date"]) if cycles else None
     cover = None
     if _has("Staff Authorisation"):
@@ -343,7 +366,7 @@ def setup_status_impl() -> dict[str, Any]:
     company_holidays = frappe.db.get_value("Company", {}, "default_holiday_list") if _has("Company") else None
     leave_types, policies = _count("Leave Type"), _count("Leave Policy", {"docstatus": 1})
     skills = _count("Skill", {"custom_kind": ["is", "set"]})
-    active = frappe.get_all("Employee", filters={"status": "Active"}, fields=["reports_to", "leave_approver", "user_id"], limit=0)
+    active = frappe.get_all("Employee", filters=settings.live({"status": "Active"}), fields=["reports_to", "leave_approver", "user_id"], limit=0)
     no_manager = sum(1 for r in active if not r.get("reports_to"))
     no_approver = sum(1 for r in active if not r.get("leave_approver"))
     linked = sum(1 for r in active if r.get("user_id"))
@@ -358,28 +381,26 @@ def setup_status_impl() -> dict[str, Any]:
         step(
             "departments",
             "Departments and heads",
-            DONE if depts and headed == len(depts) else PARTIAL if depts else AWAITING,
-            f"{len(depts)} departments, {headed} with a head." if depts else "ESWASA's department tree hasn't been loaded (ERPNext's sample departments are hidden).",
+            DONE if depts and headed == len(depts) else PARTIAL if depts else TODO,
+            f"{len(depts)} departments, {headed} with a head." if depts else "No departments yet. Add ESWASA's departments and set a head for each.",
             "/hr/structure?tab=departments",
-            None if depts else "H1, H2",
         ),
         step(
             "posts",
             "Posts and grades",
-            DONE if plans and grades else PARTIAL if plans or grades else AWAITING,
+            DONE if plans and grades else PARTIAL if plans or grades else TODO,
             f"{plans} submitted staffing plans, {grades} grades.",
             "/hr/structure?tab=establishment",
-            None if plans and grades else "§0.5 #2",
         ),
         step("holidays", "Holidays", DONE if holidays and company_holidays else PARTIAL if holidays else TODO,
              f"{holidays} holiday lists" + (", company default set." if company_holidays else ", no company default yet."), "holiday-list", desk=True),
-        step("leave", "Leave policy", DONE if policies else PARTIAL if leave_types else AWAITING, f"{leave_types} leave types, {policies} submitted leave policies.",
-             "leave-policy", None if policies else "§0.5 #4", desk=True),
-        step("competence", "Competence catalogue", DONE if skills else AWAITING, f"{skills} competences in the catalogue.", "/hr/competence", None if skills else "§0.5 #8"),
-        step("documents", "Required documents", DONE if required_docs else AWAITING,
+        step("leave", "Leave policy", DONE if policies else PARTIAL if leave_types else TODO, f"{leave_types} leave types, {policies} submitted leave policies.",
+             "leave-policy", desk=True),
+        step("competence", "Competence catalogue", DONE if skills else TODO, f"{skills} competences in the catalogue.", "/hr/competence"),
+        step("documents", "Required documents", DONE if required_docs else TODO,
              f"{required_docs} employment types list the documents staff must hold." if required_docs
-             else "No employment type lists required documents yet. ESWASA HR says which documents each type needs and when they expire.",
-             "employment-type", None if required_docs else "ESWASA HR", desk=True),
+             else "No employment type lists required documents yet. Add them to each employment type with how long they stay valid.",
+             "employment-type", desk=True),
         step(
             "approvers",
             "Approvers and privacy",
@@ -387,20 +408,18 @@ def setup_status_impl() -> dict[str, Any]:
             f"{levels} protected Employee fields; Executive Director role {'assigned' if ed else 'not assigned'}; "
             f"{no_manager} people without a line manager, {no_approver} without a leave approver.",
             "/hr/directory",
-            None if active else "§0.5 #10",
         ),
         _import_step(len(active), linked),
         step(
             "expenses",
             "Expense claims",
-            DONE if expense_types else AWAITING,
+            DONE if expense_types else TODO,
             f"{expense_types} expense types; "
             + (f"receipts needed above {receipt_above:,.2f}." if receipt_above else "a receipt is needed on every line (no threshold set)."),
             "expense-claim-type",
-            None if expense_types else "ESWASA Finance",
             desk=True,
         ),
-        step("payroll", "Payroll scope", EXCLUDED, "Excluded until ESWASA decides whether payroll runs in EswasaOne.", None, "H15, H16"),
+        _payroll_step(),
     ]
     return {"steps": steps, **progress(steps)}
 
@@ -414,11 +433,28 @@ def _import_step(active: int, linked: int) -> dict[str, Any]:
     return step(
         "import",
         "Import employees",
-        {"done": DONE, "partial": PARTIAL}.get(state, PARTIAL if active else AWAITING),
+        {"done": DONE, "partial": PARTIAL}.get(state, PARTIAL if active else TODO),
         (f"{active} active employees, {linked} with a login. " if active else "") + detail,
         "/system-admin?tab=hr-setup#hr-import",
-        None if active or state != "todo" else "§0.5 #3",
         desk=False,
+    )
+
+
+def _payroll_step() -> dict[str, Any]:
+    """Payroll from what HRMS holds: salary structures, who is assigned one, and the last payroll run."""
+    import frappe
+
+    structures = _count("Salary Structure", {"docstatus": 1})
+    assigned = _count("Salary Structure Assignment", {"docstatus": 1})
+    runs = frappe.get_all("Payroll Entry", filters={"docstatus": 1}, fields=["posting_date"], order_by="posting_date desc", limit=1) if _has("Payroll Entry") else []
+    last = f" Last payroll run {runs[0]['posting_date']}." if runs else ""
+    return step(
+        "payroll",
+        "Payroll",
+        DONE if structures and assigned and runs else PARTIAL if structures else TODO,
+        f"{structures} salary structures, {assigned} employees assigned one.{last}",
+        "salary-structure",
+        desk=True,
     )
 
 

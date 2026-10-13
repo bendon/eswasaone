@@ -16,6 +16,7 @@ import { RequisitionDetail } from "./recruitment/RequisitionDetail";
 import { CaseDetail } from "./cases/Cases";
 import { StructureView } from "./StructureView";
 import { DepartmentDetail } from "./establishment/Establishment";
+import { settingsResponse } from "../test/hrSettings";
 
 type Call = { url: string; method: string; body: unknown };
 let calls: Call[] = [];
@@ -29,6 +30,8 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const hit = routes

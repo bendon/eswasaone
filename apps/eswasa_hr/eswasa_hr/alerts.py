@@ -14,10 +14,10 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Iterable
 
+from eswasa_hr import settings
+
 DOCTYPE = "HR Alert"
-CONTRACT_NOTICE_DAYS = 60  # R-H2
-EXPIRY_THRESHOLDS = (60, 30, 7)  # R-H3
-THIN_COVER = 1  # R-H4: one or zero current holders
+# R-H2 / R-H3 / R-H4 windows and the thin-cover threshold come from HR Settings (eswasa_hr.settings).
 
 
 # ---------------------------------------------------------------- pure rules
@@ -33,27 +33,27 @@ def fmt(d: date) -> str:
     return f"{d.day} {d.strftime('%b %Y')}"
 
 
-def contract_due(end: Any, day: date, notice: int = CONTRACT_NOTICE_DAYS) -> bool:
+def contract_due(end: Any, day: date, notice: int | None = None) -> bool:
     """R-H2: the contract ends within the notice window and hasn't ended yet."""
     e = _d(end)
-    return e is not None and 0 <= (e - day).days <= notice
+    return e is not None and 0 <= (e - day).days <= (notice if notice is not None else settings.get("contract_notice_days"))
 
 
 def expiry_threshold(valid_to: Any, day: date) -> int | None:
-    """R-H3: the smallest threshold already reached (60, 30 or 7 days), or None."""
+    """R-H3: the smallest alert threshold already reached (HR Settings, e.g. 60, 30, 7 days), or None."""
     e = _d(valid_to)
     if e is None:
         return None
     left = (e - day).days
     if left < 0:
         return None
-    reached = [t for t in EXPIRY_THRESHOLDS if left <= t]
+    reached = [t for t in settings.get("expiry_alert_days") if left <= t]
     return min(reached) if reached else None
 
 
 def thin_cover(skills: Iterable[str], cov: dict[str, dict[str, int]]) -> list[tuple[str, int]]:
     """R-H4: (skill, holders) for every catalogue skill with one or zero current holders."""
-    return [(s, cov.get(s, {}).get("holders", 0)) for s in skills if cov.get(s, {}).get("holders", 0) <= THIN_COVER]
+    return [(s, cov.get(s, {}).get("holders", 0)) for s in skills if cov.get(s, {}).get("holders", 0) <= settings.get("thin_cover")]
 
 
 def recipients(*users: Any) -> list[str]:
@@ -75,7 +75,7 @@ def expiry_title(employee_name: str, skill: str, valid_to: date, threshold: int)
 
 
 def cover_title(skill: str, holders: int) -> str:
-    who = "nobody holds" if holders == 0 else "only one person holds"
+    who = "nobody holds" if holders == 0 else ("only one person holds" if holders == 1 else f"only {holders} people hold")
     return f"Competence cover alert: {who} {skill}"
 
 
@@ -151,7 +151,7 @@ def close_for(employee: str, rule: str) -> int:
 
 
 def contract_end_alerts() -> int:
-    """R-H2: HR Managers and the line manager, once, when a contract enters its last 60 days."""
+    """R-H2: HR Managers and the line manager, once, when a contract enters its notice window (HR Settings)."""
     import frappe
     from frappe.utils import add_days
 
@@ -162,7 +162,7 @@ def contract_end_alerts() -> int:
     n = 0
     for e in frappe.get_all(
         "Employee",
-        filters={"status": "Active", "contract_end_date": ["between", [day, add_days(day, CONTRACT_NOTICE_DAYS)]]},
+        filters={"status": "Active", "contract_end_date": ["between", [day, add_days(day, settings.get("contract_notice_days"))]]},
         fields=["name", "employee_name", "contract_end_date", "reports_to"],
         limit=0,
     ):
@@ -176,7 +176,7 @@ def contract_end_alerts() -> int:
 
 
 def authorisation_expiry_alerts() -> int:
-    """R-H3: the employee, line manager and HR Managers at 60, 30 and 7 days before valid_to."""
+    """R-H3: the employee, line manager and HR Managers at each HR Settings alert threshold before valid_to."""
     import frappe
     from frappe.utils import add_days
 
@@ -189,7 +189,7 @@ def authorisation_expiry_alerts() -> int:
     n = 0
     for a in frappe.get_all(
         "Staff Authorisation",
-        filters={"docstatus": 1, "status": ["in", ["Current", "Expiring"]], "valid_to": ["between", [day, add_days(day, max(EXPIRY_THRESHOLDS))]]},
+        filters={"docstatus": 1, "status": ["in", ["Current", "Expiring"]], "valid_to": ["between", [day, add_days(day, max(settings.get("expiry_alert_days")))]]},
         fields=["name", "person_type", "employee", "external_person", "department", "skill", "valid_to"],
         limit=0,
     ):
@@ -208,7 +208,7 @@ def authorisation_expiry_alerts() -> int:
             name, person_user, manager = who["name"], who["user"], department_head(who["department"])[1]
         users = recipients(person_user, manager, hr)
         title = expiry_title(name, a["skill"], end, t)
-        mail = ("authorisation_expiring", {"employee_name": name, "competence": a["skill"], "valid_to": fmt(end)}) if t == 7 else None
+        mail = ("authorisation_expiring", {"employee_name": name, "competence": a["skill"], "valid_to": fmt(end)}) if t == min(settings.get("expiry_alert_days")) else None
         n += raise_alert(f"R-H3:{a['name']}:{end.isoformat()}:{t}", "R-H3", title, users, end, a.get("employee"), ("Staff Authorisation", a["name"]), mail)
     return n
 

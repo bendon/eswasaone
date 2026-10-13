@@ -202,7 +202,7 @@
   "options": "\nHead\nHR\nDone",
   "insert_after": "status",
   "read_only": 1,
-  "description": "Head of department, then HR (brief \u00a712.1). Set by EswasaOne.",
+  "description": "Head of department, then HR (brief §12.1). Set by EswasaOne.",
   "name": "Job Requisition-custom_stage"
  },
  {
@@ -213,7 +213,7 @@
   "fieldtype": "Select",
   "options": "\nEswasa Executive Director\nHR Manager",
   "insert_after": "custom_receipt_required_above",
-  "description": "Who signs offer letters (Confirmation Pack H3). Empty: letters say the signatory is awaiting ESWASA.",
+  "description": "Who signs offer letters and certificates of service. Empty: the Executive Director.",
   "name": "HR Settings-custom_offer_signatory_role"
  },
  {
@@ -257,7 +257,240 @@
   "fieldtype": "Check",
   "default": "0",
   "insert_after": "custom_offer_signatory_role",
-  "description": "Off until ESWASA confirms external auditors and experts are used (Confirmation Pack H10).",
+  "description": "Turn on to record external auditors and technical experts and authorise them like staff.",
   "name": "HR Settings-custom_external_personnel_enabled"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_eswasa_rules_section",
+  "label": "ESWASA HR rules",
+  "fieldtype": "Section Break",
+  "insert_after": "custom_external_personnel_enabled",
+  "collapsible": 1,
+  "name": "HR Settings-custom_eswasa_rules_section"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_leave_sla_days",
+  "label": "Leave decision (working days)",
+  "fieldtype": "Int",
+  "default": "2",
+  "insert_after": "custom_eswasa_rules_section",
+  "description": "Working days an approver has to decide a leave request before it goes to the HR Managers.",
+  "name": "HR Settings-custom_leave_sla_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_expense_sla_days",
+  "label": "Expense decision (working days)",
+  "fieldtype": "Int",
+  "default": "3",
+  "insert_after": "custom_leave_sla_days",
+  "description": "Working days for an expense claim decision before the approver and Finance are reminded.",
+  "name": "HR Settings-custom_expense_sla_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_decision_sla_days",
+  "label": "Other HR decisions (working days)",
+  "fieldtype": "Int",
+  "default": "3",
+  "insert_after": "custom_expense_sla_days",
+  "description": "Working days for requisitions, contract and lifecycle changes, access and profile requests.",
+  "name": "HR Settings-custom_decision_sla_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_head_sla_days",
+  "label": "Head of department decision (days)",
+  "fieldtype": "Int",
+  "default": "5",
+  "insert_after": "custom_decision_sla_days",
+  "description": "Days a head of department or the Executive Director has to decide authorisations and establishment changes.",
+  "name": "HR Settings-custom_head_sla_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_interview_feedback_days",
+  "label": "Interview feedback (working days)",
+  "fieldtype": "Int",
+  "default": "1",
+  "insert_after": "custom_head_sla_days",
+  "description": "Working days after an interview for each panel member to record feedback.",
+  "name": "HR Settings-custom_interview_feedback_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_offer_reply_days",
+  "label": "Offer reply (working days)",
+  "fieldtype": "Int",
+  "default": "5",
+  "insert_after": "custom_interview_feedback_days",
+  "description": "Working days an offer waits for the candidate's answer before HR is reminded.",
+  "name": "HR Settings-custom_offer_reply_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_contract_notice_days",
+  "label": "Contract end alert (days)",
+  "fieldtype": "Int",
+  "default": "60",
+  "insert_after": "custom_offer_reply_days",
+  "description": "HR and the line manager are alerted this many days before a contract ends.",
+  "name": "HR Settings-custom_contract_notice_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_probation_notice_days",
+  "label": "Probation review alert (days)",
+  "fieldtype": "Int",
+  "default": "30",
+  "insert_after": "custom_contract_notice_days",
+  "description": "The line manager is asked for a probation outcome this many days before the confirmation date.",
+  "name": "HR Settings-custom_probation_notice_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_expiry_alert_days",
+  "label": "Authorisation expiry alerts (days)",
+  "fieldtype": "Data",
+  "default": "60,30,7",
+  "insert_after": "custom_probation_notice_days",
+  "description": "Comma-separated days before a staff authorisation expires when alerts go out, e.g. 60,30,7.",
+  "name": "HR Settings-custom_expiry_alert_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_thin_cover",
+  "label": "Thin cover (holders)",
+  "fieldtype": "Int",
+  "default": "1",
+  "insert_after": "custom_expiry_alert_days",
+  "description": "A competence with this many current holders or fewer is flagged to the head of department.",
+  "name": "HR Settings-custom_thin_cover"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_declaration_handoff_days",
+  "label": "Declaration hand-off (days)",
+  "fieldtype": "Int",
+  "default": "10",
+  "insert_after": "custom_thin_cover",
+  "description": "Days an unsigned yearly declaration waits before HR is alerted.",
+  "name": "HR Settings-custom_declaration_handoff_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_movement_days",
+  "label": "Movements window (days)",
+  "fieldtype": "Int",
+  "default": "90",
+  "insert_after": "custom_declaration_handoff_days",
+  "description": "Joiners and leavers on the HR overview count over this many days.",
+  "name": "HR Settings-custom_movement_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_turnover_days",
+  "label": "Turnover window (days)",
+  "fieldtype": "Int",
+  "default": "365",
+  "insert_after": "custom_movement_days",
+  "description": "Turnover on the HR overview and Board pack counts over this many days.",
+  "name": "HR Settings-custom_turnover_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_cycle_warn_days",
+  "label": "Appraisal cycle warning (days)",
+  "fieldtype": "Int",
+  "default": "14",
+  "insert_after": "custom_turnover_days",
+  "description": "Unfinished appraisals show on the HR overview this many days before a cycle ends.",
+  "name": "HR Settings-custom_cycle_warn_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_appraisal_reminder_days",
+  "label": "Appraisal reminders (working days)",
+  "fieldtype": "Data",
+  "default": "10,3",
+  "insert_after": "custom_cycle_warn_days",
+  "description": "Comma-separated working days before a cycle ends when reminders go out, e.g. 10,3.",
+  "name": "HR Settings-custom_appraisal_reminder_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_calendar_max_days",
+  "label": "Leave calendar span (days)",
+  "fieldtype": "Int",
+  "default": "62",
+  "insert_after": "custom_appraisal_reminder_days",
+  "description": "Longest period the leave calendar loads at once.",
+  "name": "HR Settings-custom_calendar_max_days"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_rating_max",
+  "label": "Rating scale (top score)",
+  "fieldtype": "Int",
+  "default": "5",
+  "insert_after": "custom_calendar_max_days",
+  "description": "Highest score on appraisal and interview ratings.",
+  "name": "HR Settings-custom_rating_max"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "HR Settings",
+  "fieldname": "custom_hr_email",
+  "label": "HR contact email",
+  "fieldtype": "Data",
+  "default": "info@swasa.co.sz",
+  "insert_after": "custom_rating_max",
+  "description": "Shown to applicants and staff as the address for HR questions.",
+  "name": "HR Settings-custom_hr_email",
+  "options": "Email"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee Boarding Activity",
+  "fieldname": "custom_owner",
+  "label": "Owner",
+  "fieldtype": "Select",
+  "options": "HR\nLine manager\nNew joiner\nHR chooses",
+  "default": "HR chooses",
+  "in_list_view": 1,
+  "insert_after": "activity_name",
+  "description": "Who does it when the checklist starts: HR (whoever starts it), the line manager, the new joiner or leaver, or a person HR picks.",
+  "name": "Employee Boarding Activity-custom_owner"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Employee Boarding Activity",
+  "fieldname": "custom_team",
+  "label": "Team",
+  "fieldtype": "Data",
+  "in_list_view": 1,
+  "insert_after": "custom_owner",
+  "description": "Shown next to the task, e.g. ICT or Finance.",
+  "name": "Employee Boarding Activity-custom_team"
  }
 ]

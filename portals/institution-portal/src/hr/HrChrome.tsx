@@ -1,14 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Icon, inviteStaff, type InviteStaffRequest, Select } from "@eswasaone/shared-ui";
-
-const INVITE_ROLES = [
-  "ESWASA Staff",
-  "HR User",
-  "Certification Officer",
-  "Accounts User",
-  "Desk User",
-];
+import { useHrSettings } from "./useHrSettings";
 
 const LIFE: { to: string; label: string; icon: "i-users" | "i-briefcase" | "i-gauge" | "i-dollar" | "i-badge" }[] = [
   { to: "/hr", label: "Plan", icon: "i-badge" },
@@ -29,7 +22,11 @@ export function HrChrome() {
   const [showInvite, setShowInvite] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState(INVITE_ROLES[0]);
+  // The roles an invitation may give, from eswasa_hr (GET /hr/settings lists.invite_roles).
+  const lists = useHrSettings()?.lists;
+  const INVITE_ROLES = lists?.invite_roles ?? [];
+  const [picked, setRole] = useState<string | null>(null);
+  const role = picked ?? lists?.invite_default_roles?.[0] ?? INVITE_ROLES[0] ?? "";
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);

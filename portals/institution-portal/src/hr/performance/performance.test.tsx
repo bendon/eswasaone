@@ -15,6 +15,7 @@ vi.mock("../../layout/InstitutionLayout", () => ({
 import { CycleDetail, CycleNew, PerformanceHome } from "./Performance";
 import { MyAppraisal } from "../../me/MyAppraisal";
 import { TeamReview } from "../../team/Review";
+import { settingsResponse } from "../../test/hrSettings";
 
 const CYCLE = {
   name: "CYC-1", cycle_name: "Mid-year review 2026/27", start_date: "2026-10-01", end_date: "2027-03-31", status: "In Progress",
@@ -39,6 +40,8 @@ function stub(appraisal: Record<string, unknown> = APPRAISAL) {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const settings = settingsResponse(url);
+      if (settings) return settings;
       const method = (init?.method ?? "GET").toUpperCase();
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
       const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json" } });

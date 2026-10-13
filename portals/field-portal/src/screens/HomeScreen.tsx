@@ -23,7 +23,7 @@ export function HomeScreen() {
   const actor = useMemo(() => ({ name: user?.full_name || user?.username || "", roles: user?.roles ?? [] }), [user]);
   const tasks = useStoreResource([taskStore], () => listTasks(actor, { queue: "all", module: "Field" }).filter((t) => t.assignee === actor.name || !t.assignee), [actor.name]);
 
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(next.mapsQuery)}`;
+  const mapsUrl = next ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(next.mapsQuery)}` : null;
 
   return (
     <section className="field-screen" aria-label={`Home for ${firstName}`}>
@@ -34,22 +34,29 @@ export function HomeScreen() {
             : "Updating…"}
         </p>
       ) : null}
+      {next ? (
       <article className="hm-next">
         <div className="hm-next__lbl">NEXT AUDIT · {next.whenLabel}</div>
         <h2 className="hm-next__title">{next.company}</h2>
         <div className="hm-next__meta">
-          <span>
-            <Icon name="i-badge" />
-            {next.standard} · {next.stage}
-          </span>
-          <span>
-            <Icon name="i-clock" />
-            {next.time}
-          </span>
-          <span>
-            <Icon name="i-pin" />
-            {next.location}
-          </span>
+          {next.standard || next.stage ? (
+            <span>
+              <Icon name="i-badge" />
+              {[next.standard, next.stage].filter(Boolean).join(" · ")}
+            </span>
+          ) : null}
+          {next.time ? (
+            <span>
+              <Icon name="i-clock" />
+              {next.time}
+            </span>
+          ) : null}
+          {next.location ? (
+            <span>
+              <Icon name="i-pin" />
+              {next.location}
+            </span>
+          ) : null}
         </div>
         <div className="hm-next__act">
           <Link className="hm-next__go" to={auditsHref({ open: next.id })}>
@@ -58,7 +65,7 @@ export function HomeScreen() {
           </Link>
           <a
             className="hm-next__dir"
-            href={mapsUrl}
+            href={mapsUrl ?? undefined}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -67,6 +74,12 @@ export function HomeScreen() {
           </a>
         </div>
       </article>
+      ) : (
+        <article className="hm-next">
+          <div className="hm-next__lbl">NEXT AUDIT</div>
+          <h2 className="hm-next__title">No audits assigned to you</h2>
+        </article>
+      )}
 
       <nav className="hm-qa" aria-label="Quick actions">
         <Link to="/audits">
@@ -120,6 +133,7 @@ export function HomeScreen() {
 
       <h3 className="hm-sec">Today&apos;s schedule</h3>
       <div className="hm-card">
+        {schedule.length ? null : <p className="hm-row__body" style={{ padding: 12, margin: 0 }}>Nothing scheduled.</p>}
         {schedule.map((item) => (
           <button
             key={item.id}
@@ -155,7 +169,7 @@ export function HomeScreen() {
               ) : null}
             </div>
             <div style={{ fontSize: 12, color: "var(--muted-2)" }}>
-              Annual leave left
+              {me.leaveType ? `${me.leaveType} left` : "No leave allocated"}
             </div>
           </div>
           <div className="hm-glance__r">

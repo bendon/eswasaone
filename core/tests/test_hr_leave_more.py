@@ -52,7 +52,7 @@ async def test_queue_keeps_the_leaveview_shape(client: AsyncClient, monkeypatch:
     r = await client.get("/api/hr/leave", params={"status": "Open"})
     assert r.status_code == 200, r.text
     assert r.json()["items"] == [{"id": "HR-LAP-002", "employee": "Thandi Mamba", "leave_type": "Annual",
-                                  "from_date": "2026-11-02", "to_date": "2026-11-06", "status": "Open"}]
+                                  "from_date": "2026-11-02", "to_date": "2026-11-06", "status": "Open", "days": None}]
     assert calls == [("eswasa_hr.leave.requests", {"status": "Open"})]
 
 
@@ -139,7 +139,7 @@ async def test_new_request_goes_through_eswasa_hr(client: AsyncClient, monkeypat
     r = await client.post("/api/hr/leave", json=body)
     assert r.status_code == 201, r.text
     assert r.json() == {"id": "HR-LAP-009", "employee": "Thandi Mamba", "leave_type": "Annual",
-                        "from_date": "2026-11-02", "to_date": "2026-11-03", "status": "Open"}
+                        "from_date": "2026-11-02", "to_date": "2026-11-03", "status": "Open", "days": None}
     assert calls == [("eswasa_hr.leave.apply", {"leave_type": "Annual", "from_date": "2026-11-02", "to_date": "2026-11-03",
                                                 "reason": "Family", "confirm": True})]
 

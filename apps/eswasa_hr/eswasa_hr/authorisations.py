@@ -15,9 +15,10 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any
 
+from eswasa_hr import settings
+
 DOCTYPE = "Staff Authorisation"
 HR_ROLES = ("HR Manager", "HR User", "System Manager")
-EXPIRING_DAYS = 60
 EVIDENCE_TYPES = ("Training Result", "Witnessed audit", "Proficiency test", "File", "Other")
 LMS_PREFIX = "LMS:"  # a reference to an LMS Certificate is "LMS:<name>" (plan 07 step 6)
 
@@ -34,7 +35,7 @@ def _d(v: Any) -> date | None:
 
 
 def status_on(docstatus: int, valid_to: Any, day: date, withdrawn: bool = False) -> str:
-    """In training (draft) → Current → Expiring (≤60 days) → Expired; Withdrawn wins."""
+    """In training (draft) → Current → Expiring (within the first alert window, HR Settings) → Expired; Withdrawn wins."""
     if withdrawn:
         return "Withdrawn"
     if int(docstatus or 0) == 0:
@@ -46,7 +47,7 @@ def status_on(docstatus: int, valid_to: Any, day: date, withdrawn: bool = False)
         return "Current"
     if end < day:
         return "Expired"
-    if (end - day).days <= EXPIRING_DAYS:
+    if (end - day).days <= max(settings.get("expiry_alert_days")):
         return "Expiring"
     return "Current"
 
@@ -299,7 +300,7 @@ def sync_todo(doc: Any, method: str | None = None) -> None:
                 "status": "Open",
                 "priority": "Medium",
                 "assigned_by": doc.owner,
-                "date": add_days(_today(), 5),  # brief §12.1: 5 days
+                "date": add_days(_today(), settings.get("head_sla_days")),
             }
         ).insert(ignore_permissions=True)
 
@@ -566,10 +567,10 @@ def matrix_impl() -> dict[str, Any]:
     }
 
 
-def expiring_impl(days: int = EXPIRING_DAYS) -> list[dict[str, Any]]:
+def expiring_impl(days: int | None = None) -> list[dict[str, Any]]:
     _require_hr()
     day = _today()
-    limit = day + timedelta(days=int(days))
+    limit = day + timedelta(days=int(days) if days else max(settings.get("expiry_alert_days")))
     return sorted(
         [r for r in _all_rows({"docstatus": 1}) if r["valid_to"] and day <= _d(r["valid_to"]) <= limit],
         key=lambda r: r["valid_to"],
@@ -611,7 +612,7 @@ def ask_renewal_impl(skill: str, note: str) -> dict[str, Any]:
                 "reference_name": emp.name,
                 "status": "Open",
                 "priority": "Medium",
-                "date": add_days(_today(), 5),
+                "date": add_days(_today(), settings.get("head_sla_days")),
             }
         ).insert(ignore_permissions=True)
         created += 1
@@ -679,8 +680,8 @@ def matrix() -> dict[str, Any]:
 
 
 @_whitelist
-def expiring(days: Any = EXPIRING_DAYS) -> list[dict[str, Any]]:
-    return expiring_impl(int(days or EXPIRING_DAYS))
+def expiring(days: Any = None) -> list[dict[str, Any]]:
+    return expiring_impl(int(days) if days else None)
 
 
 @_whitelist

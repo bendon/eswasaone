@@ -22,6 +22,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Iterable
 
+from eswasa_hr import settings
+
 GRIEVANCE = "Employee Grievance"
 DISCIPLINARY = "Disciplinary Case"
 KIND_DOCTYPE = {"grievance": GRIEVANCE, "disciplinary": DISCIPLINARY}
@@ -373,7 +375,7 @@ def raise_impl(grievance_type: str | None, description: str, not_handled_by: lis
         frappe.throw("There's no HR Manager left to handle it. Take out one of the people you excluded, or speak to the Executive Director.", frappe.ValidationError)
     owner = candidates[0]
     company = frappe.db.get_value("Employee", me, "company")
-    due = add_days(_today(), 5)
+    due = add_days(_today(), settings.get("head_sla_days"))
     doc = frappe.get_doc(_grievance(me, company, f"Concern raised in confidence ({grievance_type or 'general'})", description, grievance_type, owner, "Meet the employee" if talk_first else "Acknowledge and plan the next step", due, talk_first))
     doc.insert(ignore_permissions=True)
     if not_handled_by:

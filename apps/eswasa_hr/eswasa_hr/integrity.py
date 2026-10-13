@@ -17,6 +17,8 @@ import json
 from datetime import date
 from typing import Any, Iterable
 
+from eswasa_hr import settings
+
 SNAPSHOT = "HR Integrity Snapshot"
 TOP_ROLE = "Eswasa Executive Director"
 RULE = "Record gaps"
@@ -124,7 +126,7 @@ def _active_rows() -> list[dict[str, Any]]:
 
     rows = frappe.get_all(
         "Employee",
-        filters={"status": "Active"},
+        filters=settings.live({"status": "Active"}),
         fields=["name", "employee_name", "department", "designation", "grade", "holiday_list", "company", "reports_to", "leave_approver", "user_id"],
         limit=0,
     )

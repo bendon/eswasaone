@@ -153,19 +153,17 @@ async def test_preview_balance_after_and_conflicts(client: AsyncClient, monkeypa
 
 
 @pytest.mark.asyncio
-async def test_preview_warns_over_balance_and_falls_back_to_weekdays(
+async def test_preview_never_guesses_days_when_hrms_fails(
     client: AsyncClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # HRMS's own count (holidays, half days, leave-type rules) or an error; never a Monday-to-Friday guess.
     _fake_frappe(monkeypatch, days=FrappeError("not whitelisted"))
-    body = (
-        await client.post(
-            "/api/hr/leave/preview",
-            json={"leave_type": "Annual Leave", "from_date": "2026-11-02", "to_date": "2026-11-20"},
-        )
-    ).json()
-    assert body["days"] == 15  # three working weeks
-    assert body["balance_after"] == -3
-    assert body["warnings"] == ["This is more than your balance of 12 days."]
+    resp = await client.post(
+        "/api/hr/leave/preview",
+        json={"leave_type": "Annual Leave", "from_date": "2026-11-02", "to_date": "2026-11-20"},
+    )
+    assert resp.status_code >= 400
+    assert "days" not in resp.json()
 
 
 @pytest.mark.asyncio

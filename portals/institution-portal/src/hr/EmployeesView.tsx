@@ -245,75 +245,81 @@ export function EmployeesView() {
                   <p>Name, gender, date of birth and date of joining are required by HRMS. Nothing is filled in for you.</p>
                 </div>
               </div>
-              <div className="hr-box__b">
-                <form className="hr-invite" onSubmit={(e) => void onAdd(e)}>
-                  <label>
-                    Full name
-                    <input required value={fullName} onChange={(e) => setFullName(e.target.value)} />
-                  </label>
-                  <label>
-                    Work email
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                  </label>
-                  <label>
-                    Gender
-                    <select required value={gender} onChange={(e) => setGender(e.target.value)}>
-                      <option value="">{opts.loading ? "Loading…" : opts.data?.genders.length ? "Choose…" : "None set up in HRMS"}</option>
-                      {(opts.data?.genders ?? []).map((g) => (
-                        <option key={g} value={g}>
-                          {g}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Date of birth
-                    <input type="date" required value={dob} onChange={(e) => setDob(e.target.value)} />
-                  </label>
-                  <label>
-                    Date of joining
-                    <input type="date" required value={joined} onChange={(e) => setJoined(e.target.value)} />
-                  </label>
-                  <label>
-                    Department
-                    <select value={department} onChange={(e) => setDepartment(e.target.value)}>
-                      <option value="">{depts.loading ? "Loading…" : depts.data?.items.length ? "Choose later" : "None set up yet"}</option>
-                      {(depts.data?.items ?? []).map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Designation
-                    <select value={designation} onChange={(e) => setDesignation(e.target.value)}>
-                      <option value="">{desigs.loading ? "Loading…" : desigs.data?.items.length ? "Choose later" : "None set up yet"}</option>
-                      {(desigs.data?.items ?? []).map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.title}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={invite}
-                      onChange={(e) => setInvite(e.target.checked)}
-                    />
-                    Also invite as Institution user (welcome email)
-                  </label>
-                  {addErr ? (
-                    <p className="page-note" role="alert" style={{ whiteSpace: "pre-line" }}>
-                      {addErr}
-                    </p>
-                  ) : null}
+              <form className="hr-box__b hr-form" onSubmit={(e) => void onAdd(e)}>
+                <h4 className="hr-sub wide">Person</h4>
+                <label className="hr-f">
+                  Full name
+                  <input className="hr-in" required value={fullName} placeholder="As on their ID" onChange={(e) => setFullName(e.target.value)} />
+                </label>
+                <label className="hr-f">
+                  <span>Work email <small>Optional</small></span>
+                  <input className="hr-in" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </label>
+                <label className="hr-f">
+                  Gender
+                  <select className="hr-in" required value={gender} onChange={(e) => setGender(e.target.value)}>
+                    <option value="">{opts.loading ? "Loading…" : opts.data?.genders.length ? "Choose…" : "None set up in HRMS"}</option>
+                    {(opts.data?.genders ?? []).map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="hr-f">
+                  Date of birth
+                  <input className="hr-in" type="date" required value={dob} onChange={(e) => setDob(e.target.value)} />
+                </label>
+
+                <h4 className="hr-sub wide">Job</h4>
+                <label className="hr-f">
+                  Date of joining
+                  <input className="hr-in" type="date" required value={joined} onChange={(e) => setJoined(e.target.value)} />
+                </label>
+                <label className="hr-f">
+                  <span>Department <small>Optional</small></span>
+                  <select className="hr-in" value={department} onChange={(e) => setDepartment(e.target.value)}>
+                    <option value="">{depts.loading ? "Loading…" : depts.data?.items.length ? "Choose later" : "None set up yet"}</option>
+                    {(depts.data?.items ?? []).map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="hr-f">
+                  <span>Designation <small>Optional</small></span>
+                  <select className="hr-in" value={designation} onChange={(e) => setDesignation(e.target.value)}>
+                    <option value="">{desigs.loading ? "Loading…" : desigs.data?.items.length ? "Choose later" : "None set up yet"}</option>
+                    {(desigs.data?.items ?? []).map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="hr-radio wide">
+                  <input type="checkbox" checked={invite} onChange={(e) => setInvite(e.target.checked)} />
+                  <span>
+                    <b>Also invite as Institution user</b>
+                    <small>Sends a welcome email so they can sign in to the portal.</small>
+                  </span>
+                </label>
+                {addErr ? (
+                  <p className="page-note wide" role="alert" style={{ whiteSpace: "pre-line", margin: 0 }}>
+                    {addErr}
+                  </p>
+                ) : null}
+                <div className="hr-actions wide">
+                  <button type="button" className="btn ghost" onClick={() => setShowAdd(false)}>
+                    Cancel
+                  </button>
                   <button type="submit" className="btn pri" disabled={busy}>
                     {busy ? "Saving…" : "Create employee"}
                   </button>
-                </form>
-              </div>
+                </div>
+              </form>
             </div>
           ) : null}
 

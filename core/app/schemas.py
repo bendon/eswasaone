@@ -2708,6 +2708,40 @@ class CreateCrmLeadBody(BaseModel):
     confirm: bool
 
 
+class CrmClientCertSummary(BaseModel):
+    id: str
+    standard: str
+    status: str
+
+
+class CrmClientApplicationSummary(BaseModel):
+    id: str
+    status: str
+    scheme: str | None = None
+
+
+class CrmClientSummary(BaseModel):
+    id: str
+    name: str
+    sector: str | None = None
+    region: str | None = None
+    tier: str | None = None
+    status: str = "active"
+    reg_no: str | None = None
+    since: str | None = None
+    exporter: bool = False
+    account_manager: str | None = None
+    tags: list[str] = []
+    contact_email: str | None = None
+    contact_phone: str | None = None
+    address: str | None = None
+    website: str | None = None
+    certificates: list[CrmClientCertSummary] = []
+    applications: list[CrmClientApplicationSummary] = []
+    health_score: int | None = None
+    health_band: str | None = None
+
+
 class CrmDealSummary(BaseModel):
     id: str
     title: str

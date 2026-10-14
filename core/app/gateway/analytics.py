@@ -159,7 +159,7 @@ async def fetch_metric(session: FrappeClient, metric: str) -> dict[str, Any]:
         rows = await _get_list(
             session,
             "Budget",
-            fields=["name", "cost_center", "from_fiscal_year", "to_fiscal_year", "company", "budget_amount"],
+            fields=["name", "cost_center", "from_fiscal_year", "to_fiscal_year", "budget_amount"],
             limit=100,
             order_by="modified desc",
         )

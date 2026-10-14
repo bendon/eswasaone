@@ -48,6 +48,9 @@ from app.schemas import (
     CreateFinanceInvoiceBody,
     CreateHrEmployeeBody,
     CreateHrLeaveBody,
+    CrmClientSummary,
+    CrmClientCertSummary,
+    CrmClientApplicationSummary,
     CrmDealSummary,
     CrmLeadSummary,
     CrmPipeline,
@@ -2013,8 +2016,29 @@ async def _load_company(session: FrappeClient) -> dict[str, Any] | None:
     name = str(rows[0].get("name") or "")
     if not name:
         return rows[0]
-    doc = await _frappe_get_doc(session, "Company", name, optional=True)
-    return doc or rows[0]
+    # Use a second get_list (not frappe.client.get) to fetch the full row,
+    # because some roles (e.g. HR User) have get_list read access but not
+    # frappe.get_doc read access on Company.  Only request standard fields
+    # that actually exist on the Company DocType to avoid "Field not
+    # permitted in query" errors.
+    extra_rows = await _frappe_get_list(
+        session,
+        "Company",
+        fields=[
+            "name",
+            "company_name",
+            "abbr",
+            "domain",
+            "date_of_establishment",
+            "tax_id",
+            "default_currency",
+            "country",
+        ],
+        filters=[["name", "=", name]],
+        limit=1,
+        optional=True,
+    )
+    return extra_rows[0] if extra_rows else rows[0]
 
 
 async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOverview:
@@ -2028,7 +2052,6 @@ async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOvervi
             "name",
             "department_name",
             "parent_department",
-            "company",
             "disabled",
             "is_group",
             "payroll_cost_center",
@@ -2050,7 +2073,7 @@ async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOvervi
     loc_rows = await _frappe_get_list(
         session,
         "Branch",
-        fields=["name", "branch", "company"],
+        fields=["name", "branch"],
         limit=100,
         order_by="name asc",
         optional=True,
@@ -2058,7 +2081,7 @@ async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOvervi
     cc_rows = await _frappe_get_list(
         session,
         "Cost Center",
-        fields=["name", "cost_center_name", "company", "disabled", "is_group", "parent_cost_center"],
+        fields=["name", "cost_center_name", "disabled", "is_group", "parent_cost_center"],
         filters=[["is_group", "=", 0]],
         limit=200,
         order_by="name asc",
@@ -2067,7 +2090,7 @@ async def _aggregate_org_overview(session: FrappeClient) -> HrOrganisationOvervi
     grade_rows = await _frappe_get_list(
         session,
         _EMPLOYEE_GRADE_DOCTYPE,
-        fields=["name", "description"],
+        fields=["name", "default_base_pay"],
         limit=100,
         order_by="name asc",
         optional=True,
@@ -2347,7 +2370,6 @@ async def list_hr_departments(
                 "name",
                 "department_name",
                 "parent_department",
-                "company",
                 "disabled",
                 "is_group",
                 "payroll_cost_center",
@@ -2696,7 +2718,7 @@ async def list_hr_grade_bands(
         rows = await _frappe_get_list(
             auth.frappe(frappe),
             _EMPLOYEE_GRADE_DOCTYPE,
-            fields=["name", "description"],
+            fields=["name", "default_base_pay"],
             limit=100,
             order_by="name asc",
             optional=True,
@@ -2792,7 +2814,7 @@ async def list_hr_locations(
         rows = await _frappe_get_list(
             session,
             "Branch",
-            fields=["name", "branch", "company"],
+            fields=["name", "branch"],
             limit=100,
             order_by="name asc",
             optional=True,
@@ -2899,7 +2921,6 @@ async def list_hr_cost_centres(
             fields=[
                 "name",
                 "cost_center_name",
-                "company",
                 "disabled",
                 "is_group",
                 "parent_cost_center",
@@ -3422,7 +3443,7 @@ async def get_finance_budget(
         rows = await _frappe_get_list(
             auth.frappe(frappe),
             "Budget",
-            fields=["name", "cost_center", "from_fiscal_year", "to_fiscal_year", "company", "budget_amount"],
+            fields=["name", "cost_center", "from_fiscal_year", "to_fiscal_year", "budget_amount"],
             limit=100,
             order_by="modified desc",
             soft=True,
@@ -6067,6 +6088,149 @@ async def create_crm_deal(
         raw = await _frappe_insert(auth.frappe(frappe), doc)
         return _as_crm_deal(raw)
     except FrappeError as exc:
+        _raise_from_frappe(exc)
+        raise  # pragma: no cover
+
+
+# ---------------------------------------------------------------------------
+# CRM Clients — aggregated from Customer + Certification Application
+# ---------------------------------------------------------------------------
+
+
+def _as_crm_client(
+    cust: dict[str, Any],
+    apps_by_customer: dict[str, list[dict[str, Any]]] | None = None,
+) -> CrmClientSummary:
+    """Map a Frappe Customer row + linked applications → CrmClientSummary."""
+    cid = cust.get("name", "")
+    apps = (apps_by_customer or {}).get(cid, [])
+    certs: list[CrmClientCertSummary] = []
+    app_summaries: list[CrmClientApplicationSummary] = []
+    for a in apps:
+        status = a.get("workflow_state", "Application")
+        scheme = a.get("scheme") or None
+        app_summaries.append(
+            CrmClientApplicationSummary(id=a.get("name", ""), status=status, scheme=scheme)
+        )
+        if status in ("Certified", "Surveillance", "Renewal"):
+            certs.append(
+                CrmClientCertSummary(
+                    id=a.get("name", ""),
+                    standard=a.get("scheme") or "Certified",
+                    status=status,
+                )
+            )
+    # Derive a basic health band from application status
+    health_band: str | None = None
+    health_score: int | None = None
+    if certs:
+        health_band = "good"
+        health_score = 85
+    elif app_summaries:
+        any_active = any(a.status not in ("Withdraw", "Application") for a in app_summaries)
+        health_band = "watch" if any_active else "risk"
+        health_score = 65 if any_active else 40
+
+    return CrmClientSummary(
+        id=cid,
+        name=cust.get("customer_name") or cust.get("name") or "",
+        sector=cust.get("customer_group") or None,
+        region=cust.get("territory") or None,
+        tier="Standard",
+        status="active" if certs or app_summaries else "prospect",
+        reg_no=cust.get("tax_id") or None,
+        since=None,
+        exporter=False,
+        account_manager=None,
+        tags=[],
+        contact_email=cust.get("email_id") or None,
+        contact_phone=cust.get("mobile_no") or None,
+        address=None,
+        website=cust.get("website") or None,
+        certificates=certs,
+        applications=app_summaries,
+        health_score=health_score,
+        health_band=health_band,
+    )
+
+
+@router.get("/crm/clients", tags=["crm"])
+async def list_crm_clients(
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    frappe: Annotated[FrappeClient, Depends(get_frappe_client)],
+    limit: int = 50,
+) -> dict[str, list[CrmClientSummary]]:
+    """List CRM clients.
+
+    Aggregates Frappe ``Customer`` records with linked ``Certification Application``
+    records so the Institution Portal CRM → Clients page shows real organisations
+    that applied through the Public Service Portal.
+    """
+    if auth.mock or not await frappe.health():
+        raise HTTPException(status_code=503, detail="Frappe unavailable")
+    session = auth.frappe(frappe)
+    try:
+        # 1. Fetch Customers
+        customers = await _frappe_get_list(
+            session,
+            "Customer",
+            fields=["name", "customer_name", "customer_group", "customer_type",
+                    "territory", "tax_id", "email_id", "mobile_no", "website"],
+            limit=limit,
+            order_by="modified desc",
+            soft=True,
+        )
+        # 2. Fetch Certification Applications to link by customer name
+        #    Certification Application has applicant_name but not a Customer link field,
+        #    so we match by applicant_name == customer name.
+        apps_raw = await _frappe_get_list(
+            session,
+            "Certification Application",
+            fields=["name", "applicant_name", "applicant_org", "workflow_state", "scheme"],
+            limit=200,
+            order_by="modified desc",
+            soft=True,
+        )
+        # Build lookup: customer name → list of applications
+        apps_by_customer: dict[str, list[dict[str, Any]]] = {}
+        for a in apps_raw:
+            # Match on applicant_name or applicant_org matching customer name
+            key = a.get("applicant_name") or a.get("applicant_org") or ""
+            if key:
+                apps_by_customer.setdefault(key, []).append(a)
+        # 3. Build client summaries
+        items = []
+        for c in customers:
+            cname = c.get("customer_name") or c.get("name") or ""
+            linked_apps = apps_by_customer.get(cname, [])
+            items.append(_as_crm_client(c, {c.get("name", ""): linked_apps}))
+        # Also include applications that have no matching Customer yet (prospects)
+        existing_names = {c.get("customer_name") or c.get("name") for c in customers}
+        for a in apps_raw:
+            aname = a.get("applicant_name") or a.get("applicant_org") or ""
+            if aname and aname not in existing_names:
+                # Create a prospect client from the application
+                items.append(CrmClientSummary(
+                    id=f"APP-{a.get('name', '')}",
+                    name=aname,
+                    status="prospect",
+                    applications=[CrmClientApplicationSummary(
+                        id=a.get("name", ""),
+                        status=a.get("workflow_state", "Application"),
+                        scheme=a.get("scheme") or None,
+                    )],
+                ))
+                existing_names.add(aname)
+        return {"items": items}
+    except FrappeError as exc:
+        text = str(exc)
+        if (
+            exc.status_code == 403
+            or "PermissionError" in text
+            or "Insufficient Permission" in text
+            or "Not permitted" in text
+        ):
+            return {"items": []}
         _raise_from_frappe(exc)
         raise  # pragma: no cover
 

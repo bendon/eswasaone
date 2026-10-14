@@ -624,6 +624,7 @@ class HrLeaveSummary(BaseModel):
     from_date: str | None = None
     to_date: str | None = None
     status: str
+    days: float | None = None  # HRMS total_leave_days (holidays and half days counted)
 
 
 class CreateHrLeaveBody(BaseModel):
@@ -1002,6 +1003,7 @@ class CareerOpening(BaseModel):
     posted_on: str | None = None
     closes_on: str | None = None
     salary: CareerSalary | None = None
+    contact_email: str | None = None  # HR Settings hr_email
 
 
 class CareerApplicationReceipt(BaseModel):
@@ -1225,7 +1227,7 @@ class HrTeamCalendarEntry(BaseModel):
     label: str
     from_date: str
     to_date: str
-    approved: bool = True
+    approved: bool
 
 
 class HrTeamCalendar(BaseModel):
@@ -1835,17 +1837,59 @@ class HrLiveOverview(BaseModel):
     """GET /hr/overview/live — H0: needs attention, establishment, away today, movements, record quality."""
 
     as_of: str
-    headcount: int = 0
-    departments: int = 0
+    headcount: int
+    departments: int
     establishment: HrOverviewEstablishment = Field(default_factory=HrOverviewEstablishment)
     attention: list[HrAttentionItem] = Field(default_factory=list)
     away_today: list[HrAwayToday] = Field(default_factory=list)
     movements: HrMovements = Field(default_factory=HrMovements)
+    windows: dict[str, int] = Field(default_factory=dict)  # day windows behind movements / turnover / ending soon
     turnover: HrTurnover = Field(default_factory=HrTurnover)
     ending_soon: dict[str, int] = Field(default_factory=dict)
     record_quality: list[HrRecordGap] = Field(default_factory=list)
     record_checked_on: str | None = None  # R-H7: when the nightly integrity check last ran (None = live, not yet run)
     cycles: list[HrCycleStatus] = Field(default_factory=list)
+
+
+class HrSettingsLists(BaseModel):
+    evidence_types: list[str] = Field(default_factory=list)
+    external_roles: list[str] = Field(default_factory=list)
+    document_types: list[str] = Field(default_factory=list)
+    evidence_sections: list[str] = Field(default_factory=list)
+    separation_reasons: list[str] = Field(default_factory=list)
+    contract_changes: list[str] = Field(default_factory=list)
+    establishment_changes: list[str] = Field(default_factory=list)
+    council_changes: list[str] = Field(default_factory=list)
+    invite_roles: list[str] = Field(default_factory=list)
+    invite_default_roles: list[str] = Field(default_factory=list)
+    case_stages: dict[str, list[str]] = Field(default_factory=dict)
+    case_closed: dict[str, list[str]] = Field(default_factory=dict)
+
+
+class HrSettings(BaseModel):
+    """GET /hr/settings: the HR rules and limits screens show (eswasa_hr.settings), never typed into the UI."""
+
+    leave_sla_days: int
+    expense_sla_days: int
+    decision_sla_days: int
+    head_sla_days: int
+    interview_feedback_days: int
+    offer_reply_days: int
+    contract_notice_days: int
+    probation_notice_days: int
+    expiry_alert_days: list[int]
+    thin_cover: int
+    declaration_handoff_days: int
+    movement_days: int
+    turnover_days: int
+    cycle_warn_days: int
+    appraisal_reminder_days: list[int]
+    calendar_max_days: int
+    rating_max: int
+    hr_email: str
+    currency: str | None = None
+    working_week: list[int]
+    lists: HrSettingsLists
 
 
 class HrSetupStep(BaseModel):
@@ -1885,7 +1929,7 @@ class HrBoardPack(BaseModel):
     """GET /hr/board-pack — H15 for the Council HR & Remuneration Committee. Aggregates only, no names."""
 
     as_of: str
-    headcount: int = 0
+    headcount: int
     establishment: HrEstCounts | None = None
     turnover: HrTurnover = Field(default_factory=HrTurnover)
     appraisals: HrCycleStatus | None = None
@@ -1957,7 +2001,7 @@ class HrLeaveCalendarEntry(BaseModel):
     label: str
     from_date: str
     to_date: str
-    approved: bool = True
+    approved: bool
     style: str  # solid (approved) | dashed (open) | F (field visit)
 
 
@@ -2369,9 +2413,9 @@ class HrDepartment(BaseModel):
     head: HrEmployeeRef | None = None
     cost_centre: HrCostCentreRef | None = None
     status: Literal["active", "archived"] = "active"
-    designation_count: int = 0
+    designation_count: int | None = None  # distinct posts held by active staff in the department
     filled_count: int = 0
-    total_positions: int = 0
+    total_positions: int | None = None  # approved posts (submitted Staffing Plans); None until a plan exists
 
 
 class HrDepartmentCreate(BaseModel):
@@ -2434,7 +2478,7 @@ class HrGradeBand(BaseModel):
     level: int | None = None
     min_salary: float | None = None
     max_salary: float | None = None
-    currency: str | None = "SZL"
+    currency: str | None = None
 
 
 class HrGradeBandCreate(BaseModel):
@@ -2444,7 +2488,7 @@ class HrGradeBandCreate(BaseModel):
     level: int | None = None
     min_salary: float | None = None
     max_salary: float | None = None
-    currency: str = "SZL"
+    currency: str | None = None  # the company currency when not given
 
 
 class HrGradeBandPatch(BaseModel):
@@ -2662,6 +2706,40 @@ class CreateCrmLeadBody(BaseModel):
     title: str
     organization: str | None = None
     confirm: bool
+
+
+class CrmClientCertSummary(BaseModel):
+    id: str
+    standard: str
+    status: str
+
+
+class CrmClientApplicationSummary(BaseModel):
+    id: str
+    status: str
+    scheme: str | None = None
+
+
+class CrmClientSummary(BaseModel):
+    id: str
+    name: str
+    sector: str | None = None
+    region: str | None = None
+    tier: str | None = None
+    status: str = "active"
+    reg_no: str | None = None
+    since: str | None = None
+    exporter: bool = False
+    account_manager: str | None = None
+    tags: list[str] = []
+    contact_email: str | None = None
+    contact_phone: str | None = None
+    address: str | None = None
+    website: str | None = None
+    certificates: list[CrmClientCertSummary] = []
+    applications: list[CrmClientApplicationSummary] = []
+    health_score: int | None = None
+    health_band: str | None = None
 
 
 class CrmDealSummary(BaseModel):

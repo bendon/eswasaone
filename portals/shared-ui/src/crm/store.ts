@@ -26,11 +26,15 @@ import type {
   CaseType,
   CaseChannel,
   Client,
+  ClientApplication,
+  ClientCert,
+  ClientTier,
   CrmActor,
   CrmConfig,
   CrmQuote,
   Opportunity,
   OpportunityStage,
+  Region,
   Signal,
   KbArticle,
   MessageDelivery,
@@ -659,18 +663,92 @@ export async function handOff(ref: string, actor: CrmActor, kind: "investigation
 
 /* ---------------- clients ---------------- */
 
+/** Shape returned by GET /crm/clients (Core API). */
+type ApiCrmClient = {
+  id: string;
+  name: string;
+  sector?: string | null;
+  region?: string | null;
+  tier?: string | null;
+  status?: string | null;
+  reg_no?: string | null;
+  since?: string | null;
+  exporter?: boolean | null;
+  account_manager?: string | null;
+  tags?: string[] | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  address?: string | null;
+  website?: string | null;
+  certificates?: { id: string; standard: string; status: string }[];
+  applications?: { id: string; status: string; scheme?: string | null }[];
+  health_score?: number | null;
+  health_band?: string | null;
+};
+
+/** Map a Core API client summary → portal Client type. */
+function apiClientToClient(c: ApiCrmClient): Client {
+  const now = new Date().toISOString().slice(0, 10);
+  const certs: ClientCert[] = (c.certificates ?? []).map((x) => ({
+    id: x.id,
+    scheme: x.standard,
+    standard: x.standard,
+    status: x.status === "Certified" || x.status === "Surveillance" || x.status === "Renewal"
+      ? "valid"
+      : "expired",
+    issued: now,
+    expires: now,
+  }));
+  const apps: ClientApplication[] = (c.applications ?? []).map((x) => ({
+    id: x.id,
+    scheme: x.scheme ?? "",
+    stage: x.status,
+    opened: now,
+  }));
+  return {
+    id: c.id,
+    name: c.name,
+    sector: c.sector ?? "Unknown",
+    region: (c.region ?? "Manzini") as Region,
+    tier: (c.tier ?? "Standard") as ClientTier,
+    status: (c.status ?? "active") as "active" | "prospect" | "dormant",
+    reg_no: c.reg_no ?? undefined,
+    since: c.since ?? now,
+    exporter: c.exporter ?? false,
+    account_manager: c.account_manager ?? undefined,
+    tags: c.tags ?? [],
+    contacts: [],
+    certificates: certs,
+    applications: apps,
+    instruments: [],
+    training: [],
+    orders: [],
+    invoices: [],
+    activity: [],
+    address: c.address ?? undefined,
+    website: c.website ?? undefined,
+  };
+}
+
 export async function listClients(): Promise<Client[]> {
-  // TODO: wire real — GET /crm/clients (Customer / CRM Organization).
-  if (!crmDemoMode()) return [];
-  guard("Clients");
-  return structuredClone(Object.values(read().clients)).sort((a, b) => a.name.localeCompare(b.name));
+  if (crmDemoMode()) {
+    guard("Clients");
+    return structuredClone(Object.values(read().clients)).sort((a, b) => a.name.localeCompare(b.name));
+  }
+  // Wire real: GET /crm/clients (Core → Frappe Customer + Certification Application)
+  const res = await apiFetch<{ items: ApiCrmClient[] }>("/crm/clients");
+  return res.items.map(apiClientToClient).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function getClient(id: string): Promise<Client | null> {
-  if (!crmDemoMode()) return null;
-  guard("Client");
-  const c = read().clients[id];
-  return c ? structuredClone(c) : null;
+  if (crmDemoMode()) {
+    guard("Client");
+    const c = read().clients[id];
+    return c ? structuredClone(c) : null;
+  }
+  // Wire real: fetch all clients and find by id (single-client endpoint not yet available)
+  const clients = await listClients();
+  return clients.find((c) => c.id === id) ?? null;
 }
 
 /** Public register search: certified clients only, public fields only. */

@@ -116,3 +116,6 @@ def after_migrate() -> None:
     # Only disable fixtures when no Active employees yet (safe on greenfield).
     if frappe.db.count("Employee", {"status": "Active"}) == 0:
         disable_erpnext_department_fixtures()
+    from eswasa_hr.demo_seed import after_migrate as demo_people
+
+    demo_people()  # demo sites only (site_config eswasa_demo_seed); a no-op everywhere else

@@ -138,3 +138,31 @@ The specs that touch the README "Frontend conflicts" (Time off buttons, Add pers
 Add a dated entry to `HR_PEOPLE_HANDOVER.md`: the commit, the install check result, the seed's `skipped` list, and the Playwright summary (passed / failed / skipped, with each failure's first line). A skip is not a pass: list why each one skipped.
 
 **Remove the test people when done.** Disable the `E2E …` users (Desk → User list, filter on the e2e mailbox) and set `eswasa_e2e_seed` back to 0.
+
+## 10. Demo people (demo sites only)
+
+Three joiners who went through the whole hire journey, plus the staff who ran it, for exploring the portal. Add to the demo site's `site_config.json`:
+
+```json
+"eswasa_demo_seed": 1,
+"eswasa_demo_password": "<one password for every demo login>"
+```
+
+The next `bench --site <site> migrate` seeds them (the last `after_migrate` step), or run it now:
+
+```bash
+bench --site <site> execute eswasa_hr.demo_seed.run
+```
+
+| Login | Who | Role in the journey |
+|---|---|---|
+| `nomvula.dlamini@eswasa.demo` | Human Resources Manager | Raises the requisitions, prepares the offers, starts onboarding |
+| `sandile.motsa@eswasa.demo` | Senior HR Officer (HR Manager role) | Second HR approval, approves the offers, interview panel |
+| `mduduzi.nxumalo@eswasa.demo` | Certification Manager, head of Certification | Head approval, interview panel, line manager |
+| `lindiwe.mamba@eswasa.demo` | Certification Officer, joined ~3 months ago | Joiner |
+| `sibusiso.maseko@eswasa.demo` | Lead Auditor, joined ~2 months ago | Joiner (spouse and child as dependants) |
+| `phumzile.hlophe@eswasa.demo` | Technical Reviewer, joined ~3 weeks ago | Joiner |
+
+Every login has the emailed sign-in code switched off (`User.custom_otp_enabled = 0`), so sign in with the email and the password only. The addresses can't receive mail (`eswasa_demo_mail_domain` changes the domain), and personal emails are `@example.com`. Each hire takes one of Certification's open vacancies; a hire with no vacancy left is listed under `skipped` in `sites/<site>/private/hr_demo_seed.json`. Running it again only finishes what's missing.
+
+Never set the flag on production. To retire the demo, disable the six users and set `eswasa_demo_seed` to 0.

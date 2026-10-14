@@ -1,0 +1,409 @@
+{
+ "note": "Provisional: the approved posts per department, each department's head and the roles beyond the default staff roles. Staff numbers refer to staff_records.csv.",
+ "establishment": [
+  {
+   "department": "Executive Office",
+   "posts": [
+    {
+     "designation": "Executive Director",
+     "positions": 1
+    },
+    {
+     "designation": "Executive Assistant",
+     "positions": 1
+    },
+    {
+     "designation": "Executive Driver",
+     "positions": 1
+    }
+   ]
+  },
+  {
+   "department": "Internal Audit",
+   "posts": [
+    {
+     "designation": "Internal Audit Manager",
+     "positions": 1
+    },
+    {
+     "designation": "Internal Auditor",
+     "positions": 1
+    }
+   ]
+  },
+  {
+   "department": "Legal and Board Secretariat",
+   "posts": [
+    {
+     "designation": "Legal Officer and Board Secretary",
+     "positions": 1
+    }
+   ]
+  },
+  {
+   "department": "Quality and Risk",
+   "posts": [
+    {
+     "designation": "Quality Manager",
+     "positions": 1
+    },
+    {
+     "designation": "Quality Officer",
+     "positions": 1
+    }
+   ]
+  },
+  {
+   "department": "Standards Development",
+   "posts": [
+    {
+     "designation": "Standards Development Manager",
+     "positions": 1
+    },
+    {
+     "designation": "Senior Standards Officer",
+     "positions": 2
+    },
+    {
+     "designation": "Standards Officer",
+     "positions": 6
+    },
+    {
+     "designation": "Standards Assistant",
+     "positions": 1
+    }
+   ]
+  },
+  {
+   "department": "Certification",
+   "posts": [
+    {
+     "designation": "Certification Manager",
+     "positions": 1
+    },
+    {
+     "designation": "Lead Auditor",
+     "positions": 4
+    },
+    {
+     "designation": "Technical Reviewer",
+     "positions": 2
+    },
+    {
+     "designation": "Certification Officer",
+     "positions": 5
+    },
+    {
+     "designation": "Certification Administrator",
+     "positions": 2
+    }
+   ]
+  },
+  {
+   "department": "Testing Laboratory",
+   "posts": [
+    {
+     "designation": "Laboratory Manager",
+     "positions": 1
+    },
+    {
+     "designation": "Senior Laboratory Analyst",
+     "positions": 2
+    },
+    {
+     "designation": "Laboratory Analyst",
+     "positions": 6
+    },
+    {
+     "designation": "Laboratory Technician",
+     "positions": 3
+    },
+    {
+     "designation": "Sample Receiving Clerk",
+     "positions": 1
+    }
+   ]
+  },
+  {
+   "department": "Metrology",
+   "posts": [
+    {
+     "designation": "Metrology Manager",
+     "positions": 1
+    },
+    {
+     "designation": "Senior Metrologist",
+     "positions": 2
+    },
+    {
+     "designation": "Metrologist",
+     "positions": 6
+    },
+    {
+     "designation": "Metrology Technician",
+     "positions": 3
+    }
+   ]
+  },
+  {
+   "department": "Information and Training Centre",
+   "posts": [
+    {
+     "designation": "Information Centre Manager",
+     "positions": 1
+    },
+    {
+     "designation": "Information Officer",
+     "positions": 2
+    },
+    {
+     "designation": "Training Officer",
+     "positions": 1
+    },
+    {
+     "designation": "Standards Sales Officer",
+     "positions": 1
+    }
+   ]
+  },
+  {
+   "department": "Human Resources",
+   "posts": [
+    {
+     "designation": "Human Resources Manager",
+     "positions": 1
+    },
+    {
+     "designation": "Senior Human Resources Officer",
+     "positions": 1
+    },
+    {
+     "designation": "Human Resources Officer",
+     "positions": 1
+    },
+    {
+     "designation": "Human Resources Assistant",
+     "positions": 1
+    }
+   ]
+  },
+  {
+   "department": "Finance",
+   "posts": [
+    {
+     "designation": "Finance Manager",
+     "positions": 1
+    },
+    {
+     "designation": "Accountant",
+     "positions": 2
+    },
+    {
+     "designation": "Accounts Officer",
+     "positions": 2
+    }
+   ]
+  },
+  {
+   "department": "Procurement",
+   "posts": [
+    {
+     "designation": "Procurement Officer",
+     "positions": 1
+    },
+    {
+     "designation": "Stores Clerk",
+     "positions": 1
+    }
+   ]
+  },
+  {
+   "department": "ICT",
+   "posts": [
+    {
+     "designation": "ICT Manager",
+     "positions": 1
+    },
+    {
+     "designation": "Systems Administrator",
+     "positions": 1
+    },
+    {
+     "designation": "ICT Support Technician",
+     "positions": 2
+    }
+   ]
+  },
+  {
+   "department": "Marketing and Communications",
+   "posts": [
+    {
+     "designation": "Marketing and Communications Manager",
+     "positions": 1
+    },
+    {
+     "designation": "Marketing Officer",
+     "positions": 2
+    },
+    {
+     "designation": "Communications Officer",
+     "positions": 1
+    },
+    {
+     "designation": "Customer Service Officer",
+     "positions": 1
+    }
+   ]
+  },
+  {
+   "department": "Administration",
+   "posts": [
+    {
+     "designation": "Administration Officer",
+     "positions": 1
+    },
+    {
+     "designation": "Receptionist",
+     "positions": 1
+    },
+    {
+     "designation": "Driver",
+     "positions": 2
+    },
+    {
+     "designation": "Cleaner",
+     "positions": 2
+    },
+    {
+     "designation": "Messenger",
+     "positions": 1
+    }
+   ]
+  }
+ ],
+ "heads": {
+  "Executive Office": "ESW-001",
+  "Internal Audit": "ESW-004",
+  "Legal and Board Secretariat": "ESW-006",
+  "Quality and Risk": "ESW-007",
+  "Standards Development": "ESW-009",
+  "Certification": "ESW-018",
+  "Testing Laboratory": "ESW-029",
+  "Metrology": "ESW-041",
+  "Information and Training Centre": "ESW-052",
+  "Human Resources": "ESW-057",
+  "Finance": "ESW-061",
+  "Procurement": "ESW-066",
+  "ICT": "ESW-068",
+  "Marketing and Communications": "ESW-072",
+  "Administration": "ESW-077"
+ },
+ "roles": {
+  "ESW-001": [
+   "Eswasa Executive Director",
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-004": [
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-006": [
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-007": [
+   "Eswasa Quality Manager",
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-009": [
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-018": [
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-029": [
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-041": [
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-052": [
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-057": [
+   "HR Manager",
+   "HR User",
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-058": [
+   "HR Manager",
+   "HR User",
+   "Interviewer"
+  ],
+  "ESW-059": [
+   "HR User"
+  ],
+  "ESW-060": [
+   "HR User"
+  ],
+  "ESW-061": [
+   "Accounts Manager",
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-062": [
+   "Accounts User"
+  ],
+  "ESW-063": [
+   "Accounts User"
+  ],
+  "ESW-064": [
+   "Accounts User"
+  ],
+  "ESW-065": [
+   "Accounts User"
+  ],
+  "ESW-066": [
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-068": [
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-072": [
+   "Interviewer",
+   "Leave Approver"
+  ],
+  "ESW-077": [
+   "Interviewer",
+   "Leave Approver"
+  ]
+ },
+ "staff_import": [
+  {
+   "pass": 1,
+   "file": "staff_records.csv"
+  },
+  {
+   "pass": 2,
+   "file": "staff_logins.csv"
+  },
+  {
+   "pass": 2,
+   "file": "staff_lines.csv"
+  },
+  {
+   "pass": 3,
+   "file": "staff_leave.csv"
+  }
+ ]
+}

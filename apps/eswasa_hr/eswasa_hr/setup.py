@@ -2,7 +2,8 @@
 One-shot / migrate helpers for HR master data.
 
 Does NOT invent ESWASA departments or staff — only disables known ERPNext
-install fixtures and applies HR Settings flags from the brief §1.
+install fixtures and applies HR Settings flags from the brief §1. Staging and
+demo sites can load the provisional baseline (eswasa_hr.baseline, data/baseline/).
 """
 
 from __future__ import annotations
@@ -116,6 +117,9 @@ def after_migrate() -> None:
     # Only disable fixtures when no Active employees yet (safe on greenfield).
     if frappe.db.count("Employee", {"status": "Active"}) == 0:
         disable_erpnext_department_fixtures()
+    from eswasa_hr.baseline import after_migrate as baseline
     from eswasa_hr.demo_seed import after_migrate as demo_people
+
+    baseline()  # staging and demo sites only (site_config eswasa_hr_baseline); a no-op everywhere else
 
     demo_people()  # demo sites only (site_config eswasa_demo_seed); a no-op everywhere else

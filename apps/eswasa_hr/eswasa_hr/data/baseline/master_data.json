@@ -1,0 +1,1529 @@
+{
+ "version": "Provisional Eswatini baseline 2026-10 (not ESWASA-signed; replace with ESWASA's file when supplied)",
+ "branches": [
+  {
+   "name": "Matsapha Head Office"
+  },
+  {
+   "name": "Mbabane Office"
+  }
+ ],
+ "employment_types": [
+  {
+   "name": "Permanent"
+  },
+  {
+   "name": "Fixed-term contract"
+  },
+  {
+   "name": "Internship"
+  }
+ ],
+ "grades": [
+  {
+   "name": "A2"
+  },
+  {
+   "name": "A3"
+  },
+  {
+   "name": "B2"
+  },
+  {
+   "name": "B3"
+  },
+  {
+   "name": "B4"
+  },
+  {
+   "name": "C1"
+  },
+  {
+   "name": "C2"
+  },
+  {
+   "name": "C3"
+  },
+  {
+   "name": "C4"
+  },
+  {
+   "name": "C5"
+  },
+  {
+   "name": "D1"
+  },
+  {
+   "name": "D2"
+  },
+  {
+   "name": "D3"
+  },
+  {
+   "name": "E1"
+  }
+ ],
+ "departments": [
+  {
+   "name": "Office of the Executive Director",
+   "parent": null
+  },
+  {
+   "name": "Executive Office",
+   "parent": "Office of the Executive Director"
+  },
+  {
+   "name": "Internal Audit",
+   "parent": "Office of the Executive Director"
+  },
+  {
+   "name": "Legal and Board Secretariat",
+   "parent": "Office of the Executive Director"
+  },
+  {
+   "name": "Quality and Risk",
+   "parent": "Office of the Executive Director"
+  },
+  {
+   "name": "Technical Services",
+   "parent": null
+  },
+  {
+   "name": "Standards Development",
+   "parent": "Technical Services"
+  },
+  {
+   "name": "Certification",
+   "parent": "Technical Services"
+  },
+  {
+   "name": "Testing Laboratory",
+   "parent": "Technical Services"
+  },
+  {
+   "name": "Metrology",
+   "parent": "Technical Services"
+  },
+  {
+   "name": "Information and Training Centre",
+   "parent": "Technical Services"
+  },
+  {
+   "name": "Corporate Services",
+   "parent": null
+  },
+  {
+   "name": "Human Resources",
+   "parent": "Corporate Services"
+  },
+  {
+   "name": "Finance",
+   "parent": "Corporate Services"
+  },
+  {
+   "name": "Procurement",
+   "parent": "Corporate Services"
+  },
+  {
+   "name": "ICT",
+   "parent": "Corporate Services"
+  },
+  {
+   "name": "Marketing and Communications",
+   "parent": "Corporate Services"
+  },
+  {
+   "name": "Administration",
+   "parent": "Corporate Services"
+  }
+ ],
+ "designations": [
+  {
+   "name": "Executive Director",
+   "grade": "E1",
+   "description": "Leads the Authority and reports to the Council."
+  },
+  {
+   "name": "Executive Assistant",
+   "grade": "B4",
+   "description": "Diary, correspondence and meetings for the Executive Director."
+  },
+  {
+   "name": "Executive Driver",
+   "grade": "A3",
+   "description": "Drives the Executive Director and keeps the logbook."
+  },
+  {
+   "name": "Internal Audit Manager",
+   "grade": "D2",
+   "description": "Plans and leads internal audits; reports to the Council audit committee."
+  },
+  {
+   "name": "Internal Auditor",
+   "grade": "C3",
+   "description": "Carries out internal audits of finance and operations."
+  },
+  {
+   "name": "Legal Officer and Board Secretary",
+   "grade": "D1",
+   "description": "Legal advice, contracts, and the Council's secretariat."
+  },
+  {
+   "name": "Quality Manager",
+   "grade": "D1",
+   "description": "Keeps the Authority's management system and accreditation in order."
+  },
+  {
+   "name": "Quality Officer",
+   "grade": "C2",
+   "description": "Document control, internal quality audits and corrective actions."
+  },
+  {
+   "name": "Standards Development Manager",
+   "grade": "D3",
+   "description": "Runs the national standards programme and technical committees."
+  },
+  {
+   "name": "Senior Standards Officer",
+   "grade": "C4",
+   "description": "Leads technical committees and reviews draft standards."
+  },
+  {
+   "name": "Standards Officer",
+   "grade": "C3",
+   "description": "Secretariat to technical committees; drafts and adopts standards."
+  },
+  {
+   "name": "Standards Assistant",
+   "grade": "B3",
+   "description": "Committee logistics, ballots and records."
+  },
+  {
+   "name": "Certification Manager",
+   "grade": "D3",
+   "description": "Runs product and management system certification."
+  },
+  {
+   "name": "Lead Auditor",
+   "grade": "C5",
+   "description": "Leads third-party management system audits."
+  },
+  {
+   "name": "Technical Reviewer",
+   "grade": "C4",
+   "description": "Reviews audit files before the certification decision."
+  },
+  {
+   "name": "Certification Officer",
+   "grade": "C3",
+   "description": "Processes certification applications and client files."
+  },
+  {
+   "name": "Certification Administrator",
+   "grade": "B3",
+   "description": "Scheduling, certificates and client records."
+  },
+  {
+   "name": "Laboratory Manager",
+   "grade": "D3",
+   "description": "Runs the testing laboratory under ISO/IEC 17025."
+  },
+  {
+   "name": "Senior Laboratory Analyst",
+   "grade": "C4",
+   "description": "Leads a testing section and authorises results."
+  },
+  {
+   "name": "Laboratory Analyst",
+   "grade": "C2",
+   "description": "Carries out chemical and microbiological tests."
+  },
+  {
+   "name": "Laboratory Technician",
+   "grade": "B4",
+   "description": "Prepares samples, media and equipment."
+  },
+  {
+   "name": "Sample Receiving Clerk",
+   "grade": "B2",
+   "description": "Receives, logs and stores samples."
+  },
+  {
+   "name": "Metrology Manager",
+   "grade": "D3",
+   "description": "Runs calibration and legal metrology."
+  },
+  {
+   "name": "Senior Metrologist",
+   "grade": "C4",
+   "description": "Leads a calibration discipline and signs certificates."
+  },
+  {
+   "name": "Metrologist",
+   "grade": "C3",
+   "description": "Calibrates instruments in the laboratory and on site."
+  },
+  {
+   "name": "Metrology Technician",
+   "grade": "B4",
+   "description": "Verifies weighing and measuring instruments used in trade."
+  },
+  {
+   "name": "Information Centre Manager",
+   "grade": "D2",
+   "description": "Runs the standards information centre and WTO/TBT enquiry point."
+  },
+  {
+   "name": "Information Officer",
+   "grade": "C2",
+   "description": "Answers standards enquiries and TBT notifications."
+  },
+  {
+   "name": "Training Officer",
+   "grade": "C2",
+   "description": "Runs public training courses on standards."
+  },
+  {
+   "name": "Standards Sales Officer",
+   "grade": "B3",
+   "description": "Sells standards and keeps the catalogue."
+  },
+  {
+   "name": "Human Resources Manager",
+   "grade": "D3",
+   "description": "Runs HR: people, structure, recruitment, performance and relations."
+  },
+  {
+   "name": "Senior Human Resources Officer",
+   "grade": "C4",
+   "description": "Recruitment, employee relations and HR records."
+  },
+  {
+   "name": "Human Resources Officer",
+   "grade": "C2",
+   "description": "Leave, onboarding, training administration."
+  },
+  {
+   "name": "Human Resources Assistant",
+   "grade": "B3",
+   "description": "Filing, staff queries and HR data capture."
+  },
+  {
+   "name": "Finance Manager",
+   "grade": "D3",
+   "description": "Runs finance, budgets and reporting."
+  },
+  {
+   "name": "Accountant",
+   "grade": "C3",
+   "description": "Ledgers, reconciliations and management accounts."
+  },
+  {
+   "name": "Accounts Officer",
+   "grade": "B4",
+   "description": "Payables, receivables and claims."
+  },
+  {
+   "name": "Procurement Officer",
+   "grade": "C2",
+   "description": "Runs purchasing under the Public Procurement Act."
+  },
+  {
+   "name": "Stores Clerk",
+   "grade": "B2",
+   "description": "Receives and issues stores."
+  },
+  {
+   "name": "ICT Manager",
+   "grade": "D2",
+   "description": "Runs ICT systems and security."
+  },
+  {
+   "name": "Systems Administrator",
+   "grade": "C3",
+   "description": "Servers, network, backups and EswasaOne administration."
+  },
+  {
+   "name": "ICT Support Technician",
+   "grade": "B4",
+   "description": "User support and equipment."
+  },
+  {
+   "name": "Marketing and Communications Manager",
+   "grade": "D2",
+   "description": "Marketing, communications and customer service."
+  },
+  {
+   "name": "Marketing Officer",
+   "grade": "C2",
+   "description": "Promotes the Authority's services."
+  },
+  {
+   "name": "Communications Officer",
+   "grade": "C2",
+   "description": "Media, website and publications."
+  },
+  {
+   "name": "Customer Service Officer",
+   "grade": "B3",
+   "description": "Front-line client enquiries and complaints."
+  },
+  {
+   "name": "Administration Officer",
+   "grade": "C1",
+   "description": "Facilities, fleet and office services."
+  },
+  {
+   "name": "Receptionist",
+   "grade": "B2",
+   "description": "Reception and switchboard."
+  },
+  {
+   "name": "Driver",
+   "grade": "A3",
+   "description": "Drives Authority vehicles and keeps the logbook."
+  },
+  {
+   "name": "Cleaner",
+   "grade": "A2",
+   "description": "Keeps the offices and laboratories clean."
+  },
+  {
+   "name": "Messenger",
+   "grade": "A2",
+   "description": "Mail, deliveries and errands."
+  }
+ ],
+ "holiday_list": {
+  "name": "Eswatini",
+  "from_date": "2026-01-01",
+  "to_date": "2027-12-31",
+  "company_default": true,
+  "holidays": [
+   {
+    "date": "2026-01-01",
+    "description": "New Year's Day"
+   },
+   {
+    "date": "2026-01-03",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-01-04",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-01-10",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-01-11",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-01-17",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-01-18",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-01-24",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-01-25",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-01-31",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-02-01",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-02-07",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-02-08",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-02-14",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-02-15",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-02-21",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-02-22",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-02-28",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-03-01",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-03-07",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-03-08",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-03-14",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-03-15",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-03-21",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-03-22",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-03-28",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-03-29",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-04-03",
+    "description": "Good Friday"
+   },
+   {
+    "date": "2026-04-04",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-04-05",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-04-06",
+    "description": "Easter Monday"
+   },
+   {
+    "date": "2026-04-11",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-04-12",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-04-18",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-04-19",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-04-20",
+    "description": "King's Birthday (observed; 19 April is a Sunday)"
+   },
+   {
+    "date": "2026-04-25",
+    "description": "National Flag Day"
+   },
+   {
+    "date": "2026-04-26",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-05-01",
+    "description": "Workers' Day"
+   },
+   {
+    "date": "2026-05-02",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-05-03",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-05-09",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-05-10",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-05-14",
+    "description": "Ascension Day"
+   },
+   {
+    "date": "2026-05-16",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-05-17",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-05-23",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-05-24",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-05-30",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-05-31",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-06-06",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-06-07",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-06-13",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-06-14",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-06-20",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-06-21",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-06-27",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-06-28",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-07-04",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-07-05",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-07-11",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-07-12",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-07-18",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-07-19",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-07-22",
+    "description": "Birthday of the late King Sobhuza II"
+   },
+   {
+    "date": "2026-07-25",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-07-26",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-08-01",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-08-02",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-08-08",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-08-09",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-08-15",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-08-16",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-08-22",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-08-23",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-08-29",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-08-30",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-08-31",
+    "description": "Umhlanga (Reed Dance) Day (date announced yearly)"
+   },
+   {
+    "date": "2026-09-05",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-09-06",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-09-07",
+    "description": "Somhlolo (Independence) Day (observed; 6 September is a Sunday)"
+   },
+   {
+    "date": "2026-09-12",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-09-13",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-09-19",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-09-20",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-09-26",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-09-27",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-10-03",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-10-04",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-10-10",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-10-11",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-10-17",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-10-18",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-10-24",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-10-25",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-10-31",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-11-01",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-11-07",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-11-08",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-11-14",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-11-15",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-11-21",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-11-22",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-11-28",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-11-29",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-12-05",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-12-06",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-12-12",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-12-13",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-12-19",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-12-20",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-12-25",
+    "description": "Christmas Day"
+   },
+   {
+    "date": "2026-12-26",
+    "description": "Boxing Day"
+   },
+   {
+    "date": "2026-12-27",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2026-12-28",
+    "description": "Incwala Day (date announced yearly)"
+   },
+   {
+    "date": "2027-01-01",
+    "description": "New Year's Day"
+   },
+   {
+    "date": "2027-01-02",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-01-03",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-01-09",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-01-10",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-01-16",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-01-17",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-01-23",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-01-24",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-01-30",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-01-31",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-02-06",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-02-07",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-02-13",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-02-14",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-02-20",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-02-21",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-02-27",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-02-28",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-03-06",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-03-07",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-03-13",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-03-14",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-03-20",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-03-21",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-03-26",
+    "description": "Good Friday"
+   },
+   {
+    "date": "2027-03-27",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-03-28",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-03-29",
+    "description": "Easter Monday"
+   },
+   {
+    "date": "2027-04-03",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-04-04",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-04-10",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-04-11",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-04-17",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-04-18",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-04-19",
+    "description": "King's Birthday"
+   },
+   {
+    "date": "2027-04-24",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-04-25",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-04-26",
+    "description": "National Flag Day (observed; 25 April is a Sunday)"
+   },
+   {
+    "date": "2027-05-01",
+    "description": "Workers' Day"
+   },
+   {
+    "date": "2027-05-02",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-05-06",
+    "description": "Ascension Day"
+   },
+   {
+    "date": "2027-05-08",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-05-09",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-05-15",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-05-16",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-05-22",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-05-23",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-05-29",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-05-30",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-06-05",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-06-06",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-06-12",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-06-13",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-06-19",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-06-20",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-06-26",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-06-27",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-07-03",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-07-04",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-07-10",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-07-11",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-07-17",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-07-18",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-07-22",
+    "description": "Birthday of the late King Sobhuza II"
+   },
+   {
+    "date": "2027-07-24",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-07-25",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-07-31",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-08-01",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-08-07",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-08-08",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-08-14",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-08-15",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-08-21",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-08-22",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-08-28",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-08-29",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-08-30",
+    "description": "Umhlanga (Reed Dance) Day (date announced yearly)"
+   },
+   {
+    "date": "2027-09-04",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-09-05",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-09-06",
+    "description": "Somhlolo (Independence) Day"
+   },
+   {
+    "date": "2027-09-11",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-09-12",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-09-18",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-09-19",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-09-25",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-09-26",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-10-02",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-10-03",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-10-09",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-10-10",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-10-16",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-10-17",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-10-23",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-10-24",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-10-30",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-10-31",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-11-06",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-11-07",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-11-13",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-11-14",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-11-20",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-11-21",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-11-27",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-11-28",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-12-04",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-12-05",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-12-11",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-12-12",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-12-18",
+    "description": "Saturday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-12-19",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-12-25",
+    "description": "Christmas Day"
+   },
+   {
+    "date": "2027-12-26",
+    "description": "Sunday",
+    "weekly_off": true
+   },
+   {
+    "date": "2027-12-27",
+    "description": "Boxing Day (observed; 26 December is a Sunday)"
+   },
+   {
+    "date": "2027-12-28",
+    "description": "Incwala Day (date announced yearly)"
+   }
+  ]
+ }
+}

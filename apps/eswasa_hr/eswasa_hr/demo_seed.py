@@ -5,8 +5,10 @@ Runs after every ``bench migrate`` (``setup.after_migrate``) on a site whose ``s
 
     bench --site <site> execute eswasa_hr.demo_seed.run
 
-It adds the three existing staff the journey needs (two HR Managers and the head of Certification) and three
-joiners. Each joiner goes through the real steps, each called as the person who would do it: requisition raised
+The organisation comes from the provisional baseline (``eswasa_hr.baseline``, which runs first on the same flag):
+departments, posts, about eighty staff and the vacancies left open. The journey takes three of those staff (two HR
+Managers and the head of Certification, found by staff number) and hires three joiners into the open posts; who
+they are is in ``data/baseline/demo_journey.json``. Each joiner goes through the real steps, each called as the person who would do it: requisition raised
 by HR, approved by the head and then the other HR Manager, advertised, applied for, shortlisted, interviewed with
 panel feedback, offered (prepared by one HR Manager, approved by the other), accepted, made an employee and
 onboarded, with every checklist task ticked by its owner. Dates are then moved back so each hire has a believable
@@ -28,6 +30,8 @@ import json
 from datetime import date, datetime, time, timedelta
 from typing import Any, Callable
 
+from eswasa_hr.baseline import read
+
 FLAG = "eswasa_demo_seed"
 PASSWORD = "eswasa_demo_password"
 MAIL_DOMAIN = "eswasa_demo_mail_domain"
@@ -35,100 +39,11 @@ DEFAULT_DOMAIN = "eswasa.demo"
 PERSONAL_DOMAIN = "example.com"  # reserved (RFC 2606): never a real mailbox
 DECLARATION_ACTIVITY = "Sign the impartiality and confidentiality declaration"
 
-# Existing staff who run the journey. Joined years ago; created directly, as an HR import would.
-STAFF: dict[str, dict[str, Any]] = {
-    "hr_lead": {
-        "first": "Nomvula", "last": "Dlamini", "gender": "Female", "dob": "1984-03-17", "joined": "2016-02-01",
-        "department": "Human Resources", "designation": "Human Resources Manager",
-        "roles": ["HR Manager", "HR User", "Employee"], "boss": None,
-        "marital": "Married", "phone": "+268 7612 4471", "address": "Plot 88, Coates Valley, Manzini",
-        "home": "Ka-Khoza, Manzini", "kin": ("Themba Dlamini", "Spouse", "+268 7604 2219"),
-        "bank": ("Standard Bank Eswatini", "9110 4482 3371"),
-    },
-    "hr_second": {
-        "first": "Sandile", "last": "Motsa", "gender": "Male", "dob": "1989-09-05", "joined": "2019-07-15",
-        "department": "Human Resources", "designation": "Senior Human Resources Officer",
-        "roles": ["HR Manager", "HR User", "Interviewer", "Employee"], "boss": "hr_lead",
-        "marital": "Single", "phone": "+268 7688 1352", "address": "Flat 4, Mhlambanyatsi Road, Mbabane",
-        "home": "Ezulwini, Hhohho", "kin": ("Gugu Motsa", "Mother", "+268 7615 9030"),
-        "bank": ("FNB Eswatini", "6233 0917 554"),
-    },
-    "cert_head": {
-        "first": "Mduduzi", "last": "Nxumalo", "gender": "Male", "dob": "1980-11-22", "joined": "2013-05-02",
-        "department": "Certification", "designation": "Certification Manager",
-        "roles": ["Interviewer", "Employee"], "boss": None,
-        "marital": "Married", "phone": "+268 7622 7045", "address": "House 12, Thembelihle, Mbabane",
-        "home": "Siteki, Lubombo", "kin": ("Zanele Nxumalo", "Spouse", "+268 7630 5582"),
-        "bank": ("Nedbank Eswatini", "0204 7716 2093"),
-    },
-}
-
-# Joiners, hired through Recruitment into approved vacancies. ``joined_days_ago`` sets the whole timeline.
-HIRES: list[dict[str, Any]] = [
-    {
-        "key": "lindiwe", "first": "Lindiwe", "last": "Mamba", "gender": "Female", "dob": "1994-06-12",
-        "department": "Certification", "designation": "Certification Officer", "joined_days_ago": 95,
-        "monthly_pay": 21500, "reason": "Workload increase",
-        "description": (
-            "Process product and system certification applications from receipt to decision: check applications "
-            "are complete, plan audits with the Lead Auditor, keep client files and follow up corrective actions. "
-            "Needs a degree in a science or engineering field, two years in quality or conformity assessment, and "
-            "working knowledge of ISO/IEC 17065."
-        ),
-        "cover": "I have spent three years in quality assurance at a food processor in Matsapha and would like to bring "
-                 "that experience to product certification.",
-        "marital": "Single", "phone": "+268 7645 2208", "address": "Plot 214, Fairview North, Manzini",
-        "home": "Nhlangano, Shiselweni", "kin": ("Sibongile Mamba", "Mother", "+268 7690 1147"),
-        "bank": ("Standard Bank Eswatini", "9110 7735 0482"),
-        "medical": ("Swazimed", "SWM-448210", "Essential", 1), "dependants": [],
-        "education": [("University of Eswatini", "BSc Chemistry", "Graduate", 2016)],
-        "history": [("Matsapha Food Processors (Pty) Ltd", "Quality Assurance Officer", "3 years")],
-    },
-    {
-        "key": "sibusiso", "first": "Sibusiso", "last": "Maseko", "gender": "Male", "dob": "1987-01-28",
-        "department": "Certification", "designation": "Lead Auditor", "joined_days_ago": 60,
-        "monthly_pay": 32800, "reason": "Replacement",
-        "description": (
-            "Lead management system audits against ISO 9001, ISO 22000 and ISO 14001: plan the audit, lead the team "
-            "on site, write the report and recommend the certification decision. Needs a registered lead auditor "
-            "qualification in at least two standards and five years of third-party auditing."
-        ),
-        "cover": "I am an IRCA-registered lead auditor with seven years of third-party audits across Southern Africa.",
-        "marital": "Married", "phone": "+268 7671 9364", "address": "House 31, Sidwashini, Mbabane",
-        "home": "Piggs Peak, Hhohho", "kin": ("Nonhlanhla Maseko", "Spouse", "+268 7683 4410"),
-        "bank": ("FNB Eswatini", "6233 5520 819"),
-        "medical": ("Medsas", "MDS-102274", "Comprehensive", 1),
-        "dependants": [
-            ("Nonhlanhla Maseko", "Spouse", "1990-04-09", "9004090144087", 1, 60, "+268 7683 4410"),
-            ("Lwazi Maseko", "Child", "2016-08-21", "1608210512083", 1, 40, None),
-        ],
-        "education": [("University of Eswatini", "BEng Electrical Engineering", "Graduate", 2010),
-                      ("University of Johannesburg", "Postgraduate Diploma in Quality Management", "Post Graduate", 2014)],
-        "history": [("Southern Certification Services", "Lead Auditor", "4 years"),
-                    ("Mbabane Engineering Works", "Quality Engineer", "3 years")],
-    },
-    {
-        "key": "phumzile", "first": "Phumzile", "last": "Hlophe", "gender": "Female", "dob": "1991-10-03",
-        "department": "Certification", "designation": "Technical Reviewer", "joined_days_ago": 21,
-        "monthly_pay": 26400, "reason": "New service line",
-        "description": (
-            "Review completed audit files before the certification decision: check that evidence supports every "
-            "finding, that the audit team was competent for the scope, and that the report is complete. Needs a "
-            "degree, auditor training in ISO 9001 or ISO 22000, and an eye for detail."
-        ),
-        "cover": "After four years as a laboratory analyst I trained as an auditor and want to move into technical review.",
-        "marital": "Married", "phone": "+268 7659 0813", "address": "Unit 7, Riverstone Village, Matsapha",
-        "home": "Mankayane, Manzini", "kin": ("Bheki Hlophe", "Spouse", "+268 7617 3328"),
-        "bank": ("Eswatini Bank", "2201 0398 1166"),
-        "medical": ("Swazimed", "SWM-551903", "Family", 1),
-        "dependants": [("Bheki Hlophe", "Spouse", "1988-02-14", "8802140233081", 1, 100, "+268 7617 3328")],
-        "education": [("University of Eswatini", "BSc Biological Sciences", "Graduate", 2013)],
-        "history": [("Eswatini Water Laboratories", "Laboratory Analyst", "4 years")],
-    },
-]
-
-INTERVIEW_TYPE = "Panel interview"
-INTERVIEW_SKILLS = ("Technical knowledge", "Communication", "Judgement")
+# The cast and the joiners live in data/baseline/demo_journey.json, not here. The staff it names are loaded by the
+# baseline (eswasa_hr.baseline) and found by staff number; the joiners are hired into the vacancies it leaves open.
+JOURNEY: dict[str, Any] = read("demo_journey.json")
+STAFF: dict[str, dict[str, Any]] = JOURNEY["staff"]
+HIRES: list[dict[str, Any]] = JOURNEY["hires"]
 
 
 # ---------------------------------------------------------------- pure (tested without Frappe)
@@ -277,18 +192,14 @@ def _department(stem: str, company: str) -> str:
                            "parent_department": root}).insert(ignore_permissions=True).name
 
 
-def _designation(name: str) -> str:
+def _grade(designation: str | None = None) -> str | None:
+    """The post's grade (Designation.custom_grade), else the grade most active staff have; a missing grade is a gap."""
     import frappe
 
-    if not frappe.db.exists("Designation", name):
-        frappe.get_doc({"doctype": "Designation", "designation_name": name}).insert(ignore_permissions=True)
-    return name
-
-
-def _grade() -> str | None:
-    """The grade most active staff already have; the record check counts a missing grade as a gap."""
-    import frappe
-
+    if designation and frappe.get_meta("Designation").has_field("custom_grade"):
+        grade = frappe.db.get_value("Designation", designation, "custom_grade")
+        if grade:
+            return grade
     rows = frappe.get_all("Employee", filters={"status": "Active", "grade": ["is", "set"]}, fields=["grade"], limit=0)
     counts: dict[str, int] = {}
     for r in rows:
@@ -301,10 +212,8 @@ def _grade() -> str | None:
 def _employment_type() -> str | None:
     import frappe
 
-    for t in ("Full-time", "Permanent"):
-        if frappe.db.exists("Employment Type", t):
-            return t
-    return None
+    want = JOURNEY.get("employment_type")
+    return want if want and frappe.db.exists("Employment Type", want) else None
 
 
 def _user(email: str, first: str, last: str, roles: list[str], password: str) -> str:
@@ -328,53 +237,41 @@ def _user(email: str, first: str, last: str, roles: list[str], password: str) ->
     return email
 
 
-def _profile(employee: str, p: dict[str, Any]) -> None:
+def _profile(employee: str, p: dict[str, Any], monthly_pay: float | None = None) -> None:
     """Personal, bank, family and history details, the way HR would have captured them."""
     import frappe
 
-    kin_name, kin_rel, kin_phone = p["kin"]
-    bank, account = p["bank"]
+    kin, bank = p.get("kin") or {}, p.get("bank") or {}
     _set("Employee", employee, {k: v for k, v in {
-        "marital_status": p["marital"],
-        "cell_number": p["phone"],
+        "marital_status": p.get("marital"),
+        "cell_number": p.get("phone"),
         "personal_email": personal_email(p["first"], p["last"]),
-        "current_address": p["address"],
+        "current_address": p.get("address"),
         "current_accommodation_type": "Rented",
-        "permanent_address": p["home"],
+        "permanent_address": p.get("home"),
         "permanent_accommodation_type": "Owned",
-        "person_to_be_contacted": kin_name,
-        "relation": kin_rel,
-        "emergency_phone_number": kin_phone,
+        "person_to_be_contacted": kin.get("name"),
+        "relation": kin.get("relation"),
+        "emergency_phone_number": kin.get("phone"),
         "salary_mode": "Bank",
         "salary_currency": "SZL" if frappe.db.exists("Currency", "SZL") else None,
-        "bank_name": bank,
-        "bank_ac_no": account,
-        "ctc": (p.get("monthly_pay") or 0) * 12 or None,
+        "bank_name": bank.get("bank"),
+        "bank_ac_no": bank.get("account"),
+        "ctc": (monthly_pay or 0) * 12 or None,
     }.items() if v is not None})
     doc = frappe.get_doc("Employee", employee)
     meta = frappe.get_meta("Employee")
     changed = False
-    if p.get("medical") and meta.has_field("custom_medical_aid_scheme"):
-        scheme, number, plan, main = p["medical"]
-        doc.custom_medical_aid_scheme, doc.custom_medical_aid_number = scheme, number
-        doc.custom_medical_aid_plan, doc.custom_medical_aid_main_member = plan, main
+    medical = p.get("medical")
+    if medical and meta.has_field("custom_medical_aid_scheme"):
+        doc.custom_medical_aid_scheme, doc.custom_medical_aid_number = medical["scheme"], medical["number"]
+        doc.custom_medical_aid_plan, doc.custom_medical_aid_main_member = medical["plan"], medical["main_member"]
         changed = True
-    if p.get("dependants") and meta.has_field("custom_dependants") and not doc.get("custom_dependants"):
-        for full_name, rel, dob, id_no, on_aid, share, phone in p["dependants"]:
-            doc.append("custom_dependants", {"full_name": full_name, "relationship": rel, "date_of_birth": dob,
-                                             "id_number": id_no, "on_medical_aid": on_aid, "beneficiary_share": share,
-                                             "phone": phone})
-        changed = True
-    if p.get("education") and meta.has_field("education") and not doc.get("education"):
-        for school, qualification, level, year in p["education"]:
-            doc.append("education", {"school_univ": school, "qualification": qualification, "level": level,
-                                     "year_of_passing": year})
-        changed = True
-    if p.get("history") and meta.has_field("external_work_history") and not doc.get("external_work_history"):
-        for company, designation, years in p["history"]:
-            doc.append("external_work_history", {"company_name": company, "designation": designation,
-                                                 "total_experience": years})
-        changed = True
+    for table, key in (("custom_dependants", "dependants"), ("education", "education"), ("external_work_history", "history")):
+        if p.get(key) and meta.has_field(table) and not doc.get(table):
+            for row in p[key]:
+                doc.append(table, row)
+            changed = True
     if changed:
         doc.flags.ignore_permissions = True
         doc.flags.ignore_mandatory = True
@@ -382,67 +279,52 @@ def _profile(employee: str, p: dict[str, Any]) -> None:
 
 
 def _staff(out: dict[str, Any], conf: dict[str, Any]) -> dict[str, Any]:
-    """The HR Managers and the head of Certification, with logins. Managers first."""
+    """The HR Managers and the head of Certification, from the baseline staff, with demo logins and profiles."""
     import frappe
 
     company, domain = _company(), conf.get(MAIL_DOMAIN) or DEFAULT_DOMAIN
     out["company"] = company
-    grade, holidays, etype = _grade(), frappe.db.get_value("Company", company, "default_holiday_list"), _employment_type()
     cast: dict[str, Any] = {}
-    for key in sorted(STAFF, key=lambda k: STAFF[k]["boss"] is not None):
-        p = STAFF[key]
-        email = _user(work_email(p["first"], p["last"], domain), p["first"], p["last"], p["roles"], conf[PASSWORD])
-        dept = _department(p["department"], company)
-        boss = cast[p["boss"]] if p["boss"] else None
-        emp = frappe.db.get_value("Employee", {"user_id": email}, "name")
+    for key, c in STAFF.items():
+        p = c["profile"]
+        emp = frappe.db.get_value("Employee", {"employee_number": c["employee_number"]}, ["name", "user_id", "department"], as_dict=True)
         if not emp:
-            joined = date.fromisoformat(p["joined"])
-            emp = frappe.get_doc({
-                "doctype": "Employee", "first_name": p["first"], "last_name": p["last"], "gender": p["gender"],
-                "date_of_birth": p["dob"], "date_of_joining": p["joined"], "status": "Active", "company": company,
-                "department": dept, "designation": _designation(p["designation"]), "grade": grade,
-                "holiday_list": holidays, "employment_type": etype, "user_id": email, "company_email": email,
-                "prefered_contact_email": "Company Email", "reports_to": boss["employee"] if boss else None,
-                "final_confirmation_date": _add_months(joined, 6).isoformat(),
-            }).insert(ignore_permissions=True).name
-            _profile(emp, p)
-        cast[key] = {"user": email, "employee": emp, "name": f"{p['first']} {p['last']}", "department": dept}
-    # Leave and expenses go to the line manager; those at the top go to the HR lead (never themselves).
-    for key, c in cast.items():
-        boss = STAFF[key]["boss"]
-        approver = cast[boss]["user"] if boss else (cast["hr_second"]["user"] if key == "hr_lead" else cast["hr_lead"]["user"])
-        frappe.db.set_value("Employee", c["employee"], {"leave_approver": approver, "expense_approver": approver})
-    head = cast["cert_head"]
-    current = frappe.db.get_value("Department", head["department"], "custom_head")
-    if not current or not frappe.db.get_value("Employee", current, "user_id"):
-        frappe.db.set_value("Department", head["department"], "custom_head", head["employee"])
-    else:
-        out["kept_existing_head"] = {"department": head["department"], "head": current}
-    hr_dept = cast["hr_lead"]["department"]
-    if not frappe.db.get_value("Department", hr_dept, "custom_head"):
-        frappe.db.set_value("Department", hr_dept, "custom_head", cast["hr_lead"]["employee"])
-    from eswasa_hr import scope
-
-    scope.release_deciders()  # set_value skips hooks: heads and approvers must still see what they decide
+            raise ValueError(f"Staff number {c['employee_number']} isn't on this site: load the baseline first (eswasa_hr.baseline)")
+        email = _user(emp.user_id or work_email(p["first"], p["last"], domain), p["first"], p["last"], c["roles"], conf[PASSWORD])
+        if not emp.user_id:
+            doc = frappe.get_doc("Employee", emp.name)  # a real save: linking the login runs the Employee hooks
+            doc.update({"user_id": email, "company_email": email, "prefered_contact_email": "Company Email"})
+            doc.flags.ignore_permissions = True
+            doc.save()
+        _profile(emp.name, p)
+        cast[key] = {"user": email, "employee": emp.name, "name": f"{p['first']} {p['last']}", "department": emp.department}
+    if not recruitment_head(cast["cert_head"]["department"]):
+        raise ValueError(f"{cast['cert_head']['department']} has no head with a login: the requisitions need one")
     return cast
 
 
+def recruitment_head(department: str) -> str | None:
+    from eswasa_hr import recruitment
+
+    return recruitment._head_user(department)
+
+
 def _interview_setup() -> tuple[str, list[str]]:
-    """An interview type with skills to rate: the first HR set up, else a panel interview."""
+    """An interview type with skills to rate: the first HR set up, else the journey's panel interview."""
     import frappe
 
     for row in frappe.get_all("Interview Type", fields=["name"], order_by="creation asc", limit=0):
         skills = [r["skill"] for r in frappe.get_all("Expected Skill Set", filters={"parent": row["name"]}, fields=["skill"], limit=0)]
         if skills:
             return row["name"], skills
-    for s in INTERVIEW_SKILLS:
+    spec = JOURNEY["interview"]
+    for s in spec["skills"]:
         if not frappe.db.exists("Skill", s):
             frappe.get_doc({"doctype": "Skill", "skill_name": s}).insert(ignore_permissions=True)
-    if not frappe.db.exists("Interview Type", INTERVIEW_TYPE):
-        frappe.get_doc({"doctype": "Interview Type", "name": INTERVIEW_TYPE,
-                        "description": "Head of department and HR, structured questions on the job description.",
-                        "expected_skill_set": [{"skill": s} for s in INTERVIEW_SKILLS]}).insert(ignore_permissions=True)
-    return INTERVIEW_TYPE, list(INTERVIEW_SKILLS)
+    if not frappe.db.exists("Interview Type", spec["type"]):
+        frappe.get_doc({"doctype": "Interview Type", "name": spec["type"], "description": spec["description"],
+                        "expected_skill_set": [{"skill": s} for s in spec["skills"]]}).insert(ignore_permissions=True)
+    return spec["type"], list(spec["skills"])
 
 
 def _hire(h: dict[str, Any], cast: dict[str, Any], conf: dict[str, Any], today: date) -> dict[str, Any]:
@@ -493,7 +375,7 @@ def _hire(h: dict[str, Any], cast: dict[str, Any], conf: dict[str, Any], today: 
         opening = frappe.db.get_value(recruitment.OPENING, {"job_requisition": req}, "name")
         steps.append("advertised")
     if not app:
-        recruitment.apply_impl(opening, full, email, h["phone"], h["cover"],
+        recruitment.apply_impl(opening, full, email, h["profile"]["phone"], h["cover"],
                                f"https://{PERSONAL_DOMAIN}/cv/{h['first']}-{h['last']}.pdf".lower(), True)
         app = frappe.db.get_value("Job Applicant", {"email_id": email}, ["name", "job_title"], as_dict=True)
         steps.append("applied")
@@ -549,14 +431,14 @@ def _hire(h: dict[str, Any], cast: dict[str, Any], conf: dict[str, Any], today: 
         doc = frappe.get_doc("Employee", emp)
         meta = frappe.get_meta("Employee")
         doc.update({k: v for k, v in {
-            "user_id": login, "company_email": login, "prefered_contact_email": "Company Email", "grade": _grade(),
+            "user_id": login, "company_email": login, "prefered_contact_email": "Company Email", "grade": _grade(h["designation"]),
             "employment_type": _employment_type(),
             "holiday_list": frappe.db.get_value("Company", company, "default_holiday_list"),
             "scheduled_confirmation_date": t["probation_ends"].isoformat(),
         }.items() if v and meta.has_field(k)})
         doc.flags.ignore_permissions = True
         doc.save()
-        _profile(emp, h)
+        _profile(emp, h["profile"], h.get("monthly_pay"))
         steps.append("employee created")
 
     # 7. Onboarding, every task ticked by its owner; the joiner signs their declaration.
@@ -609,6 +491,18 @@ def _declare(employee: str, user: str, signed_name: str, signed_on: date) -> str
     return _as(user, sign)
 
 
+def _annual_allocation(leave_type: str) -> float:
+    """Days a year from a submitted Leave Policy, else the leave type's maximum."""
+    import frappe
+
+    rows = frappe.get_all("Leave Policy Detail", filters={"leave_type": leave_type, "parenttype": "Leave Policy"},
+                          fields=["parent", "annual_allocation"], limit=0)
+    for r in rows:
+        if frappe.db.get_value("Leave Policy", r["parent"], "docstatus") == 1 and r.get("annual_allocation"):
+            return float(r["annual_allocation"])
+    return float(frappe.db.get_value("Leave Type", leave_type, "max_leaves_allowed") or 0)
+
+
 def _leave(cast: dict[str, Any], hires: dict[str, Any]) -> dict[str, Any] | None:
     """This period's leave for everyone seeded; joiners get it from the day they joined."""
     import frappe
@@ -627,8 +521,9 @@ def _leave(cast: dict[str, Any], hires: dict[str, Any]) -> dict[str, Any] | None
     leave_type = leave_type or frappe.db.get_value("Leave Type", {"is_lwp": 0}, "name")
     if not leave_type:
         raise ValueError("No Leave Type on this site")
-    cap = frappe.db.get_value("Leave Type", leave_type, "max_leaves_allowed") or 0
-    per_year = min(20, cap) if cap else 20
+    per_year = _annual_allocation(leave_type)
+    if not per_year:
+        raise ValueError(f"No yearly allocation for {leave_type} (Leave Policy or the leave type's maximum)")
     made = []
     for emp in [c["employee"] for c in cast.values()] + [h["employee"] for h in hires.values()]:
         if frappe.db.exists("Leave Allocation", {"employee": emp, "leave_type": leave_type, "docstatus": 1,

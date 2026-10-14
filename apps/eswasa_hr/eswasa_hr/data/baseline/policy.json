@@ -1,0 +1,109 @@
+{
+ "note": "Provisional HR policy values for a staging or demo site, modelled on Eswatini practice (Employment Act 1980, Code of Good Practice on discipline, a parastatal's conditions of service). Not ESWASA's signed values. Each value is written only where the site has none, so HR's own changes stay.",
+ "hr_settings": {
+  "custom_verbal_warning_months": 6,
+  "custom_written_warning_months": 12,
+  "custom_final_warning_months": 12,
+  "custom_issued_item_types": [
+   "Laptop",
+   "Desktop computer",
+   "Mobile phone",
+   "SIM card",
+   "Access card",
+   "Staff ID card",
+   "Office keys",
+   "Pool vehicle keys",
+   "Fuel card",
+   "Laboratory coat and safety boots",
+   "Calibration field kit",
+   "Verification test weights"
+  ],
+  "custom_service_milestones": "5, 10, 15, 20, 25, 30",
+  "custom_receipt_required_above": 100
+ },
+ "disciplinary_offences": [
+  {"code": "D01", "title": "Late coming or leaving work early without permission", "category": "Attendance", "level": "Minor", "suggested_sanction": "Verbal warning"},
+  {"code": "D02", "title": "Absence without leave or a valid reason (one or two days)", "category": "Attendance", "level": "Serious", "suggested_sanction": "Written warning"},
+  {"code": "D03", "title": "Absence without leave for more than three working days in thirty", "category": "Attendance", "level": "Gross", "suggested_sanction": "Dismissal"},
+  {"code": "D04", "title": "Failure to carry out a reasonable instruction", "category": "Conduct", "level": "Serious", "suggested_sanction": "Written warning"},
+  {"code": "D05", "title": "Insubordination", "category": "Conduct", "level": "Serious", "suggested_sanction": "Final written warning"},
+  {"code": "D06", "title": "Abusive, insulting or threatening language", "category": "Conduct", "level": "Serious", "suggested_sanction": "Written warning"},
+  {"code": "D07", "title": "Harassment, including sexual harassment", "category": "Conduct", "level": "Gross", "suggested_sanction": "Dismissal"},
+  {"code": "D08", "title": "Reporting for duty under the influence of alcohol or drugs", "category": "Conduct", "level": "Gross", "suggested_sanction": "Dismissal"},
+  {"code": "D09", "title": "Negligent performance of duties", "category": "Performance", "level": "Minor", "suggested_sanction": "Verbal warning"},
+  {"code": "D10", "title": "Gross negligence causing loss, damage or risk", "category": "Performance", "level": "Gross", "suggested_sanction": "Dismissal"},
+  {"code": "D11", "title": "Misuse of Authority vehicles, equipment or property", "category": "Property", "level": "Serious", "suggested_sanction": "Written warning"},
+  {"code": "D12", "title": "Theft, fraud or dishonesty", "category": "Integrity", "level": "Gross", "suggested_sanction": "Dismissal"},
+  {"code": "D13", "title": "Falsifying test, calibration, audit or certification records", "category": "Integrity", "level": "Gross", "suggested_sanction": "Dismissal"},
+  {"code": "D14", "title": "Accepting gifts, favours or payment from clients", "category": "Integrity", "level": "Gross", "suggested_sanction": "Dismissal"},
+  {"code": "D15", "title": "Undisclosed conflict of interest (breach of impartiality)", "category": "Impartiality", "level": "Gross", "suggested_sanction": "Final written warning"},
+  {"code": "D16", "title": "Disclosure of confidential client or certification information", "category": "Confidentiality", "level": "Gross", "suggested_sanction": "Dismissal"},
+  {"code": "D17", "title": "Breach of laboratory health and safety rules", "category": "Safety", "level": "Serious", "suggested_sanction": "Written warning"},
+  {"code": "D18", "title": "Breach of the ICT acceptable-use policy", "category": "Conduct", "level": "Minor", "suggested_sanction": "Verbal warning"}
+ ],
+ "letter_wording": {
+  "Probation confirmation letter": "We are pleased to confirm that you have completed your probation as {designation} in the {department} department. Your appointment is confirmed with effect from {final_confirmation_date}. All other terms of your employment, which began on {date_of_joining}, remain as set out in your contract and the Authority's conditions of service. We thank you for your contribution so far and wish you continued success.",
+  "Contract renewal letter": "Further to the review of your fixed-term contract as {designation} in the {department} department, which was due to end on {current_end_date}, we are pleased to renew it to {new_end_date}. All other terms remain as set out in your contract and the Authority's conditions of service. Please sign and return a copy of this letter to Human Resources.",
+  "Permanent appointment letter": "We are pleased to inform you that your appointment as {designation} in the {department} department has been made {new_employment_type}. Your continuous service counts from {date_of_joining}. All other terms remain as set out in the Authority's conditions of service. Please sign and return a copy of this letter to Human Resources.",
+  "Promotion letter": "We are pleased to inform you that you have been promoted to {designation} in the {department} department, grade {grade}, with effect from {promotion_date}. Your new duties will be explained by your line manager. All other terms of your employment remain as set out in your contract and the Authority's conditions of service. Congratulations on your promotion.",
+  "Transfer letter": "This letter confirms your transfer to the {department} department as {designation}, based at {branch}, with effect from {transfer_date}. Your grade, continuous service and other terms of employment are not affected. Please report to your new line manager on that date.",
+  "Warning letter": "Following the disciplinary hearing held on {outcome_on}, you were found to have committed the offence of {offence_title}. In terms of the Authority's disciplinary code you are issued with a {sanction}. This warning remains on your file until {warning_expires_on}, after which it will no longer be taken into account. A repeat of this or a related offence while the warning is active may lead to more serious action. You have the right to appeal in writing within five working days of receiving this letter.",
+  "Employment confirmation letter": "This is to confirm that {employee_name}, staff number {employee_number}, is employed by the Eswatini Standards Authority as {designation} in the {department} department, on a {employment_type} basis, and has been employed since {date_of_joining}. This letter is issued at the employee's request for the purpose stated ({purpose}) and confirms employment details only."
+ },
+ "leave_types": [
+  {"leave_type_name": "Annual Leave", "max_leaves_allowed": 24, "is_carry_forward": 1, "maximum_carry_forwarded_leaves": 10, "include_holiday": 0, "allow_negative": 0},
+  {"leave_type_name": "Sick Leave", "max_leaves_allowed": 28, "include_holiday": 0, "custom_certificate_after_days": 2},
+  {"leave_type_name": "Maternity Leave", "max_leaves_allowed": 98, "max_continuous_days_allowed": 98, "include_holiday": 1},
+  {"leave_type_name": "Paternity Leave", "max_leaves_allowed": 5, "include_holiday": 0},
+  {"leave_type_name": "Compassionate Leave", "max_leaves_allowed": 5, "include_holiday": 0},
+  {"leave_type_name": "Study and Examination Leave", "max_leaves_allowed": 10, "include_holiday": 0},
+  {"leave_type_name": "Leave Without Pay", "is_lwp": 1, "include_holiday": 0}
+ ],
+ "leave_period": {"starts_month": 1, "starts_day": 1},
+ "leave_policy": {
+  "title": "ESWASA staff leave (provisional)",
+  "allocations": {"Annual Leave": 24, "Sick Leave": 28, "Compassionate Leave": 5, "Study and Examination Leave": 10}
+ },
+ "competences": [
+  {"skill_name": "Lead auditor: ISO 9001 quality management", "custom_kind": "Audit", "custom_scheme": "ISO 9001", "custom_validity_months": 36},
+  {"skill_name": "Lead auditor: ISO 22000 food safety", "custom_kind": "Audit", "custom_scheme": "ISO 22000", "custom_validity_months": 36},
+  {"skill_name": "Lead auditor: ISO 14001 environmental management", "custom_kind": "Audit", "custom_scheme": "ISO 14001", "custom_validity_months": 36},
+  {"skill_name": "Lead auditor: ISO 45001 occupational health and safety", "custom_kind": "Audit", "custom_scheme": "ISO 45001", "custom_validity_months": 36},
+  {"skill_name": "Product certification auditor: ESWASA Mark", "custom_kind": "Audit", "custom_scheme": "ESWASA Mark", "custom_validity_months": 24},
+  {"skill_name": "Technical reviewer: management system certification", "custom_kind": "Technical review", "custom_scheme": "ISO/IEC 17021-1", "custom_validity_months": 24},
+  {"skill_name": "Technical reviewer: product certification", "custom_kind": "Technical review", "custom_scheme": "ISO/IEC 17065", "custom_validity_months": 24},
+  {"skill_name": "Calibration: mass and balances", "custom_kind": "Calibration", "custom_scheme": "ISO/IEC 17025", "custom_validity_months": 12},
+  {"skill_name": "Calibration: temperature", "custom_kind": "Calibration", "custom_scheme": "ISO/IEC 17025", "custom_validity_months": 12},
+  {"skill_name": "Calibration: pressure", "custom_kind": "Calibration", "custom_scheme": "ISO/IEC 17025", "custom_validity_months": 12},
+  {"skill_name": "Calibration: volume and flow", "custom_kind": "Calibration", "custom_scheme": "ISO/IEC 17025", "custom_validity_months": 12},
+  {"skill_name": "Verification of weighing and measuring instruments in trade", "custom_kind": "Inspection", "custom_scheme": "Legal metrology", "custom_validity_months": 24},
+  {"skill_name": "Market surveillance inspection", "custom_kind": "Inspection", "custom_scheme": "Market surveillance", "custom_validity_months": 24}
+ ],
+ "required_documents": {
+  "Permanent": [
+   {"document_type": "ID"},
+   {"document_type": "Contract"},
+   {"document_type": "Qualification"},
+   {"document_type": "Impartiality declaration", "expires": 1, "alert_days": 30}
+  ],
+  "Fixed-term contract": [
+   {"document_type": "ID"},
+   {"document_type": "Contract", "expires": 1, "alert_days": 60},
+   {"document_type": "Qualification"},
+   {"document_type": "Impartiality declaration", "expires": 1, "alert_days": 30}
+  ],
+  "Internship": [
+   {"document_type": "ID"},
+   {"document_type": "Contract", "expires": 1, "alert_days": 30},
+   {"document_type": "Impartiality declaration", "expires": 1, "alert_days": 30}
+  ]
+ },
+ "expense_claim_types": [
+  {"expense_type": "Local travel", "description": "Taxi, bus and other local transport on Authority business.", "account": "Travel Expenses"},
+  {"expense_type": "Subsistence allowance", "description": "Meals and incidentals on an overnight or out-of-station trip.", "account": "Travel Expenses"},
+  {"expense_type": "Accommodation", "description": "Hotel or lodge on an out-of-station trip.", "account": "Travel Expenses"},
+  {"expense_type": "Private vehicle mileage", "description": "Kilometres driven in a private vehicle on Authority business.", "account": "Travel Expenses"},
+  {"expense_type": "Training and conference fees", "description": "Course, workshop or conference registration.", "account": "Miscellaneous Expenses"},
+  {"expense_type": "Airtime and data", "description": "Calls and data used for field work.", "account": "Telephone Expenses"}
+ ]
+}

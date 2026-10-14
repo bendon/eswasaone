@@ -79,24 +79,25 @@ class CastTests(unittest.TestCase):
         self.assertIn("hr_lead", hr)
         self.assertIn("hr_second", hr)
 
-    def test_managers_are_seeded_before_their_reports(self):
-        for key, p in seed.STAFF.items():
-            if p["boss"]:
-                self.assertIn(p["boss"], seed.STAFF)
-                self.assertIsNone(seed.STAFF[p["boss"]]["boss"], f"{p['boss']} must be seeded before {key}")
-
     def test_hires_are_distinct_and_complete(self):
         keys = {h["key"] for h in seed.HIRES}
         self.assertEqual(len(keys), len(seed.HIRES))
-        names = {(h["first"], h["last"]) for h in seed.HIRES} | {(p["first"], p["last"]) for p in seed.STAFF.values()}
+        names = {(h["first"], h["last"]) for h in seed.HIRES} | {(p["profile"]["first"], p["profile"]["last"]) for p in seed.STAFF.values()}
         self.assertEqual(len(names), len(seed.HIRES) + len(seed.STAFF))
         for h in seed.HIRES:
-            for field in ("designation", "department", "description", "dob", "gender", "phone", "bank", "kin"):
+            for field in ("designation", "department", "description", "dob", "gender"):
                 self.assertTrue(h.get(field), f"{h['key']} needs {field}")
-            self.assertTrue(h["phone"].startswith("+268 7"), h["key"])
-            shares = [d[5] for d in h["dependants"]]
+            for field in ("phone", "bank", "kin"):
+                self.assertTrue(h["profile"].get(field), f"{h['key']} needs {field}")
+            self.assertTrue(h["profile"]["phone"].startswith("+268 7"), h["key"])
+            shares = [d["beneficiary_share"] for d in h["profile"]["dependants"]]
             if shares:
                 self.assertEqual(sum(shares), 100, f"{h['key']} beneficiary shares")
+
+    def test_the_cast_is_found_by_staff_number(self):
+        numbers = [c["employee_number"] for c in seed.STAFF.values()]
+        self.assertEqual(len(numbers), len(set(numbers)))
+        self.assertTrue(all(n.startswith("ESW-") for n in numbers))
 
     def test_a_failing_block_becomes_a_skip_reason(self):
         out = {"skipped": {}}

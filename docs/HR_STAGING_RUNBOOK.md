@@ -141,7 +141,7 @@ Add a dated entry to `HR_PEOPLE_HANDOVER.md`: the commit, the install check resu
 
 ## 10. Demo people (demo sites only)
 
-Three joiners who went through the whole hire journey, plus the staff who ran it, for exploring the portal. Add to the demo site's `site_config.json`:
+Three joiners who went through the whole hire journey, plus the staff who ran it, for exploring the portal. The demo flag also loads the provisional baseline (section 11) first, because the journey hires into its departments and vacancies and acts as three of its staff. Add to the demo site's `site_config.json`:
 
 ```json
 "eswasa_demo_seed": 1,
@@ -166,3 +166,39 @@ bench --site <site> execute eswasa_hr.demo_seed.run
 Every login has the emailed sign-in code switched off (`User.custom_otp_enabled = 0`), so sign in with the email and the password only. The addresses can't receive mail (`eswasa_demo_mail_domain` changes the domain), and personal emails are `@example.com`. Each hire takes one of Certification's open vacancies; a hire with no vacancy left is listed under `skipped` in `sites/<site>/private/hr_demo_seed.json`. Running it again only finishes what's missing.
 
 Never set the flag on production. To retire the demo, disable the six users and set `eswasa_demo_seed` to 0.
+
+## 11. Provisional Eswatini baseline (staging and demo sites)
+
+Until ESWASA signs off its values, this makes every HR & People screen usable with an Eswatini-style organisation of 82 staff (85 with the demo joiners). The values are files in `apps/eswasa_hr/eswasa_hr/data/baseline/` (see its README), not code. They are loaded through the same mechanisms HR uses: the master-data loader, the employee import (recorded as HR Import Runs), and the setup records.
+
+```json
+"eswasa_hr_baseline": 1
+```
+
+The next `bench --site <site> migrate` loads it (just before the demo people), or run it now:
+
+```bash
+bench --site <site> execute eswasa_hr.baseline.run
+```
+
+It fills the ESWASA answers that are still open:
+
+- A1: disciplinary code and warning months
+- A2: issued item types
+- A3: letter wording
+- A8: milestone years
+
+It also loads departments, heads, posts and the approved establishment, the Eswatini holidays for 2026–2027, leave types with the current leave period and policy, the competence catalogue, required documents and expense claim types. HR setup then shows these steps as done.
+
+Only empty values get written, so anything HR has set stays as it is. A file already imported isn't imported again. Logins use `@eswasa.demo`, and invitation emails are muted. With `eswasa_demo_password` and the demo flag, every baseline login uses that password.
+
+| Login | Who |
+|---|---|
+| `nompumelelo.dube@eswasa.demo` | Executive Director (`Eswasa Executive Director` role; decides establishment changes) |
+| `melusi.khumalo@eswasa.demo` | Finance Manager (`Accounts Manager`) |
+| `thabo.tsabedze@eswasa.demo` | Quality Manager (`Eswasa Quality Manager`) |
+| `nokuthula.mhlanga@eswasa.demo` | Metrology Manager, head of Metrology (line manager of 10) |
+| `melusi.sibandze@eswasa.demo` | Human Resources Officer (`HR User`) |
+| `ncamsile.nxumalo@eswasa.demo` | Laboratory Analyst (an ordinary employee) |
+
+The result goes to `sites/<site>/private/hr_baseline.json`, with a reason for each skipped step. Never set the flag on production; ESWASA's real data goes in through HR setup (section 5).

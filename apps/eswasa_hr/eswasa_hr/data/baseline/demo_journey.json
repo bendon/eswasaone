@@ -1,0 +1,291 @@
+{
+ "note": "Demo journey (demo sites only). The staff below are loaded by the baseline (staff_records.csv) and are found by staff number; the hires go through recruitment into the vacancies organisation.json leaves open. The people are made up.",
+ "employment_type": "Permanent",
+ "interview": {
+  "type": "Panel interview",
+  "description": "Head of department and HR, structured questions on the job description.",
+  "skills": [
+   "Technical knowledge",
+   "Communication",
+   "Judgement"
+  ]
+ },
+ "staff": {
+  "hr_lead": {
+   "employee_number": "ESW-057",
+   "roles": [
+    "HR Manager",
+    "HR User",
+    "Employee"
+   ],
+   "profile": {
+    "first": "Nomvula",
+    "last": "Dlamini",
+    "marital": "Married",
+    "phone": "+268 7612 4471",
+    "address": "Plot 88, Coates Valley, Manzini",
+    "home": "Ka-Khoza, Manzini",
+    "kin": {
+     "name": "Themba Dlamini",
+     "relation": "Spouse",
+     "phone": "+268 7604 2219"
+    },
+    "bank": {
+     "bank": "Standard Bank Eswatini",
+     "account": "9110 4482 3371"
+    }
+   }
+  },
+  "hr_second": {
+   "employee_number": "ESW-058",
+   "roles": [
+    "HR Manager",
+    "HR User",
+    "Interviewer",
+    "Employee"
+   ],
+   "profile": {
+    "first": "Sandile",
+    "last": "Motsa",
+    "marital": "Single",
+    "phone": "+268 7688 1352",
+    "address": "Flat 4, Mhlambanyatsi Road, Mbabane",
+    "home": "Ezulwini, Hhohho",
+    "kin": {
+     "name": "Gugu Motsa",
+     "relation": "Mother",
+     "phone": "+268 7615 9030"
+    },
+    "bank": {
+     "bank": "FNB Eswatini",
+     "account": "6233 0917 554"
+    }
+   }
+  },
+  "cert_head": {
+   "employee_number": "ESW-018",
+   "roles": [
+    "Interviewer",
+    "Employee"
+   ],
+   "profile": {
+    "first": "Mduduzi",
+    "last": "Nxumalo",
+    "marital": "Married",
+    "phone": "+268 7622 7045",
+    "address": "House 12, Thembelihle, Mbabane",
+    "home": "Siteki, Lubombo",
+    "kin": {
+     "name": "Zanele Nxumalo",
+     "relation": "Spouse",
+     "phone": "+268 7630 5582"
+    },
+    "bank": {
+     "bank": "Nedbank Eswatini",
+     "account": "0204 7716 2093"
+    }
+   }
+  }
+ },
+ "hires": [
+  {
+   "key": "lindiwe",
+   "first": "Lindiwe",
+   "last": "Mamba",
+   "gender": "Female",
+   "dob": "1994-06-12",
+   "department": "Certification",
+   "designation": "Certification Officer",
+   "joined_days_ago": 95,
+   "monthly_pay": 21500,
+   "reason": "Workload increase",
+   "description": "Process product and system certification applications from receipt to decision: check applications are complete, plan audits with the Lead Auditor, keep client files and follow up corrective actions. Needs a degree in a science or engineering field, two years in quality or conformity assessment, and working knowledge of ISO/IEC 17065.",
+   "cover": "I have spent three years in quality assurance at a food processor in Matsapha and would like to bring that experience to product certification.",
+   "profile": {
+    "first": "Lindiwe",
+    "last": "Mamba",
+    "marital": "Single",
+    "phone": "+268 7645 2208",
+    "address": "Plot 214, Fairview North, Manzini",
+    "home": "Nhlangano, Shiselweni",
+    "kin": {
+     "name": "Sibongile Mamba",
+     "relation": "Mother",
+     "phone": "+268 7690 1147"
+    },
+    "bank": {
+     "bank": "Standard Bank Eswatini",
+     "account": "9110 7735 0482"
+    },
+    "medical": {
+     "scheme": "Swazimed",
+     "number": "SWM-448210",
+     "plan": "Essential",
+     "main_member": 1
+    },
+    "dependants": [],
+    "education": [
+     {
+      "school_univ": "University of Eswatini",
+      "qualification": "BSc Chemistry",
+      "level": "Graduate",
+      "year_of_passing": 2016
+     }
+    ],
+    "history": [
+     {
+      "company_name": "Matsapha Food Processors (Pty) Ltd",
+      "designation": "Quality Assurance Officer",
+      "total_experience": "3 years"
+     }
+    ]
+   }
+  },
+  {
+   "key": "sibusiso",
+   "first": "Sibusiso",
+   "last": "Maseko",
+   "gender": "Male",
+   "dob": "1987-01-28",
+   "department": "Certification",
+   "designation": "Lead Auditor",
+   "joined_days_ago": 60,
+   "monthly_pay": 32800,
+   "reason": "Replacement",
+   "description": "Lead management system audits against ISO 9001, ISO 22000 and ISO 14001: plan the audit, lead the team on site, write the report and recommend the certification decision. Needs a registered lead auditor qualification in at least two standards and five years of third-party auditing.",
+   "cover": "I am an IRCA-registered lead auditor with seven years of third-party audits across Southern Africa.",
+   "profile": {
+    "first": "Sibusiso",
+    "last": "Maseko",
+    "marital": "Married",
+    "phone": "+268 7671 9364",
+    "address": "House 31, Sidwashini, Mbabane",
+    "home": "Piggs Peak, Hhohho",
+    "kin": {
+     "name": "Nonhlanhla Maseko",
+     "relation": "Spouse",
+     "phone": "+268 7683 4410"
+    },
+    "bank": {
+     "bank": "FNB Eswatini",
+     "account": "6233 5520 819"
+    },
+    "medical": {
+     "scheme": "Medsas",
+     "number": "MDS-102274",
+     "plan": "Comprehensive",
+     "main_member": 1
+    },
+    "dependants": [
+     {
+      "full_name": "Nonhlanhla Maseko",
+      "relationship": "Spouse",
+      "date_of_birth": "1990-04-09",
+      "id_number": "9004090144087",
+      "on_medical_aid": 1,
+      "beneficiary_share": 60,
+      "phone": "+268 7683 4410"
+     },
+     {
+      "full_name": "Lwazi Maseko",
+      "relationship": "Child",
+      "date_of_birth": "2016-08-21",
+      "id_number": "1608210512083",
+      "on_medical_aid": 1,
+      "beneficiary_share": 40,
+      "phone": null
+     }
+    ],
+    "education": [
+     {
+      "school_univ": "University of Eswatini",
+      "qualification": "BEng Electrical Engineering",
+      "level": "Graduate",
+      "year_of_passing": 2010
+     },
+     {
+      "school_univ": "University of Johannesburg",
+      "qualification": "Postgraduate Diploma in Quality Management",
+      "level": "Post Graduate",
+      "year_of_passing": 2014
+     }
+    ],
+    "history": [
+     {
+      "company_name": "Southern Certification Services",
+      "designation": "Lead Auditor",
+      "total_experience": "4 years"
+     },
+     {
+      "company_name": "Mbabane Engineering Works",
+      "designation": "Quality Engineer",
+      "total_experience": "3 years"
+     }
+    ]
+   }
+  },
+  {
+   "key": "phumzile",
+   "first": "Phumzile",
+   "last": "Hlophe",
+   "gender": "Female",
+   "dob": "1991-10-03",
+   "department": "Certification",
+   "designation": "Technical Reviewer",
+   "joined_days_ago": 21,
+   "monthly_pay": 26400,
+   "reason": "New service line",
+   "description": "Review completed audit files before the certification decision: check that evidence supports every finding, that the audit team was competent for the scope, and that the report is complete. Needs a degree, auditor training in ISO 9001 or ISO 22000, and an eye for detail.",
+   "cover": "After four years as a laboratory analyst I trained as an auditor and want to move into technical review.",
+   "profile": {
+    "first": "Phumzile",
+    "last": "Hlophe",
+    "marital": "Married",
+    "phone": "+268 7659 0813",
+    "address": "Unit 7, Riverstone Village, Matsapha",
+    "home": "Mankayane, Manzini",
+    "kin": {
+     "name": "Bheki Hlophe",
+     "relation": "Spouse",
+     "phone": "+268 7617 3328"
+    },
+    "bank": {
+     "bank": "Eswatini Bank",
+     "account": "2201 0398 1166"
+    },
+    "medical": {
+     "scheme": "Swazimed",
+     "number": "SWM-551903",
+     "plan": "Family",
+     "main_member": 1
+    },
+    "dependants": [
+     {
+      "full_name": "Bheki Hlophe",
+      "relationship": "Spouse",
+      "date_of_birth": "1988-02-14",
+      "id_number": "8802140233081",
+      "on_medical_aid": 1,
+      "beneficiary_share": 100,
+      "phone": "+268 7617 3328"
+     }
+    ],
+    "education": [
+     {
+      "school_univ": "University of Eswatini",
+      "qualification": "BSc Biological Sciences",
+      "level": "Graduate",
+      "year_of_passing": 2013
+     }
+    ],
+    "history": [
+     {
+      "company_name": "Eswatini Water Laboratories",
+      "designation": "Laboratory Analyst",
+      "total_experience": "4 years"
+     }
+    ]
+   }
+  }
+ ]
+}
